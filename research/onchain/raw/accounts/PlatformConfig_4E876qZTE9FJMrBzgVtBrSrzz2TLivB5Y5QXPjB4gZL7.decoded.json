@@ -1,0 +1,22 @@
+{
+ "epoch": 1028,
+ "platform_fee_wallet": "5CEbueQnq1Ym2uSSx2xXds3jQAqT1BDnkA59RZobSPAG",
+ "platform_nft_wallet": "5CEbueQnq1Ym2uSSx2xXds3jQAqT1BDnkA59RZobSPAG",
+ "platform_scale": 1000000,
+ "creator_scale": 0,
+ "burn_scale": 0,
+ "fee_rate": 10000,
+ "name": "StonkFun",
+ "web": "https://www.stonkfun.xyz",
+ "img": "https://www.stonkfun.xyz/stonkfun-logo.png",
+ "cpswap_config": "CRRS5ieQmBrZjWhcj99JuGrT5tyuWDaGAXLXLFjbAtjQ",
+ "creator_fee_rate": 0,
+ "transfer_fee_extension_auth": "5KXDF6QnqhBj72hDtJNkkpFaQVUfbFXNybMsp3DiK6tD",
+ "platform_vesting_wallet": "5CEbueQnq1Ym2uSSx2xXds3jQAqT1BDnkA59RZobSPAG",
+ "platform_vesting_scale": 0,
+ "platform_cp_creator": "5CEbueQnq1Ym2uSSx2xXds3jQAqT1BDnkA59RZobSPAG",
+ "restrict_global_config": 0,
+ "restrict_curve_param": 1,
+ "curve_rule_manager": "2pMi1Sr8vnAR2GPKMHJsmgFY8Hc4cUVbmG5ARxLsRrvp",
+ "padding": ""
+}

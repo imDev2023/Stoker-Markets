@@ -1,0 +1,145 @@
+{
+ "distinct_quote_mints": 503,
+ "top20": [
+  {
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "symbol": "SOL",
+   "name": "Wrapped SOL",
+   "pools": 11880,
+   "graduated": 89
+  },
+  {
+   "quote_mint": "6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx",
+   "symbol": "STONK",
+   "name": "STONK",
+   "pools": 8798,
+   "graduated": 168
+  },
+  {
+   "quote_mint": "A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS",
+   "symbol": "ZEC",
+   "name": "Zcash",
+   "pools": 8135,
+   "graduated": 236
+  },
+  {
+   "quote_mint": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
+   "symbol": "NVDAx",
+   "name": "NVIDIA xStock",
+   "pools": 4649,
+   "graduated": 78
+  },
+  {
+   "quote_mint": "Xs3oZwbHvqis4NYcf4YKWmEia2eC84wSiVrcYcTqpH8",
+   "symbol": "SPCXx",
+   "name": "SpaceX xStock",
+   "pools": 4382,
+   "graduated": 79
+  },
+  {
+   "quote_mint": "4sWNB8zGWHkh6UnmwiEtzNxL4XrN7uK9tosbESbJFfVs",
+   "symbol": "xSOL",
+   "name": "Hylo 3x Leveraged SOL",
+   "pools": 3513,
+   "graduated": 82
+  },
+  {
+   "quote_mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+   "symbol": "SPYx",
+   "name": "SP500 xStock",
+   "pools": 3225,
+   "graduated": 50
+  },
+  {
+   "quote_mint": "Pren1FvFX6J3E4kXhJuCiAD5aDmGEb7qJRncwA8Lkhw",
+   "symbol": "ANTHROPIC",
+   "name": "Anthropic PreStocks",
+   "pools": 2235,
+   "graduated": 63
+  },
+  {
+   "quote_mint": "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF",
+   "symbol": "OPENAI",
+   "name": "OpenAI PreStocks",
+   "pools": 2187,
+   "graduated": 59
+  },
+  {
+   "quote_mint": "3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh",
+   "symbol": "WBTC",
+   "name": "Wrapped BTC (Wormhole)",
+   "pools": 2047,
+   "graduated": 90
+  },
+  {
+   "quote_mint": "pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn",
+   "symbol": "PUMP",
+   "name": "Pump",
+   "pools": 2011,
+   "graduated": 14
+  },
+  {
+   "quote_mint": "XsvNBAYkrDRNhA7wPHQfX3ZUXZyZLdnCQDfHZ56bzpg",
+   "symbol": "HOODx",
+   "name": "Robinhood xStock",
+   "pools": 1782,
+   "graduated": 13
+  },
+  {
+   "quote_mint": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
+   "symbol": "AAPLx",
+   "name": "Apple xStock",
+   "pools": 1728,
+   "graduated": 22
+  },
+  {
+   "quote_mint": "DoGEV7LASBkQbibMc5k5vKnTZoMg423GpJ5QtJEGfm7R",
+   "symbol": "DOGE",
+   "name": "Dogecoin",
+   "pools": 1634,
+   "graduated": 46
+  },
+  {
+   "quote_mint": "Xsv9hRk1z5ystj9MhnA7Lq4vjSsLwzL2nxrwmwtD3re",
+   "symbol": "GLDx",
+   "name": "Gold xStock",
+   "pools": 1623,
+   "graduated": 41
+  },
+  {
+   "quote_mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+   "symbol": "USDC",
+   "name": "USD Coin",
+   "pools": 1620,
+   "graduated": 33
+  },
+  {
+   "quote_mint": "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu",
+   "symbol": "METAx",
+   "name": "Meta xStock",
+   "pools": 1582,
+   "graduated": 33
+  },
+  {
+   "quote_mint": "CARDSccUMFKoPRZxt5vt3ksUbxEFEcnZ3H2pd3dKxYjp",
+   "symbol": "CARDS",
+   "name": "Collector Crypt",
+   "pools": 1560,
+   "graduated": 49
+  },
+  {
+   "quote_mint": "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ",
+   "symbol": "QQQx",
+   "name": "Nasdaq xStock",
+   "pools": 1491,
+   "graduated": 27
+  },
+  {
+   "quote_mint": "oPAiAikWTaFj9RYoRFD35ccfwhnMcB3ThgBZRHSkjTZ",
+   "symbol": "tOpenAI",
+   "name": "T-OpenAI",
+   "pools": 1473,
+   "graduated": 30
+  }
+ ]
+}

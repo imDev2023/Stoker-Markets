@@ -1,0 +1,263 @@
+{
+ "letsbonk.fun": {
+  "pools": 1148907,
+  "distinct_quotes": 104,
+  "non_sol_pools": 251987,
+  "top_quotes": [
+   [
+    "So11111111111111111111111111111111111111112",
+    896920
+   ],
+   [
+    "USD1ttGY1N17NEEHLmELoaybftRBUSErhqYiQzvEmuB",
+    249917
+   ],
+   [
+    "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
+    816
+   ],
+   [
+    "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+    444
+   ],
+   [
+    "Dz9mQ9NzkBcCsuGPFJ3r1bS4wgqKMHBPiVuniW8Mbonk",
+    134
+   ],
+   [
+    "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ",
+    68
+   ]
+  ]
+ },
+ "StonkFun": {
+  "pools": 131868,
+  "distinct_quotes": 503,
+  "non_sol_pools": 119976,
+  "top_quotes": [
+   [
+    "So11111111111111111111111111111111111111112",
+    11892
+   ],
+   [
+    "6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx",
+    8799
+   ],
+   [
+    "A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS",
+    8140
+   ],
+   [
+    "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
+    4650
+   ],
+   [
+    "Xs3oZwbHvqis4NYcf4YKWmEia2eC84wSiVrcYcTqpH8",
+    4386
+   ],
+   [
+    "4sWNB8zGWHkh6UnmwiEtzNxL4XrN7uK9tosbESbJFfVs",
+    3515
+   ]
+  ]
+ },
+ "Raydium": {
+  "pools": 97128,
+  "distinct_quotes": 12,
+  "non_sol_pools": 701,
+  "top_quotes": [
+   [
+    "So11111111111111111111111111111111111111112",
+    96427
+   ],
+   [
+    "USD1ttGY1N17NEEHLmELoaybftRBUSErhqYiQzvEmuB",
+    689
+   ],
+   [
+    "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
+    2
+   ],
+   [
+    "9cRCn9rGT8V2imeM2BaKs13yhMEais3ruM3rPvTGpump",
+    2
+   ],
+   [
+    "3d1qHSAkQhoN7kN1C6tvpAArCkXWxwYdBng6taXCDM6u",
+    1
+   ],
+   [
+    "AjdE84dGqhbqDYhh8Pm8oCRMCTpUGQ4oDaRBF5vwpump",
+    1
+   ]
+  ]
+ },
+ "RevShare": {
+  "pools": 11589,
+  "distinct_quotes": 2,
+  "non_sol_pools": 1,
+  "top_quotes": [
+   [
+    "So11111111111111111111111111111111111111112",
+    11588
+   ],
+   [
+    "USD1ttGY1N17NEEHLmELoaybftRBUSErhqYiQzvEmuB",
+    1
+   ]
+  ]
+ },
+ "cook.meme": {
+  "pools": 5178,
+  "distinct_quotes": 1,
+  "non_sol_pools": 0,
+  "top_quotes": [
+   [
+    "So11111111111111111111111111111111111111112",
+    5178
+   ]
+  ]
+ },
+ "GAYS": {
+  "pools": 2438,
+  "distinct_quotes": 2,
+  "non_sol_pools": 58,
+  "top_quotes": [
+   [
+    "So11111111111111111111111111111111111111112",
+    2380
+   ],
+   [
+    "USD1ttGY1N17NEEHLmELoaybftRBUSErhqYiQzvEmuB",
+    58
+   ]
+  ]
+ },
+ "Pump Fun Robinhood": {
+  "pools": 1604,
+  "distinct_quotes": 1,
+  "non_sol_pools": 0,
+  "top_quotes": [
+   [
+    "So11111111111111111111111111111111111111112",
+    1604
+   ]
+  ]
+ },
+ "Bankr": {
+  "pools": 1509,
+  "distinct_quotes": 2,
+  "non_sol_pools": 1,
+  "top_quotes": [
+   [
+    "So11111111111111111111111111111111111111112",
+    1508
+   ],
+   [
+    "USD1ttGY1N17NEEHLmELoaybftRBUSErhqYiQzvEmuB",
+    1
+   ]
+  ]
+ },
+ "SURGE": {
+  "pools": 1303,
+  "distinct_quotes": 2,
+  "non_sol_pools": 58,
+  "top_quotes": [
+   [
+    "So11111111111111111111111111111111111111112",
+    1245
+   ],
+   [
+    "USD1ttGY1N17NEEHLmELoaybftRBUSErhqYiQzvEmuB",
+    58
+   ]
+  ]
+ },
+ "PossumLabs": {
+  "pools": 1111,
+  "distinct_quotes": 2,
+  "non_sol_pools": 45,
+  "top_quotes": [
+   [
+    "So11111111111111111111111111111111111111112",
+    1066
+   ],
+   [
+    "USD1ttGY1N17NEEHLmELoaybftRBUSErhqYiQzvEmuB",
+    45
+   ]
+  ]
+ },
+ "Wally Launchpad": {
+  "pools": 1099,
+  "distinct_quotes": 1,
+  "non_sol_pools": 0,
+  "top_quotes": [
+   [
+    "So11111111111111111111111111111111111111112",
+    1099
+   ]
+  ]
+ },
+ "TRiX": {
+  "pools": 1035,
+  "distinct_quotes": 4,
+  "non_sol_pools": 3,
+  "top_quotes": [
+   [
+    "So11111111111111111111111111111111111111112",
+    1032
+   ],
+   [
+    "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
+    1
+   ],
+   [
+    "3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh",
+    1
+   ],
+   [
+    "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+    1
+   ]
+  ]
+ },
+ "Memoo.Fun": {
+  "pools": 984,
+  "distinct_quotes": 2,
+  "non_sol_pools": 1,
+  "top_quotes": [
+   [
+    "So11111111111111111111111111111111111111112",
+    983
+   ],
+   [
+    "USD1ttGY1N17NEEHLmELoaybftRBUSErhqYiQzvEmuB",
+    1
+   ]
+  ]
+ },
+ "Wen.Dev": {
+  "pools": 907,
+  "distinct_quotes": 1,
+  "non_sol_pools": 0,
+  "top_quotes": [
+   [
+    "So11111111111111111111111111111111111111112",
+    907
+   ]
+  ]
+ },
+ "Pumpkin.fun": {
+  "pools": 797,
+  "distinct_quotes": 1,
+  "non_sol_pools": 0,
+  "top_quotes": [
+   [
+    "So11111111111111111111111111111111111111112",
+    797
+   ]
+  ]
+ }
+}
