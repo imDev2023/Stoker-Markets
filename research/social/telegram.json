@@ -1,0 +1,109 @@
+{
+  "collected_at": "2026-09-26",
+  "sources": [
+    "https://t.me/s/StonkFunXyz (public web preview)",
+    "https://t.me/StonkFunXyz/<id>?embed=1 (per-post probe, ids 2-6 and 8-9)",
+    "Telegram Bot API as @Approval44_bot: getMe, getChat, getChatMemberCount, getChatAdministrators (read-only)"
+  ],
+  "chat": {
+    "id": -1003909480502,
+    "type": "channel",
+    "title": "StonkFun",
+    "username": "StonkFunXyz",
+    "url": "https://t.me/StonkFunXyz",
+    "description": null,
+    "has_visible_history": true,
+    "available_reactions": [
+      "❤",
+      "👍",
+      "🔥"
+    ],
+    "member_count": 3617,
+    "web_preview_subscribers_label": "3 617 subscribers"
+  },
+  "pinned_message_id": 7,
+  "messages": [
+    {
+      "id": 1,
+      "url": "https://t.me/StonkFunXyz/1",
+      "date": "2026-07-24T01:54:44+00:00",
+      "type": "service",
+      "text": "Channel created"
+    },
+    {
+      "id": 7,
+      "url": "https://t.me/StonkFunXyz/7",
+      "date": "2026-07-24T03:37:59+00:00",
+      "edit_date": "2026-08-20T11:43:16+00:00",
+      "pinned": true,
+      "type": "photo",
+      "photo_largest": {
+        "width": 1280,
+        "height": 426,
+        "file_unique_id": "AQAD7A5rG3bBGFB-"
+      },
+      "photo_web_preview_url": "https://cdn4.telesco.pe/file/j8Xk8KFno8hJpe7EE-5i89RhR4aGslx1JItZN9M_hSupIa3P4iUevLyMBadjnlIWCDAtuRL4HZ2KsU3EIMFUURLIAFEN4Al1j_JnG5Z0c2HiJU7mZ3IX5n-JwLUHqstBMh5CFfNL15FDhdTmxHulcNMDuvbdqUJGS99r4s0U9kDUOP3m-NCIYSqsx1sel9rmZ27q7mGuRGJredfVov7dLcmfvFnAZb-qhU89gMxJMJP9nU-yBDYAyHf313u5M5ZZAIaGOjWoKV9iKVPPoI5U0-J5iR4sRqecGqGe36WfptIKPVkGpjBUqb5wrkvNr7h9ZZbRh0vfcjq5tnPcvAeWVg.jpg",
+      "text": "Launch Coins / Paired with Anything\n\nPowered by Raydium\n\nLaunchpad: stonkpad.xyz\n\nX: x.com/LaunchOnSF\n\nClick below to verify you're human",
+      "links": [
+        "http://stonkpad.xyz/",
+        "http://x.com/LaunchOnSF"
+      ],
+      "inline_keyboard": [
+        [
+          {
+            "text": "Tap to verify",
+            "url": "http://t.me/safeguard?start=-1004491672783"
+          }
+        ]
+      ],
+      "views_label": "20.9K",
+      "reactions": {
+        "heart": 143,
+        "fire": 42,
+        "thumbs_up": 11
+      }
+    }
+  ],
+  "missing_message_ids": {
+    "ids": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "status": "Post not found (deleted or never public)"
+  },
+  "bot_view": {
+    "bot": {
+      "id": 8702043371,
+      "username": "Approval44_bot",
+      "can_join_groups": true,
+      "can_read_all_group_messages": false
+    },
+    "getChat": "ok (works for any bot on a public channel; does not imply membership)",
+    "getChatMemberCount": 3617,
+    "getChatAdministrators": "Bad Request: member list is inaccessible",
+    "interpretation": "The bot is not an admin of @StonkFunXyz (member list inaccessible). @StonkFunXyz is a broadcast channel (portal), not the discussion group. The community group sits behind a Safeguard verification button (t.me/safeguard?start=-1004491672783); its chat id differs from the channel id. It was not probed."
+  },
+  "extracted": {
+    "announcements": [
+      "Launch Coins / Paired with Anything",
+      "Powered by Raydium"
+    ],
+    "rules": [],
+    "contract_addresses": [],
+    "bot_usernames": [
+      "@safeguard (verification portal bot)"
+    ],
+    "launch_how": "Pinned post points to launchpad stonkpad.xyz; coins can be paired with any quote token; Raydium powers liquidity. No further detail in the channel.",
+    "anomalies": [
+      "Pinned post names the launchpad as stonkpad.xyz, while X uses stonkfun.xyz everywhere. The pinned post was edited 2026-08-20. Treat stonkpad.xyz as unverified; not visited."
+    ]
+  },
+  "limitations": [
+    "Bot API cannot read past history of any chat; bots only receive new updates after joining, and @Approval44_bot has privacy mode on (can_read_all_group_messages=false).",
+    "Full history of the private community group behind the Safeguard gate needs a user-account MTProto client (e.g. Telethon) logged in by the owner.",
+    "getUpdates was intentionally not called; no messages were sent; the Safeguard-linked group id was not probed."
+  ]
+}

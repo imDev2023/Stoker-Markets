@@ -1,0 +1,16 @@
+{
+ "bump": 255,
+ "index": 3,
+ "owner": "projjosVCPQH49d5em7VYS7fJZzaqKixqKtus7yk416",
+ "protocol_fee_rate": 120000,
+ "trade_fee_rate": 10000,
+ "tick_spacing": 120,
+ "fund_fee_rate": 40000,
+ "padding_u32": 0,
+ "fund_owner": "FundHfY8oo8J9KYGyfXFFuQCHe7Z1VBNmsj84eMcdYs4",
+ "padding": [
+  0,
+  0,
+  0
+ ]
+}

@@ -1,0 +1,29 @@
+{
+ "bump": 254,
+ "disable_create_pool": false,
+ "index": 11,
+ "trade_fee_rate": 2500,
+ "protocol_fee_rate": 120000,
+ "fund_fee_rate": 40000,
+ "create_pool_fee": 150000000,
+ "protocol_owner": "ProCXqRcXJjoUd1RNoo28bSizAA6EEqt9wURZYPDc5u",
+ "fund_owner": "FUNDduJTA7XcckKHKfAoEnnhuSud2JUCUZv6opWEjrBU",
+ "creator_fee_rate": 10000,
+ "padding": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0
+ ]
+}

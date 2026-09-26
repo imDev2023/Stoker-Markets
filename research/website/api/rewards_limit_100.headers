@@ -1,0 +1,26 @@
+HTTP/2 200 
+access-control-allow-headers: Content-Type
+access-control-allow-methods: GET, POST, OPTIONS
+access-control-allow-origin: *
+access-control-expose-headers: X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, X-Quota-Remaining-Day, Retry-After
+access-control-max-age: 86400
+age: 0
+cache-control: public, max-age=5
+content-security-policy-report-only: default-src 'self'; script-src 'self' 'unsafe-inline' https://plugin.jup.ag https://*.jup.ag https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' https:; connect-src 'self' https: wss:; frame-src https://jup.ag https://*.jup.ag https://www.googletagmanager.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; report-uri /api/csp-report
+content-type: application/json; charset=utf-8
+date: Sat, 26 Sep 2026 19:07:47 GMT
+etag: "v14a1tg5nx69ddn"
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=()
+referrer-policy: strict-origin-when-cross-origin
+server: Vercel
+strict-transport-security: max-age=63072000
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-matched-path: /api/public/v1/rewards
+x-ratelimit-limit: 300
+x-ratelimit-remaining: 296
+x-ratelimit-reset: 1790449680
+x-vercel-cache: MISS
+x-vercel-id: lhr1::iad1::4vbhq-1790449664568-367456a876ca
+content-length: 10515044
+

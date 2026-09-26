@@ -1,0 +1,2357 @@
+{
+  "collected_at": "2026-09-26",
+  "method": {
+    "profile": "Bright Data Datasets API, X profiles dataset gd_lwxmeb2u1cniijd7t4 (1 record)",
+    "post_discovery": "Bright Data X posts dataset discover_by=profile_url returned only 3 posts (logged-out view). Post URLs were then discovered through Tavily (include_domains x.com), Bright Data Google SERP and a Jina Reader render of the logged-out profile (pinned + 4 latest).",
+    "post_details": "Bright Data X posts dataset gd_lwxkxvnf1cynvib9co, collected by URL for 70 discovered post URLs (70/70 succeeded).",
+    "tco_links": "Resolved with a single non-following HEAD-style request to t.co (Location header only); target sites were not visited.",
+    "coverage": "70 of 1,209 account posts (posts_count includes replies). Dated 2026-08-02 to 2026-09-26. Coverage of original announcements is good from August 2026 onward; most replies and some posts are missing. Metrics are a snapshot as of 2026-09-26."
+  },
+  "profile": {
+    "handle": "LaunchOnSF",
+    "url": "https://x.com/LaunchOnSF",
+    "user_id": "1668095655905046529",
+    "display_name": "Stonk",
+    "bio": "Launch coins paired with anything\n\nPowered by $STONK",
+    "website": "http://stonkfun.xyz/",
+    "joined": "2023-06-12T03:19:39.768Z",
+    "followers": 54102,
+    "following": 69,
+    "posts_count": 1209,
+    "verified": true,
+    "verification_type": "blue",
+    "profile_image": "https://pbs.twimg.com/profile_images/2089109995379912704/flmLVouk_400x400.jpg",
+    "banner_image": "https://pbs.twimg.com/profile_banners/1668095655905046529/1786917612/1500x500",
+    "pinned_post": "https://x.com/LaunchOnSF/status/2091622537968955815",
+    "collected_at": "2026-09-26T19:07:28.317Z"
+  },
+  "posts": [
+    {
+      "id": "2084046149359477077",
+      "url": "https://x.com/LaunchOnSF/status/2084046149359477077",
+      "date": "2026-08-02T22:38:16.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Introducing https://t.co/LCcwPSMSIa!\n\nThe RWA platform on @solana \nLaunch tokens backed by stocks, every token is paired to an underlying xStocks asset.    \n\nTrade, Create and Earn via Creator fees, while your token is backed by an underlying equity.\n\nMemes & Stocks\n\nPowered by $STONK - The first ever stock paired token on solana.\n\nTelegram: https://t.co/J4oTyvZDi7\n\nLaunchpad:",
+      "likes": 449,
+      "reposts": 49,
+      "replies": 114,
+      "quotes": 30,
+      "bookmarks": 55,
+      "views": 118422,
+      "photos": [
+        "https://pbs.twimg.com/media/HOwE2JJWQAA0O6l.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "http://stonkfun.xyz/",
+      "links": [
+        {
+          "short": "https://t.co/LCcwPSMSIa",
+          "resolved": "https://stonkfun.xyz/"
+        },
+        {
+          "short": "https://t.co/J4oTyvZDi7",
+          "resolved": "https://t.me/StonkFunXyz"
+        }
+      ],
+      "mentions": [
+        "solana"
+      ],
+      "cashtags": [
+        "STONK"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "Solana",
+          "url": "https://x.com/solana"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2084330305796599918",
+      "url": "https://x.com/LaunchOnSF/status/2084330305796599918",
+      "date": "2026-08-03T17:27:24.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "We will be releasing new updates today!\n\nReward token pairs are next.\n\n4/4 taxes/lp fees on Raydium CLMM which 85% is used to distribute holders xStocks.\n\nTokens are paired with xStocks as normal as well, rewarding holders will incentivize communities being built around tokens launched on https://t.co/LCcwPSMSIa\n\nMore information will follow, alongside other updates.",
+      "likes": 32,
+      "reposts": 10,
+      "replies": 10,
+      "quotes": 1,
+      "bookmarks": 5,
+      "views": 18502,
+      "photos": [],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [
+        {
+          "short": "https://t.co/LCcwPSMSIa",
+          "resolved": "https://stonkfun.xyz/"
+        }
+      ],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": {
+        "post_id": "2084131321459143069",
+        "profile_id": "LaunchOnSF",
+        "profile_name": "Stonk",
+        "data_posted": "2026-08-03T04:16:42.000Z",
+        "url": "https://x.com/LaunchOnSF/status/2084131321459143069",
+        "description": "Reward tokens are coming shortly.\n\nThe launch functionality will be the same, but it will be 3/3 taxes for reward tokens, majority going towards rewards to holders while being paired with stocks, while the rest benefits our platform token.\n\nThe next update will include this"
+      }
+    },
+    {
+      "id": "2085099910924251338",
+      "url": "https://x.com/LaunchOnSF/status/2085099910924251338",
+      "date": "2026-08-05T20:25:32.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "You can now launch coins paired with $ANTHROPIC! \n\nStonkfun is the first platform to ever allow tokens to be paired with Pre IPO companies, powered by @PreStocks! \n\nMemecoins backed by AI companies!\n\nhttps://t.co/tscuFhIHFd",
+      "likes": 232,
+      "reposts": 34,
+      "replies": 29,
+      "quotes": 11,
+      "bookmarks": 12,
+      "views": 49097,
+      "photos": [
+        "https://pbs.twimg.com/media/HO-957YXEAMAf-C.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://www.stonkfun.xyz/launch",
+      "links": [
+        {
+          "short": "https://t.co/tscuFhIHFd",
+          "resolved": "https://www.stonkfun.xyz/launch"
+        }
+      ],
+      "mentions": [
+        "PreStocks"
+      ],
+      "cashtags": [
+        "ANTHROPIC"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "PreStocks",
+          "url": "https://x.com/PreStocks"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2085176365372805320",
+      "url": "https://x.com/LaunchOnSF/status/2085176365372805320",
+      "date": "2026-08-06T01:29:20.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "To support developers building on Stonkfun, we are going to be releasing a public API with documentation soon as well for integrations.\n\n- Platform docs OTW\n- Unique new use cases\n- New stock pairs\n- + more\n",
+      "likes": 133,
+      "reposts": 14,
+      "replies": 19,
+      "quotes": 1,
+      "bookmarks": 3,
+      "views": 10711,
+      "photos": [],
+      "videos": [],
+      "card_or_external_url": "http://stonkfun.xyz/",
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2085665517461811542",
+      "url": "https://x.com/LaunchOnSF/status/2085665517461811542",
+      "date": "2026-08-07T09:53:03.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Our developer API is now public!\n\nYou can launch coins programmatically, and build tooling on top of Stonkfun.\n\n- Data endpoints\n- Launch endpoint\n- Documentation \n\nIf you have any issues or need support join our telegram.\n",
+      "likes": 154,
+      "reposts": 20,
+      "replies": 27,
+      "quotes": 4,
+      "bookmarks": 3,
+      "views": 10721,
+      "photos": [],
+      "videos": [],
+      "card_or_external_url": "https://www.stonkfun.xyz/developers",
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2085874861738496456",
+      "url": "https://x.com/LaunchOnSF/status/2085874861738496456",
+      "date": "2026-08-07T23:44:55.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Introducing our redesigned reward mechanics! \n\nhttps://t.co/LCcwPSMSIa\n\nNow live for all launches on the platform \n(existing ones as well)\n\nCompletely simplified, no more guessing if you will get rewards on any pair based on previous variable thresholds.\n\n- Hold over $20 worth of any reward coin and get rewards\n- Rent is paid VIA the pot fee\n\nThis now makes it so a large majority of holders of reward tokens will receive rewards, not only whales if the coin is large!\n\nPot Thresholds:\n(amount needed to accumulate before distributing)\n< $50k- $50\n$50k – $100k - $200\n$100k – $125k - $250 \n$125k – $25M - 0.1% of market cap \n$50M +  $50,000 pot cap",
+      "likes": 159,
+      "reposts": 25,
+      "replies": 23,
+      "quotes": 6,
+      "bookmarks": 8,
+      "views": 35653,
+      "photos": [],
+      "videos": [],
+      "card_or_external_url": "http://stonkfun.xyz/",
+      "links": [
+        {
+          "short": "https://t.co/LCcwPSMSIa",
+          "resolved": "https://stonkfun.xyz/"
+        }
+      ],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2086856725538185246",
+      "url": "https://x.com/LaunchOnSF/status/2086856725538185246",
+      "date": "2026-08-10T16:46:29.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "StonkFun Update!\n\nRewards V3:\n\nRewards increase\nPlatform revenue increases\n\n4% Tax (stays the same)\n\nRewards V2: 2.785% fees to holders \nRewards V3: 2.925% fees to holders \n\nWe now use transfer tax, please note if you transfer tokens to another wallet you are also taxed. \n\nCoins now launch as token2022 tokens with transfer tax, this solves for pool fee undercutting that has been happening and causing decaying rewards on some pools. \nInstead of collecting the reward tax via a 4% Raydium CLMM pool, the tax is collected via a transfer fee for rewards\n\nMeaning no matter where someone trades the token, the trade is taxed.\n\nDesigned similar to any other EVM reward tokens.\nPlatform Fees:\n\nRewards V2: 0.504%\nRewards V3: 0.756% \n\nIncreased Revenue & $STONK buybacks\n\nPreviously platform fees were derived from 15% of the 4% Raydium CLMM pool\n\nNow platform fees come from a 1% Raydium CLMM pool\n\nAs previously stated, there is no change in the total 4% tax. Total fees are saved by using transfer tax vs Raydium CLMM 4% pools, on the protocol fees.\n\nCreators:\n\nAs highly requested, we added creator buys capped at 2.5%\n\nWe also completely rebuilt the launch logic, launches happen through a atomic transaction bundle, solving for failed launches & safety.\n\nLaunch speeds are also much faster.\n\nLaunch fees reduced from 0.342 SOL to 0.29 SOL\n\nEcosystem Flywheel:\n\nTo support communities building, 0.084% of pool fees go towards buying back and burning the top 10 tokens on the platform, market cap weighted.\n\nThis benefits all V1, V2 & V3 tokens!\n\nAll swaps route directly through the Raydium CLMM pools to support reward distributions on current pairs.\n\nWe built this feature to incentivize communities to grow projects, and support existing communities \n\nDeveloper API: \n\nWe have updated the API to handle creator buys & Atomic deploy transaction submissions\n\nFrontend Updates:\n\nAll new pairs should be near instant now on the frontend, volume, market cap, & price data streams instantly.\n\nAll of these updates solve for current issues, further support ecosystem tokens, $STONK",
+      "likes": 286,
+      "reposts": 49,
+      "replies": 47,
+      "quotes": 25,
+      "bookmarks": 10,
+      "views": 48604,
+      "photos": [
+        "https://pbs.twimg.com/media/HPX-BJAWQAAw7P0.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [
+        "STONK"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2087145513141322052",
+      "url": "https://x.com/LaunchOnSF/status/2087145513141322052",
+      "date": "2026-08-11T11:54:02.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "StonkFun's focus is to be the launchpad on Solana to launch coins paired with anything. \n\nSolana has always been the home for memecoins, and memecoins have been long overdue for unique innovation. Instead of traditional bonding curves, we use a one-sided @Raydium  CLMM pool. This opens the opportunity to do so many things that were not possible before, and never done before on Solana.\n\nYou can launch coins paired with any custom quote, RWAs, currencies, pre-IPO shares, and more interesting things coming.\n\nWe have a lot of great things coming. Our focus is also to support existing communities on the platform, and build for what people really want.\n\nWhat's coming?\n\nOver the next few days, we will be integrating with trading terminals & deployers. Making StonkFun tradeable anywhere. Platforms are building out their backends to support custom quotes and any token launched on our platform.\n\nWe are going to be working on a complete frontend redesign, improving our backend for scale and growth.\n\nNew categories, unique assets, and interesting new concepts we have been working on without diluting any of the ecosystem, and always putting community first.\n\nNew assets that list on Sunrise will be listed on StonkFun as well, to help support growth of RWAs on Solana, such as $NBIS today and many more to come.\n\nOverall branding improvments\n\nFurther partnerships are in the works.\n\nRegarding bugs:\n\nWe fixed v1 & v2 reward distributions that were down for a bit. We are looking into moving all the reward functionality to a Merkle distributor so it lives on-chain.\n\nDeploys were made into atomic transaction bundles, meaning there is no risk of some of the transactions failing (such as positions, LP locks, etc.). It's all handled in one submission.\n\nThe speed of V3 reward coin claiming and tax swaps is being improved, so you should see tokens distribute a lot quicker now on V3.\n\nWe are also working on adjusting the thresholds for pot distributions so they happen more frequently on higher market cap coins.\n\nMore TBA",
+      "likes": 275,
+      "reposts": 41,
+      "replies": 56,
+      "quotes": 10,
+      "bookmarks": 10,
+      "views": 16498,
+      "photos": [],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [
+        "Raydium"
+      ],
+      "cashtags": [
+        "NBIS"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "Raydium",
+          "url": "https://x.com/Raydium"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2087381200318968312",
+      "url": "https://x.com/LaunchOnSF/status/2087381200318968312",
+      "date": "2026-08-12T03:30:34.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Introducing https://t.co/LCcwPSMSIa!\n\nThe launchpad to create coins / paired with anything.\n\nLaunch coins paired with stocks, commodities, currencies, memes, leveraged assets & more.\n\nTrade, create, reward holders, or earn. \n\nPowered by @Raydium \n\nTelegram: https://t.co/J4oTyvZDi7\n\nLaunchpad: https://t.co/H4LZ8dIKJw\n\n$STONK",
+      "likes": 408,
+      "reposts": 40,
+      "replies": 47,
+      "quotes": 14,
+      "bookmarks": 37,
+      "views": 72538,
+      "photos": [
+        "https://pbs.twimg.com/media/HPfdf7OWcAAiIsJ.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "http://stonkfun.xyz/",
+      "links": [
+        {
+          "short": "https://t.co/LCcwPSMSIa",
+          "resolved": "https://stonkfun.xyz/"
+        },
+        {
+          "short": "https://t.co/J4oTyvZDi7",
+          "resolved": "https://t.me/StonkFunXyz"
+        },
+        {
+          "short": "https://t.co/H4LZ8dIKJw",
+          "resolved": "https://stonkfun.xyz/"
+        }
+      ],
+      "mentions": [
+        "Raydium"
+      ],
+      "cashtags": [
+        "STONK"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "Raydium",
+          "url": "https://x.com/Raydium"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2087960282794545453",
+      "url": "https://x.com/LaunchOnSF/status/2087960282794545453",
+      "date": "2026-08-13T17:51:38.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "StonkFun has now been integrated into @AxiomExchange! \n\nTrade coins paired with anything, directly on Axiom.\n\nYou can view the quote tokens that you are trading against, such as stocks, currencies, commodities, Pre-IPO shares and more! \n\nhttps://t.co/RyZMZAmZet",
+      "likes": 261,
+      "reposts": 35,
+      "replies": 41,
+      "quotes": 11,
+      "bookmarks": 4,
+      "views": 17976,
+      "photos": [
+        "https://pbs.twimg.com/media/HPnsFenWUAAjkns.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://stonkfun.xyz/",
+      "links": [
+        {
+          "short": "https://t.co/RyZMZAmZet",
+          "resolved": "https://stonkfun.xyz/"
+        }
+      ],
+      "mentions": [
+        "AxiomExchange"
+      ],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "Axiom",
+          "url": "https://x.com/AxiomExchange"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2088402362536804691",
+      "url": "https://x.com/LaunchOnSF/status/2088402362536804691",
+      "date": "2026-08-14T23:08:18.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "StonkFun Daily Revenue\n\nRevenue: $71,758\n\nBuybacks: $42,091\n\nBurned: 4.12M $STONK \n",
+      "likes": 321,
+      "reposts": 45,
+      "replies": 38,
+      "quotes": 18,
+      "bookmarks": 10,
+      "views": 50618,
+      "photos": [
+        "https://pbs.twimg.com/media/HPt9PH4XkAAh8-4.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://www.stonkfun.xyz/revenue",
+      "links": [],
+      "mentions": [],
+      "cashtags": [
+        "STONK"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2089032567299223696",
+      "url": "https://x.com/LaunchOnSF/status/2089032567299223696",
+      "date": "2026-08-16T16:52:31.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Memecoins / Paired With Anything\n\nIn the past, memecoins were created primarily with SOL and stablecoin pairings.\n\nStonkFun changes the way coins can be created while helping support existing communities and quote assets.\n\nInstead of using traditional bonding curves, StonkFun uses @Raydium CLMM pools, which allow for custom quote assets and other unique features that aren't currently possible with traditional bonding curves.\n\nImagine being able to support an existing community or quote asset while driving volume and holder growth.\n\nAnyone can launch a coin and pair it with anything — including RWAs, memecoins, commodities, currencies, and more.\n\nLaunching coins paired with anything, outside of traditional bonding curves, is an innovation StonkFun brought to Solana.\n\nWe believe this introduces a plethora of new possibilities beyond traditional bonding curves through the use of custom quote assets.",
+      "likes": 284,
+      "reposts": 52,
+      "replies": 56,
+      "quotes": 8,
+      "bookmarks": 9,
+      "views": 32224,
+      "photos": [],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [
+        "Raydium"
+      ],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2089116661051793515",
+      "url": "https://x.com/LaunchOnSF/status/2089116661051793515",
+      "date": "2026-08-16T22:26:40.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "StonkFun has a new look! \n\nHere is our new logo, banner & redesign of overall branding.\n\nLaunch coins / Paired with anything",
+      "likes": 306,
+      "reposts": 43,
+      "replies": 47,
+      "quotes": 6,
+      "bookmarks": 9,
+      "views": 19964,
+      "photos": [
+        "https://pbs.twimg.com/media/HP4D5wdX0AArmj8.jpg",
+        "https://pbs.twimg.com/media/HP4EHWkXAAAesRD.png",
+        "https://pbs.twimg.com/media/HP4EsJCXwAAEeIn.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2089409062249124146",
+      "url": "https://x.com/LaunchOnSF/status/2089409062249124146",
+      "date": "2026-08-17T17:48:34.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "PreStocks has now added $25,000 of liquidity to Butthole\n\nWe have partnered with @PreStocks to support Pre-IPO pairings on StonkFun!\n\nLiquidity was added through @Raydium on the Anthropic/Butthole pair\n\nLaunch coins / Paired with anything",
+      "likes": 240,
+      "reposts": 49,
+      "replies": 31,
+      "quotes": 6,
+      "bookmarks": 5,
+      "views": 12990,
+      "photos": [
+        "https://pbs.twimg.com/media/HP8Q9NSWgAAG2yx.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [
+        "PreStocks",
+        "Raydium"
+      ],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "PreStocks",
+          "url": "https://x.com/PreStocks"
+        },
+        {
+          "name": "Raydium",
+          "url": "https://x.com/Raydium"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2089572281487941742",
+      "url": "https://x.com/LaunchOnSF/status/2089572281487941742",
+      "date": "2026-08-18T04:37:08.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Introducing Airdrop Mode!\n\nYou can now launch reward coins, select airdrop mode and distribute supply to the holders of the token paired.\n\nStonkFun is all about rewarding holders.\n\nInstead of having to buy supply of a coin to airdrop, all you have to pay is transaction fees! Holders of the quote token are automatically distributed to.\n\nYou can choose to distribute up to 50% of the supply of a reward coin to holders of the token you paired it with. \n\n- Top 100\n- Top 1000\n- Top 5000\n\nImagine airdropping holders of memecoins, onboarding RWA holders to memecoins, and much more that is now possible!\n\nOne of the key reasons for Solana's success during 2023-2024 was airdrops, such as BONK leading the way and airdropping the Solana community. Now anyone can execute a airdrop on our platform! \n\nAll airdrop coins continue to benefit the ecosystem flywheel, where a portion of the platform fees programmatically buyback and burn the top 10 coins on the platform.\n \nOnly possible on StonkFun\n\nInstantly tradeable on all platforms: @AxiomExchange @TradingTerminal @fomo @Raydium @JupiterExchange & more\n",
+      "likes": 408,
+      "reposts": 67,
+      "replies": 88,
+      "quotes": 29,
+      "bookmarks": 25,
+      "views": 54423,
+      "photos": [
+        "https://pbs.twimg.com/media/HP-g6oOWAAAVkyv.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [
+        "AxiomExchange",
+        "JupiterExchange",
+        "Raydium",
+        "TradingTerminal",
+        "fomo"
+      ],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2089912120670343468",
+      "url": "https://x.com/LaunchOnSF/status/2089912120670343468",
+      "date": "2026-08-19T03:07:32.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "StonkFun is now listed on @DefiLlama!   \n\nhttps://t.co/Cu2MAKFrhe \n\nRanked #44 among all revenue-generating applications over the past 7 days.  \n\nhttps://t.co/Qz3vWQhVUZ",
+      "likes": 257,
+      "reposts": 47,
+      "replies": 35,
+      "quotes": 6,
+      "bookmarks": 6,
+      "views": 12597,
+      "photos": [
+        "https://pbs.twimg.com/media/HQDb5HjWEAAC8pP.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://defillama.com/protocol/stonkfun",
+      "links": [
+        {
+          "short": "https://t.co/Cu2MAKFrhe",
+          "resolved": "https://defillama.com/protocol/stonkfun"
+        },
+        {
+          "short": "https://t.co/Qz3vWQhVUZ",
+          "resolved": "https://defillama.com/revenue"
+        }
+      ],
+      "mentions": [
+        "DefiLlama"
+      ],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "DefiLlama.com",
+          "url": "https://x.com/DefiLlama"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2090146753467294012",
+      "url": "https://x.com/LaunchOnSF/status/2090146753467294012",
+      "date": "2026-08-19T18:39:53.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Updates:\n\n1. Working on migrating to LaunchLab, this would solve for snipers on new pairs, increase volume, and incentivize more deployers. It would mean cheaper deploys, fully permissionless and traditional bonding curves which people are used to. \n\nThis would overall help to increase volume across new token deployments. While benefiting $STONK and our ecosystem from the ecosystem flywheel.\n\n2. We are looking into ways to handle distributions on-chain, which would reduce centralization risks, such as through a Merkle Distributor.\n\n3. Working on UI improvements to the site overall and mobile.\n\n4. New listings are coming, been working with Sunrise directly to get new assets listed. Such as $LLY coming tmr\n\n5. Solving for further improvements around Standard tokens to incentivize deployments outside of just rewards.\n\nWe believe StonkFun has brought something truly unique to Solana, coins paired with anything. \nWe are the only platform that offers it, and it is very difficult for other platforms to compete.\n\nStonkFun also handled the integration into terminals for custom quotes, routing and more.\n\nMemecoins / Paired with anything.",
+      "likes": 247,
+      "reposts": 46,
+      "replies": 35,
+      "quotes": 8,
+      "bookmarks": 8,
+      "views": 35811,
+      "photos": [
+        "https://pbs.twimg.com/media/HQGwCmEXEAAGTAp.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [
+        "LLY",
+        "STONK"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2090965215416311994",
+      "url": "https://x.com/LaunchOnSF/status/2090965215416311994",
+      "date": "2026-08-22T00:52:10.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "StonkFun Updates:\n\nHere is some information on what is coming over the next week and being worked on.\n\nLaunchLab integration: \n\nAs previously stated this will solve for many issues, increase potential volume and more.\n\n- Low deployment fees (0.02-0.03 SOL vs 0.3)\n- Your own deployer wallets\n- Heavily reduced risk of snipers as we have faced on new pairs on the operator wallet. It can't be done the same way with unique deployer wallets\n- Bonding curves with custom quotes, that users are used to\n- Integrated into platforms\n- Permissionless\n\nFrontend Updates:\n\nWe will be focusing on improving our desktop and mobile UI after we are finished with the LaunchLab integration. We understand this has not been a large focus for us thus far, as we have focused on improving our backend for scale across rewards, deployments, and more. \n\nNew Listings:\n\nWe will be continuing to work with Sunrise to support new assets, and have a automated solution to them being listed the moment liquidity is added to the pools.\n\nWe also are looking into incentives around new listings, to reward creators & traders.\n\nUser Docs: \n\nWe are working on our full user docs, which will be a Gitbook with all the information you need to know about the platform.\nAs we currently offer a developer docs, but no user docs. That will be completed after the LaunchLab integration as well.\n\nRewards:\n\nLooking into further ways to move our reward distributions on chain, to make StonkFun even more decentralized.\nThis is will be a focus for us after we complete the LaunchLab update.\n\nAs discussed before, there is potential around using a Merkle Distributor.\n\nSocial presence: \n\nImproving our overall social presence is a focus as well as we grow, improving on the quality of our posts, while driving further growth.\n\nWe appreciate all the support thus far.\n\nMore TBA!",
+      "likes": 268,
+      "reposts": 50,
+      "replies": 41,
+      "quotes": 14,
+      "bookmarks": 19,
+      "views": 33139,
+      "photos": [],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2091622537968955815",
+      "url": "https://x.com/LaunchOnSF/status/2091622537968955815",
+      "date": "2026-08-23T20:24:08.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Introducing https://t.co/LCcwPSMSIa!\n\nThe launchpad to create coins / paired with anything.\n\nLaunch coins paired with stocks, commodities, currencies, memes, leveraged assets & more.\n\nTrade, create, reward holders, or earn. \n\nPowered by @Raydium \n\nTelegram: https://t.co/gbYo3DPu62 \n\nLaunchpad: https://t.co/LCcwPSMSIa\n\n$STONK",
+      "likes": 1544,
+      "reposts": 197,
+      "replies": 252,
+      "quotes": 75,
+      "bookmarks": 203,
+      "views": 580096,
+      "photos": [
+        "https://pbs.twimg.com/media/HQbvIlFXsAAjR1s.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "http://stonkfun.xyz/",
+      "links": [
+        {
+          "short": "https://t.co/LCcwPSMSIa",
+          "resolved": "https://stonkfun.xyz/"
+        },
+        {
+          "short": "https://t.co/gbYo3DPu62",
+          "resolved": "https://t.me/StonkFunXyz"
+        }
+      ],
+      "mentions": [
+        "Raydium"
+      ],
+      "cashtags": [
+        "STONK"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "Raydium",
+          "url": "https://x.com/Raydium"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2094352080618053837",
+      "url": "https://x.com/LaunchOnSF/status/2094352080618053837",
+      "date": "2026-08-31T09:10:21.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "StonkFun Updates:\n\nWe are finalizing some things regarding our LaunchLab integration and looking to get it out to everyone as soon as possible.\n\nOur full focus over the last week has been on this integration, and it has required a lot of work, such as:\n\n- Raydium program updates to support custom quotes & reward coins\n- Aggregator & terminal support for LaunchLab custom quotes and routing\n- Handling pre-bonding rewards and distributions\nAnd more\n\nIn simple terms: Every aggregator, terminal, and Raydium itself had to make changes just to support what StonkFun is building.\n\nLaunchLab will allow for:\n- Permissionless deployments \n- Deploy fees of 0.03 SOL compared to 0.29 SOL\n- Bonding curves\n- CPMM pools (traditional AMM)\n- LP fees for compounding liquidity\n- Increased deployments, potential volume and more.\n\nWe have also spent a lot of time improving our backend and infra for further scale.\n\nOnce we finish this integration, the focus will be on:\n\n- Reward distributions through an on-chain distributor\n- New listings\n- Mobile & frontend redesign + docs\n- New features and more\n\nKey Metrics:\n\n- $1,214,778 revenue\n- $705,398 of solana:6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx buybacks & burns\n- 105.06M solana:6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx burned \n- $219,148,690 @Raydium  volume\n- $392,624,403 total volume\n- $68,199 bought back & burned of the top 10 ecosystem coins\n- $5,352,990 in rewards distributed \n\nLaunch coins. Paired with anything.",
+      "likes": 375,
+      "reposts": 82,
+      "replies": 50,
+      "quotes": 13,
+      "bookmarks": 10,
+      "views": 48404,
+      "photos": [
+        "https://pbs.twimg.com/media/HRCg6c1XUAA0aM-.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [
+        "Raydium"
+      ],
+      "cashtags": [],
+      "addresses_in_text": [
+        "6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx"
+      ],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2094688008280703375",
+      "url": "https://x.com/LaunchOnSF/status/2094688008280703375",
+      "date": "2026-09-01T07:25:13.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "$GPRO is coming to StonkFun today\n\nWhich will allow for coins to be paired with GoPro.\n\nMemeFi on Solana.\n\nPowered by @sunrise & @Backpack",
+      "likes": 483,
+      "reposts": 61,
+      "replies": 35,
+      "quotes": 23,
+      "bookmarks": 39,
+      "views": 111956,
+      "photos": [],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [
+        "Backpack",
+        "sunrise"
+      ],
+      "cashtags": [
+        "GPRO"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "Sunrise",
+          "url": "https://x.com/sunrise"
+        },
+        {
+          "name": "Backpack 🎒",
+          "url": "https://x.com/Backpack"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2095068565476933690",
+      "url": "https://x.com/LaunchOnSF/status/2095068565476933690",
+      "date": "2026-09-02T08:37:25.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "StonkFun Updates:\n\nRaydium shipped the last program upgrade we need today to finish our LaunchLab integration\n\nNew listings are coming this week only possible on Solana and StonkFun. \n\nLooking to further support communities already building on StonkFun as well, which is a key part of growing a healthy ecosystem.\n\nWe understand the issues around snipers and are hoping to ship our LaunchLab update to solve this ASAP.\n\nThe biggest issues and user concerns will be solved for:\n\n- Snipers\n- Completely permissionless deployments & no single-wallet launches\n- Low deployment costs\n- Launchers will not have to go through our API and can construct their own transactions\n- CPMM with a compounding LP fee and further improvements\n\nEverything discussed previously around frontend/mobile updates, distributor programs and more will be worked on after.\n\nMax dev-buys are now increased to disincentivize snipers on new coins until LaunchLab.\n\nWorking with Sunrise to not have \"hyped\" pairings pre-announced for future listings, as it leads to people finding ways to take advantage of a situation.\n\nStonkFun is the home for launching anything paired with anything on @solana.",
+      "likes": 371,
+      "reposts": 68,
+      "replies": 47,
+      "quotes": 10,
+      "bookmarks": 12,
+      "views": 33771,
+      "photos": [],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [
+        "solana"
+      ],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2095446054065852626",
+      "url": "https://x.com/LaunchOnSF/status/2095446054065852626",
+      "date": "2026-09-03T09:37:25.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "StonkFun is the home for pairing anything with anything.\n\nPowered by @Raydium",
+      "likes": 296,
+      "reposts": 42,
+      "replies": 30,
+      "quotes": 6,
+      "bookmarks": 3,
+      "views": 21284,
+      "photos": [
+        "https://pbs.twimg.com/media/HRSD5KUW4AMlztL.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [
+        "Raydium"
+      ],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "Raydium",
+          "url": "https://x.com/Raydium"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2095446056066576627",
+      "url": "https://x.com/LaunchOnSF/status/2095446056066576627",
+      "date": "2026-09-03T09:37:25.000Z",
+      "type": "self-thread reply",
+      "in_reply_to": {
+        "post_id": "2095446054065852626",
+        "user": "LaunchOnSF"
+      },
+      "text": "Platform updates are coming shortly\n",
+      "likes": 101,
+      "reposts": 12,
+      "replies": 10,
+      "quotes": 2,
+      "bookmarks": 3,
+      "views": 10920,
+      "photos": [],
+      "videos": [],
+      "card_or_external_url": "https://stonkfun.xyz/",
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2095506377447792995",
+      "url": "https://x.com/LaunchOnSF/status/2095506377447792995",
+      "date": "2026-09-03T13:37:07.000Z",
+      "type": "reply",
+      "in_reply_to": {
+        "post_id": "2095504233747349621",
+        "user": "lylepratt"
+      },
+      "text": "@lylepratt A new way for companies to build communities.\n\nOnly possible on StonkFun",
+      "likes": 129,
+      "reposts": 14,
+      "replies": 0,
+      "quotes": 0,
+      "bookmarks": 3,
+      "views": 2563,
+      "photos": [],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [
+        "lylepratt"
+      ],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "Lyle Pratt",
+          "url": "https://x.com/lylepratt"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2096315023731675202",
+      "url": "https://x.com/LaunchOnSF/status/2096315023731675202",
+      "date": "2026-09-05T19:10:23.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "StonkFun is now live on @Raydium LaunchLab.\n\nAll new StonkFun deployments now launch through LaunchLab, with cheaper deployment costs, reduced sniper risk, and compounding liquidity after bonding.\n\nhttps://t.co/Lq5IOclcO9",
+      "likes": 997,
+      "reposts": 176,
+      "replies": 118,
+      "quotes": 50,
+      "bookmarks": 51,
+      "views": 192246,
+      "photos": [],
+      "videos": [
+        {
+          "video_url": "https://video.twimg.com/amplify_video/2096314991515213827/vid/avc1/1920x1080/kVJV1RK7tnjAwcWU.mp4?tag=29",
+          "duration": 16512
+        }
+      ],
+      "card_or_external_url": "https://stonkfun.xyz/launch",
+      "links": [
+        {
+          "short": "https://t.co/Lq5IOclcO9",
+          "resolved": "https://stonkfun.xyz/launch"
+        }
+      ],
+      "mentions": [
+        "Raydium"
+      ],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "Raydium",
+          "url": "https://x.com/Raydium"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2096336049240985732",
+      "url": "https://x.com/LaunchOnSF/status/2096336049240985732",
+      "date": "2026-09-05T20:33:56.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Over $7.5M in rewards have now been distributed to StonkFun ecosystem holders.\n\nPair it. Launch it. Trade it. Hold it.",
+      "likes": 495,
+      "reposts": 78,
+      "replies": 48,
+      "quotes": 13,
+      "bookmarks": 14,
+      "views": 40659,
+      "photos": [
+        "https://pbs.twimg.com/media/HReuhwhbwAAgmyJ.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2096681319040184643",
+      "url": "https://x.com/LaunchOnSF/status/2096681319040184643",
+      "date": "2026-09-06T19:25:55.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "StonkFun Updates:\n\nWe have upgraded all of our infrastructure, and downtime issues should now be resolved.\n\nOptimizations were made this morning around reward distributions, operator functions, site loading times, and more.\n\nA patch is being worked on for DeFiLlama and will be merged shortly. This will resolve issues with misreported revenue on DeFiLlama caused by our LaunchLab integration yesterday and the pricing of custom quotes through Dune.\n\nWe have new listings being worked on and will continue to support communities building on StonkFun.\n\nYou can expect new TradFi asset listings after the market opens following the long weekend. We are also working on bridging more assets to Solana.\n\nFrontend design work has started, and we will be heavily improving our UI across both desktop and mobile.\n\nStonkFun has always focused on listening to users and addressing concerns in the space through innovation.\n\nDaily revenue thus far today:\n\nhttps://t.co/8R23fMR5Gi\n\nRevenue: $1,141,551\n\nBuybacks: $676,157\n\nMore to be announced. We appreciate all the support thus far.",
+      "likes": 827,
+      "reposts": 105,
+      "replies": 91,
+      "quotes": 23,
+      "bookmarks": 22,
+      "views": 48140,
+      "photos": [],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [
+        {
+          "short": "https://t.co/8R23fMR5Gi",
+          "resolved": "https://stonkfun.xyz/revenue"
+        }
+      ],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2096851613470314630",
+      "url": "https://x.com/LaunchOnSF/status/2096851613470314630",
+      "date": "2026-09-07T06:42:36.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Over $15 million in rewards distributed to StonkFun ecosystem token holders.\n\nGet rewarded for holding.",
+      "likes": 737,
+      "reposts": 90,
+      "replies": 118,
+      "quotes": 23,
+      "bookmarks": 11,
+      "views": 48716,
+      "photos": [
+        "https://pbs.twimg.com/media/HRmDbjxbwAAS3dk.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2097331618969194762",
+      "url": "https://x.com/LaunchOnSF/status/2097331618969194762",
+      "date": "2026-09-08T14:29:59.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Every coin needs a good pair.\n\nYou can now launch coins paired with $NKE on StonkFun.\n\nTokenized Nike stock, issued by @Backpack Securities and brought to Solana through @sunrise.\n\nJust launch it.",
+      "likes": 634,
+      "reposts": 69,
+      "replies": 79,
+      "quotes": 20,
+      "bookmarks": 19,
+      "views": 40598,
+      "photos": [
+        "https://pbs.twimg.com/media/HRs37O6a4AAZe0N.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [
+        "Backpack",
+        "sunrise"
+      ],
+      "cashtags": [
+        "NKE"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "Backpack 🎒",
+          "url": "https://x.com/Backpack"
+        },
+        {
+          "name": "Sunrise",
+          "url": "https://x.com/sunrise"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2097366338952171970",
+      "url": "https://x.com/LaunchOnSF/status/2097366338952171970",
+      "date": "2026-09-08T16:47:57.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Please remember this listing when the clankers take over.\n\nYou can now launch coins paired with $PEAQ on StonkFun.\n\nhttps://t.co/Lq5IOclKDH",
+      "likes": 464,
+      "reposts": 52,
+      "replies": 52,
+      "quotes": 8,
+      "bookmarks": 6,
+      "views": 30324,
+      "photos": [
+        "https://pbs.twimg.com/media/HRtXijKawAAmz9j.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://stonkfun.xyz/launch",
+      "links": [
+        {
+          "short": "https://t.co/Lq5IOclKDH",
+          "resolved": "https://stonkfun.xyz/launch"
+        }
+      ],
+      "mentions": [],
+      "cashtags": [
+        "PEAQ"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2097385874040533009",
+      "url": "https://x.com/LaunchOnSF/status/2097385874040533009",
+      "date": "2026-09-08T18:05:34.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "StonkFun has now crossed $1.2 billion in total trading volume.\n\nStonk szn on Solana.",
+      "likes": 1109,
+      "reposts": 160,
+      "replies": 158,
+      "quotes": 62,
+      "bookmarks": 25,
+      "views": 180449,
+      "photos": [
+        "https://pbs.twimg.com/media/HRtn4LNbMAAQict.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2097433092613140879",
+      "url": "https://x.com/LaunchOnSF/status/2097433092613140879",
+      "date": "2026-09-08T21:13:12.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Over $21 million in rewards distributed to StonkFun ecosystem token holders.  \n\nGet rewarded for holding.",
+      "likes": 726,
+      "reposts": 115,
+      "replies": 128,
+      "quotes": 35,
+      "bookmarks": 18,
+      "views": 94069,
+      "photos": [],
+      "videos": [
+        {
+          "video_url": "https://video.twimg.com/amplify_video/2097432678903762944/vid/avc1/1080x1080/haX6dvW_1dMbLzPp.mp4?tag=29",
+          "duration": 10000
+        }
+      ],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2097456768356126934",
+      "url": "https://x.com/LaunchOnSF/status/2097456768356126934",
+      "date": "2026-09-08T22:47:17.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "StonkFun is live on @fomo.\n\nFollow along for launches, announcements, and the latest from the Stonk market.",
+      "likes": 801,
+      "reposts": 80,
+      "replies": 85,
+      "quotes": 12,
+      "bookmarks": 9,
+      "views": 41299,
+      "photos": [
+        "https://pbs.twimg.com/media/HRum2OdbsAA0E5h.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [
+        "fomo"
+      ],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "fomo",
+          "url": "https://x.com/fomo"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2097750973410390326",
+      "url": "https://x.com/LaunchOnSF/status/2097750973410390326",
+      "date": "2026-09-09T18:16:21.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "New Stonk listings are live.\n\nYou can now launch coins paired with $RDDT, $BABA, $COST, $DELL, $UPS, $RBLX, $BULL, $SHOP, $HIMS, $LULU and more.\n\nPowered by @Sunrise and @Backpack.",
+      "likes": 849,
+      "reposts": 123,
+      "replies": 133,
+      "quotes": 45,
+      "bookmarks": 47,
+      "views": 152229,
+      "photos": [
+        "https://pbs.twimg.com/media/HRy1ZMYbYAAYBey.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [
+        "Backpack",
+        "Sunrise"
+      ],
+      "cashtags": [
+        "BABA",
+        "BULL",
+        "COST",
+        "DELL",
+        "HIMS",
+        "LULU",
+        "RBLX",
+        "RDDT",
+        "SHOP",
+        "UPS"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "Sunrise",
+          "url": "https://x.com/Sunrise"
+        },
+        {
+          "name": "Backpack 🎒",
+          "url": "https://x.com/Backpack"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2097784964075192386",
+      "url": "https://x.com/LaunchOnSF/status/2097784964075192386",
+      "date": "2026-09-09T20:31:25.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Over $25M in rewards have now been distributed to StonkFun ecosystem holders.\n\nThis is what putting holders first looks like.",
+      "likes": 753,
+      "reposts": 130,
+      "replies": 93,
+      "quotes": 29,
+      "bookmarks": 15,
+      "views": 78307,
+      "photos": [
+        "https://pbs.twimg.com/media/HRzUTshacAAgRtr.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2098137782187389080",
+      "url": "https://x.com/LaunchOnSF/status/2098137782187389080",
+      "date": "2026-09-10T19:53:23.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "For once, the glazing is justified.\n\nYou can now launch coins paired with $DNUT, tokenized Krispy Kreme stock on StonkFun.\n\nhttps://t.co/Lq5IOclKDH\n\nPowered by @Sunrise and @Backpack",
+      "likes": 529,
+      "reposts": 60,
+      "replies": 76,
+      "quotes": 28,
+      "bookmarks": 12,
+      "views": 68367,
+      "photos": [
+        "https://pbs.twimg.com/media/HR4VMarbUAAZr6q.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://stonkfun.xyz/launch",
+      "links": [
+        {
+          "short": "https://t.co/Lq5IOclKDH",
+          "resolved": "https://stonkfun.xyz/launch"
+        }
+      ],
+      "mentions": [
+        "Backpack",
+        "Sunrise"
+      ],
+      "cashtags": [
+        "DNUT"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "Sunrise",
+          "url": "https://x.com/Sunrise"
+        },
+        {
+          "name": "Backpack 🎒",
+          "url": "https://x.com/Backpack"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2098300010815508662",
+      "url": "https://x.com/LaunchOnSF/status/2098300010815508662",
+      "date": "2026-09-11T06:38:01.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "More than $40M worth of the total solana:6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx supply (at current value) has been burned.\n\nThat’s 14.4% of the supply, gone forever.",
+      "likes": 1082,
+      "reposts": 163,
+      "replies": 160,
+      "quotes": 31,
+      "bookmarks": 15,
+      "views": 80292,
+      "photos": [
+        "https://pbs.twimg.com/media/HR6m-SVbQAA9kiM.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [
+        "6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx"
+      ],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2099513529535771022",
+      "url": "https://x.com/LaunchOnSF/status/2099513529535771022",
+      "date": "2026-09-14T15:00:07.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "The trenches were prime real estate all along.\n\nYou can now launch coins paired with tokenized real estate through $SCHH, the Schwab U.S. REIT ETF, on StonkFun.\n\nhttps://t.co/Lq5IOclKDH\n\nPowered by @Sunrise and @Backpack",
+      "likes": 461,
+      "reposts": 56,
+      "replies": 62,
+      "quotes": 12,
+      "bookmarks": 5,
+      "views": 36548,
+      "photos": [
+        "https://pbs.twimg.com/media/HSL4W8GboAADE50.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://stonkfun.xyz/launch",
+      "links": [
+        {
+          "short": "https://t.co/Lq5IOclKDH",
+          "resolved": "https://stonkfun.xyz/launch"
+        }
+      ],
+      "mentions": [
+        "Backpack",
+        "Sunrise"
+      ],
+      "cashtags": [
+        "SCHH"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "Sunrise",
+          "url": "https://x.com/sunrise"
+        },
+        {
+          "name": "Backpack 🎒",
+          "url": "https://x.com/Backpack"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2099575479175102910",
+      "url": "https://x.com/LaunchOnSF/status/2099575479175102910",
+      "date": "2026-09-14T19:06:17.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Over $40M in rewards have now been distributed to StonkFun ecosystem holders.\n\nFun to hold, paid to hold.",
+      "likes": 804,
+      "reposts": 108,
+      "replies": 123,
+      "quotes": 29,
+      "bookmarks": 12,
+      "views": 53699,
+      "photos": [
+        "https://pbs.twimg.com/media/HSMwqOGb0AAYElu.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2099614882958299596",
+      "url": "https://x.com/LaunchOnSF/status/2099614882958299596",
+      "date": "2026-09-14T21:42:51.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "StonkFun has now crossed $2.6 billion in total trading volume.\n\nStonk Capital Markets.",
+      "likes": 799,
+      "reposts": 121,
+      "replies": 120,
+      "quotes": 29,
+      "bookmarks": 7,
+      "views": 45616,
+      "photos": [
+        "https://pbs.twimg.com/media/HSNUnBxbwAA2hpC.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2100043332990972230",
+      "url": "https://x.com/LaunchOnSF/status/2100043332990972230",
+      "date": "2026-09-16T02:05:22.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "The past week on StonkFun:\n\n• Crossed $2.6B in total trading volume\n• Surpassed $40M in total rewards distributed\n• Reached 15% of the original solana:6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx supply burned\n• Passed 1M combined holders across reward coins\n• solana:6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx perpetuals listed on Lighter and Phoenix\n• solana:6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx listed on @Gate \n• StonkFun Launchpad Screener went live on Jupiter\n• StonkFun updates went live on @fomo \n\nDevelopment update below.",
+      "likes": 676,
+      "reposts": 117,
+      "replies": 96,
+      "quotes": 18,
+      "bookmarks": 8,
+      "views": 42176,
+      "photos": [
+        "https://pbs.twimg.com/media/HSTaSElbAAAhtvq.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [
+        "Gate",
+        "fomo"
+      ],
+      "cashtags": [],
+      "addresses_in_text": [
+        "6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx"
+      ],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2100669437942837490",
+      "url": "https://x.com/LaunchOnSF/status/2100669437942837490",
+      "date": "2026-09-17T19:33:17.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "16% of the total $STONK supply has now been burned.",
+      "likes": 669,
+      "reposts": 105,
+      "replies": 86,
+      "quotes": 16,
+      "bookmarks": 10,
+      "views": 37209,
+      "photos": [
+        "https://pbs.twimg.com/media/HScTsAZb0AA4HuP.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [
+        "STONK"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2100690938377191476",
+      "url": "https://x.com/LaunchOnSF/status/2100690938377191476",
+      "date": "2026-09-17T20:58:43.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "$50,000,000 in rewards have now been distributed to holders of StonkFun reward coins.\n\nFun to hold, paid to hold.",
+      "likes": 603,
+      "reposts": 95,
+      "replies": 102,
+      "quotes": 19,
+      "bookmarks": 7,
+      "views": 29321,
+      "photos": [
+        "https://pbs.twimg.com/media/HScmOQcacAAKd4s.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2101013953883291755",
+      "url": "https://x.com/LaunchOnSF/status/2101013953883291755",
+      "date": "2026-09-18T18:22:16.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "$55,000,000 in rewards have now been distributed to holders of StonkFun reward coins.\n\nHolders 🤝 Rewards",
+      "likes": 588,
+      "reposts": 85,
+      "replies": 106,
+      "quotes": 35,
+      "bookmarks": 9,
+      "views": 59286,
+      "photos": [
+        "https://pbs.twimg.com/media/HShMmv9aYAA9DR2.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2101341071313883630",
+      "url": "https://x.com/LaunchOnSF/status/2101341071313883630",
+      "date": "2026-09-19T16:02:07.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "BlackBerry is back in the group chat.\n\nYou can now launch coins paired with $BB from @BlackBerry on StonkFun.\n\nhttps://t.co/Lq5IOclKDH\n\nPowered by @Sunrise and @Backpack.",
+      "likes": 300,
+      "reposts": 24,
+      "replies": 72,
+      "quotes": 8,
+      "bookmarks": 5,
+      "views": 50016,
+      "photos": [
+        "https://pbs.twimg.com/media/HSl2UUQa8AEdhgm.png"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://stonkfun.xyz/launch",
+      "links": [
+        {
+          "short": "https://t.co/Lq5IOclKDH",
+          "resolved": "https://stonkfun.xyz/launch"
+        }
+      ],
+      "mentions": [
+        "Backpack",
+        "BlackBerry",
+        "Sunrise"
+      ],
+      "cashtags": [
+        "BB"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "BlackBerry",
+          "url": "https://x.com/BlackBerry"
+        },
+        {
+          "name": "Sunrise",
+          "url": "https://x.com/sunrise"
+        },
+        {
+          "name": "Backpack 🎒",
+          "url": "https://x.com/Backpack"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2102050015061700825",
+      "url": "https://x.com/LaunchOnSF/status/2102050015061700825",
+      "date": "2026-09-21T14:59:12.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Your next meme could go nuclear.\n\nYou can now launch coins paired with $URA, the Global X Uranium ETF, on StonkFun.\n\nhttps://t.co/Lq5IOclKDH\n\nPowered by @Sunrise and @Backpack.",
+      "likes": 351,
+      "reposts": 46,
+      "replies": 84,
+      "quotes": 17,
+      "bookmarks": 10,
+      "views": 44176,
+      "photos": [
+        "https://pbs.twimg.com/media/HSv6LbpaMAAPwa-.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://stonkfun.xyz/launch",
+      "links": [
+        {
+          "short": "https://t.co/Lq5IOclKDH",
+          "resolved": "https://stonkfun.xyz/launch"
+        }
+      ],
+      "mentions": [
+        "Backpack",
+        "Sunrise"
+      ],
+      "cashtags": [
+        "URA"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "Sunrise",
+          "url": "https://x.com/sunrise"
+        },
+        {
+          "name": "Backpack 🎒",
+          "url": "https://x.com/Backpack"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2102050016609362321",
+      "url": "https://x.com/LaunchOnSF/status/2102050016609362321",
+      "date": "2026-09-21T14:59:12.000Z",
+      "type": "self-thread reply",
+      "in_reply_to": {
+        "post_id": "2102050015061700825",
+        "user": "LaunchOnSF"
+      },
+      "text": "",
+      "likes": 17,
+      "reposts": 3,
+      "replies": 8,
+      "quotes": 0,
+      "bookmarks": 1,
+      "views": 5502,
+      "photos": [
+        "https://pbs.twimg.com/media/HSv7Cn_aUAAiVaj.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2102060115729981702",
+      "url": "https://x.com/LaunchOnSF/status/2102060115729981702",
+      "date": "2026-09-21T15:39:20.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "17% of the total solana:6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx supply has now been burned.",
+      "likes": 942,
+      "reposts": 111,
+      "replies": 113,
+      "quotes": 33,
+      "bookmarks": 10,
+      "views": 71042,
+      "photos": [
+        "https://pbs.twimg.com/media/HSwDzJzaAAA812a.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [
+        "6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx"
+      ],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2102076256393281766",
+      "url": "https://x.com/LaunchOnSF/status/2102076256393281766",
+      "date": "2026-09-21T16:43:28.000Z",
+      "type": "self-thread reply",
+      "in_reply_to": {
+        "post_id": "2102073646600568962",
+        "user": "Stonk"
+      },
+      "text": "How to launch and find INJ tokens through StonkFun on Solana",
+      "likes": 476,
+      "reposts": 90,
+      "replies": 58,
+      "quotes": 0,
+      "bookmarks": 0,
+      "views": 4363,
+      "photos": [],
+      "videos": [],
+      "card_or_external_url": "https://x.com/i/article/2102062984826953728",
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2102127337685082622",
+      "url": "https://x.com/LaunchOnSF/status/2102127337685082622",
+      "date": "2026-09-21T20:06:27.000Z",
+      "type": "self-thread reply",
+      "in_reply_to": {
+        "post_id": "2102127335789199544",
+        "user": "LaunchOnSF"
+      },
+      "text": "",
+      "likes": 16,
+      "reposts": 4,
+      "replies": 8,
+      "quotes": 0,
+      "bookmarks": 0,
+      "views": 6894,
+      "photos": [
+        "https://pbs.twimg.com/media/HSxBoJJaAAAfTBK.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2102127335789199544",
+      "url": "https://x.com/LaunchOnSF/status/2102127335789199544",
+      "date": "2026-09-21T20:06:27.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "The trenches just struck copper.\n\nYou can now launch coins paired with $COPX, the Global X Copper Miners ETF, on StonkFun.\n\nhttps://t.co/Lq5IOclKDH\n\nPowered by @Sunrise and @Backpack.",
+      "likes": 376,
+      "reposts": 41,
+      "replies": 120,
+      "quotes": 26,
+      "bookmarks": 12,
+      "views": 66889,
+      "photos": [
+        "https://pbs.twimg.com/media/HSxBh11bsAAJ5Uq.png"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://stonkfun.xyz/launch",
+      "links": [
+        {
+          "short": "https://t.co/Lq5IOclKDH",
+          "resolved": "https://stonkfun.xyz/launch"
+        }
+      ],
+      "mentions": [
+        "Backpack",
+        "Sunrise"
+      ],
+      "cashtags": [
+        "COPX"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "Sunrise",
+          "url": "https://x.com/sunrise"
+        },
+        {
+          "name": "Backpack 🎒",
+          "url": "https://x.com/Backpack"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2102173626405630011",
+      "url": "https://x.com/LaunchOnSF/status/2102173626405630011",
+      "date": "2026-09-21T23:10:23.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "2M combined holders across StonkFun reward coins.\n\nStonkFun is for holders.",
+      "likes": 579,
+      "reposts": 71,
+      "replies": 120,
+      "quotes": 18,
+      "bookmarks": 5,
+      "views": 31712,
+      "photos": [
+        "https://pbs.twimg.com/media/HSxrehOagAAw_Qr.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2102494801149215208",
+      "url": "https://x.com/LaunchOnSF/status/2102494801149215208",
+      "date": "2026-09-22T20:26:37.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Meet the tech behind your doomscrolling.\n\nYou can now launch coins paired with $ARM from @Arm, on StonkFun.\n\nhttps://t.co/Lq5IOclKDH\n\nPowered by @Sunrise and @Backpack.",
+      "likes": 242,
+      "reposts": 31,
+      "replies": 75,
+      "quotes": 3,
+      "bookmarks": 5,
+      "views": 21361,
+      "photos": [
+        "https://pbs.twimg.com/media/HS2Ps7PbMAANKQO.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://stonkfun.xyz/launch",
+      "links": [
+        {
+          "short": "https://t.co/Lq5IOclKDH",
+          "resolved": "https://stonkfun.xyz/launch"
+        }
+      ],
+      "mentions": [
+        "Arm",
+        "Backpack",
+        "Sunrise"
+      ],
+      "cashtags": [
+        "ARM"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "Arm",
+          "url": "https://x.com/Arm"
+        },
+        {
+          "name": "Sunrise",
+          "url": "https://x.com/sunrise"
+        },
+        {
+          "name": "Backpack 🎒",
+          "url": "https://x.com/Backpack"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2102567078469452198",
+      "url": "https://x.com/LaunchOnSF/status/2102567078469452198",
+      "date": "2026-09-23T01:13:49.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "StonkFun Revenue\n(Sept 22nd)\n\nRevenue: $1,507,870\nBuybacks: $717,397\nBurned: 2.4M $STONK\n\nhttps://t.co/vKy5UJFK4W",
+      "likes": 724,
+      "reposts": 109,
+      "replies": 132,
+      "quotes": 24,
+      "bookmarks": 10,
+      "views": 55115,
+      "photos": [
+        "https://pbs.twimg.com/media/HS3Q4K5agAAadKK.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://stonkfun.xyz/revenue",
+      "links": [
+        {
+          "short": "https://t.co/vKy5UJFK4W",
+          "resolved": "https://stonkfun.xyz/revenue"
+        }
+      ],
+      "mentions": [],
+      "cashtags": [
+        "STONK"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2102775629192274216",
+      "url": "https://x.com/LaunchOnSF/status/2102775629192274216",
+      "date": "2026-09-23T15:02:32.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Cloud services, meet the Stonk market.\n\nYou can now launch coins paired with $CRWV, from @CoreWeave, on StonkFun.\n\nhttps://t.co/Lq5IOclKDH\n\nPowered by @Sunrise and @Backpack.",
+      "likes": 251,
+      "reposts": 26,
+      "replies": 62,
+      "quotes": 3,
+      "bookmarks": 6,
+      "views": 19088,
+      "photos": [
+        "https://pbs.twimg.com/media/HS6PHjgaMAAEnP0.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://stonkfun.xyz/launch",
+      "links": [
+        {
+          "short": "https://t.co/Lq5IOclKDH",
+          "resolved": "https://stonkfun.xyz/launch"
+        }
+      ],
+      "mentions": [
+        "Backpack",
+        "CoreWeave",
+        "Sunrise"
+      ],
+      "cashtags": [
+        "CRWV"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "CoreWeave",
+          "url": "https://x.com/CoreWeave"
+        },
+        {
+          "name": "Sunrise",
+          "url": "https://x.com/sunrise"
+        },
+        {
+          "name": "Backpack 🎒",
+          "url": "https://x.com/Backpack"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2102813181500657879",
+      "url": "https://x.com/LaunchOnSF/status/2102813181500657879",
+      "date": "2026-09-23T17:31:45.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "For those who can never get enough HYPE.\n\nYou can now launch coins paired with solana:7ga6rtE9qSb3wdEiDCpTu2kHqoGVfT52jD8ign1rYTvx, the 3x leveraged $HYPE token from @hylo_so, on StonkFun.\n\nhttps://t.co/Lq5IOclKDH",
+      "likes": 444,
+      "reposts": 42,
+      "replies": 112,
+      "quotes": 13,
+      "bookmarks": 14,
+      "views": 59703,
+      "photos": [
+        "https://pbs.twimg.com/media/HS6xTqtaAAAdjrZ.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://stonkfun.xyz/launch",
+      "links": [
+        {
+          "short": "https://t.co/Lq5IOclKDH",
+          "resolved": "https://stonkfun.xyz/launch"
+        }
+      ],
+      "mentions": [
+        "hylo_so"
+      ],
+      "cashtags": [
+        "HYPE"
+      ],
+      "addresses_in_text": [
+        "7ga6rtE9qSb3wdEiDCpTu2kHqoGVfT52jD8ign1rYTvx"
+      ],
+      "tagged_users": [
+        {
+          "name": "Hylo",
+          "url": "https://x.com/hylo_so"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2102852030490624228",
+      "url": "https://x.com/LaunchOnSF/status/2102852030490624228",
+      "date": "2026-09-23T20:06:07.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Internet money meets memes.\n\nYou can now launch coins paired with ethereum:0x57e114b691db790c35207b2e685d4a43181e6061 from @ethena, on StonkFun.\n\nhttps://t.co/Lq5IOclKDH\n\nPowered by @Sunrise.",
+      "likes": 339,
+      "reposts": 38,
+      "replies": 75,
+      "quotes": 10,
+      "bookmarks": 6,
+      "views": 43155,
+      "photos": [
+        "https://pbs.twimg.com/media/HS7URNmbkAEg2Yr.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://stonkfun.xyz/launch",
+      "links": [
+        {
+          "short": "https://t.co/Lq5IOclKDH",
+          "resolved": "https://stonkfun.xyz/launch"
+        }
+      ],
+      "mentions": [
+        "Sunrise",
+        "ethena"
+      ],
+      "cashtags": [],
+      "addresses_in_text": [
+        "0x57e114b691db790c35207b2e685d4a43181e6061"
+      ],
+      "tagged_users": [
+        {
+          "name": "Ethena",
+          "url": "https://x.com/ethena"
+        },
+        {
+          "name": "Sunrise",
+          "url": "https://x.com/sunrise"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2102915711278702923",
+      "url": "https://x.com/LaunchOnSF/status/2102915711278702923",
+      "date": "2026-09-24T00:19:10.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "StonkFun Revenue\n(Sept 23rd)\n\nRevenue: $1,487,685\nBuybacks: $1,130,389\nBurned: 3.67M solana:6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx \n\nhttps://t.co/vKy5UJFK4W",
+      "likes": 859,
+      "reposts": 141,
+      "replies": 153,
+      "quotes": 67,
+      "bookmarks": 14,
+      "views": 127005,
+      "photos": [
+        "https://pbs.twimg.com/media/HS8OQFPa0AAtT3v.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://stonkfun.xyz/revenue",
+      "links": [
+        {
+          "short": "https://t.co/vKy5UJFK4W",
+          "resolved": "https://stonkfun.xyz/revenue"
+        }
+      ],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [
+        "6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx"
+      ],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2103137003554635785",
+      "url": "https://x.com/LaunchOnSF/status/2103137003554635785",
+      "date": "2026-09-24T14:58:30.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Private finance, meets public memes.\n\nYou can now launch coins paired with ethereum:0xa12cc123ba206d4031d1c7f6223d1c2ec249f4f3 from @zama on StonkFun.\n\nhttps://t.co/Lq5IOclKDH\n\nPowered by @Sunrise.",
+      "likes": 266,
+      "reposts": 28,
+      "replies": 57,
+      "quotes": 5,
+      "bookmarks": 5,
+      "views": 19602,
+      "photos": [
+        "https://pbs.twimg.com/media/HS_Xvata4AAL8cs.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://stonkfun.xyz/launch",
+      "links": [
+        {
+          "short": "https://t.co/Lq5IOclKDH",
+          "resolved": "https://stonkfun.xyz/launch"
+        }
+      ],
+      "mentions": [
+        "Sunrise",
+        "zama"
+      ],
+      "cashtags": [],
+      "addresses_in_text": [
+        "0xa12cc123ba206d4031d1c7f6223d1c2ec249f4f3"
+      ],
+      "tagged_users": [
+        {
+          "name": "Zama",
+          "url": "https://x.com/zama"
+        },
+        {
+          "name": "Sunrise",
+          "url": "https://x.com/sunrise"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2103159830769017061",
+      "url": "https://x.com/LaunchOnSF/status/2103159830769017061",
+      "date": "2026-09-24T16:29:13.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Introducing the Million Dollar Club.\n\nEach of these coins has distributed $1M+ in rewards to holders.\n\nWho’s next?",
+      "likes": 1377,
+      "reposts": 185,
+      "replies": 425,
+      "quotes": 68,
+      "bookmarks": 36,
+      "views": 97533,
+      "photos": [
+        "https://pbs.twimg.com/media/HS_ryaQasAAfE4L.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2103214239750250923",
+      "url": "https://x.com/LaunchOnSF/status/2103214239750250923",
+      "date": "2026-09-24T20:05:25.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "More power to the memes.\n\nYou can now launch coins paired with $IREN from @IREN_Ltd on StonkFun.\n\nhttps://t.co/Lq5IOclKDH\n\nPowered by @Sunrise and @Backpack.",
+      "likes": 205,
+      "reposts": 23,
+      "replies": 57,
+      "quotes": 4,
+      "bookmarks": 3,
+      "views": 17443,
+      "photos": [
+        "https://pbs.twimg.com/media/HTAeD7JaEAAvtuP.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://stonkfun.xyz/launch",
+      "links": [
+        {
+          "short": "https://t.co/Lq5IOclKDH",
+          "resolved": "https://stonkfun.xyz/launch"
+        }
+      ],
+      "mentions": [
+        "Backpack",
+        "IREN_Ltd",
+        "Sunrise"
+      ],
+      "cashtags": [
+        "IREN"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "IREN",
+          "url": "https://x.com/IREN_Ltd"
+        },
+        {
+          "name": "Sunrise",
+          "url": "https://x.com/sunrise"
+        },
+        {
+          "name": "Backpack 🎒",
+          "url": "https://x.com/Backpack"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2103224807815016485",
+      "url": "https://x.com/LaunchOnSF/status/2103224807815016485",
+      "date": "2026-09-24T20:47:24.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "18% of the total solana:6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx supply has now been burned.",
+      "likes": 772,
+      "reposts": 113,
+      "replies": 96,
+      "quotes": 19,
+      "bookmarks": 10,
+      "views": 35396,
+      "photos": [
+        "https://pbs.twimg.com/media/HTAnpf2bcAAGYkr.png"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [
+        "6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx"
+      ],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2103494280614641842",
+      "url": "https://x.com/LaunchOnSF/status/2103494280614641842",
+      "date": "2026-09-25T14:38:12.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Short the Nasdaq. Long the memes.\n\nYou can now launch coins paired with $SQQQ on StonkFun.\n\nhttps://t.co/Lq5IOclKDH\n\nPowered by @Sunrise and @Backpack.",
+      "likes": 337,
+      "reposts": 37,
+      "replies": 69,
+      "quotes": 13,
+      "bookmarks": 8,
+      "views": 28416,
+      "photos": [
+        "https://pbs.twimg.com/media/HTEcMwbb0AAqe3X.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://stonkfun.xyz/launch",
+      "links": [
+        {
+          "short": "https://t.co/Lq5IOclKDH",
+          "resolved": "https://stonkfun.xyz/launch"
+        }
+      ],
+      "mentions": [
+        "Backpack",
+        "Sunrise"
+      ],
+      "cashtags": [
+        "SQQQ"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "Sunrise",
+          "url": "https://x.com/sunrise"
+        },
+        {
+          "name": "Backpack 🎒",
+          "url": "https://x.com/Backpack"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2103517504232669190",
+      "url": "https://x.com/LaunchOnSF/status/2103517504232669190",
+      "date": "2026-09-25T16:10:29.000Z",
+      "type": "reply",
+      "in_reply_to": {
+        "post_id": "2103515370049151296",
+        "user": "EcosystemCall"
+      },
+      "text": "@EcosystemCall @hylo_so Leverage the memes.",
+      "likes": 67,
+      "reposts": 6,
+      "replies": 20,
+      "quotes": 5,
+      "bookmarks": 0,
+      "views": 7127,
+      "photos": [],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [
+        "EcosystemCall",
+        "hylo_so"
+      ],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "Solana Ecosystem Call",
+          "url": "https://x.com/EcosystemCall"
+        },
+        {
+          "name": "Hylo",
+          "url": "https://x.com/hylo_so"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2103641678393532626",
+      "url": "https://x.com/LaunchOnSF/status/2103641678393532626",
+      "date": "2026-09-26T00:23:54.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "StonkFun Revenue\n(September 25)\n\nRevenue: $965,731\nBuybacks: $580,495\nBurned: 1.9M $STONK\n\nhttps://t.co/vKy5UJFK4W",
+      "likes": 550,
+      "reposts": 74,
+      "replies": 59,
+      "quotes": 6,
+      "bookmarks": 12,
+      "views": 24746,
+      "photos": [
+        "https://pbs.twimg.com/media/HTGhzn-bQAA9Ftq.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://stonkfun.xyz/revenue",
+      "links": [
+        {
+          "short": "https://t.co/vKy5UJFK4W",
+          "resolved": "https://stonkfun.xyz/revenue"
+        }
+      ],
+      "mentions": [],
+      "cashtags": [
+        "STONK"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2103659250228871405",
+      "url": "https://x.com/LaunchOnSF/status/2103659250228871405",
+      "date": "2026-09-26T01:33:44.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Over $85,000,000 in rewards have been sent to holders of StonkFun reward coins.",
+      "likes": 538,
+      "reposts": 77,
+      "replies": 73,
+      "quotes": 10,
+      "bookmarks": 4,
+      "views": 22078,
+      "photos": [
+        "https://pbs.twimg.com/media/HTGvxHjawAAdEn9.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2103735185229369744",
+      "url": "https://x.com/LaunchOnSF/status/2103735185229369744",
+      "date": "2026-09-26T06:35:28.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "Rewards update.\n\nThe StonkFun rewards pipeline has been upgraded.\n\nRewards no longer wait for a large pot to accumulate before harvesting transfer tax. Fees are converted and distributed continuously.\n\nThe upgrade allows for separate horizontal scaling at each stage. There are also distinct thresholds for each stage:\n\n• Harvesting\n• Claiming & swapping\n• Planning and funding distributions\n• Sending distributions to holders\n\nIf a conversion ever lags behind volume, rewards can be distributed in the coin itself so payouts keep flowing without delay or excessive harvesting.\n\nLive for new and existing coins launched on LaunchLab, with the upgrade rolling out to legacy coins (CLMM) soon.\n\nThe pipeline is still being tuned for optimal performance, further concurrency and prioritization algorithms are being worked on.",
+      "likes": 1660,
+      "reposts": 320,
+      "replies": 295,
+      "quotes": 105,
+      "bookmarks": 53,
+      "views": 135695,
+      "photos": [
+        "https://pbs.twimg.com/media/HTH0VYSWMAAMreP.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": null,
+      "links": [],
+      "mentions": [],
+      "cashtags": [],
+      "addresses_in_text": [],
+      "tagged_users": [],
+      "quoted_post": null
+    },
+    {
+      "id": "2103864852318142520",
+      "url": "https://x.com/LaunchOnSF/status/2103864852318142520",
+      "date": "2026-09-26T15:10:43.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "From Seoul to Solana.\n\nYou can now launch coins paired with $EWY, the tokenized iShares MSCI South Korea ETF, on StonkFun.\n\nhttps://t.co/Lq5IOclKDH\n\nPowered by @Sunrise and @Backpack.",
+      "likes": 275,
+      "reposts": 26,
+      "replies": 40,
+      "quotes": 4,
+      "bookmarks": 2,
+      "views": 12842,
+      "photos": [
+        "https://pbs.twimg.com/media/HTJtul7bMAABbyu.jpg"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://stonkfun.xyz/launch",
+      "links": [
+        {
+          "short": "https://t.co/Lq5IOclKDH",
+          "resolved": "https://stonkfun.xyz/launch"
+        }
+      ],
+      "mentions": [
+        "Backpack",
+        "Sunrise"
+      ],
+      "cashtags": [
+        "EWY"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "Sunrise",
+          "url": "https://x.com/sunrise"
+        },
+        {
+          "name": "Backpack 🎒",
+          "url": "https://x.com/Backpack"
+        }
+      ],
+      "quoted_post": null
+    },
+    {
+      "id": "2103907488638840936",
+      "url": "https://x.com/LaunchOnSF/status/2103907488638840936",
+      "date": "2026-09-26T18:00:08.000Z",
+      "type": "post",
+      "in_reply_to": null,
+      "text": "You’re never too old for Hot Wheels.\n\nYou can now launch coins paired with $CARS from @ripcarsio on StonkFun.\n\nhttps://t.co/Lq5IOclKDH",
+      "likes": 205,
+      "reposts": 31,
+      "replies": 52,
+      "quotes": 9,
+      "bookmarks": 2,
+      "views": 16883,
+      "photos": [
+        "https://pbs.twimg.com/media/HTKTLb9bwAAvvei.png"
+      ],
+      "videos": [],
+      "card_or_external_url": "https://stonkfun.xyz/launch",
+      "links": [
+        {
+          "short": "https://t.co/Lq5IOclKDH",
+          "resolved": "https://stonkfun.xyz/launch"
+        }
+      ],
+      "mentions": [
+        "ripcarsio"
+      ],
+      "cashtags": [
+        "CARS"
+      ],
+      "addresses_in_text": [],
+      "tagged_users": [
+        {
+          "name": "Rip Cars",
+          "url": "https://x.com/ripcarsio"
+        }
+      ],
+      "quoted_post": null
+    }
+  ]
+}
