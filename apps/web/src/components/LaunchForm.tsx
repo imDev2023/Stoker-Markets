@@ -144,7 +144,7 @@ export function LaunchForm({ platform }: { platform: PlatformInfo }) {
                 maxLength={10}
                 required
                 placeholder="TRCR"
-                className="mono"
+                className={styles.ticker}
               />
             </label>
           </div>
@@ -154,7 +154,7 @@ export function LaunchForm({ platform }: { platform: PlatformInfo }) {
               Description <em>optional</em>
             </span>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={DESCRIPTION_MAX} rows={3} />
-            <small className={styles.counter}>{description.length} / {DESCRIPTION_MAX}</small>
+            <small className={styles.counter} aria-hidden>{description.length} / {DESCRIPTION_MAX}</small>
           </label>
 
           <div className={styles.links}>
@@ -217,7 +217,7 @@ export function LaunchForm({ platform }: { platform: PlatformInfo }) {
         ) : (
           <div className={styles.connect}>
             <p>Connect a wallet to launch. It pays the network fees and becomes the coin&apos;s creator.</p>
-            <WalletButton />
+            <WalletButton variant="inline" />
           </div>
         )}
       </form>
@@ -227,7 +227,7 @@ export function LaunchForm({ platform }: { platform: PlatformInfo }) {
         <div className={styles.previewCard}>
           <div className={styles.previewTop}>
             {imageUrl ? <img src={imageUrl} alt="" /> : <div className={styles.previewImage} aria-hidden />}
-            <div>
+            <div className={styles.previewTitles}>
               <PairMark base={symbol || "TICKER"} quote={quote} size="lg" />
               <p className={styles.previewName}>{name || "Coin name"}</p>
             </div>

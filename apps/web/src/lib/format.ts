@@ -28,7 +28,13 @@ export function timeAgo(iso: string, now = Date.now()) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-export function explorerUrl(kind: "tx" | "address", value: string, cluster: string) {
-  const suffix = cluster === "mainnet" ? "" : cluster === "devnet" ? "?cluster=devnet" : "?cluster=custom&customUrl=http%3A%2F%2F127.0.0.1%3A8899";
+/** A local chain has no public explorer cluster, so the explorer is pointed at the platform's own RPC. */
+export function explorerUrl(kind: "tx" | "address", value: string, platform: { cluster: string; rpcUrl: string }) {
+  const suffix =
+    platform.cluster === "mainnet"
+      ? ""
+      : platform.cluster === "devnet"
+        ? "?cluster=devnet"
+        : `?cluster=custom&customUrl=${encodeURIComponent(platform.rpcUrl)}`;
   return `https://explorer.solana.com/${kind}/${value}${suffix}`;
 }

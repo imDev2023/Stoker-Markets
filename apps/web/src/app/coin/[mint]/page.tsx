@@ -65,7 +65,7 @@ export default async function CoinPage({ params }: Props) {
             <dt>Launched</dt>
             <dd>
               <time dateTime={launch.createdAt}>
-                {new Date(launch.createdAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC
+                {`${new Date(launch.createdAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC`}
               </time>
             </dd>
           </div>
@@ -83,7 +83,7 @@ export default async function CoinPage({ params }: Props) {
             <div key={label}>
               <dt>{label}</dt>
               <dd>
-                <a className="mono" href={explorerUrl(kind, value, platform.cluster)} target="_blank" rel="noreferrer">
+                <a className="mono" href={explorerUrl(kind, value, platform)} target="_blank" rel="noreferrer">
                   {shortAddress(value)}
                 </a>
                 <CopyButton value={value} label={`Copy ${label.toLowerCase()}`} />

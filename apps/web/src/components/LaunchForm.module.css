@@ -141,6 +141,12 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--cobalt) 22%, transparent);
 }
 
+/* Mono like every ticker on the site, at the size of the fields beside it. */
+.field .ticker {
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
 .field input::placeholder,
 .field textarea::placeholder {
   color: var(--ink-3);
@@ -247,7 +253,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 14px 16px;
   flex-wrap: wrap;
   padding: 16px 18px;
   border: 1px solid var(--line);
@@ -296,7 +302,8 @@
   min-width: 0;
 }
 
-.previewTop > div {
+.previewTitles {
+  flex: 1;
   min-width: 0;
 }
 

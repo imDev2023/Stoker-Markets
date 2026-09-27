@@ -7,7 +7,7 @@ export default async function HomePage() {
   return (
     <>
       <Hero latest={launches[0] ?? null} />
-      <Board initial={launches} />
+      <Board initial={launches} renderedAt={Date.now()} />
     </>
   );
 }
