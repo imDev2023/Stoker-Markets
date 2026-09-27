@@ -75,10 +75,10 @@ export async function refreshQuoteRegistry({ db, cfg, market, operations }: Refr
     };
   });
   if (rows.length) {
-    const { mint: _key, ...columns } = getTableColumns(quoteAssets);
+    const columns = Object.entries(getTableColumns(quoteAssets)).filter(([key]) => key !== "mint");
     await db.insert(quoteAssets).values(rows).onConflictDoUpdate({
       target: quoteAssets.mint,
-      set: Object.fromEntries(Object.entries(columns).map(([key, column]) => [key, sql.raw(`excluded.${column.name}`)])),
+      set: Object.fromEntries(columns.map(([key, column]) => [key, sql.raw(`excluded.${column.name}`)])),
     });
   }
   return { quoteAssets: rows.length, priced: rows.filter((r) => r.priceSol).length, ruleWrites: Math.min(writes.length, MAX_RULE_WRITES) };

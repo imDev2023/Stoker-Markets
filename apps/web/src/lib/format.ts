@@ -5,8 +5,15 @@ export function quoteTicker(quote: Pick<QuoteRef, "mint" | "symbol">) {
   return quote.symbol ?? shortAddress(quote.mint);
 }
 
-/** Decimals of the Quote Asset's raw units; SOL's 9 until the Quote Registry lands. */
-export const QUOTE_DECIMALS = 9;
+const WSOL_MINT = "So11111111111111111111111111111111111111112";
+/** SOL's decimals: lamports per SOL is 10^9. */
+export const SOL_DECIMALS = 9;
+
+/** SOL is paid from and to the wallet's own balance; every other Quote Asset from a token account. */
+export function isSol(quote: Pick<QuoteRef, "mint">) {
+  return quote.mint === WSOL_MINT;
+}
+
 /** Every Launch's coin has 6 decimals and a supply of 1B: the launch shape our curve rules pin on-chain. */
 export const COIN_DECIMALS = 6;
 export const COIN_SUPPLY = 1_000_000_000;

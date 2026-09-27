@@ -7,7 +7,10 @@ import { fileURLToPath } from "node:url";
 import {
   Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, sendAndConfirmTransaction, Transaction, type TransactionInstruction,
 } from "@solana/web3.js";
-import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import {
+  createAssociatedTokenAccountIdempotentInstruction, createMintToInstruction, getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
 import BN from "bn.js";
 import { createPlatformConfigIx, launchlabCoder, launchlabPdas, programsFor, updatePlatformConfigIx } from "@launchpad/chain";
 
@@ -106,6 +109,26 @@ function patchKey(data: Buffer, offset: number, expected: PublicKey, value: Publ
 
 const TOKEN_PROGRAMS = new Set([TOKEN_PROGRAM_ID.toBase58(), TOKEN_2022_PROGRAM_ID.toBase58()]);
 
+/**
+ * The cloned quote mints, written to `dir` with `authority` as their mint authority, so tests can hand wallets USDC or a
+ * stock to trade with. Both token programs keep the mint authority as a COption<Pubkey> at the start of the mint.
+ */
+function quoteMintFixtures(dir: string, authority: PublicKey): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const f of readdirSync(join(FIXTURES, "quotes")).filter((f) => f.endsWith(".json"))) {
+    const fixture = readFixture(join(FIXTURES, "quotes", f));
+    if (!TOKEN_PROGRAMS.has(fixture.account.owner)) continue;
+    const data = Buffer.from(fixture.account.data[0], "base64");
+    data.writeUInt32LE(1, 0);
+    authority.toBuffer().copy(data, 4);
+    const path = join(dir, `quote_mint_${fixture.pubkey}.json`);
+    // As for GlobalConfigs: a JSON round-trip turns rentEpoch u64::MAX into a float the validator rejects.
+    writeFileSync(path, JSON.stringify({ ...fixture, account: { ...fixture.account, data: [data.toString("base64"), "base64"], rentEpoch: 0 } }));
+    out.set(fixture.pubkey, path);
+  }
+  return out;
+}
+
 /** The quote mints cloned from mainnet into `fixtures/quotes` (their Metaplex metadata accounts sit beside them). */
 export function localQuoteMints(): PublicKey[] {
   return readdirSync(join(FIXTURES, "quotes"))
@@ -182,6 +205,7 @@ export async function startLocalnet(opts: { rpcPort?: number } = {}): Promise<Lo
   const ledger = join(dir, "ledger");
   mkdirSync(ledger, { recursive: true });
   const { admin } = localnetKeys();
+  const quoteMints = quoteMintFixtures(dir, admin.publicKey);
   const args = [
     "--reset", "--quiet", "--ledger", ledger,
     "--rpc-port", String(rpcPort), "--faucet-port", String(ports.faucet),
@@ -190,10 +214,12 @@ export async function startLocalnet(opts: { rpcPort?: number } = {}): Promise<Lo
   for (const f of readdirSync(join(FIXTURES, "programs"))) args.push("--bpf-program", f.replace(/\.so$/, ""), join(FIXTURES, "programs", f));
   for (const folder of ["accounts", "quotes"]) {
     for (const f of readdirSync(join(FIXTURES, folder))) {
-      if (!f.endsWith(".json") || f === `${SOL_GLOBAL_CONFIG.toBase58()}.json`) continue;
-      args.push("--account", f.replace(/\.json$/, ""), join(FIXTURES, folder, f));
+      const address = f.replace(/\.json$/, "");
+      if (!f.endsWith(".json") || address === SOL_GLOBAL_CONFIG.toBase58() || quoteMints.has(address)) continue;
+      args.push("--account", address, join(FIXTURES, folder, f));
     }
   }
+  for (const [address, path] of quoteMints) args.push("--account", address, path);
   for (const [address, path] of globalConfigFixtures(dir, admin.publicKey)) args.push("--account", address, path);
 
   const proc: ChildProcess = spawn("solana-test-validator", args, { stdio: ["ignore", "pipe", "pipe"] });
@@ -250,6 +276,22 @@ export async function airdrop(connection: Connection, to: PublicKey, sol: number
   const signature = await connection.requestAirdrop(to, sol * LAMPORTS_PER_SOL);
   const latest = await connection.getLatestBlockhash("confirmed");
   await connection.confirmTransaction({ signature, ...latest }, "confirmed");
+}
+
+/**
+ * Gives `owner` `amount` raw units of a cloned quote mint, opening their token account if needed. Only works on the local
+ * chain, where the admin key holds every cloned quote mint's mint authority.
+ */
+export async function mintLocalQuote(connection: Connection, mint: PublicKey, owner: PublicKey, amount: bigint) {
+  const { admin } = localnetKeys();
+  const tokenProgram = (await connection.getAccountInfo(mint))?.owner;
+  if (!tokenProgram || !TOKEN_PROGRAMS.has(tokenProgram.toBase58())) throw new Error(`${mint.toBase58()} is not a mint on this chain`);
+  const account = getAssociatedTokenAddressSync(mint, owner, true, tokenProgram);
+  await send(connection, [
+    createAssociatedTokenAccountIdempotentInstruction(admin.publicKey, account, owner, mint, tokenProgram),
+    createMintToInstruction(mint, account, admin.publicKey, amount, [], tokenProgram),
+  ], [admin]);
+  return account;
 }
 
 /**

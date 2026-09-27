@@ -167,6 +167,7 @@ app.get("/v1/launches/:mint", async (c) => {
   return c.json(toSummary(c.get("cfg"), row.launches, row.launch_metadata, row.quote_assets, row.curves));
 });
 
+app.route("/v1", quotes);
 app.route("/v1", tradeRoutes);
 
 /** Token metadata JSON in the Metaplex off-chain format, as referenced by the on-chain metadata URI. */
@@ -242,7 +243,6 @@ function timingSafeEqual(a: string, b: string) {
   return diff === 0;
 }
 
-app.route("/", quotes);
 
 export default {
   fetch: app.fetch,

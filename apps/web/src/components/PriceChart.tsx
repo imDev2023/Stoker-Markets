@@ -13,7 +13,7 @@ const INTERVAL_LABEL: Record<CandleInterval, string> = {
   "1m": "1 minute", "5m": "5 minutes", "15m": "15 minutes", "1h": "1 hour", "4h": "4 hours", "1d": "1 day",
 };
 
-/** The smallest price step the chart draws: prices on a fresh curve are around 1e-8 SOL per coin. */
+/** The smallest price step the chart draws: prices on a fresh curve are around 1e-8 of the Quote Asset per coin. */
 const MIN_MOVE = 1e-15;
 
 /** Chart colors come from the design tokens, read again whenever the color scheme changes. */

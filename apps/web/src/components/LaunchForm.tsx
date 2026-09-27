@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { LAUNCH_IMAGE_MAX_BYTES, type PlatformInfo, type PreparedLaunch, type QuoteAsset } from "@launchpad/contract";
 import { prepareLaunch, reportTransaction } from "@/lib/api";
-import { formatAmount, formatUnits, quoteTicker } from "@/lib/format";
+import { formatAmount, formatUnits, isSol, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
 import { PairMark } from "./PairMark";
 import { QuotePicker } from "./QuotePicker";
@@ -257,10 +257,10 @@ function GraduationTerms({ quote }: { quote: QuoteAsset }) {
   if (!target) return <>{quote.reason}</>;
   const amount = `${formatAmount(target.raw, quote.decimals)} ${quoteTicker(quote)}`;
   // SOL itself: the amount already is the SOL figure.
-  if (target.raw === target.lamports && quote.decimals === 9) return <>{amount} raised, then moves to Raydium</>;
+  if (isSol(quote)) return <>{amount} raised, then moves to Raydium</>;
   return (
     <>
-      {amount} raised, worth {formatAmount(target.lamports, 9)} SOL today, then moves to Raydium
+      {amount} raised, worth {formatAmount(target.lamports, SOL_DECIMALS)} SOL today, then moves to Raydium
       <span className={styles.termsNote}>The amount is fixed from {quoteTicker(quote)}&apos;s price when you launch.</span>
     </>
   );
