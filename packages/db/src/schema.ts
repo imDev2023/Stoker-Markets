@@ -66,6 +66,31 @@ export const trades = pgTable(
   (t) => [primaryKey({ columns: [t.signature, t.eventIndex] }), index("trades_mint_slot_idx").on(t.mint, t.slot)],
 );
 
+/**
+ * One row per Creator Fee claim by a Creator of our platform, written by the Indexer from the claim transaction: the
+ * public history of what each Creator has taken out of their Creator Fee vaults.
+ */
+export const creatorFeeClaims = pgTable(
+  "creator_fee_claims",
+  {
+    signature: text("signature").notNull(),
+    /** Position among the claims in the transaction. */
+    eventIndex: integer("event_index").notNull(),
+    creator: text("creator").notNull(),
+    quoteMint: text("quote_mint").notNull(),
+    quoteDecimals: integer("quote_decimals").notNull(),
+    /** Raw units of the Quote Asset paid out of the vault. */
+    amount: numeric("amount", { precision: 40, scale: 0 }).notNull(),
+    slot: bigint("slot", { mode: "number" }).notNull(),
+    blockTime: timestamp("block_time", { withTimezone: true }).notNull(),
+    indexedAt: timestamp("indexed_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.signature, t.eventIndex] }),
+    index("creator_fee_claims_creator_slot_idx").on(t.creator, t.slot),
+  ],
+);
+
 /** The latest indexed state of each Launch's curve: what it has raised toward its Graduation Target, and its price. */
 export const curves = pgTable("curves", {
   mint: text("mint").primaryKey(),

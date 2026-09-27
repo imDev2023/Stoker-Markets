@@ -1,7 +1,7 @@
 // What a client of the platform does: call the public API, sign with a wallet, send to the chain.
-import { Connection, Keypair, LAMPORTS_PER_SOL, VersionedTransaction } from "@solana/web3.js";
+import { Connection, Keypair, LAMPORTS_PER_SOL, VersionedTransaction, type PublicKey } from "@solana/web3.js";
 import { inject } from "vitest";
-import { LaunchList, LaunchSummary, PreparedLaunch, QuoteAssetList } from "@launchpad/contract";
+import { LaunchList, LaunchSummary, PreparedLaunch, PreparedTrade, QuoteAssetList, type TradeSide } from "@launchpad/contract";
 import { WSOL_MINT, type RawTransaction } from "@launchpad/chain";
 
 export const env = () => inject("harness");
@@ -108,4 +108,39 @@ export async function refreshQuoteRegistry() {
 export async function listQuotes() {
   const res = await fetch(`${env().apiUrl}/v1/quotes`);
   return QuoteAssetList.parse(await res.json()).quotes;
+}
+
+type TradeBody = { mint: string; trader: string; side: TradeSide; amount: string; slippageBps?: number };
+
+export function prepareTrade(body: TradeBody) {
+  return fetch(`${env().apiUrl}/v1/trades/prepare`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function prepared(trader: Keypair, mint: string, side: TradeSide, amount: bigint, slippageBps = 100) {
+  const res = await prepareTrade({ mint, trader: trader.publicKey.toBase58(), side, amount: amount.toString(), slippageBps });
+  if (!res.ok) throw new Error(`prepare trade failed: ${res.status} ${await res.text()}`);
+  return PreparedTrade.parse(await res.json());
+}
+
+/** What a trader does: ask the API for the trade, sign it in the wallet, send it. */
+export async function trade(trader: Keypair, mint: string, side: TradeSide, amount: bigint, slippageBps = 100) {
+  const p = await prepared(trader, mint, side, amount, slippageBps);
+  return { quote: p.quote, signature: await signAndSend(p, trader) };
+}
+
+/** A token account's balance in raw units; zero if the account doesn't exist. */
+export async function tokenBalance(account: PublicKey) {
+  const res = await connection().getTokenAccountBalance(account, "confirmed").catch(() => null);
+  return BigInt(res?.value.amount ?? 0);
+}
+
+export const solOf = async (owner: Keypair) => BigInt(await connection().getBalance(owner.publicKey, "confirmed"));
+
+export async function networkFee(signature: string) {
+  const tx = await connection().getTransaction(signature, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
+  return BigInt(tx!.meta!.fee);
 }
