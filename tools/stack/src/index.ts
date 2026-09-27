@@ -80,6 +80,32 @@ function run(cmd: string, args: string[], cwd: string, env: NodeJS.ProcessEnv) {
 
 export const WEBHOOK_SECRET = "test-webhook-secret";
 
+/**
+ * Runs the API Worker under `wrangler dev` with the given vars. Resolves once it answers HTTP at all, so a test can
+ * also start a deliberately misconfigured API and look at how it fails.
+ */
+export async function startApi(opts: { port: number; vars: Record<string, string>; databaseUrl: string }) {
+  const { port, vars, databaseUrl } = opts;
+  const url = `http://127.0.0.1:${port}`;
+  const api = run(
+    "pnpm",
+    [
+      "exec", "wrangler", "dev", "--port", String(port), "--ip", "127.0.0.1", "--inspector-port", String(await freePort()),
+      "--persist-to", mkdtempSync(join(tmpdir(), "launchpad-api-")),
+      ...Object.entries(vars).flatMap(([k, v]) => ["--var", `${k}:${v}`]),
+    ],
+    join(REPO, "apps", "api"),
+    { CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: databaseUrl, WRANGLER_SEND_METRICS: "false" },
+  );
+  try {
+    await waitFor("API", async () => Boolean(await fetch(`${url}/health`)), 90_000, api.log);
+  } catch (e) {
+    await api.stop();
+    throw e;
+  }
+  return { url, stop: api.stop, log: api.log };
+}
+
 /** Starts everything and returns the addresses plus a teardown that stops it all, in reverse order. */
 export async function startStack(opts: StackOptions = {}): Promise<{ env: StackEnv; stop: () => Promise<void> }> {
   const cleanups: (() => Promise<void> | void)[] = [];
@@ -103,10 +129,10 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       new BN((opts.graduationTargetSol ?? 1) * LAMPORTS_PER_SOL),
     );
 
-    const apiPort = await freePort();
-    const apiUrl = `http://127.0.0.1:${apiPort}`;
     const webPort = opts.web ? await freePort() : null;
     const webUrl = webPort ? `http://127.0.0.1:${webPort}` : null;
+    const apiPort = await freePort();
+    const apiUrl = `http://127.0.0.1:${apiPort}`;
     const vars = {
       RPC_URL: chain.rpcUrl,
       PUBLIC_API_URL: apiUrl,
@@ -116,18 +142,9 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       GRADUATION_TARGET_LAMPORTS: platform.graduationTargetLamports,
       HELIUS_WEBHOOK_SECRET: WEBHOOK_SECRET,
     };
-    const api = run(
-      "pnpm",
-      [
-        "exec", "wrangler", "dev", "--port", String(apiPort), "--ip", "127.0.0.1", "--inspector-port", String(await freePort()),
-        "--persist-to", mkdtempSync(join(tmpdir(), "launchpad-api-")),
-        ...Object.entries(vars).flatMap(([k, v]) => ["--var", `${k}:${v}`]),
-      ],
-      join(REPO, "apps", "api"),
-      { CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: pg.url, WRANGLER_SEND_METRICS: "false" },
-    );
+    const api = await startApi({ port: apiPort, vars, databaseUrl: pg.url });
     cleanups.push(api.stop);
-    await waitFor("API", async () => (await fetch(`${apiUrl}/health`)).ok, 90_000, api.log);
+    await waitFor("API", async () => (await fetch(`${apiUrl}/health`)).ok, 30_000, api.log);
 
     if (webPort && webUrl) {
       const web = run(
