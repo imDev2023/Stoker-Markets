@@ -66,6 +66,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 - Write every trade row (curve or pool) through `insertTrade` in `apps/api/src/market.ts`, never `db.insert(trades)`: it also moves the Launch's `launch_markets` price, which the board's market caps and sorts read.
 - Never classify a Quote Asset by its name: a pump.fun coin on mainnet calls itself "GoPro - Backpack Securities". Categories come from the mint address (SOL, stablecoins) or the issuer's freeze authority or permanent delegate (tokenized stocks), in `apps/api/src/quotes/categories.ts`.
 - A curve's coins sit in `launchlabPdas.vault(pool, mint)`, owned by the LaunchLab vault authority PDA, not in an associated token account; after Graduation the CPMM authority PDA owns the pool's.
+- On a cold `next dev` load, hydration can land after `networkidle`, so a UI check that needs client script (a fitted `PairMark`, anything set in an effect) must poll, as `expectNoTruncatedText` does.
 - lightweight-charts lays out its chart with a `<table>`, so in UI tests scope table queries to the Trades region. Playwright won't click an `aria-disabled` option without `force: true`.
 - `agent-browser screenshot` needs absolute paths. Firecrawl is out of credits.
 - Devnet faucets are rate-limited and faucet.solana.com is closed to agents; the owner's default Solana CLI wallet holds devnet SOL.
