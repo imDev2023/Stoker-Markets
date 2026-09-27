@@ -219,6 +219,12 @@ describe("claiming the Creator Fee", () => {
     // Helius delivers it like any other claim.
     expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 1 });
     expect(await claims(creator.publicKey)).toEqual([expect.objectContaining({ signature, amount: inVault.toString() })]);
+
+    // As the docs say, a claim with nothing in the vault fails and moves nothing.
+    await expect(sendAndConfirmTransaction(connection(), new Transaction().add(claimFollowingTheDocs(creator.publicKey)), [creator], {
+      commitment: "confirmed",
+    })).rejects.toThrow();
+    expect(await vaultBalance(creator.publicKey)).toBe(0n);
   });
 
   it("can't be taken by anyone but the Creator", async () => {

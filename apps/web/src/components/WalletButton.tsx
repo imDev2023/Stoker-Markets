@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletReadyState } from "@solana/wallet-adapter-base";
 import { useEffect, useRef, useState } from "react";
@@ -46,6 +47,9 @@ export function WalletButton({ variant = "header" }: { variant?: "header" | "inl
         </button>
         {open && (
           <div className={styles.menu} role="menu">
+            <Link href={`/creator/${publicKey.toBase58()}`} role="menuitem" className={styles.menuLink} onClick={() => setOpen(false)}>
+              Your Creator Fee
+            </Link>
             <button type="button" role="menuitem" onClick={() => { setOpen(false); void disconnect(); }}>
               Disconnect
             </button>

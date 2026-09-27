@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { test as base, expect, type Page } from "@playwright/test";
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, VersionedTransaction } from "@solana/web3.js";
-import { LaunchList, PreparedLaunch, PreparedTrade, type TradeSide } from "@launchpad/contract";
+import { LaunchList, PreparedCreatorFeeClaim, PreparedLaunch, PreparedTrade, type TradeSide } from "@launchpad/contract";
 import { LOCAL_QUOTES, mintLocalQuote } from "@launchpad/localnet";
 import type { StackEnv } from "@launchpad/stack";
 import { installTestWallet, type TestWallet } from "./wallet";
@@ -23,13 +23,18 @@ export function stackEnv(): StackEnv {
 
 const connection = () => new Connection(stackEnv().rpcUrl, "confirmed");
 
-export async function fundedKeypair(sol = 5) {
-  const kp = Keypair.generate();
+export async function fundedKeypair(sol = 5, kp = Keypair.generate()) {
   const conn = connection();
   const signature = await conn.requestAirdrop(kp.publicKey, sol * LAMPORTS_PER_SOL);
   await conn.confirmTransaction({ signature, ...(await conn.getLatestBlockhash("confirmed")) }, "confirmed");
   return kp;
 }
+
+/**
+ * The Creator of the seeded coins. A fixed key, since the chain is new every run, so the visual tests can open the
+ * Creator Fee page as that Creator.
+ */
+export const SEED_CREATOR = Keypair.fromSeed(new Uint8Array(32).fill(7));
 
 export async function listLaunches() {
   return LaunchList.parse(await (await fetch(`${stackEnv().apiUrl}/v1/launches?limit=100`)).json()).launches;
@@ -91,6 +96,34 @@ export async function tradeViaApi(trader: Keypair, mint: string, side: TradeSide
 /** Hands a wallet a non-SOL Quote Asset: the local chain's admin holds every cloned quote mint's authority. */
 export async function fundQuote(owner: PublicKey, quote: Exclude<keyof typeof QUOTES, "SOL">, raw: bigint) {
   await mintLocalQuote(connection(), QUOTES[quote], owner, raw);
+}
+
+/** Claims a Creator's Creator Fee in one Quote Asset the way any API client would. */
+export async function claimViaApi(creator: Keypair, quote: keyof typeof QUOTES = "SOL") {
+  const res = await fetch(`${stackEnv().apiUrl}/v1/creator-fees/prepare`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ creator: creator.publicKey.toBase58(), quoteMint: QUOTES[quote].toBase58() }),
+  });
+  if (!res.ok) throw new Error(`prepare claim failed: ${res.status} ${await res.text()}`);
+  return signSendReport(PreparedCreatorFeeClaim.parse(await res.json()), creator);
+}
+
+/** The Creator's Creator Fee vault for a Quote Asset, derived the way the public docs describe, and what it holds on-chain. */
+export async function creatorFeeVault(creator: PublicKey, quote: keyof typeof QUOTES = "SOL") {
+  const program = new PublicKey(stackEnv().platform.launchlab);
+  const [vault] = PublicKey.findProgramAddressSync([creator.toBuffer(), QUOTES[quote].toBuffer()], program);
+  const balance = await connection().getTokenAccountBalance(vault, "confirmed").catch(() => null);
+  return { vault, balance: BigInt(balance?.value.amount ?? 0) };
+}
+
+export const solBalance = async (owner: PublicKey) => BigInt(await connection().getBalance(owner, "confirmed"));
+
+/** Raw lamports as the site writes them: whole SOL with thousands separators, then every decimal that isn't a trailing zero. */
+export function sol(lamports: bigint) {
+  const whole = lamports / BigInt(LAMPORTS_PER_SOL);
+  const fraction = (lamports % BigInt(LAMPORTS_PER_SOL)).toString().padStart(9, "0").replace(/0+$/, "");
+  return `${whole.toLocaleString("en-US")}${fraction ? `.${fraction}` : ""}`;
 }
 
 /** Nothing on the page may be wider than the viewport: a sideways scroll on a phone is a layout bug. */

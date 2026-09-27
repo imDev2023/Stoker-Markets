@@ -62,6 +62,11 @@ export function formatAmount(raw: string, decimals: number) {
   return formatUnits(raw, decimals, BigInt(raw) >= 10n ** BigInt(decimals) ? 2 : 4);
 }
 
+/** A date and time in UTC, so the server and every browser render the same text. */
+export function formatUtc(iso: string) {
+  return `${new Date(iso).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC`;
+}
+
 export function timeAgo(iso: string, now = Date.now()) {
   const s = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
   if (s < 60) return `${s}s ago`;
