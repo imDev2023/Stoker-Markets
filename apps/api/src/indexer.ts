@@ -1,10 +1,11 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import {
-  curvePrice, decodeTransaction, poolPrice, type CreatorFeeClaimed, type Graduated, type LaunchCreated, type PoolSwapExecuted,
-  type RawTransaction, type TradeExecuted,
+  curvePrice, decodeTransaction, initialCurveReserves, poolPrice, type CreatorFeeClaimed, type Graduated, type LaunchCreated,
+  type PoolSwapExecuted, type RawTransaction, type TradeExecuted,
 } from "@launchpad/chain";
-import { creatorFeeClaims, curves, graduations, launches, operatorAlerts, trades, type Db } from "@launchpad/db";
+import { creatorFeeClaims, curves, graduations, launches, operatorAlerts, type Db } from "@launchpad/db";
 import type { Config } from "./env";
+import { insertTrade, openMarket } from "./market";
 
 export type IndexResult = { launched: number; traded: number; claimed: number; graduated: number };
 
@@ -66,33 +67,31 @@ async function indexLaunch(db: Db, e: LaunchCreated) {
     })
     .onConflictDoNothing()
     .returning({ mint: launches.mint });
+  const start = initialCurveReserves({ supply: e.supply, totalBaseSell: e.totalBaseSell, fundRaising: e.graduationTargetRaw });
+  await openMarket(db, e.baseMint.toBase58(), curvePrice(start, e.decimals, e.quoteDecimals), e.slot);
   return inserted.length;
 }
 
 async function indexTrade(db: Db, e: TradeExecuted) {
   const mint = e.baseMint.toBase58();
   const price = curvePrice(e.after, e.baseDecimals, e.quoteDecimals);
-  const inserted = await db
-    .insert(trades)
-    .values({
-      signature: e.signature,
-      eventIndex: e.index,
-      mint,
-      venue: "curve",
-      trader: e.trader.toBase58(),
-      side: e.side,
-      baseAmount: (e.side === "buy" ? e.amountOut : e.amountIn).toString(),
-      quoteAmount: (e.side === "buy" ? e.amountIn : e.amountOut).toString(),
-      protocolFee: e.fees.protocol.toString(),
-      platformFee: e.fees.platform.toString(),
-      creatorFee: e.fees.creator.toString(),
-      priceBefore: curvePrice(e.before, e.baseDecimals, e.quoteDecimals),
-      priceAfter: price,
-      slot: e.slot,
-      blockTime: time(e.blockTime),
-    })
-    .onConflictDoNothing()
-    .returning({ signature: trades.signature });
+  const inserted = await insertTrade(db, {
+    signature: e.signature,
+    eventIndex: e.index,
+    mint,
+    venue: "curve",
+    trader: e.trader.toBase58(),
+    side: e.side,
+    baseAmount: (e.side === "buy" ? e.amountOut : e.amountIn).toString(),
+    quoteAmount: (e.side === "buy" ? e.amountIn : e.amountOut).toString(),
+    protocolFee: e.fees.protocol.toString(),
+    platformFee: e.fees.platform.toString(),
+    creatorFee: e.fees.creator.toString(),
+    priceBefore: curvePrice(e.before, e.baseDecimals, e.quoteDecimals),
+    priceAfter: price,
+    slot: e.slot,
+    blockTime: time(e.blockTime),
+  });
 
   // The curve moves to a trade from a later slot, or to the next trade in the same slot, which starts where the stored
   // state ends. Replays and late deliveries of earlier trades never move it backwards.
@@ -121,7 +120,7 @@ async function indexTrade(db: Db, e: TradeExecuted) {
       },
       setWhere: sql`excluded.slot > ${curves.slot} or (excluded.slot = ${curves.slot} and ${curves.realBase} = ${e.before.realBase.toString()} and ${curves.realQuote} = ${e.before.realQuote.toString()})`,
     });
-  return inserted.length;
+  return Number(inserted);
 }
 
 async function indexClaim(db: Db, e: CreatorFeeClaimed) {
@@ -174,35 +173,32 @@ async function indexPoolTrade(db: Db, e: PoolSwapExecuted) {
   const price = ([input, output]: typeof e.before) =>
     buy ? poolPrice(output, input, e.outputDecimals, e.inputDecimals) : poolPrice(input, output, e.inputDecimals, e.outputDecimals);
   const priceAfter = price(e.after);
-  const inserted = await db
-    .insert(trades)
-    .values({
-      signature: e.signature,
-      eventIndex: e.index,
-      mint: g.mint,
-      venue: "pool",
-      trader: e.trader.toBase58(),
-      side: buy ? "buy" : "sell",
-      baseAmount: (buy ? e.amountOut : e.amountIn).toString(),
-      quoteAmount: (buy ? e.amountIn : e.amountOut).toString(),
-      protocolFee: e.tradeFee.toString(),
-      // Our platform is every graduated pool's creator, so the pool's creator fee is platform revenue (ADR 0001).
-      platformFee: e.creatorFee.toString(),
-      creatorFee: "0",
-      priceBefore: price(e.before),
-      priceAfter,
-      slot: e.slot,
-      blockTime: time(e.blockTime),
-    })
-    .onConflictDoNothing()
-    .returning({ signature: trades.signature });
+  // Through insertTrade like a curve trade, so the board's price, market cap and volume follow the coin into its pool.
+  const inserted = await insertTrade(db, {
+    signature: e.signature,
+    eventIndex: e.index,
+    mint: g.mint,
+    venue: "pool",
+    trader: e.trader.toBase58(),
+    side: buy ? "buy" : "sell",
+    baseAmount: (buy ? e.amountOut : e.amountIn).toString(),
+    quoteAmount: (buy ? e.amountIn : e.amountOut).toString(),
+    protocolFee: e.tradeFee.toString(),
+    // Our platform is every graduated pool's creator, so the pool's creator fee is platform revenue (ADR 0001).
+    platformFee: e.creatorFee.toString(),
+    creatorFee: "0",
+    priceBefore: price(e.before),
+    priceAfter,
+    slot: e.slot,
+    blockTime: time(e.blockTime),
+  });
   // The pool's price follows its latest trade by slot; within one slot, the last one indexed wins. Replays never move it.
-  if (inserted.length > 0)
+  if (inserted)
     await db
       .update(graduations)
       .set({ price: priceAfter, priceSlot: e.slot })
       .where(and(eq(graduations.mint, g.mint), sql`coalesce(${graduations.priceSlot}, 0) <= ${e.slot}`));
-  return inserted.length;
+  return Number(inserted);
 }
 
 /** Fetches one transaction in the same JSON shape Helius raw webhooks deliver. */

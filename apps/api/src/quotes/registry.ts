@@ -6,6 +6,7 @@ import {
 import { quoteAssets, type Db } from "@launchpad/db";
 import type { Config } from "../env";
 import { divide, formatDecimal, graduationTargetRaw, type Decimal, type QuoteMarket } from "./pricing";
+import { quoteCategory } from "./categories";
 import { bandOf, ruleUpdate } from "./rules";
 
 export type RefreshDeps = { db: Db; cfg: Config; market: QuoteMarket; operations: Keypair };
@@ -65,6 +66,7 @@ export async function refreshQuoteRegistry({ db, cfg, market, operations }: Refr
       symbol: q.mint.symbol,
       name: q.mint.name,
       logo: logos.get(mint) ?? known.get(mint) ?? null,
+      category: quoteCategory(q.mint),
       priceUsd: q.quoteUsd ? formatDecimal(q.quoteUsd) : null,
       priceSol: q.priceSol ? formatDecimal(q.priceSol) : null,
       pricedAt: q.priceSol ? pricedAt : null,

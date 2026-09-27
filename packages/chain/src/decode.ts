@@ -47,6 +47,8 @@ export type LaunchCreated = {
   symbol: string;
   uri: string;
   decimals: number;
+  /** The Quote Asset's decimals, from the launch's token balances (the launch opens the curve's quote vault). */
+  quoteDecimals: number;
   supply: BN;
   totalBaseSell: BN;
   graduationTargetRaw: BN;
@@ -368,6 +370,7 @@ export function decodeTransaction(raw: RawTransaction, programs: Pick<Programs, 
         symbol: data.base_mint_param.symbol,
         uri: data.base_mint_param.uri,
         decimals: data.base_mint_param.decimals,
+        quoteDecimals: decimalsOf(acct(IX_ACCOUNT.quoteMint)),
         supply: curve.supply,
         totalBaseSell: curve.total_base_sell,
         graduationTargetRaw: curve.total_quote_fund_raising,

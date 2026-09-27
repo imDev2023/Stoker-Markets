@@ -6,19 +6,19 @@ import BN from "bn.js";
 import { desc, eq } from "drizzle-orm";
 import { prepareLaunch, type RawTransaction } from "@launchpad/chain";
 import {
-  LAUNCH_IMAGE_MAX_BYTES, LAUNCH_IMAGE_TYPES, PrepareLaunchFields, type LaunchSummary, type OperatorAlertList, type PlatformInfo,
-  type PreparedLaunch,
+  LAUNCH_IMAGE_MAX_BYTES, LAUNCH_IMAGE_TYPES, PrepareLaunchFields, type OperatorAlertList, type PlatformInfo, type PreparedLaunch,
 } from "@launchpad/contract";
-import { createDb, curves, graduations, launches, launchMetadata, operatorAlerts, quoteAssets } from "@launchpad/db";
-import { config, operationsKey, quoteMarket, type AppEnv, type Bindings, type Config } from "./env";
+import { createDb, launchMetadata, operatorAlerts } from "@launchpad/db";
+import { config, operationsKey, quoteMarket, type AppEnv, type Bindings } from "./env";
 import { watchGraduations } from "./graduation";
 import { fetchRawTransaction, indexTransactions } from "./indexer";
 import { sniffImageType } from "./images";
-import { priceLaunch, toQuoteRef } from "./quotes/assets";
+import { priceLaunch } from "./quotes/assets";
 import { refreshQuoteRegistry } from "./quotes/registry";
 import { creatorFeeRoutes } from "./routes/creatorFees";
 import { quotes } from "./routes/quotes";
-import { curveProgress, tradeRoutes } from "./routes/trades";
+import { launchRoutes } from "./routes/launches";
+import { tradeRoutes } from "./routes/trades";
 
 const app = new Hono<AppEnv>();
 
@@ -141,38 +141,7 @@ app.post("/v1/transactions/:signature", async (c) => {
   return c.json(await indexTransactions(c.get("db"), c.get("cfg"), [raw]));
 });
 
-app.get("/v1/launches", async (c) => {
-  const limit = Math.min(Math.max(Number(c.req.query("limit") ?? 50) || 50, 1), 100);
-  const rows = await c
-    .get("db")
-    .select()
-    .from(launches)
-    .leftJoin(launchMetadata, eq(launchMetadata.id, launches.mint))
-    .leftJoin(curves, eq(curves.mint, launches.mint))
-    .leftJoin(graduations, eq(graduations.mint, launches.mint))
-    // Amounts need the Quote Asset's decimals, so a Launch shows once the registry lists its Quote Asset. Every Launch the API
-    // built already is; only one sent straight to a GlobalConfig newer than the last refresh waits for the next one.
-    .innerJoin(quoteAssets, eq(quoteAssets.mint, launches.quoteMint))
-    .orderBy(desc(launches.createdSlot))
-    .limit(limit);
-  return c.json({ launches: rows.map((r) => toSummary(c.get("cfg"), r)) });
-});
-
-app.get("/v1/launches/:mint", async (c) => {
-  const [row] = await c
-    .get("db")
-    .select()
-    .from(launches)
-    .leftJoin(launchMetadata, eq(launchMetadata.id, launches.mint))
-    .leftJoin(curves, eq(curves.mint, launches.mint))
-    .leftJoin(graduations, eq(graduations.mint, launches.mint))
-    .innerJoin(quoteAssets, eq(quoteAssets.mint, launches.quoteMint))
-    .where(eq(launches.mint, c.req.param("mint")))
-    .limit(1);
-  if (!row) return c.json({ error: "launch not found" }, 404);
-  return c.json(toSummary(c.get("cfg"), row));
-});
-
+app.route("/v1", launchRoutes);
 app.route("/v1", quotes);
 app.route("/v1", tradeRoutes);
 app.route("/v1", creatorFeeRoutes);
@@ -231,37 +200,6 @@ app.get("/metadata/:mint/image", async (c) => {
     },
   });
 });
-
-type SummaryRow = {
-  launches: typeof launches.$inferSelect;
-  launch_metadata: typeof launchMetadata.$inferSelect | null;
-  quote_assets: typeof quoteAssets.$inferSelect;
-  curves: typeof curves.$inferSelect | null;
-  graduations: typeof graduations.$inferSelect | null;
-};
-
-function toSummary(
-  cfg: Config,
-  { launches: l, launch_metadata: m, quote_assets: q, curves: curve, graduations: g }: SummaryRow,
-): LaunchSummary {
-  return {
-    mint: l.mint,
-    pool: l.pool,
-    creator: l.creator,
-    quote: toQuoteRef(q),
-    name: l.name,
-    symbol: l.symbol,
-    metadataUri: l.metadataUri,
-    image: m ? `${cfg.publicApiUrl}/metadata/${l.mint}/image` : null,
-    description: m?.description ?? null,
-    links: { website: m?.website ?? null, x: m?.x ?? null, telegram: m?.telegram ?? null },
-    graduationTarget: l.graduationTarget,
-    curve: curveProgress(curve, g !== null),
-    graduation: g && { pool: g.pool, signature: g.signature, graduatedAt: g.graduatedAt.toISOString(), price: g.price },
-    createdSignature: l.createdSignature,
-    createdAt: l.createdAt.toISOString(),
-  };
-}
 
 function timingSafeEqual(a: string, b: string) {
   if (b === "") return false;

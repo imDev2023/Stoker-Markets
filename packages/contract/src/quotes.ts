@@ -9,6 +9,15 @@ const rawAmount = z.string().regex(/^\d+$/, "must be a raw integer amount");
 export const GraduationTarget = z.object({ raw: rawAmount, lamports: rawAmount });
 export type GraduationTarget = z.infer<typeof GraduationTarget>;
 
+/**
+ * The kinds of Quote Asset the board filters by. A stablecoin is one of a known list of mints; a tokenized stock is a mint
+ * whose freeze authority or permanent delegate belongs to a known stock issuer (xStocks, Backpack, PreStocks); everything
+ * else is a community token.
+ */
+export const QUOTE_CATEGORIES = ["sol", "stablecoin", "tokenized_stock", "community"] as const;
+export const QuoteCategory = z.enum(QUOTE_CATEGORIES);
+export type QuoteCategory = z.infer<typeof QuoteCategory>;
+
 /** Enough about a Quote Asset to show an amount in it: every Launch carries one. */
 export const QuoteRef = z.object({
   mint: base58,
@@ -17,6 +26,7 @@ export const QuoteRef = z.object({
   name: z.string().nullable(),
   decimals: z.number().int(),
   logo: z.string().nullable(),
+  category: QuoteCategory,
 });
 export type QuoteRef = z.infer<typeof QuoteRef>;
 
