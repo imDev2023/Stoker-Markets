@@ -9,8 +9,8 @@ declare module "vitest" {
 }
 
 export default async function setup(project: TestProject) {
-  // TEST_RPC_PORT lets several checkouts (worktrees) run their suites at the same time without port clashes.
-  const { env, stop } = await startStack({ rpcPort: Number(process.env.TEST_RPC_PORT ?? 18_899) });
+  // The chain takes free ports by itself; TEST_RPC_PORT pins it when a fixed address helps debugging.
+  const { env, stop } = await startStack(process.env.TEST_RPC_PORT ? { rpcPort: Number(process.env.TEST_RPC_PORT) } : {});
   project.provide("harness", env);
   return stop;
 }
