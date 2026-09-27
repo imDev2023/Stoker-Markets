@@ -26,16 +26,23 @@ export const RuleOp = { Eq: 0, Gte: 1, Lte: 2, Neq: 3 } as const;
 
 export type RuleConstraint = { field: number; op: number; value: BN };
 
-/** Constraints for a standard (SPL, no transfer fee) Launch against one Quote Asset with a fixed Graduation Target. */
-export function standardLaunchConstraints(graduationTargetRaw: BN): RuleConstraint[] {
-  const eq = (field: number, value: BN | number) => ({ field, op: RuleOp.Eq, value: new BN(value.toString()) });
+/** The Graduation Targets, in the Quote Asset's raw units, a curve rule accepts. SOL's is a single value. */
+export type GraduationBand = { min: BN; max: BN };
+
+/** Constraints for a standard (SPL, no transfer fee) Launch against one Quote Asset. */
+export function standardLaunchConstraints(band: GraduationBand): RuleConstraint[] {
+  const c = (field: number, op: number, value: BN | number) => ({ field, op, value: new BN(value.toString()) });
+  const eq = (field: number, value: BN | number) => c(field, RuleOp.Eq, value);
+  const target = band.min.eq(band.max)
+    ? [eq(RuleField.TotalFundRaisingB, band.min)]
+    : [c(RuleField.TotalFundRaisingB, RuleOp.Gte, band.min), c(RuleField.TotalFundRaisingB, RuleOp.Lte, band.max)];
   return [
     eq(RuleField.CurveType, LAUNCH_SHAPE.curveType),
     eq(RuleField.MigrateType, LAUNCH_SHAPE.migrateType),
     eq(RuleField.MigrateCpmmFeeOn, 0),
     eq(RuleField.Supply, LAUNCH_SHAPE.supply),
     eq(RuleField.TotalSellA, LAUNCH_SHAPE.totalBaseSell),
-    eq(RuleField.TotalFundRaisingB, graduationTargetRaw),
+    ...target,
     eq(RuleField.TotalLockedAmount, 0),
     eq(RuleField.CliffPeriod, 0),
     eq(RuleField.UnlockPeriod, 0),
@@ -43,3 +50,29 @@ export function standardLaunchConstraints(graduationTargetRaw: BN): RuleConstrai
     eq(RuleField.TransferFeeEnabled, 0),
   ];
 }
+
+/**
+ * A group no launch can satisfy (a raise of at least 1 and at most 0), for a Quote Asset we can't price.
+ * Needed because a Quote Asset with no curve rule at all is not restricted, even with `restrict_curve_param` on.
+ */
+export function closedLaunchConstraints(): RuleConstraint[] {
+  return [
+    { field: RuleField.TotalFundRaisingB, op: RuleOp.Gte, value: new BN(1) },
+    { field: RuleField.TotalFundRaisingB, op: RuleOp.Lte, value: new BN(0) },
+  ];
+}
+
+/** The Graduation Target band a group of constraints allows, or null when it allows none (a closed group). */
+export function graduationBandOf(constraints: RuleConstraint[]): GraduationBand | null {
+  let min: BN | null = null;
+  let max: BN | null = null;
+  for (const c of constraints) {
+    if (c.field !== RuleField.TotalFundRaisingB) continue;
+    if (c.op === RuleOp.Eq || c.op === RuleOp.Gte) min = min && min.gt(c.value) ? min : c.value;
+    if (c.op === RuleOp.Eq || c.op === RuleOp.Lte) max = max && max.lt(c.value) ? max : c.value;
+  }
+  return min && max && min.lte(max) ? { min, max } : null;
+}
+
+export const sameConstraints = (a: RuleConstraint[], b: RuleConstraint[]) =>
+  a.length === b.length && a.every((c, i) => c.field === b[i]!.field && c.op === b[i]!.op && c.value.eq(b[i]!.value));

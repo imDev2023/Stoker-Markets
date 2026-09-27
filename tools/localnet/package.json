@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@launchpad/chain": "workspace:*",
+    "@solana/spl-token": "^0.4.15",
     "@solana/web3.js": "^1.99.0",
     "bn.js": "^5.2.2"
   },
