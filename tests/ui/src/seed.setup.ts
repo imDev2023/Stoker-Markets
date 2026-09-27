@@ -2,11 +2,13 @@
 // Names and tickers run to the contract's limits to catch text that overflows its box.
 import { test as setup } from "@playwright/test";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { fundedKeypair, launchViaApi, tradeViaApi } from "./fixtures";
+import { fundedKeypair, fundQuote, launchViaApi, tradeViaApi, type LaunchFields } from "./fixtures";
 
-export const SEEDED = [
+export const SEEDED: LaunchFields[] = [
   { name: "Harbor Lights", symbol: "HRBR", description: "A coin for the night shift at the port." },
   { name: "Q", symbol: "Q" },
+  { name: "Dollar Paired", symbol: "USDP", quote: "USDC", description: "Priced and traded in USDC, with its Graduation Target set in USDC." },
+  { name: "Chipmaker Pair", symbol: "CHPX", quote: "NVDAx", description: "Paired with a tokenized stock." },
   {
     name: "Maximum Length Coin Name Here 32",
     symbol: "WWWWWWWWWW",
@@ -28,10 +30,13 @@ const TRADES = [
 
 setup("seed the board", async () => {
   const creator = await fundedKeypair(20);
-  const mints: string[] = [];
-  for (const coin of SEEDED) mints.push(await launchViaApi(creator, coin));
+  const mints = new Map<string, string>();
+  for (const coin of SEEDED) mints.set(coin.name, await launchViaApi(creator, coin));
   const trader = await fundedKeypair(5);
-  for (const t of TRADES) await tradeViaApi(trader, mints[0]!, t.side, t.amount);
-  // The last coin sells out its curve (the local Graduation Target is 1 SOL), so a closed trade panel is on show too.
-  await tradeViaApi(trader, mints.at(-1)!, "buy", BigInt(2 * LAMPORTS_PER_SOL));
+  for (const t of TRADES) await tradeViaApi(trader, mints.get("Harbor Lights")!, t.side, t.amount);
+  // Signal Fire sells out its curve (the local Graduation Target is 1 SOL), so a closed trade panel is on show too.
+  await tradeViaApi(trader, mints.get("Signal Fire")!, "buy", BigInt(2 * LAMPORTS_PER_SOL));
+  // Dollar Paired is bought in USDC, so a non-SOL coin page has a trade too.
+  await fundQuote(trader.publicKey, "USDC", 30_000_000n);
+  await tradeViaApi(trader, mints.get("Dollar Paired")!, "buy", 30_000_000n);
 });

@@ -27,6 +27,8 @@ async function snap(page: Page, name: string, mask = dynamic) {
   await expectNoTruncatedText(page);
   // A full-page capture of a scrolled page stitches the sticky header into the middle.
   await page.evaluate(() => window.scrollTo(0, 0));
+  // After the scroll the pointer rests over whatever now sits where it last clicked; park it on the page's corner so no field shows a hover.
+  await page.mouse.move(0, 0);
   await expect(page).toHaveScreenshot(name, { fullPage: true, mask: mask(page) });
 }
 
@@ -87,7 +89,7 @@ test("trade panel, buy and sell, quote and review", async ({ page, wallet }) => 
   await panel.getByRole("group", { name: "Buy or sell" }).getByRole("button", { name: "Sell" }).click();
   // The test wallet holds none of this coin, so a sell shows the over-balance state.
   await panel.getByLabel("You pay").fill("1000000");
-  await expect(panel.getByText(/^You have 0 HRBR\. Enter a smaller amount\.$/)).toBeVisible();
+  await expect(panel.getByText("Your wallet has no HRBR.", { exact: true })).toBeVisible();
   await expect(panel.getByText("You get about")).toBeVisible();
   await expect(panel).toHaveScreenshot("trade-sell-over-balance.png", { mask: tradedDynamic(page) });
 });
@@ -96,6 +98,14 @@ test("trade panel after the curve sold out", async ({ page }) => {
   await page.goto(`/coin/${await mintOf("Signal Fire")}`);
   await expect(page.getByText(/The curve sold out, so this coin no longer trades here/)).toBeVisible();
   await snap(page, "coin-sold-out.png", tradedDynamic);
+});
+
+test("coin page paired with USDC, after a buy", async ({ page }) => {
+  await page.goto(`/coin/${await mintOf("Dollar Paired")}`);
+  await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
+  await expect(page.getByRole("region", { name: "Trades", exact: true }).getByRole("row")).toHaveCount(2);
+  await expect(page.getByText("Market cap")).toBeVisible();
+  await snap(page, "coin-usdc.png", tradedDynamic);
 });
 
 test("coin not found", async ({ page }) => {
@@ -123,6 +133,11 @@ test("launch form, step by step", async ({ page, wallet }) => {
   await page.getByLabel("Website").fill("https://example.com/tracer");
   await snap(page, "launch-filled.png");
 
+  await page.getByRole("button", { name: /^Pair with/ }).click();
+  await expect(page.getByRole("listbox", { name: "Quote Assets" }).getByRole("option")).toHaveCount(5);
+  await snap(page, "launch-quote-picker.png");
+  await page.keyboard.press("Escape");
+
   await page.getByRole("button", { name: "Review launch" }).click();
   const dialog = page.getByRole("dialog", { name: "Before you launch" });
   await expect(dialog).toBeVisible();
@@ -132,6 +147,27 @@ test("launch form, step by step", async ({ page, wallet }) => {
 
   await expect(page.getByRole("region", { name: "Review your launch" })).toBeVisible();
   await snap(page, "launch-review.png");
+  expect(wallet.requests).toHaveLength(0);
+});
+
+test("launch review against a tokenized stock", async ({ page, wallet }) => {
+  await page.goto("/launch");
+  await page.getByRole("main").getByRole("button", { name: "Connect wallet" }).click();
+  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await page.locator('input[type="file"]').setInputFiles({ name: "coin.png", mimeType: "image/png", buffer: COIN_PNG });
+  await page.getByLabel("Name").fill("Chipmaker Pair");
+  await page.getByLabel("Ticker").fill("CHPX");
+  await page.getByRole("button", { name: /^Pair with/ }).click();
+  await page.getByRole("combobox", { name: "Search Quote Assets" }).fill("NVDAx");
+  await page.getByRole("option", { name: /NVDAx/ }).click();
+  await snap(page, "launch-filled-stock.png");
+
+  await page.getByRole("button", { name: "Review launch" }).click();
+  const dialog = page.getByRole("dialog", { name: "Before you launch" });
+  await dialog.getByRole("checkbox").check();
+  await dialog.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("region", { name: "Review your launch" })).toContainText("0.83333333 NVDAx");
+  await snap(page, "launch-review-stock.png");
   expect(wallet.requests).toHaveLength(0);
 });
 

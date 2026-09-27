@@ -1,5 +1,7 @@
 # Price-banded curve rules, managed by the hot operations wallet
 
+Status: proposed, implemented on the local chain, awaiting the operator's approval (#10).
+
 A Graduation Target is fixed at launch as 85 SOL-equivalent in the Quote Asset's raw units, so for anything but SOL it depends on a price the chain cannot see.
 LaunchLab curve rules compare launch parameters with constants, so an exact on-chain pin of `TotalFundRaisingB` only works for SOL.
 Each Quote Asset's curve rule therefore accepts a band of Graduation Targets, 10% either side of the target at the latest price, alongside the same exact pins on the rest of the launch shape.
@@ -24,7 +26,7 @@ The admin key stays offline (ADR 0004); moving bands every few minutes with a ha
 
 - A launch sent straight to the chain can pick any target within 10% of the SOL-equivalent; launches built by our API always use the exact target at the live price.
 - A leaked operations key can loosen or close any curve rule, letting off-shape coins launch on our PlatformConfig or stopping launches, but it cannot touch fees, which only the admin key can change; the admin key recovers by naming a new curve rule manager.
-- A GlobalConfig Raydium creates is unrestricted on our PlatformConfig until the next refresh writes its rule, so the window is up to five minutes; the Indexer should learn to ignore launches that don't match the shape.
+- A GlobalConfig Raydium creates is unrestricted on our PlatformConfig until the next refresh writes its rule, so the window is up to five minutes; the Indexer ignores any launch outside our launch shape, so such a coin never reaches the board. It cannot tell an in-window Graduation Target from the band it would have had, so an on-shape launch with an off-price target in that window is still listed.
 - The operations wallet pays rent for one rule account per GlobalConfig (about 0.003 SOL each, roughly 2 SOL for mainnet's 571) and a transaction fee for each band move.
 - A refresh writes at most 120 rules, missing ones first, so the first run on mainnet needs a few runs to cover every Quote Asset.
 - If the price source is down, launches against non-SOL Quote Assets are refused until it returns; existing bands stay as they were.
