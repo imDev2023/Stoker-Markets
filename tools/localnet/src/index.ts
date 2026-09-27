@@ -1,5 +1,7 @@
 import { spawn, type ChildProcess } from "node:child_process";
+import { createSocket } from "node:dgram";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { createServer } from "node:net";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -67,9 +69,66 @@ function patchedGlobalConfig(dir: string, migrateWallet: PublicKey) {
 
 export type Localnet = { rpcUrl: string; connection: Connection; stop: () => Promise<void> };
 
-/** Starts a fresh solana-test-validator with the Raydium devnet programs and accounts from fixtures. */
+/**
+ * Every port a validator binds, derived from its RPC port so each chain gets its own block: RPC and its websocket,
+ * the faucet, gossip, and the dynamic range for TPU and repair.
+ */
+function validatorPorts(rpcPort: number) {
+  const dynamic = Array.from({ length: 30 }, (_, i) => rpcPort + 2001 + i);
+  return {
+    faucet: rpcPort + 1000,
+    gossip: rpcPort + 2000,
+    dynamicRange: `${rpcPort + 2001}-${rpcPort + 2030}`,
+    tcp: [rpcPort, rpcPort + 1, rpcPort + 1000, rpcPort + 2000, ...dynamic],
+    udp: [rpcPort + 2000, ...dynamic],
+  };
+}
+
+const canBind = (port: number, kind: "tcp" | "udp") =>
+  new Promise<boolean>((resolve) => {
+    if (kind === "tcp") {
+      const srv = createServer().once("error", () => resolve(false));
+      srv.listen(port, "0.0.0.0", () => srv.close(() => resolve(true)));
+    } else {
+      const sock = createSocket("udp4").once("error", () => resolve(false));
+      sock.bind(port, "0.0.0.0", () => sock.close(() => resolve(true)));
+    }
+  });
+
+async function portsFree(rpcPort: number) {
+  const ports = validatorPorts(rpcPort);
+  for (const p of ports.tcp) if (!(await canBind(p, "tcp"))) return false;
+  for (const p of ports.udp) if (!(await canBind(p, "udp"))) return false;
+  return true;
+}
+
+/** A free block of validator ports, so parallel checkouts and agents never share (or kill) each other's chain. */
+async function freeRpcPort() {
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const port = 20_000 + Math.floor(Math.random() * 400) * 50;
+    if (await portsFree(port)) return port;
+  }
+  throw new Error("no free block of validator ports found between 20000 and 42000");
+}
+
+async function rpcIdentity(rpcUrl: string) {
+  const res = await fetch(rpcUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getIdentity" }),
+  });
+  return ((await res.json()) as { result: { identity: string } }).result.identity;
+}
+
+/**
+ * Starts a fresh solana-test-validator with the Raydium devnet programs and accounts from fixtures.
+ * Without an `rpcPort` it takes a free block of ports; with one, it refuses to start if anything already holds them.
+ */
 export async function startLocalnet(opts: { rpcPort?: number } = {}): Promise<Localnet> {
-  const rpcPort = opts.rpcPort ?? 8899;
+  const rpcPort = opts.rpcPort ?? (await freeRpcPort());
+  if (opts.rpcPort !== undefined && !(await portsFree(rpcPort)))
+    throw new Error(`port ${rpcPort} or one of the validator ports derived from it is in use; is another local chain running there?`);
+  const ports = validatorPorts(rpcPort);
   const dir = join(ROOT, ".ledger", String(rpcPort));
   rmSync(dir, { recursive: true, force: true });
   const ledger = join(dir, "ledger");
@@ -77,9 +136,8 @@ export async function startLocalnet(opts: { rpcPort?: number } = {}): Promise<Lo
   const { admin } = localnetKeys();
   const args = [
     "--reset", "--quiet", "--ledger", ledger,
-    "--rpc-port", String(rpcPort), "--faucet-port", String(rpcPort + 1000),
-    // Each validator needs its own gossip and dynamic ports so a dev chain and a test chain can run side by side.
-    "--gossip-port", String(rpcPort + 2000), "--dynamic-port-range", `${rpcPort + 2001}-${rpcPort + 2030}`,
+    "--rpc-port", String(rpcPort), "--faucet-port", String(ports.faucet),
+    "--gossip-port", String(ports.gossip), "--dynamic-port-range", ports.dynamicRange,
   ];
   for (const f of readdirSync(join(FIXTURES, "programs"))) args.push("--bpf-program", f.replace(/\.so$/, ""), join(FIXTURES, "programs", f));
   for (const f of readdirSync(join(FIXTURES, "accounts"))) {
@@ -95,11 +153,22 @@ export async function startLocalnet(opts: { rpcPort?: number } = {}): Promise<Lo
   const rpcUrl = `http://127.0.0.1:${rpcPort}`;
   const connection = new Connection(rpcUrl, "confirmed");
   const deadline = Date.now() + 60_000;
+  const identityFile = join(ledger, "validator-keypair.json");
   for (;;) {
     if (proc.exitCode !== null) throw new Error(`solana-test-validator exited: ${stderr}`);
     try {
-      if ((await connection.getSlot()) > 0) break;
-    } catch {
+      // Ready only when the chain answering is this validator, not another one that grabbed the port first.
+      if (existsSync(identityFile) && (await connection.getSlot()) > 0) {
+        const own = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(readFileSync(identityFile, "utf8")))).publicKey.toBase58();
+        const answering = await rpcIdentity(rpcUrl);
+        if (answering !== own) {
+          proc.kill("SIGKILL");
+          throw new Error(`another validator (${answering}) is answering on ${rpcUrl}`);
+        }
+        break;
+      }
+    } catch (e) {
+      if ((e as Error).message.startsWith("another validator")) throw e;
       // not up yet
     }
     if (Date.now() > deadline) {
@@ -111,12 +180,15 @@ export async function startLocalnet(opts: { rpcPort?: number } = {}): Promise<Lo
   return {
     rpcUrl,
     connection,
-    stop: () =>
-      new Promise<void>((resolve) => {
+    stop: async () => {
+      await new Promise<void>((resolve) => {
         if (proc.exitCode !== null) return resolve();
         proc.once("exit", () => resolve());
         proc.kill("SIGTERM");
-      }),
+      });
+      // A chain on picked ports is throwaway; one on a chosen port keeps its ledger for inspection.
+      if (opts.rpcPort === undefined) rmSync(dir, { recursive: true, force: true });
+    },
   };
 }
 

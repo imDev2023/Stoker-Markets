@@ -23,8 +23,8 @@ export type StackEnv = {
 };
 
 export type StackOptions = {
-  /** Fixed so a test chain never collides with the dev chain on 8899. */
-  rpcPort: number;
+  /** Taken automatically from the free ports unless set, so parallel suites never share a chain. */
+  rpcPort?: number;
   /** Small, so tests can graduate a Launch cheaply; production uses 85 SOL. */
   graduationTargetSol?: number;
   web?: boolean;
@@ -81,7 +81,7 @@ function run(cmd: string, args: string[], cwd: string, env: NodeJS.ProcessEnv) {
 export const WEBHOOK_SECRET = "test-webhook-secret";
 
 /** Starts everything and returns the addresses plus a teardown that stops it all, in reverse order. */
-export async function startStack(opts: StackOptions): Promise<{ env: StackEnv; stop: () => Promise<void> }> {
+export async function startStack(opts: StackOptions = {}): Promise<{ env: StackEnv; stop: () => Promise<void> }> {
   const cleanups: (() => Promise<void> | void)[] = [];
   const stop = async () => {
     for (const c of cleanups.reverse()) await c();
@@ -95,7 +95,7 @@ export async function startStack(opts: StackOptions): Promise<{ env: StackEnv; s
     }, 60_000);
     await runMigrations(pg.url);
 
-    const chain = await startLocalnet({ rpcPort: opts.rpcPort });
+    const chain = await startLocalnet(opts.rpcPort === undefined ? {} : { rpcPort: opts.rpcPort });
     cleanups.push(() => chain.stop());
     const platform = await bootstrapPlatform(
       chain.connection,
