@@ -21,11 +21,13 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 - `tools/localnet` - `solana-test-validator` with the Raydium devnet programs from committed fixtures, plus platform bootstrap.
 - `tools/stack` - starts Postgres, local chain, API (and optionally web) for tests.
 - `tests/backend` - black-box tests: only HTTP API and chain, never internals.
+- `tests/ui` - Playwright browser E2E on the full stack with a Wallet Standard test wallet (`src/wallet.ts`: the key stays in Node, tests approve or decline each signature), plus pixel baselines at 1440 and 390, light and dark.
 
 ## Run and test
 
 - Dev: `docker compose up -d` (Postgres on 5442), `pnpm localnet` (chain on 8899, writes `tools/localnet/.ledger/state.json`), `apps/api`: `pnpm exec wrangler dev --port 8791 --var PLATFORM_CONFIG:<from state.json>`, `apps/web`: `pnpm dev` (3100). Migrate the dev DB with `runMigrations` from `@launchpad/db/migrate`.
-- Tests: `pnpm test:backend` (starts its own throwaway stack; set `TEST_RPC_PORT` to run two checkouts at once). `pnpm -r typecheck`.
+- Tests: `pnpm test:backend` and `pnpm test:ui`, each on its own throwaway stack; the chain takes a free block of ports, so checkouts and agents can run suites side by side (`TEST_RPC_PORT` pins it). `pnpm lint`, `pnpm typecheck`; CI runs both.
+- UI baselines live in `tests/ui/screenshots/<platform>/`; after an intended UI change, run `pnpm test:ui --update-snapshots=all` and look at every changed image before committing.
 - Port 8787 and 3000 belong to other projects on this machine; ours are 3100, 8791, 8899, 5442.
 
 ## Settled (do not re-litigate)
@@ -45,6 +47,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 - `solana account --output json` dumps `rentEpoch` as u64 max; a JSON round-trip turns it into a float the validator rejects, so write 0.
 - TypeScript is pinned to 6.0 because typescript-eslint doesn't support 7. pnpm 11 needs `allowBuilds` in `pnpm-workspace.yaml` for native deps.
 - `grep` in this shell is aliased to ugrep with different flags; use `/usr/bin/grep` in scripts.
+- Test `next dev` runs rewrite `apps/web/next-env.d.ts` to point at their throwaway build folder; the web `typecheck` runs `next typegen` first, so ignore that file.
 - `agent-browser screenshot` needs absolute paths. Firecrawl is out of credits.
 - Devnet faucets are rate-limited and faucet.solana.com is closed to agents; the owner's default Solana CLI wallet holds devnet SOL.
 - StonkFun's Terms of Use ban scraping and copying: never use its frontend, copy or branding; never open its `/admin`, `/api/admin/*` or `/integrators`.
