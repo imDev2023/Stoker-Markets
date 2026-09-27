@@ -45,6 +45,9 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 - The `PlatformConfig` address is derived from the admin key and the admin can never change (ADR 0004).
 - Our platform sets `restrict_curve_param`, so every launch must pass the curve-rule PDA as the last account; a mismatched shape fails with 6025 `CurveParamNotMatchPlatformRule`.
 - Trades must include the platform and creator fee-vault accounts or fail with 6018.
+- A Creator Fee vault is per (Creator, Quote Asset) across every LaunchLab platform, and `claim_creator_fee` names no platform: its balance can include fees earned elsewhere, and the Indexer keeps claims only for Creators who launched with us. To see claims made without our site, the Helius webhook must watch the vault authority PDA (seed `creator_fee_vault_auth_seed`), which every claim passes.
+- `simulateTransaction` returns account lamports with the network fee already taken off; subtracting `getFeeForMessage` again double-counts it.
+- The UI tests' overflow check flags any element whose box runs past the viewport, even inside a scrolling container; a sideways-scrolling `pre` must hold plain text, not a `code` child.
 - Decode Helius payloads as raw RPC `getTransaction` JSON (`accountKeys` strings); web3.js's parsed `getTransaction` object has a different shape.
 - `solana account --output json` dumps `rentEpoch` as u64 max; a JSON round-trip turns it into a float the validator rejects, so write 0.
 - TypeScript is pinned to 6.0 because typescript-eslint doesn't support 7. pnpm 11 needs `allowBuilds` in `pnpm-workspace.yaml` for native deps.

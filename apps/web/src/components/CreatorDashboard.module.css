@@ -1,0 +1,328 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding-top: clamp(28px, 5vw, 56px);
+  padding-bottom: 80px;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 44em;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 800;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  font-weight: 500;
+}
+
+.whoLabel {
+  color: var(--ink-3);
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.who a {
+  text-decoration: none;
+  border-bottom: 1px solid var(--line);
+}
+
+.who a:hover {
+  color: var(--cobalt);
+  border-color: var(--cobalt);
+}
+
+.lede {
+  margin: 0;
+  font-size: 1.0625rem;
+  color: var(--ink-2);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+  gap: 16px;
+  align-items: start;
+}
+
+.main,
+.side,
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.card,
+.rule,
+.emptyCard,
+.access {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  min-width: 0;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.rule {
+  border-color: transparent;
+  background: var(--plate);
+}
+
+.rule .cardTitle {
+  color: var(--cobalt-strong);
+}
+
+.rule p,
+.muted,
+.access p,
+.emptyCard p {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.muted {
+  color: var(--ink-3);
+}
+
+.access {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+}
+
+.access p {
+  flex: 1 1 260px;
+  color: var(--ink-2);
+}
+
+.emptyCard {
+  align-items: flex-start;
+  gap: 16px;
+  padding: 28px;
+}
+
+.emptyCard p {
+  font-size: 1.0625rem;
+  color: var(--ink-2);
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  background: var(--cobalt);
+  color: var(--on-cobalt);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cta:hover {
+  background: var(--cobalt-strong);
+}
+
+.coins {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.coins li + li {
+  border-top: 1px solid var(--line);
+}
+
+.coin {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.coins li:first-child .coin {
+  padding-top: 4px;
+}
+
+.coins li:last-child .coin {
+  padding-bottom: 0;
+}
+
+.coin img,
+.noImage {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: var(--plate);
+}
+
+.coinNames {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.coinSymbol {
+  font-family: var(--font-display);
+  font-stretch: 125%;
+  font-weight: 800;
+  font-size: 0.9375rem;
+  overflow-wrap: anywhere;
+}
+
+.coin:hover .coinSymbol {
+  color: var(--cobalt);
+}
+
+.coinName {
+  color: var(--ink-2);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.coinEarned {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: right;
+}
+
+.earning,
+.ended {
+  display: inline-flex;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.earning {
+  background: var(--verified-bg);
+  color: var(--verified);
+}
+
+.ended {
+  background: var(--fog);
+  color: var(--ink-3);
+}
+
+.claims {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A fixed grid rather than a table, so a longer date never shifts the columns. */
+.claims li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  padding: 10px 0;
+  font-size: 0.875rem;
+}
+
+.claims li:first-child {
+  padding-top: 0;
+}
+
+.claims li:last-child {
+  padding-bottom: 0;
+}
+
+.claims li + li {
+  border-top: 1px solid var(--line);
+}
+
+.claimAmount {
+  font-weight: 500;
+}
+
+.claims a {
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  text-decoration: none;
+  border-bottom: 1px solid var(--line);
+}
+
+.claims a:hover {
+  color: var(--cobalt);
+  border-color: var(--cobalt);
+}
+
+.claimTime {
+  grid-column: 1 / -1;
+  color: var(--ink-3);
+  font-size: 0.8125rem;
+}
+
+.docsLink {
+  align-self: flex-start;
+  color: var(--cobalt-strong);
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .card,
+  .rule,
+  .access {
+    padding: 16px;
+  }
+  .emptyCard {
+    padding: 20px;
+  }
+  .cta {
+    align-self: stretch;
+    justify-content: center;
+    height: 48px;
+  }
+}

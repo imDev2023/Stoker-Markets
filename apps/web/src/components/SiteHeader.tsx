@@ -13,6 +13,7 @@ export function SiteHeader({ cluster }: { cluster: string }) {
         <nav className={styles.nav} aria-label="Main">
           <Link href="/" className={styles.link}>Coins</Link>
           <Link href="/launch" className={styles.link}>Launch a coin</Link>
+          <Link href="/creator" className={styles.link}>Creator Fee</Link>
         </nav>
         <WalletButton />
       </div>
