@@ -24,4 +24,33 @@ export function launchlabPdas(program: PublicKey) {
   };
 }
 
-export const metadataPda = (mint: PublicKey) => find([seed("metadata"), METADATA_PROGRAM.toBuffer(), mint.toBuffer()], METADATA_PROGRAM);
+/** CPMM's two token mints in the order the program stores them: token 0 is the one with the smaller address bytes. */
+export function sortMints(a: PublicKey, b: PublicKey): [PublicKey, PublicKey] {
+  return Buffer.compare(a.toBuffer(), b.toBuffer()) < 0 ? [a, b] : [b, a];
+}
+
+/** Raydium CPMM program-derived addresses. */
+export function cpmmPdas(program: PublicKey) {
+  return {
+    authority: find([seed("vault_and_lp_mint_auth_seed")], program),
+    pool: (ammConfig: PublicKey, mintA: PublicKey, mintB: PublicKey) => {
+      const [token0, token1] = sortMints(mintA, mintB);
+      return find([seed("pool"), ammConfig.toBuffer(), token0.toBuffer(), token1.toBuffer()], program);
+    },
+    lpMint: (pool: PublicKey) => find([seed("pool_lp_mint"), pool.toBuffer()], program),
+    vault: (pool: PublicKey, mint: PublicKey) => find([seed("pool_vault"), pool.toBuffer(), mint.toBuffer()], program),
+    observation: (pool: PublicKey) => find([seed("observation"), pool.toBuffer()], program),
+    permission: (owner: PublicKey) => find([seed("permission"), owner.toBuffer()], program),
+    supportMint: (mint: PublicKey) => find([seed("support_mint"), mint.toBuffer()], program),
+  };
+}
+
+/** Raydium LP-lock program-derived addresses: where a graduated pool's LP is locked behind a Fee Key NFT. */
+export function lockPdas(program: PublicKey) {
+  return {
+    authority: find([seed("lock_cp_authority_seed")], program),
+    lockedLiquidity: (feeNftMint: PublicKey) => find([seed("locked_liquidity"), feeNftMint.toBuffer()], program),
+  };
+}
+
+export const metadataPda =(mint: PublicKey) => find([seed("metadata"), METADATA_PROGRAM.toBuffer(), mint.toBuffer()], METADATA_PROGRAM);
