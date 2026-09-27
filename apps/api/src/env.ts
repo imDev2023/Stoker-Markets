@@ -1,7 +1,8 @@
-import { PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import type { Cluster } from "@launchpad/chain";
 import type { Db } from "@launchpad/db";
+import { jupiterMarket, staticMarket, type QuoteMarket } from "./quotes/pricing";
 
 export type Bindings = {
   CLUSTER: Cluster;
@@ -10,15 +11,22 @@ export type Bindings = {
   WEB_ORIGIN: string;
   LAUNCHLAB_PROGRAM: string;
   PLATFORM_CONFIG: string;
-  SOL_GLOBAL_CONFIG: string;
   GRADUATION_TARGET_LAMPORTS: string;
+  /** "jupiter" on mainnet; "static" reads QUOTE_PRICES_USD. */
+  PRICE_SOURCE: "jupiter" | "static";
+  /** JSON object of USD prices by mint, for the static price source. */
+  QUOTE_PRICES_USD: string;
+  /** Optional; without it the free Jupiter host is used. */
+  JUPITER_API_KEY?: string;
+  /** The operations wallet's secret key as a JSON byte array: it signs curve rule updates as the curve rule manager (ADR 0005). */
+  OPERATIONS_KEY: string;
   /** The Authorization header value Helius sends with every webhook delivery. */
   HELIUS_WEBHOOK_SECRET: string;
   HYPERDRIVE: Hyperdrive;
   METADATA_BUCKET: R2Bucket;
 };
 
-/** The Hono environment every `/v1` route runs in: bindings plus the per-request database and parsed configuration. */
+/** The Hono environment every route shares: bindings, plus the per-request database and parsed configuration. */
 export type AppEnv = { Bindings: Bindings; Variables: { db: Db; cfg: Config } };
 
 export type Config = {
@@ -27,7 +35,6 @@ export type Config = {
   publicApiUrl: string;
   launchlab: PublicKey;
   platformConfig: PublicKey;
-  solGlobalConfig: PublicKey;
   graduationTargetLamports: BN;
 };
 
@@ -59,7 +66,17 @@ export function config(env: Bindings): Config {
     publicApiUrl: publicApiUrl(env.PUBLIC_API_URL, env.CLUSTER),
     launchlab: key("LAUNCHLAB_PROGRAM"),
     platformConfig: key("PLATFORM_CONFIG"),
-    solGlobalConfig: key("SOL_GLOBAL_CONFIG"),
     graduationTargetLamports: new BN(env.GRADUATION_TARGET_LAMPORTS),
   };
+}
+
+export function quoteMarket(env: Bindings): QuoteMarket {
+  if (env.PRICE_SOURCE === "jupiter") return jupiterMarket(env.JUPITER_API_KEY || undefined);
+  if (env.PRICE_SOURCE === "static") return staticMarket(env.QUOTE_PRICES_USD);
+  throw new Error(`unknown PRICE_SOURCE: ${env.PRICE_SOURCE}`);
+}
+
+export function operationsKey(env: Bindings) {
+  if (!env.OPERATIONS_KEY) throw new Error("missing configuration: OPERATIONS_KEY");
+  return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(env.OPERATIONS_KEY) as number[]));
 }

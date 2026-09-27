@@ -1,8 +1,8 @@
 // What a client of the platform does: call the public API, sign with a wallet, send to the chain.
 import { Connection, Keypair, LAMPORTS_PER_SOL, VersionedTransaction } from "@solana/web3.js";
 import { inject } from "vitest";
-import { LaunchList, LaunchSummary, PreparedLaunch } from "@launchpad/contract";
-import type { RawTransaction } from "@launchpad/chain";
+import { LaunchList, LaunchSummary, PreparedLaunch, QuoteAssetList } from "@launchpad/contract";
+import { WSOL_MINT, type RawTransaction } from "@launchpad/chain";
 
 export const env = () => inject("harness");
 export const connection = () => new Connection(env().rpcUrl, "confirmed");
@@ -22,6 +22,8 @@ export async function fundedWallet(sol = 5) {
 
 export type LaunchForm = {
   creator: string;
+  /** Defaults to SOL. */
+  quoteMint?: string;
   name?: string;
   symbol?: string;
   description?: string;
@@ -33,7 +35,7 @@ export type LaunchForm = {
 
 export async function prepare(form: LaunchForm) {
   const body = new FormData();
-  const fields = { name: "Tracer", symbol: "TRCR", description: "A tracer bullet", ...form };
+  const fields = { name: "Tracer", symbol: "TRCR", description: "A tracer bullet", quoteMint: WSOL_MINT.toBase58(), ...form };
   for (const [k, v] of Object.entries(fields)) if (typeof v === "string") body.set(k, v);
   const image = form.image === undefined ? { bytes: PNG, type: "image/png" } : form.image;
   if (image) body.set("image", new Blob([image.bytes], { type: image.type }), "logo.png");
@@ -95,4 +97,15 @@ export async function listLaunches() {
 export async function getLaunch(mint: string) {
   const res = await fetch(`${env().apiUrl}/v1/launches/${mint}`);
   return { status: res.status, launch: res.ok ? LaunchSummary.parse(await res.json()) : null };
+}
+
+/** Runs the Worker's scheduled handler as its Cron Trigger would: the Quote Registry refresh. */
+export async function refreshQuoteRegistry() {
+  const res = await fetch(`${env().apiUrl}/__scheduled`);
+  if (!res.ok) throw new Error(`refresh failed: ${res.status} ${await res.text()}`);
+}
+
+export async function listQuotes() {
+  const res = await fetch(`${env().apiUrl}/v1/quotes`);
+  return QuoteAssetList.parse(await res.json()).quotes;
 }

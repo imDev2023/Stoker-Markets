@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import BN from "bn.js";
 import { runMigrations } from "@launchpad/db/migrate";
-import { bootstrapPlatform, startLocalnet, type LocalnetState } from "@launchpad/localnet";
+import { bootstrapPlatform, LOCAL_QUOTE_PRICES_USD, localnetKeys, startLocalnet, type LocalnetState } from "@launchpad/localnet";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -91,6 +91,7 @@ export async function startApi(opts: { port: number; vars: Record<string, string
     "pnpm",
     [
       "exec", "wrangler", "dev", "--port", String(port), "--ip", "127.0.0.1", "--inspector-port", String(await freePort()),
+      "--test-scheduled",
       "--persist-to", mkdtempSync(join(tmpdir(), "launchpad-api-")),
       ...Object.entries(vars).flatMap(([k, v]) => ["--var", `${k}:${v}`]),
     ],
@@ -138,13 +139,18 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       PUBLIC_API_URL: apiUrl,
       WEB_ORIGIN: webUrl ?? "http://127.0.0.1",
       PLATFORM_CONFIG: platform.platformConfig,
-      SOL_GLOBAL_CONFIG: platform.solGlobalConfig,
       GRADUATION_TARGET_LAMPORTS: platform.graduationTargetLamports,
+      PRICE_SOURCE: "static",
+      QUOTE_PRICES_USD: JSON.stringify(LOCAL_QUOTE_PRICES_USD),
+      OPERATIONS_KEY: JSON.stringify(Array.from(localnetKeys().operations.secretKey)),
       HELIUS_WEBHOOK_SECRET: WEBHOOK_SECRET,
     };
     const api = await startApi({ port: apiPort, vars, databaseUrl: pg.url });
     cleanups.push(api.stop);
     await waitFor("API", async () => (await fetch(`${apiUrl}/health`)).ok, 30_000, api.log);
+    // As a deploy would: fill the Quote Registry and write the curve rules before anything launches.
+    const refresh = await fetch(`${apiUrl}/__scheduled`);
+    if (!refresh.ok) throw new Error(`first Quote Registry refresh failed: ${refresh.status}\n${api.log()}`);
 
     if (webPort && webUrl) {
       const web = run(
