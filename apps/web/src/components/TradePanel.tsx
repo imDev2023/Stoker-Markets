@@ -5,7 +5,7 @@ import { PublicKey, VersionedTransaction } from "@solana/web3.js";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import type { LaunchSummary, PlatformInfo, PreparedTrade, TradeQuote, TradeSide } from "@launchpad/contract";
 import { getQuote, listTrades, prepareTrade, reportTransaction } from "@/lib/api";
-import { COIN_DECIMALS, explorerUrl, formatUnits, parseUnits, QUOTE_DECIMALS, quoteSymbol as symbolOf } from "@/lib/format";
+import { COIN_DECIMALS, explorerUrl, formatUnits, isSol, parseUnits, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
 import { Price } from "./Price";
 import { WalletButton } from "./WalletButton";
@@ -22,7 +22,8 @@ type Step =
 type Done = { side: TradeSide; coins: string | null; signature: string };
 
 const SLIPPAGE_BPS = [50, 100, 200, 500] as const;
-const BUY_PRESETS = ["0.1", "0.5", "1"] as const;
+/** Buy presets, in SOL or their worth in any other Quote Asset. */
+const BUY_PRESETS_SOL = [0.1, 0.5, 1] as const;
 const SELL_PRESETS = [25, 50, 100] as const;
 const RAYDIUM_FEE_PCT = 0.25;
 const QUOTE_DEBOUNCE_MS = 250;
@@ -38,21 +39,24 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
   const [slippageBps, setSlippageBps] = useState<number>(100);
   const [quote, setQuote] = useState<TradeQuote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
-  const [balances, setBalances] = useState<{ sol: bigint; coins: bigint } | null>(null);
+  /** Raw units held: SOL in lamports, the Quote Asset (the same as SOL for a SOL pair) and the coin. */
+  const [balances, setBalances] = useState<{ sol: bigint; quote: bigint; coins: bigint } | null>(null);
   const [step, setStep] = useState<Step>({ kind: "editing" });
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<Done | null>(null);
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
 
-  const quoteSymbol = symbolOf(launch.quoteMint);
-  const payDecimals = side === "buy" ? QUOTE_DECIMALS : COIN_DECIMALS;
-  const getDecimals = side === "buy" ? COIN_DECIMALS : QUOTE_DECIMALS;
+  const quoteSymbol = quoteTicker(launch.quote);
+  const quoteDecimals = launch.quote.decimals;
+  const solPair = isSol(launch.quote);
+  const payDecimals = side === "buy" ? quoteDecimals : COIN_DECIMALS;
+  const getDecimals = side === "buy" ? COIN_DECIMALS : quoteDecimals;
   const paySymbol = side === "buy" ? quoteSymbol : launch.symbol;
   const getSymbol = side === "buy" ? launch.symbol : quoteSymbol;
   const amount = parseUnits(amountText, payDecimals);
   const invalidAmount = amountText.trim() !== "" && amount === null;
   const busy = step.kind !== "editing";
-  const held = balances ? (side === "buy" ? balances.sol : balances.coins) : null;
+  const held = balances ? (side === "buy" ? balances.quote : balances.coins) : null;
   // A buy that takes the rest of the curve costs less than the amount typed, so check what the quote says it costs.
   const cost = side === "buy" && quote && amount !== null ? BigInt(quote.amountIn) : amount;
   const overBalance = cost !== null && held !== null && cost > held;
@@ -60,16 +64,20 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
   const refreshBalances = useCallback(async () => {
     if (!publicKey) return setBalances(null);
     try {
-      const [sol, accounts] = await Promise.all([
-        connection.getBalance(publicKey, "confirmed"),
-        connection.getParsedTokenAccountsByOwner(publicKey, { mint: new PublicKey(launch.mint) }, "confirmed"),
+      const held = async (mint: string) => {
+        const accounts = await connection.getParsedTokenAccountsByOwner(publicKey, { mint: new PublicKey(mint) }, "confirmed");
+        return accounts.value.reduce((sum, a) => sum + BigInt(a.account.data.parsed.info.tokenAmount.amount as string), 0n);
+      };
+      const [sol, coins, quote] = await Promise.all([
+        connection.getBalance(publicKey, "confirmed").then(BigInt),
+        held(launch.mint),
+        solPair ? null : held(launch.quote.mint),
       ]);
-      const coins = accounts.value.reduce((sum, a) => sum + BigInt(a.account.data.parsed.info.tokenAmount.amount as string), 0n);
-      setBalances({ sol: BigInt(sol), coins });
+      setBalances({ sol, quote: quote ?? sol, coins });
     } catch {
       setBalances(null);
     }
-  }, [connection, publicKey, launch.mint]);
+  }, [connection, publicKey, launch.mint, launch.quote.mint, solPair]);
 
   useEffect(() => void refreshBalances(), [refreshBalances]);
 
@@ -109,7 +117,7 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
         sigVerify: false,
         accounts: { addresses: [publicKey.toBase58()], encoding: "base64" },
       });
-      if (sim.value.err) throw new Error(simulationError(sim.value.err, sim.value.logs ?? []));
+      if (sim.value.err) throw new Error(simulationError(sim.value.err, sim.value.logs ?? [], solPair ? null : quoteSymbol));
       const before = BigInt(await connection.getBalance(publicKey, "confirmed"));
       // The simulated balance already has the network fee taken off.
       const after = BigInt(sim.value.accounts?.[0]?.lamports ?? before);
@@ -247,14 +255,16 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
             {invalidAmount
               ? `Enter an amount above zero with up to ${payDecimals} decimal places.`
               : overBalance
-                ? `You have ${formatUnits(held!.toString(), payDecimals)} ${paySymbol}. Enter a smaller amount.`
+                ? held === 0n
+                  ? `Your wallet has no ${paySymbol}.`
+                  : `You have ${formatUnits(held!.toString(), payDecimals)} ${paySymbol}. Enter a smaller amount.`
                 : side === "buy"
                   ? `Paid in ${quoteSymbol}, fees included.`
                   : `The coins you sell go back to the curve.`}
           </p>
           <div className={styles.presets}>
             {side === "buy"
-              ? BUY_PRESETS.map((p) => (
+              ? buyPresets(launch, platform).map((p) => (
                   <button key={p} type="button" onClick={() => edit(() => setAmountText(p))}>
                     {p} {quoteSymbol}
                   </button>
@@ -310,7 +320,7 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
               <div className={styles.feeTotal}>
                 <dt>Fees</dt>
                 <dd>
-                  <span className="mono">{formatUnits(totalFees.toString(), QUOTE_DECIMALS, 6)}</span> {quoteSymbol}
+                  <span className="mono">{formatUnits(totalFees.toString(), quoteDecimals, 6)}</span> {quoteSymbol}
                 </dd>
               </div>
               {fees.map(([label, pct, raw]) => (
@@ -319,7 +329,7 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
                     {label} <span className="mono">{pct}%</span>
                   </dt>
                   <dd>
-                    <span className="mono">{formatUnits(raw ?? "0", QUOTE_DECIMALS, 6)}</span> {quoteSymbol}
+                    <span className="mono">{formatUnits(raw ?? "0", quoteDecimals, 6)}</span> {quoteSymbol}
                   </dd>
                 </div>
               ))}
@@ -330,7 +340,7 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
           {shown?.completesCurve && (
             <p className={styles.completes}>
               This buy takes the last coins on the curve and starts graduation, so it costs{" "}
-              <span className="mono">{formatUnits(shown.amountIn, QUOTE_DECIMALS, 6)}</span> {quoteSymbol}, not the full amount.
+              <span className="mono">{formatUnits(shown.amountIn, quoteDecimals, 6)}</span> {quoteSymbol}, not the full amount.
             </p>
           )}
         </div>
@@ -345,15 +355,27 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
         {r ? (
           <div className={styles.review} role="region" aria-label="Review your trade">
             <p>
-              {r.walletLamports < 0n ? (
+              {solPair ? (
+                r.walletLamports < 0n ? (
+                  <>
+                    Your wallet pays <strong className="mono">{sol(-r.walletLamports)} SOL</strong> in total, including network fees
+                    and any account rent.
+                  </>
+                ) : (
+                  <>
+                    Your wallet receives about <strong className="mono">{sol(r.walletLamports)} SOL</strong> after network fees.
+                  </>
+                )
+              ) : r.prepared.quote.side === "buy" ? (
                 <>
-                  Your wallet pays <strong className="mono">{formatUnits((-r.walletLamports).toString(), QUOTE_DECIMALS, 6)} SOL</strong> in
-                  total, including network fees and any account rent.
+                  Your wallet pays <strong className="mono">{formatUnits(r.prepared.quote.amountIn, quoteDecimals, quoteDecimals)} {quoteSymbol}</strong>{" "}
+                  and <strong className="mono">{sol(-r.walletLamports)} SOL</strong> in network fees and any account rent.
                 </>
               ) : (
                 <>
-                  Your wallet receives about <strong className="mono">{formatUnits(r.walletLamports.toString(), QUOTE_DECIMALS, 6)} SOL</strong>{" "}
-                  after network fees.
+                  Your wallet receives about{" "}
+                  <strong className="mono">{formatUnits(r.prepared.quote.amountOut, quoteDecimals, 6)} {quoteSymbol}</strong> and pays{" "}
+                  <strong className="mono">{sol(-r.walletLamports)} SOL</strong> in network fees and any account rent.
                 </>
               )}{" "}
               If the price moves more than {slippageBps / 100}% first, the trade fails and nothing is traded.
@@ -401,11 +423,30 @@ function tradeError(message: string) {
   return "Something went wrong preparing the trade. Try again in a moment.";
 }
 
-/** Turns a failed simulation into something the trader can act on. */
-function simulationError(err: unknown, logs: string[]) {
+/** A SOL amount from lamports, to six decimal places. */
+const sol = (lamports: bigint) => formatUnits(lamports.toString(), SOL_DECIMALS, 6);
+
+/**
+ * Buy presets worth about 0.1, 0.5 and 1 SOL. For any other Quote Asset they are converted at the price the Launch's
+ * Graduation Target was fixed at, rounded to two significant digits so they read as round numbers.
+ */
+function buyPresets(launch: LaunchSummary, platform: PlatformInfo) {
+  if (isSol(launch.quote)) return BUY_PRESETS_SOL.map(String);
+  const perSol = (Number(launch.graduationTarget) / 10 ** launch.quote.decimals) / (Number(platform.graduationTargetLamports) / 10 ** SOL_DECIMALS);
+  return BUY_PRESETS_SOL.map((s) =>
+    (s * perSol).toLocaleString("en-US", { maximumSignificantDigits: 2, maximumFractionDigits: launch.quote.decimals, useGrouping: false }),
+  );
+}
+
+/** Turns a failed simulation into something the trader can act on; `quote` is the Quote Asset's ticker when it isn't SOL. */
+function simulationError(err: unknown, logs: string[], quote: string | null) {
   const text = `${JSON.stringify(err)} ${logs.join(" ")}`;
+  if (quote && /insufficient funds|"Custom":1\b/.test(text) && !/insufficient lamports|InsufficientFundsForRent/.test(text))
+    return `Your wallet doesn't have enough ${quote} for this trade. Lower the amount or add ${quote}.`;
   if (/insufficient (lamports|funds)|InsufficientFundsForRent|"Custom":1\b/.test(text))
-    return "Your wallet doesn't have enough to cover this trade and its network fees. Lower the amount or add SOL.";
+    return quote
+      ? "Your wallet doesn't have enough SOL for this trade's network fees. Add SOL and try again."
+      : "Your wallet doesn't have enough to cover this trade and its network fees. Lower the amount or add SOL.";
   if (/AccountNotFound/.test(text)) return "Your wallet has no SOL yet. Add SOL and try again.";
   if (exceededSlippage(text)) return "The price has moved past your slippage. Check the new quote and try again.";
   return "The trade would fail on-chain, so nothing was sent. Try again in a moment.";
