@@ -11,20 +11,23 @@
   "pools_by_class": {
    "SOL": 1453722,
    "stablecoin": 233707,
-   "other token": 9187,
-   "tokenized stock (xStocks)": 1243
+   "other token": 8930,
+   "tokenized stock (xStocks)": 1243,
+   "tokenized stock (other issuers)": 257
   },
   "curve_complete_by_class": {
    "SOL": 908732,
    "stablecoin": 1782,
-   "other token": 793,
-   "tokenized stock (xStocks)": 50
+   "other token": 786,
+   "tokenized stock (xStocks)": 50,
+   "tokenized stock (other issuers)": 7
   },
   "share_by_class": {
    "SOL": 0.856209,
    "stablecoin": 0.137648,
-   "other token": 0.005411,
-   "tokenized stock (xStocks)": 0.000732
+   "other token": 0.00526,
+   "tokenized stock (xStocks)": 0.000732,
+   "tokenized stock (other issuers)": 0.000151
   },
   "curve_complete_total": 911357,
   "migrated_total": 910451
@@ -489,7 +492,7 @@
    "quote_mint": "MUxEsUKSMACyw5fZf68wxf5FLnZVhtU9CwH8uNNGay1",
    "symbol": "MU",
    "name": "Micron Technology - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 45,
@@ -944,7 +947,7 @@
    "quote_mint": "SPCXxcqXj6e5dJDVNovHN8744zkbhM2bYudU45BimGb",
    "symbol": "SPCX",
    "name": "SpaceX - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 19,
@@ -1178,7 +1181,7 @@
    "quote_mint": "TTWofwAge91oFhZs7kpQdyrVRkmevgM88xijGvQFbKo",
    "symbol": "TTWO",
    "name": "Take-Two Interactive Software - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 13,
@@ -1347,7 +1350,7 @@
    "quote_mint": "NKEda5nHhNGgjrE9nDdMvaEmkmJ96qqxzBVZEcKmjSg",
    "symbol": "NKE",
    "name": "NIKE - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 10,
@@ -1360,7 +1363,7 @@
    "quote_mint": "RBLXDGRD64AtRamHMFVcjqne3Ar7NLWtFtYNtsrf1cE",
    "symbol": "RBLX",
    "name": "Roblox - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 10,
@@ -1373,7 +1376,7 @@
    "quote_mint": "GRNDYDpqwpCm6jVxpbh4xT5AM4r3p391qYsKTHqgaET2",
    "symbol": "GRND",
    "name": "Grindr - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 9,
@@ -1464,7 +1467,7 @@
    "quote_mint": "BoTx8y9ynfdxf5ZjWtCoBVkff52qKA82ysaLU8ZM6d8T",
    "symbol": "BOT",
    "name": "RoboStrategy - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 8,
@@ -1555,7 +1558,7 @@
    "quote_mint": "DJTu7vi8norVzdVAffgvb39VP7wjKeTsgaMBJrzfxvoF",
    "symbol": "DJT",
    "name": "Trump Media & Technology Group Corp. Common Stock - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 8,
@@ -1672,7 +1675,7 @@
    "quote_mint": "HiMSSzzwkZkrXJ4PGVJRdtfLaANeAztjjcgk5Dxe7Lwx",
    "symbol": "HIMS",
    "name": "Hims & Hers Health - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 7,
@@ -1841,7 +1844,7 @@
    "quote_mint": "BABANGA4JE7Kkam4nTrALAwAVgsNJUuFJnnkF7S16BZp",
    "symbol": "BABA",
    "name": "Alibaba Group Holding - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 6,
@@ -1867,7 +1870,7 @@
    "quote_mint": "GPRR2u6NS5yBQHWGauoJ9HXgjrTH8dDsrBfTV5zAYvDH",
    "symbol": "GPRO",
    "name": "GoPro - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 5,
@@ -1880,7 +1883,7 @@
    "quote_mint": "AMC1qwR9KhiyrQBRPrxnfo4JfMeMZqEBvt5tgTytNNoc",
    "symbol": "AMC",
    "name": "AMC Entertainment - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 5,
@@ -1945,7 +1948,7 @@
    "quote_mint": "DRAMjSWR7HRfJKjRkvQWYL2bcaejaVhuxEcjf4pAY4Cw",
    "symbol": "DRAM",
    "name": "Roundhill Memory ETF - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 5,
@@ -1984,7 +1987,7 @@
    "quote_mint": "123mYEnRLM2LLYsJW3K6oyYh8uP1fngj732iG638ondo",
    "symbol": "AAPLon",
    "name": "Apple (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 5,
@@ -2036,7 +2039,7 @@
    "quote_mint": "HooDYv5RewLRiMLnEVq3VJqdqxhuE6c5eYvqejMC3e9A",
    "symbol": "HOOD",
    "name": "Robinhood Markets - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 5,
@@ -2101,7 +2104,7 @@
    "quote_mint": "rpydAzWdCy85HEmoQkH5PVxYtDYQWjmLxgHHadxondo",
    "symbol": "USOon",
    "name": "United States Oil Fund (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 5,
@@ -2127,7 +2130,7 @@
    "quote_mint": "URARfsinxCRw4JpvQhuT4CxavdZXZEMjv9ZwWmWpwag",
    "symbol": "URA",
    "name": "Global X Uranium ETF - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 5,
@@ -2179,7 +2182,7 @@
    "quote_mint": "BArimz1PcKZr8PcPh3tcZ2dg4S7FJLk3cw6R5F8GsHKg",
    "symbol": "BA",
    "name": "The Boeing Company - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 5,
@@ -2270,7 +2273,7 @@
    "quote_mint": "SKHYhSjuRWHgikq8eRKbtBbpABgJSkd7ytQV14i9EQ3",
    "symbol": "SKHY",
    "name": "SK Hynix - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 4,
@@ -2478,7 +2481,7 @@
    "quote_mint": "AMD8XwJXgQ9WV45Wyj9yFLejxzf2J6VM1PJY8bJEjeES",
    "symbol": "AMD",
    "name": "Advanced Micro Devices - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 4,
@@ -2530,7 +2533,7 @@
    "quote_mint": "DKNGQFNGQmoBdXSRGKJ8tTu7uPDasw5JDcfMmWniNfow",
    "symbol": "DKNG",
    "name": "DraftKings - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 4,
@@ -2582,7 +2585,7 @@
    "quote_mint": "CZEB3WNZuF2Yz1z2H81RcCk8T7fsw82KB33zqamASVsg",
    "symbol": "COST",
    "name": "Costco Wholesale - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 3,
@@ -2660,7 +2663,7 @@
    "quote_mint": "iNTCy1qTsUEZQe3DSocLz1ZXXai34Gdw8THQh5rxFaF",
    "symbol": "INTC",
    "name": "Intel - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 3,
@@ -2725,7 +2728,7 @@
    "quote_mint": "USNv3NkKA27Dh4nsHJDPhW4VoEcTQmjoZyJt2dqdwFu",
    "symbol": "USO",
    "name": "United States Oil Fund, LP - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 3,
@@ -3063,7 +3066,7 @@
    "quote_mint": "WENAZ2WyPbmgvUcKfQ8hyMDfBQP9bZ65hsZ5KTFrRGZ",
    "symbol": "WEN",
    "name": "The Wendy's Company - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 3,
@@ -3388,7 +3391,7 @@
    "quote_mint": "RDDTGbhHwVXfyCvQMXzzowKjf5qrYBZAnehoXW83ooh",
    "symbol": "RDDT",
    "name": "Reddit - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 2,
@@ -3583,7 +3586,7 @@
    "quote_mint": "LULUmT9VMttkfAJE236LXJcYJ2tTP7nunrSWR5G1BdS",
    "symbol": "LULU",
    "name": "lululemon athletica inc. - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 2,
@@ -3661,7 +3664,7 @@
    "quote_mint": "LMT3i1BHgixFqPUgcyteJhnEz2dpy9i3cYy4pi9BoeV",
    "symbol": "LMT",
    "name": "Lockheed Martin - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 2,
@@ -3726,7 +3729,7 @@
    "quote_mint": "mJf1xT3suXtkXBCfZcE9oUUuyxkvSgqYBWiX7v1ondo",
    "symbol": "DISon",
    "name": "Disney (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 2,
@@ -3869,7 +3872,7 @@
    "quote_mint": "BMKdM4yUxX12moFqVk195k7coMbaybd4RUKCUdm7D1Sk",
    "symbol": "IBM",
    "name": "International Business Machines - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 2,
@@ -3973,7 +3976,7 @@
    "quote_mint": "SNDKbwMUQvZhnLnxLduradgLHG5KrPuKwpnrkkGRhfH",
    "symbol": "SNDK",
    "name": "Sandisk - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 2,
@@ -3999,7 +4002,7 @@
    "quote_mint": "14VXAhoa1R74vi1ZuiQyGLJrnDMfoFBPJSCpGVz3ondo",
    "symbol": "APOon",
    "name": "Apollo Global Management (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 2,
@@ -4012,7 +4015,7 @@
    "quote_mint": "B5KufqHkskgGYwMXtL8FSHgREAkMQvE3ykhH5Kmondo",
    "symbol": "ALBon",
    "name": "Albemarle (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 2,
@@ -4597,7 +4600,7 @@
    "quote_mint": "DELL2aRKQz7DMq5DrKLtkn47ZCnbxXPZXrSGbkmd13wy",
    "symbol": "DELL",
    "name": "Dell Technologies - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -4766,7 +4769,7 @@
    "quote_mint": "Fz9edBpaURPPzpKVRR1A8PENYDEgHqwx5D5th28ondo",
    "symbol": "MUon",
    "name": "Micron Technology (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -4909,7 +4912,7 @@
    "quote_mint": "83P1gCFBZfGRCwJuBt9juxJKEsZwejJoG66eTZ6ondo",
    "symbol": "DASHon",
    "name": "DoorDash (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -4961,7 +4964,7 @@
    "quote_mint": "rsiKbHCdsvmExvDfkYWypAXFsqKz6V8XuoxbkHtondo",
    "symbol": "PURRon",
    "name": "Hyperliquid Strategies (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -5052,7 +5055,7 @@
    "quote_mint": "1YVZ4LGpq8CAhpdpm3mgy7GgPb83gJczCpxLUQ3ondo",
    "symbol": "BAon",
    "name": "Boeing (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -5156,7 +5159,7 @@
    "quote_mint": "JNJg1znKdF712Phe7L7z52AATAvEjEytBdN2w8Lnh1Y",
    "symbol": "JNJ",
    "name": "Johnson & Johnson - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -5234,7 +5237,7 @@
    "quote_mint": "6xHEyem9hmkGtVq6XGCiQUGpPsHBaoYuYdFNZa5ondo",
    "symbol": "CRCLon",
    "name": "Circle Internet Group (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -5247,7 +5250,7 @@
    "quote_mint": "gEGtLTPNQ7jcg25zTetkbmF7teoDLcrfTnQfmn2ondo",
    "symbol": "NVDAon",
    "name": "NVIDIA (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -5702,7 +5705,7 @@
    "quote_mint": "QUBTAD8C9bMU9LvmMNgKPhrmBGbHvxpu6vfWQtThxxw",
    "symbol": "QUBT",
    "name": "Quantum Computing - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -5715,7 +5718,7 @@
    "quote_mint": "NBiSF3UaVUFtRzHwAfxyHsBCAZWGEKnMpewAE4oh7BG",
    "symbol": "NBIS",
    "name": "Nebius Group N.V. - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -5728,7 +5731,7 @@
    "quote_mint": "CeFbGYXDmkyfo1TXXzzZ512mtnCCewNohu6V15vondo",
    "symbol": "FXIon",
    "name": "iShares China Large-Cap ETF (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -5780,7 +5783,7 @@
    "quote_mint": "PTNzAfFAB4LvoUQEUUGrFMyUoRLExMYjH6CcfyQfsVP",
    "symbol": "PTN",
    "name": "Palatin Technologies, Inc. Common Stock - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -5897,7 +5900,7 @@
    "quote_mint": "DNUTsCvKbKwu2RM72cUuW3TD9YpzArzACcqYQssjPLSk",
    "symbol": "DNUT",
    "name": "Krispy Kreme, Inc. Common Stock - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -5923,7 +5926,7 @@
    "quote_mint": "SiLVFMgD3eD2rgK628NbTBq9MnuJF5FW2CRaVyTB35L",
    "symbol": "SILV",
    "name": "Dominion Silver",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -6196,7 +6199,7 @@
    "quote_mint": "CRWVJeR2yEZuDUKYfGuKCHvLz8ywn4LGvovHfy5WiFmi",
    "symbol": "CRWV",
    "name": "CoreWeave - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -6261,7 +6264,7 @@
    "quote_mint": "5owVsVFSHACQuippFYdLp3qWRobp2EGcwxMmsr6ondo",
    "symbol": "CMGon",
    "name": "Chipotle (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -6326,7 +6329,7 @@
    "quote_mint": "BULL151gUXcFV5wXEUqu9Am2L7Qt4bTJRLRuAUjkcspC",
    "symbol": "BULL",
    "name": "Webull Corporation Class A Ordinary Shares - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -6365,7 +6368,7 @@
    "quote_mint": "FLWSojG1gB5VStYR3Sb4nQFRt43UBYkqih1j2CpVLqgd",
    "symbol": "FLWS",
    "name": "1-800-FLOWERS.COM - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -6430,7 +6433,7 @@
    "quote_mint": "BchJRy2snmhJZf3rQ9LJ3ePs2BGfYgfvQNo31d2ondo",
    "symbol": "GSon",
    "name": "Goldman Sachs (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -6677,7 +6680,7 @@
    "quote_mint": "CADGKVBTfVqcTaTAFko4P6Vd5ZMMr7tXYs5Sn1GyLoyu",
    "symbol": "CADG",
    "name": "GIDDY Gold",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -6690,7 +6693,7 @@
    "quote_mint": "LLYuwZ33keFihgwoxXsBawy31AiRFLFSva32TYq5TvD",
    "symbol": "LLY",
    "name": "Eli Lilly and Company - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -6794,7 +6797,7 @@
    "quote_mint": "EUbJjmDt8JA222M91bVLZs211siZ2jzbFArH9N3ondo",
    "symbol": "MCDon",
    "name": "McDonald's (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -7080,7 +7083,7 @@
    "quote_mint": "SH55hfaipFAbwT42nQYhRoM5o5t61QpkmJ6p62vXB3m",
    "symbol": "SHOP",
    "name": "Shopify - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -7262,7 +7265,7 @@
    "quote_mint": "bdh3njeo19d2TBLAKTGvCWdSoArfVw8uZBAJHY4ondo",
    "symbol": "HIMSon",
    "name": "Hims & Hers Health (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -7626,7 +7629,7 @@
    "quote_mint": "hpkpc1Xenv5oEpVefk3woWjZa9rxaJxaEaVVA4Fondo",
    "symbol": "CPERon",
    "name": "US Copper Index Fund (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -7639,7 +7642,7 @@
    "quote_mint": "MSTRdWXMeZxdE8osAQy3fA4rvTY5rgummDSMEx6U7Nz",
    "symbol": "MSTR",
    "name": "Strategy - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -7665,7 +7668,7 @@
    "quote_mint": "5u6KDiNJXxX4rGMfYT4BApZQC5CuDNrG6MHkwp1ondo",
    "symbol": "COINon",
    "name": "Coinbase (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -7704,7 +7707,7 @@
    "quote_mint": "CYPHuMmCL1GxJWa2tsPhLKykC7GrHJTCHwbXD4g5uawK",
    "symbol": "CYPH",
    "name": "Cypherpunk Technologies - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -7938,7 +7941,7 @@
    "quote_mint": "54CoRF2FYMZNJg9tS36xq5BUcLZ7rju1r59jGc2ondo",
    "symbol": "BIDUon",
    "name": "Baidu (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -8289,7 +8292,7 @@
    "quote_mint": "EvzskrQ3vUUkiMGG1DzfSDyG6H2WCMy3v9G8fzzondo",
    "symbol": "URAon",
    "name": "Global X Uranium ETF (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -8757,7 +8760,7 @@
    "quote_mint": "SNAPcESrvnH8yUdgeMF6xm1hym9b6hW6s8YeqeHdZFz",
    "symbol": "SNAP",
    "name": "Snap - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -8770,7 +8773,7 @@
    "quote_mint": "NQ5hSuXQZrbnrwcDVk2qN73njjd3E3v3badYHnj5thF",
    "symbol": "IONQ",
    "name": "IonQ - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -8861,7 +8864,7 @@
    "quote_mint": "FWDtiB5fXHdVAewPqvHPL2dh4aBC1C6GacQbePoQXKjz",
    "symbol": "FWDI",
    "name": "Forward Industries, Inc. - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -9017,7 +9020,7 @@
    "quote_mint": "MGMuubtUEirmkhfEQdmGUh4pr7HuUdMWcZXFtpPbVJD",
    "symbol": "MGM",
    "name": "MGM Resorts International - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -9095,7 +9098,7 @@
    "quote_mint": "v12TwfofSbvVqQ5N5KGG4d3J8rtEi4BjGfn2apyondo",
    "symbol": "LIon",
    "name": "Li Auto (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -9134,7 +9137,7 @@
    "quote_mint": "UPSqUeMHcWbkdg784XuBUEF9DtySSnW9ur5LAVdcuB9",
    "symbol": "UPS",
    "name": "United Parcel Service - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -9316,7 +9319,7 @@
    "quote_mint": "E5Gczsavxcomqf6Cw1sGCKLabL1xYD2FzKxVoB4ondo",
    "symbol": "JPMon",
    "name": "JPMorgan Chase (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -9329,7 +9332,7 @@
    "quote_mint": "SPHRp8cZaSQBTp1KMNP4V1X821SXhXWt4Q2yLdyHzju",
    "symbol": "SPHR",
    "name": "Sphere Entertainment Co. - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -9433,7 +9436,7 @@
    "quote_mint": "5H1VpMzRuoNtRbPTRCz35ETtEUtnkt8hJuQb9v7ondo",
    "symbol": "BLKon",
    "name": "Blackrock, Inc. (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -9472,7 +9475,7 @@
    "quote_mint": "keybg184d4vyXeQdFqs4o99YsMg7xBthxTJ6Ky3ondo",
    "symbol": "TSMon",
    "name": "Taiwan Semiconductor Manufacturing (Ondo Tokenized)",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -9485,7 +9488,7 @@
    "quote_mint": "MRNAzXzhNcaEXJPibHEn8cd4vyekCDiivTyEwswLUCT",
    "symbol": "MRNA",
    "name": "Moderna - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -9498,7 +9501,7 @@
    "quote_mint": "CzLTZppPdZtTjyq3WGpHLstoc3GLhu7zH5Zg6xUa6Gv5",
    "symbol": "COPX",
    "name": "Global X Copper Miners ETF - Backpack Securities",
-   "class": "other token",
+   "class": "tokenized stock (other issuers)",
    "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
    "token_badge": true,
    "pools": 1,
@@ -9532,620 +9535,6 @@
    "configs": 1,
    "curve_complete": 0,
    "migrated": 0
-  }
- ],
- "top_fee_claimers": [
-  {
-   "fee_claimer": "5wkyL2FLEcyUUgc3UeGntHTAfWfzDrVuxMnaMm7792Gk",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 175058,
-   "configs": 6,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "USDC",
-     175058
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "CnwRFKYbqupZztkKeVVZKRuAUnWDzAZJ4efgYiSvvFhn",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 63903,
-   "configs": 8,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     63903
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "CWcERiVd7xkUrcJK5QBdcKC5GG8JMATMLNHtCEUguwPz",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 45410,
-   "configs": 45243,
-   "distinct_quotes": 3,
-   "non_sol_non_stable_pools": 197,
-   "top_quotes": [
-    [
-     "USDC",
-     38701
-    ],
-    [
-     "SOL",
-     6512
-    ],
-    [
-     "JUP",
-     197
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "9supzj2Nbnjut3r9UFfWE2RiuAenQMoYaNtZXmmtm5oC",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 31354,
-   "configs": 648,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     31354
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "Dd2VQkx4zMp2uR1snZP2m9c8dbfzwmib4GZtTYqz5XET",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 23582,
-   "configs": 16,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     23582
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "4EkpEHarHkakfxSgfVhJDTrBQWnoYwYCCUW3PV4TompU",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 22351,
-   "configs": 9,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     22351
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "9ttedh2e5DDLrfsmwxvrNkWscmXqwVnqL4iUuXJMYMGM",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 15960,
-   "configs": 216,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     15960
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "8TPACXaKotSZ7WXktfmKDRhgoypyGXNzo1ctr2YBzxLc",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 15642,
-   "configs": 518,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     15642
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "82VbBzGtb8v5wFx1TM6iaMmLyRSLy8WeqA123orjHGzL",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 15032,
-   "configs": 15028,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     15032
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "A9z3ngVK4aSRdCR8i6F2wQh9EbH7CPojyvZuBRxNot8o",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 14859,
-   "configs": 5,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     14859
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "BKPxAdgwPHXE3ZPZt5XsAovDgUaUufHgZnSAZ3eRWQNW",
-   "partner_metadata_name": "Anoncoin",
-   "partner_metadata_website": "https://anoncoin.it",
-   "pools": 13889,
-   "configs": 11,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     13889
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "4tgN1sJgAQF1kzqcdA7NU31NPVCvadgpQ3eJAdrEQrc5",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 13724,
-   "configs": 200,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     13724
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "Fbz8Y9Yg6TkAgA7beWj8eqog3qF6XTrm8xSBuL7FphUW",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 12617,
-   "configs": 1,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     12617
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "7XrX7jF4zzkKQDaDsbuC3pj83JDzRY3RPZk3yWvU5s82",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 10438,
-   "configs": 884,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     10438
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "VVKt5N8J5JS2B64zzA6ap1bWsVqVr8Q3VpdYNEtQs2T",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 9749,
-   "configs": 4,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     9749
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "8421gmbpgmK7ngjmhgfaDSSJLaJFrk6j8vhfPcWiVYQe",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 9206,
-   "configs": 9,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     9206
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "J1XxMw9ePUTAtsHLiaRbg9UMSXJTSy1CNjUFizdh86f3",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 8802,
-   "configs": 1,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     8802
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "7Dku1MQngUkEjsPk178KhdK5kXRWqxDXsEN9Zvqrhmkn",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 8280,
-   "configs": 11,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     8280
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "4QFQX8GPSsxtsiJXLApQPv2KAA9kBmFpBF3HqRR5Ae4s",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 8114,
-   "configs": 13,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     8114
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "BFBLa1V41yDNKuSQH2XfNH9W2KH8W8KFjwM9LG8ScBU6",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 7972,
-   "configs": 11,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     7972
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "4Cj49oNeaf71yoBrpXMJmCaxH3ynu12ZTA1aBFMkQeux",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 7361,
-   "configs": 3110,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     7361
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "3aEC5ZG7VZuEKgkeZayomnozJnwzKxEDFpNyECfCYTNW",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 7059,
-   "configs": 5,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     7059
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "MmY8o2LXwFYRFERUuTR5veTLjeWfrsbEr3mmrhyMvt9",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 6996,
-   "configs": 14,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     6996
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "ECmYUuUMZHcRxB2Rk3AAcLVrC9qvZXyoX2pHxpjnH51P",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 6882,
-   "configs": 1,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     6882
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "FJMgrtQCgpnVtieBzTWwLZgKcHGYzw3CJWL8PrYYVvpG",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 6843,
-   "configs": 1,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     6843
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "277a5qD2U5zQM7miEExhnHi2uj5Vzbjk1yoAG9NNBxCa",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 6620,
-   "configs": 8,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     6620
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "7W7jQUgDxczLax1YdmECoG8rw3XAFBxsCrnAU7zjwRUt",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 6364,
-   "configs": 11,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     6364
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "7SLVZJZbFv5eJm2uSEpTJV6pbgLU6spmpaoeXBjdw9cb",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 5892,
-   "configs": 1,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     5892
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "2ZjcuuveK6PXCh4hKXiKt9s3imWTYWHL8GfR32osvJAy",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 5825,
-   "configs": 4,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     5825
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "2zAzSXkrxT2rQcCFUCVU1eiE8zc8qpdAgfCgBxseg61D",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 5508,
-   "configs": 7,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     5508
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "Aefrfa3ffaznptazDaDnAPK624UwvkujhJTWBCcCSofv",
-   "partner_metadata_name": "SOAR",
-   "partner_metadata_website": "https://launchonsoar.com",
-   "pools": 5476,
-   "configs": 6,
-   "distinct_quotes": 2,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "USDC",
-     5389
-    ],
-    [
-     "USD1",
-     87
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "G8y4gZ8dSTgWQUtRwm5L3iedpryzsnJcGVQNUYwt6GVT",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 5397,
-   "configs": 6,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     5397
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "7wacff5J8gbbYHNY4Vtq4JLe7VdReomguvUdNRy7KJJt",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 5375,
-   "configs": 2,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     5375
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "6CvLjVW8puhNUJG3un5GSCV9uEBh1yVWb7vB6Hro7nYY",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 5305,
-   "configs": 435,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     5305
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "fCZJvPufxQaVzqrnNWvdNPeqVTJZAaSjM1mkvhpVTHu",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 5007,
-   "configs": 1,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     5007
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "6kGEB1eQnhDvHztPnV1323qWYsa2pQvNAAp8zd2PKNHh",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 4910,
-   "configs": 12,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     4910
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "5jYaYv7HoiFVrY9bAcruj6dH8fCBseky4sBmnTFGSaeW",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 4794,
-   "configs": 4063,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     4794
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "DLpDpnDmDXD7kn9qjmBtuNujoqjzVTN32riJxFUEzXaQ",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 4737,
-   "configs": 3,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     4737
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "FeM9TjTqJm8FGBxAsC44P828Cc7Lmz7rcNmMWjUSpHKB",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 4734,
-   "configs": 1,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     4734
-    ]
-   ]
-  },
-  {
-   "fee_claimer": "7Z1X7kuBnAqMthkUQb7mRs8cvdKpde6QXUjHgAp27CeJ",
-   "partner_metadata_name": "",
-   "partner_metadata_website": "",
-   "pools": 4489,
-   "configs": 10,
-   "distinct_quotes": 1,
-   "non_sol_non_stable_pools": 0,
-   "top_quotes": [
-    [
-     "SOL",
-     4489
-    ]
-   ]
   }
  ]
 }

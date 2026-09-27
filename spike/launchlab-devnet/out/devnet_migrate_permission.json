@@ -1,0 +1,88 @@
+{
+  "simulations": [
+    {
+      "payer": "DRayP1Yav394wpS47WQJ5Qm6d95WTQFtGGh54cVQFmhF",
+      "isCrank": true,
+      "pool": "BQJri4tM7GxrYpLe1DrPweZG296nM5gm2XRFqVQDA2M6",
+      "err": {
+        "InstructionError": [
+          1,
+          {
+            "Custom": 6006
+          }
+        ]
+      },
+      "logs": [
+        "Program log: AnchorError occurred. Error Code: PoolMigrated. Error Number: 6006. Error Message: Pool migrated.",
+        "Program DRay6fNdQ5J82H7xV6uq2aV3mNrUZ1J4PgSKsWgptcm6 failed: custom program error: 0x1776"
+      ]
+    },
+    {
+      "payer": "DRaySeEaQ4oFFFZNFfM8vZTZdj6ve6bqBByBg4DuLGdi",
+      "isCrank": false,
+      "pool": "BQJri4tM7GxrYpLe1DrPweZG296nM5gm2XRFqVQDA2M6",
+      "err": {
+        "InstructionError": [
+          1,
+          {
+            "Custom": 6001
+          }
+        ]
+      },
+      "logs": [
+        "Program log: AnchorError caused by account: payer. Error Code: InvalidOwner. Error Number: 6001. Error Message: Input account owner is not the program address.",
+        "Program DRay6fNdQ5J82H7xV6uq2aV3mNrUZ1J4PgSKsWgptcm6 failed: custom program error: 0x1771"
+      ]
+    }
+  ],
+  "crankLatency": [
+    {
+      "pool": "BQJri4tM7GxrYpLe1DrPweZG296nM5gm2XRFqVQDA2M6",
+      "migration": "5ZpE81mU5gVsxRJE3tvVXnYoPGDARCWq4PgmA5AdB3kxm2YGbZdnkQ6D8C3wTqq9KriPtvcer1Lv9415KkRd9L1M",
+      "previousTx": "9m6gd6jNKvWsfiahGUjbQqG4f9Q2wPZStu66wrbxtDD9jorJ21H6hkr8owMnWedddXAKi3bf45Tnfq9xUXPrmuG",
+      "seconds": 8
+    },
+    {
+      "pool": "HMjnRrAiXubx7w3Bm3RNvnUhV5Dfk5y2HqtBMUPcxJt4",
+      "migration": "duGyyg9rePScLGe7FxhMFaTXBjtLEULWCgaQtadYrjQot3PXka9ERq93CQZRh1a8MvxZjQmBC25PxANASwUj6ez",
+      "previousTx": "cELtCg7ssFC7Ziatp4sffxTqK3w444DH2kM3mFbh9YYn3PpKP72PsyZhrVos7ofRbUmHgzw3LgCiiEDV42nXTaA",
+      "seconds": 6
+    },
+    {
+      "pool": "Cz5cW42iU1iE9DK8kymCCpcLkGpXpL8tr9n4k5hv9c43",
+      "migration": "5duwZbYmjkjdAkyRzCXmK5qjF1pNiAve869GcVsKvdPL9EMd9UFJJxP34JS15KGgntv2pvBvKFxkHBoEbhVXkqYc",
+      "previousTx": "XgveaEEyUADjhG6RnnDofDE7JnLN8kZ1WQQgeGmduZpW2BKtNhq4LvmJ3owbdTsDFPVwx8f5TZdH61nN2Whdh2n",
+      "seconds": 171
+    },
+    {
+      "pool": "Cp8bPwAULFT1FQU4khFgMPcdG3yJLBGvkPvtKe4b2onH",
+      "migration": "3EHXeWi8LXNowqZR7P2Swr3ok7gWQRFWqotwzxkRYtfSSjMM3CvCsiY5CfVYrbWfYCCAYZ6DDBHX4xLmARp1jpXu",
+      "previousTx": "22L2Vc2qdeZNoQDoNbv7EMhNsdn7yk9AxM1ZCNg6VzRqfR61A1HTAM11tAjRBWSygnQREAN5vwAEGpQWU76DgCoV",
+      "seconds": 5
+    },
+    {
+      "pool": "6iNvgZMAgg7jCLMwuVtVCW762tqLD8fFduRKB13yJ73c",
+      "migration": "W5UaseW2p6XY7QzUa4vx6yT3kwdYh9XnfmBz1eMBoLspoZTbuEEWNEdFS5qstGsnoPfshcBo6m3dhSmctzcNqc9",
+      "previousTx": "4JcfvdUAAUd6Y4v75wGHNcPpwZeuYPnJvnZ5a28jvnAR8rNUSmivXWPxPmxKNJracmniA7FZgBFSXvLLyPhw8dm1",
+      "seconds": 4
+    },
+    {
+      "pool": "2LSs6gYKNTph54riSFfpBNm3Wk4dWM7xTkXsPMS7itMX",
+      "migration": "4P7rzkGXMCECW7wPV6h9VU9CNkneXhy6KjYfSdkAmvupGpybG1YoLwW7kFJeb3xNz2MwNN8Gy5am7CpzQzuhdHFu",
+      "previousTx": "4TvyzGosuP5ugZ6dPaiBQfxgwsYjpGy85poFWB1F3wWnsCGKihmvEzL9uzTU7RTxZLHfsLd8JTPTXkXcfxiqTd7m",
+      "seconds": 6
+    },
+    {
+      "pool": "CSoVpNFe9pLiAe538e4WpKZGfDTL1nFKQVLygp7Y5H8X",
+      "migration": "2jj8WruzqSN8wLwjJwFE8pK6BXdxVX9Fka3euANSqvPfwe4bBZF5wbwU7EtDU1QP4AyGZ5vxwPRabfKc2hCdRDTM",
+      "previousTx": "2o1meULTCehRVUEG5bh4GsudN3K5ceSk5UMyEFjGeRy1KQDop8WBftsTGkXpS6fqvXKq8no1p4dNDNNbegroumuq",
+      "seconds": 6
+    },
+    {
+      "pool": "HUFVRwr9Fvi2QNg7JqgB14B1tcFQiwNza3CtEueuSMYs",
+      "migration": "5tR6cs7Do6LwjQrH8EQPXgFBrXMjRrHWqHWNmVTNQDpnpMueTLWZ6tMJqbSnhfF5S9LpaA4i4M9jdd6NZ7QHBSEY",
+      "previousTx": "4i3utgfYjMSMC2adC8RBJ3qsQkXBnvZFaxaknXXGdKbymb73BZEd4eutBQ9wxqsZ4H7ZmomtxUCHxEhC5ahLpeER",
+      "seconds": 5
+    }
+  ]
+}

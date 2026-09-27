@@ -1,0 +1,3229 @@
+{
+ "snapshot": "2026-09-26",
+ "program": "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P",
+ "global": "4wTV1YmiEkRvAtNtsSGPtUrqRYQMe5SKy2uB4Jjaxnjf",
+ "quote_control": "6z6GDdfb2AjR9ZhJmAUQ5cipJCVxQvLJhB2H8mCwTFBP",
+ "whitelisted_quote_mints": [
+  "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+ ],
+ "quote_control_mints": 181,
+ "sample": {
+  "pages": 40,
+  "seed": 4663,
+  "curves": 303888,
+  "key_space_covered": 0.013266,
+  "estimated_total_curves": 22907385,
+  "non_sol_share": 0.007226,
+  "asset_paired_share": 0.002794,
+  "estimated_asset_paired_curves": 63998
+ },
+ "quote_mints": [
+  {
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "symbol": "SOL",
+   "name": "",
+   "token_program": "",
+   "admitted_by": "native SOL",
+   "sampled_curves": 301692,
+   "sampled_complete": 3905,
+   "estimated_curves": 22741848,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+   "symbol": "USDC",
+   "name": "USD Coin",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "Global.whitelisted_quote_mints",
+   "sampled_curves": 1347,
+   "sampled_complete": 35,
+   "estimated_curves": 101538,
+   "sample_bonding_curves": [
+    "9tvf9dh53jvpdgonmnFHWWYGp393rRN3ZrTu6egn87nd",
+    "9tw1ST2uRAQjrLeid3d1E2neWWcXek7DngKyYee9RMX5",
+    "9twvQCPLeAtEB2Nj67SPAguDGs5yGaCNTV1vUEfDmDbz"
+   ]
+  },
+  {
+   "quote_mint": "pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn",
+   "symbol": "PUMP",
+   "name": "Pump",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 194,
+   "sampled_complete": 2,
+   "estimated_curves": 14624,
+   "sample_bonding_curves": [
+    "9u3nZgRP96gGqoWBViPsNcZN2Ug6gTb9oud5puGYsqXN",
+    "9u43ziFPLuFUiiejv2vu9Q7NjUEdUqedRRphbmcoLV87",
+    "9u4B84jAGD1weRManRAijhv3QCqZfyVnTZb4LeZaCwg6"
+   ]
+  },
+  {
+   "quote_mint": "SPCXxcqXj6e5dJDVNovHN8744zkbhM2bYudU45BimGb",
+   "symbol": "SPCX",
+   "name": "SpaceX - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 51,
+   "sampled_complete": 0,
+   "estimated_curves": 3844,
+   "sample_bonding_curves": [
+    "9twCASqdWDgedik7RV8jhUsm3yguPLXJzxoNwG2WBP5n",
+    "9u7zhYpgqjoZCWWaYjAEBP1h5H8vdjKBQk6J3K2fgevu",
+    "9u9pgXNnfrgcm7BEDKXgttapMhycUiXrRm8U63VGAiQV"
+   ]
+  },
+  {
+   "quote_mint": "3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh",
+   "symbol": "WBTC",
+   "name": "Wrapped BTC (Wormhole)",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 44,
+   "sampled_complete": 0,
+   "estimated_curves": 3317,
+   "sample_bonding_curves": [
+    "9u1vbh1XQ7PV5BtS6BskSZyPRRX1eqbLV1JQFizur4KH",
+    "DUcJ6RnssuBNx1XaMyfLeUY81sBw6LzJ1kAnHR8n2MFA",
+    "DUhUU8FrTpaQgrF4AiMKvsZywF1vsvwJCd5YXxq3bFDz"
+   ]
+  },
+  {
+   "quote_mint": "A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS",
+   "symbol": "ZEC",
+   "name": "Zcash",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 44,
+   "sampled_complete": 0,
+   "estimated_curves": 3317,
+   "sample_bonding_curves": [
+    "9u5Re9NvJkVD2tyQdgkV15TaPbWuPxZsaikKFeQ2uSAG",
+    "9u8ZbRYEAqLCFVUEn32HgSBVGcPaoKbC1NyyaYaMjHyJ",
+    "DUQP8NiTAJPLp2JjxmYDfpac2CYAYHa8dJjmvSRp8TDn"
+   ]
+  },
+  {
+   "quote_mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+   "symbol": "SPYx",
+   "name": "SP500 xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 27,
+   "sampled_complete": 1,
+   "estimated_curves": 2035,
+   "sample_bonding_curves": [
+    "DUc22jZt7LodPUhxpsvruAeSpyvPkruAkdH8MRvqyTeg",
+    "Ed2dZCe9vn4yDhNvNNc1JtbPse15ydSuqPpdEKUitKJJ",
+    "3XV5K57r6EKHEeGAh6tp2jrRsYLVKZCd1fjfBe2QhLg2"
+   ]
+  },
+  {
+   "quote_mint": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
+   "symbol": "NVDAx",
+   "name": "NVIDIA xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 22,
+   "sampled_complete": 0,
+   "estimated_curves": 1658,
+   "sample_bonding_curves": [
+    "9u1YQtayYzQ7Vo2RW5Kfhw31c1ZS1cb6R6tgyafjL5MA",
+    "9u9iBRXkq2ivcsrY2SK8KmRuBZNLfaLovQSirjfLSou8",
+    "DUaeyNBXysQhavWC9254bbgAATeQGMC7xKa2ezkWBpZX"
+   ]
+  },
+  {
+   "quote_mint": "DoGEV7LASBkQbibMc5k5vKnTZoMg423GpJ5QtJEGfm7R",
+   "symbol": "DOGE",
+   "name": "Dogecoin",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 21,
+   "sampled_complete": 0,
+   "estimated_curves": 1583,
+   "sample_bonding_curves": [
+    "DUS5HhpFbRRTgY85F8CYaUWYgRWHjAt7K7q3HMeE68tv",
+    "44YQdJ4igi46HFA8FNfuvNZLJsaqH3ygJuDVzice3Epp",
+    "AjvLReHLHEaCeD63tEvC2q4gDfAMtxMP9J2MqvCx9KB"
+   ]
+  },
+  {
+   "quote_mint": "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu",
+   "symbol": "METAx",
+   "name": "Meta xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 16,
+   "sampled_complete": 0,
+   "estimated_curves": 1206,
+   "sample_bonding_curves": [
+    "44Yobm2bhuknt7NDnvZXgrTEEgMxXHXt8x181FpxXE9w",
+    "Js4Ka8TJ3ib3rM5tsWtttqG3RWnY84MUajqHURjZPBp",
+    "K8rQQ9jikXUF2jtXHJudf8NxzWMekwAHkWH4Cwm3aWk"
+   ]
+  },
+  {
+   "quote_mint": "Xsv9hRk1z5ystj9MhnA7Lq4vjSsLwzL2nxrwmwtD3re",
+   "symbol": "GLDx",
+   "name": "Gold xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 14,
+   "sampled_complete": 0,
+   "estimated_curves": 1055,
+   "sample_bonding_curves": [
+    "DUgFSDaPHZFeMgbFjXJR3RdWTcfJZUDQ8CqcF2WNzc4t",
+    "K4qRNUiKsGySKwKUyPXAU5XGc7JRvydxJq8jw9J5TBk",
+    "3XWk2gcSq7JqoKCByL5pJooAffrrYPZZ21VnVw38XJ6A"
+   ]
+  },
+  {
+   "quote_mint": "PEPEqnuuCDbBC89p1u9vpnP1KQ2oj1xTcQBsjt9X55m",
+   "symbol": "PEPE",
+   "name": "Pepe",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 14,
+   "sampled_complete": 0,
+   "estimated_curves": 1055,
+   "sample_bonding_curves": [
+    "9u1NNTLNeTDnUoz24hQEEkUb3f3LLZLyPcGDnRbawjLZ",
+    "JrCDPeqjZDNqXaGecMwXaGtdrMuAQZdbi6KkYzs8i4j",
+    "K4rDjgExdeqHVLtnRvcErGeR9DLCa74tc1UQbBatEzo"
+   ]
+  },
+  {
+   "quote_mint": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
+   "symbol": "TSLAx",
+   "name": "Tesla xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 13,
+   "sampled_complete": 0,
+   "estimated_curves": 980,
+   "sample_bonding_curves": [
+    "9u7u1QGNNNFamXPc5Bau4gANfXbRPxbjwusRSwtbFrmq",
+    "9uFLjh2EbRBhDvTRfmJw2Sc6jyd91zX94sqTCwvYqWLV",
+    "44X5iz1KketfJFuKbhMGBRDmeb1NNJwZJU9uoSn5N3oS"
+   ]
+  },
+  {
+   "quote_mint": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
+   "symbol": "AAPLx",
+   "name": "Apple xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 12,
+   "sampled_complete": 0,
+   "estimated_curves": 905,
+   "sample_bonding_curves": [
+    "DUiXWGpZegmMLf9DNNBF6StCU28CPbQKksA2XutEkqxn",
+    "51fXc8wYeiHYquRTHQHki5eHoErFJvBVG6cz7XJrR46R",
+    "51nF84hTJfbhyB8U6AF1aQKR9A8nvNUaG6JWY7PYcbpG"
+   ]
+  },
+  {
+   "quote_mint": "WXMRyRZhsa19ety5erZhHg4N3xj3EVN92u94422teJp",
+   "symbol": "XMR",
+   "name": "Monero",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 12,
+   "sampled_complete": 0,
+   "estimated_curves": 905,
+   "sample_bonding_curves": [
+    "44d8jAk6wdBSDWkPKWQkgtGnErPzuw8KWz4aYhGhikfe",
+    "3XgCytEbSqrvt9XKkhhrrDsnnZfCq65UwyLDXSbyDRXX",
+    "5w9ekF6USpZnz4rfwHLnSGQdgitjKSVQHfS5oHRQAZcH"
+   ]
+  },
+  {
+   "quote_mint": "DJTu7vi8norVzdVAffgvb39VP7wjKeTsgaMBJrzfxvoF",
+   "symbol": "DJT",
+   "name": "Trump Media & Technology Group Corp. Common Stock - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 12,
+   "sampled_complete": 0,
+   "estimated_curves": 905,
+   "sample_bonding_curves": [
+    "3Xc5BjkUYY6afxgn3GF9VcNfyef1KzjUQXwPnG1SR8Dk",
+    "AH6DHQJmgsPcjPSDUbTzRHxKa3U1tD2EHXeJcxfujUjN",
+    "DDLtXDC4XKPev1DBEpyt2TLvgG6uoCCtFqT6JbC1yxrb"
+   ]
+  },
+  {
+   "quote_mint": "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump",
+   "symbol": "Fartcoin",
+   "name": "Fartcoin",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 11,
+   "sampled_complete": 0,
+   "estimated_curves": 829,
+   "sample_bonding_curves": [
+    "DUZZz8qkmrqZ67EvNEj4F4t9QWmtAdESHH5syKNckCVe",
+    "EdC3jAX7tR6CfsewRywwZQXQYXqwux2823QaM8p3b5uD",
+    "JtP5R9Sn25ZhM3UUmM3K6jgxFpU8wCQXwCVq2f4muKX"
+   ]
+  },
+  {
+   "quote_mint": "6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx",
+   "symbol": "STONK",
+   "name": "STONK",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 10,
+   "sampled_complete": 0,
+   "estimated_curves": 754,
+   "sample_bonding_curves": [
+    "Ed8zxFEaYMybbzv2QBxB1CtAAUaJmHQNJQBDKBDQDjY8",
+    "AH56AXQmQm1Wife6e2a5jZHrmPxvC7b2KaiCXK17C94H",
+    "AHBjN3zZpursZP1hrvGacjSLqDBsrUGzPFHgw5sUS8eB"
+   ]
+  },
+  {
+   "quote_mint": "Ai66LHZG9MCzg1WKdawwqduVAXpNDUuV8M3uyq5ppump",
+   "symbol": "CATE",
+   "name": "Catecoin",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 10,
+   "sampled_complete": 0,
+   "estimated_curves": 754,
+   "sample_bonding_curves": [
+    "Ed1VgPinVgCHEgMuFPM74vCiCjKiL4XCQ4hvxsZ2Ypfi",
+    "AdJjTuRsgeKHQUsFvto9PmHrXeWutwDNa8c7nf4dr8M",
+    "5o35oJcs1AWNTKDoBwNr5iu5FXVA2C3oyCTSMccnk9kE"
+   ]
+  },
+  {
+   "quote_mint": "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ",
+   "symbol": "QQQx",
+   "name": "Nasdaq xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 9,
+   "sampled_complete": 0,
+   "estimated_curves": 678,
+   "sample_bonding_curves": [
+    "44gwHY3upt89KBRUZNVXUtEYTkgkEPWtMkXwSFSwNHmB",
+    "3XiE52MCY9owp7Y7VeY9FE6Ap2iZixMXgb5EhgbQCo6d",
+    "GTagMBTKLHWNMxhztBMcs3W1wWgrRJUje28MZKdkLerw"
+   ]
+  },
+  {
+   "quote_mint": "XsvNBAYkrDRNhA7wPHQfX3ZUXZyZLdnCQDfHZ56bzpg",
+   "symbol": "HOODx",
+   "name": "Robinhood xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 9,
+   "sampled_complete": 1,
+   "estimated_curves": 678,
+   "sample_bonding_curves": [
+    "GX9Pq8Tk8AQW5qNFbiPhCCgPWwQViwVwwWV6HAEnXmMG",
+    "AdS7PnnkNmTKWygBVNf8FvRBcJAX2vcu53cbGaNzrud",
+    "51orsnCysxxjXqPxeTfxKVNELF7tvz3ApUL64AozKyuz"
+   ]
+  },
+  {
+   "quote_mint": "XsoBhf2ufR8fTyNSjqfU71DYGaE6Z3SUGAidpzriAA4",
+   "symbol": "PLTRx",
+   "name": "Palantir xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 9,
+   "sampled_complete": 0,
+   "estimated_curves": 678,
+   "sample_bonding_curves": [
+    "DUQ53nrszJjEnCxRtwf59uKmMv5vH3Nv1oNRn1hPqf8B",
+    "EdGCNNAHAbTbEL655NHkVHzppkYndpZepyUcgCGPAcVP",
+    "44R9tLqjHPQm3KK2LuS5jcvDpHhKLSQD2PddkFvZa79P"
+   ]
+  },
+  {
+   "quote_mint": "HiMSSzzwkZkrXJ4PGVJRdtfLaANeAztjjcgk5Dxe7Lwx",
+   "symbol": "HIMS",
+   "name": "Hims & Hers Health - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 9,
+   "sampled_complete": 0,
+   "estimated_curves": 678,
+   "sample_bonding_curves": [
+    "9uF5GQmCytVz9XED5q1xhFvDRL2wtSBYpq2BCnqVme5t",
+    "44UevocTVJaioD576mUY48oJWKpUVKf8XBrez41rBD7L",
+    "AgtASgmgxVZrvWkueXHMjFMa7BzJPcTaASjpguf6gwz"
+   ]
+  },
+  {
+   "quote_mint": "RDDTGbhHwVXfyCvQMXzzowKjf5qrYBZAnehoXW83ooh",
+   "symbol": "RDDT",
+   "name": "Reddit - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 9,
+   "sampled_complete": 0,
+   "estimated_curves": 678,
+   "sample_bonding_curves": [
+    "AHAdQGrBmfzSYW6798SeFNi9pvnz52j9vyDvf5QJZDkR",
+    "92UZyixStCQjHDfeFz6pXgdKf9F2vwbcJ61eCa16v3rS",
+    "5nzUdHgUnucduUt929izthJMB7Ap2Cq8dc5U4eoJ7GhQ"
+   ]
+  },
+  {
+   "quote_mint": "Xsf9mBktVB9BSU5kf4nHxPq5hCBJ2j2ui3ecFGxPRGc",
+   "symbol": "GMEx",
+   "name": "Gamestop xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 8,
+   "sampled_complete": 0,
+   "estimated_curves": 603,
+   "sample_bonding_curves": [
+    "DUZXN3c36GmqokEnxCthmWfdgNDiZNGoC8gViJ4apmQk",
+    "AWCNvAs2iqoS1DZv3oYt1Ltz7duH1982jjPo8fq2PaH",
+    "6nWN8PrJJxjDiMyTdxZ9ZpiJEGTA5JdKz7pDKLbfHZuT"
+   ]
+  },
+  {
+   "quote_mint": "98kfF7rmsg1QDUEoCqNE7g7M1FdrTt92TEp2CLzypump",
+   "symbol": "PAID",
+   "name": "Paid",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 8,
+   "sampled_complete": 0,
+   "estimated_curves": 603,
+   "sample_bonding_curves": [
+    "Ed6fKQzME2c1aYE1Jj9MEK6fhD3zCe5Eu8mRCV3Tjm1E",
+    "44a48bLUe3KoZEEBy2AqzVLaxwHMQu4gYUShiLQgujap",
+    "GX8TdhuRu91BmfBWVs5LNP9iNoAvHaaJbrM25x5RHVtR"
+   ]
+  },
+  {
+   "quote_mint": "XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX",
+   "symbol": "MSFTx",
+   "name": "Microsoft xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 7,
+   "sampled_complete": 0,
+   "estimated_curves": 528,
+   "sample_bonding_curves": [
+    "GXD7iGwS73v3CRYYk5gdtFzang2DCQFyziYLScQwRe6Y",
+    "3XiRs9fNszxs8BGS4zzxiXuSB1cEfcRprApmSemX3BNY",
+    "92XgTnE5D3xWpNRgWq97r8488UHV8h5oit65GqLCTXZk"
+   ]
+  },
+  {
+   "quote_mint": "98sMhvDwXj1RQi5c5Mndm3vPe9cBqPrbLaufMXFNMh5g",
+   "symbol": "HYPE",
+   "name": "HYPE",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 7,
+   "sampled_complete": 0,
+   "estimated_curves": 528,
+   "sample_bonding_curves": [
+    "AjWeumod9bHHbV5tjveMSJGLQWF5WS5JxAHYuoUCNjd",
+    "Av9Sd1jwVC31FHekjWY6gDT7hWWEJkhsAqrRMKnFhfd",
+    "AjWeumod9bHHbV5tjveMSJGLQWF5WS5JxAHYuoUCNjd"
+   ]
+  },
+  {
+   "quote_mint": "9cRCn9rGT8V2imeM2BaKs13yhMEais3ruM3rPvTGpump",
+   "symbol": "ANSEM",
+   "name": "The Black Bull",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 7,
+   "sampled_complete": 0,
+   "estimated_curves": 528,
+   "sample_bonding_curves": [
+    "9u5JvAY4QuK7zbHejm1vqosN6zFAxvp9pNGJnB5EjYon",
+    "44UdPBUdZsqv7EY8q4WomSJsRdH7WH1dCM95vzyGQ2C4",
+    "AH1yWHnmr8vcQuWkAdCkgr5jTeF2zarGmPhL8xUddxWR"
+   ]
+  },
+  {
+   "quote_mint": "CbyTNf7UPzvewHh4Zp6umogM2RWahhmGRJWLJnPwpump",
+   "symbol": "biketyson",
+   "name": "BIKE TYSON",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 7,
+   "sampled_complete": 0,
+   "estimated_curves": 528,
+   "sample_bonding_curves": [
+    "DDHfonT7pAGdAWhbWTEeXYuqibtkxjZBkcdHYLJz4xYv",
+    "92Pb1Yf99EhGvtWQdXyJKVunC1xgNnTEWg1X7YAhr1xK",
+    "BTNuVsBRNd6PzCqrLuvTxtqcKznWPebLgQ9RYyTSiKma"
+   ]
+  },
+  {
+   "quote_mint": "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ",
+   "symbol": "MSTRx",
+   "name": "MicroStrategy xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 6,
+   "sampled_complete": 0,
+   "estimated_curves": 452,
+   "sample_bonding_curves": [
+    "GX6KjeQE5ReGpuVjGAsNg4TriHK32Z24ySbUrx54HSqU",
+    "51ymUfGm9pe2h9uDF8ducNoBXPoB4XkaFTtrtMZaD6nd",
+    "5wA1cd5cNEhTEm52JoxWRuz8fQgt2PaJDsbyJ1sFhXjJ"
+   ]
+  },
+  {
+   "quote_mint": "Xs7ZdzSHLU9ftNJsii5fCeJhoRWSC32SQGzGQtePxNu",
+   "symbol": "COINx",
+   "name": "Coinbase xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 6,
+   "sampled_complete": 0,
+   "estimated_curves": 452,
+   "sample_bonding_curves": [
+    "9u9KGEUkLmUp5oWm19XsKbLHxAgu9ZxTKjYgcRk9LREQ",
+    "Ed775Tax2JWqT2NA99rcXH2BJY4NQnDDJ5FAj3v5LpdB",
+    "DJiB5TdxUWqzVuBp3Bz8bQvotEkvy9Vg1PLFhq2roZyg"
+   ]
+  },
+  {
+   "quote_mint": "poNSfquKq512ApeYjVghwViSun4x1MhCqHVH2Paq4jN",
+   "symbol": "PONS",
+   "name": "Pons",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 6,
+   "sampled_complete": 0,
+   "estimated_curves": 452,
+   "sample_bonding_curves": [
+    "GX2WwvVVxN135mbd5uduD1oAea7UrEiMk3DNVPGGQ9La",
+    "AnEiQV79acUMDCm6sXBqaiqpYCNtbREJZXvEUQCWqPZ",
+    "DDK2jUctJhZh6HsCNcKzKdL1pWxk1XkbvFVfBLZLFCkU"
+   ]
+  },
+  {
+   "quote_mint": "GRNDYDpqwpCm6jVxpbh4xT5AM4r3p391qYsKTHqgaET2",
+   "symbol": "GRND",
+   "name": "Grindr - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 6,
+   "sampled_complete": 0,
+   "estimated_curves": 452,
+   "sample_bonding_curves": [
+    "9tzodKMkYV9XpZrSYndJ6Zd5Z5Eru78vMk1X3twzcf4A",
+    "51z4GZpuLZNDFe7oXCgJ6BJREifS8YMgdrSg3hXBTim6",
+    "EoaaBwTS9zLKUWXGZFmQgsTvAtDqCYW4Hq8E2ZVgF7st"
+   ]
+  },
+  {
+   "quote_mint": "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
+   "symbol": "$WIF",
+   "name": "dogwifhat",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 6,
+   "sampled_complete": 0,
+   "estimated_curves": 452,
+   "sample_bonding_curves": [
+    "JtBJwK8BQTvPy91qJk9TvunEXjH48DibSr9QvMtxku7",
+    "DDMBAd4xLqJAworqxBbmKHedTjf9Tcz1fnE9o4e1TzRs",
+    "E7wbfDSeTmnb2LtEjsrewzNQEd56YMBqRtB4qNSUjN6M"
+   ]
+  },
+  {
+   "quote_mint": "CARDSccUMFKoPRZxt5vt3ksUbxEFEcnZ3H2pd3dKxYjp",
+   "symbol": "CARDS",
+   "name": "Collector Crypt",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 6,
+   "sampled_complete": 0,
+   "estimated_curves": 452,
+   "sample_bonding_curves": [
+    "DUh6yvWwNzCa9B7U5Xic23DuY183wcweN1yUTzbs8kNQ",
+    "GXAhnFLzkQDc64NAAe8qSTsrJ6jhaVeMKu4gvFTuFYeZ",
+    "6nf59fXMq2FJB2so26GPozFR2gdzrySthJ6RUYb6zCCf"
+   ]
+  },
+  {
+   "quote_mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
+   "symbol": "CRCLx",
+   "name": "Circle xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 5,
+   "sampled_complete": 0,
+   "estimated_curves": 377,
+   "sample_bonding_curves": [
+    "9uBkCu7SvtppU8AjeaatLy31uasU1eqeeZaNtiE994tb",
+    "92S8ZCCd8dMgWvSFHSXaPynN3MGTUWKkrzUvU24rCfva",
+    "5nqJk3ceFVsgwJrS8oTt3hwUSb2G3FkKAHnnmeKC49bz"
+   ]
+  },
+  {
+   "quote_mint": "XsqE9cRRpzxcGKDXj1BJ7Xmg4GRhZoyY1KpmGSxAWT2",
+   "symbol": "MCDx",
+   "name": "McDonald's xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 5,
+   "sampled_complete": 0,
+   "estimated_curves": 377,
+   "sample_bonding_curves": [
+    "9twQNSHpAFTr8upPH4cLMK4X1idh85vCodUJdvCUzf5z",
+    "9uFbaxs5WXS7VL71PdymYwHQ9H6XZy1PcoFKzeNCbfYf",
+    "DUfNprAM8YsPC9e2CKbjgMAY23zaNMnYeut3rCv627JJ"
+   ]
+  },
+  {
+   "quote_mint": "NKEda5nHhNGgjrE9nDdMvaEmkmJ96qqxzBVZEcKmjSg",
+   "symbol": "NKE",
+   "name": "NIKE - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 5,
+   "sampled_complete": 0,
+   "estimated_curves": 377,
+   "sample_bonding_curves": [
+    "44Zo66iS5m9mCjKhS7zuzP4Xap2cWECJtqRjgAqUszMt",
+    "AH9jFN883XrxgpveM9qR4pLsGZpE9SQFq8LuBEuj5M24",
+    "DTuXQPFoKrfb5qWo7eiNqRL742VyTse9VckkTepKw2GH"
+   ]
+  },
+  {
+   "quote_mint": "BoTx8y9ynfdxf5ZjWtCoBVkff52qKA82ysaLU8ZM6d8T",
+   "symbol": "BOT",
+   "name": "RoboStrategy - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 4,
+   "sampled_complete": 0,
+   "estimated_curves": 302,
+   "sample_bonding_curves": [
+    "DU1UVRToXVtUUBVnSeqvD1DBEbYD7TNJ6u6zjQoHFpRV",
+    "EpaUupTyG2PjYhpZiwztRiUtS2bFErxWgo1M5nmXZUrj",
+    "5npGg9g9GkJzTfPDqkDjUxftK2DA3omPDNjAaiA1y4Ef"
+   ]
+  },
+  {
+   "quote_mint": "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN",
+   "symbol": "GOOGLx",
+   "name": "Alphabet xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 4,
+   "sampled_complete": 0,
+   "estimated_curves": 302,
+   "sample_bonding_curves": [
+    "DUWbRtyZpytQ2BV8nTnnHHjKnreRjvTVv992VMKNUH2u",
+    "EdBpfZUppQ6fo2FgokKsA9QDSoyqhgCSdV8FvhSJAqUd",
+    "AH3EGjSrL2HGDwnYSjvPTxqT6YoEEpQmr1iQEd7roJSf"
+   ]
+  },
+  {
+   "quote_mint": "Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg",
+   "symbol": "AMZNx",
+   "name": "Amazon.com xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 4,
+   "sampled_complete": 0,
+   "estimated_curves": 302,
+   "sample_bonding_curves": [
+    "DDENEXQUUqjBKadFHRgvAnwQpzy8DCG9qTbfRfXseCPM",
+    "51ggZfZ7wHu46NMmG1GHwTnA24PoYDuwEnmteR6UbsFY",
+    "F6MKNKzipJjPioSPRbCjjNyN8ejHW4q7agndxENVQP6Z"
+   ]
+  },
+  {
+   "quote_mint": "AMC1qwR9KhiyrQBRPrxnfo4JfMeMZqEBvt5tgTytNNoc",
+   "symbol": "AMC",
+   "name": "AMC Entertainment - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 4,
+   "sampled_complete": 0,
+   "estimated_curves": 302,
+   "sample_bonding_curves": [
+    "JsGvjyzpTXqo29FAibqsyTJRajqvwPXZGR1twzMV9SP",
+    "DDKxvsY9r4qF3DHRnwFDirXYEbdRsFrwohWsc85ewb24",
+    "5UZkL6TQbgJsgTEE4zNSP43UmuL8hJtozpbn5KKV3Ted"
+   ]
+  },
+  {
+   "quote_mint": "CashcatZMRn4Jv8sPQZUSsbTLi2PcPe1ssqbHcnaJqSS",
+   "symbol": "CASHCAT",
+   "name": "Cash Cat",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 4,
+   "sampled_complete": 0,
+   "estimated_curves": 302,
+   "sample_bonding_curves": [
+    "6nSHqczMYAZgVhpQJ9tRJbj7aGhXYSJJCYbVhAxwdvXm",
+    "Epd4p5Nm8T6e1DcEHGf4CQCTPsUHepLrR1XWriaHMU7K",
+    "Hj99GVb3xXUmyHAZAHQ8ePnJBSzSAyCmdoSyCR4eeD2"
+   ]
+  },
+  {
+   "quote_mint": "J8PSdNP3QewKq2Z1JJJFDMaqF7KcaiJhR7gbr5KZpump",
+   "symbol": "TripleT",
+   "name": "Tung Tung Tung Sahur",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 4,
+   "sampled_complete": 0,
+   "estimated_curves": 302,
+   "sample_bonding_curves": [
+    "51gYMUowXa1qpNrFaJMLz2QeDFAC6kxvyAz1f9YUAJLK",
+    "5np85KArKmvhoMzY6eiGrVGaCfHmXrLZ745MkU7AWcCV",
+    "8GxgC5WxtdXYzp7R5syV3TQ5cxN6EZNiLmmCAwqGC2Yc"
+   ]
+  },
+  {
+   "quote_mint": "8XtRWb4uAAJFMP4QQhoYYCWR6XXb7ybcCdiqPwz9s5WS",
+   "symbol": "ALON",
+   "name": "alon",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 4,
+   "sampled_complete": 0,
+   "estimated_curves": 302,
+   "sample_bonding_curves": [
+    "GTo5iAKDL8BBEssNCaW8YpzuQ9QdRkXUMvFpSvURMtL7",
+    "DJuCynkSHgWkmYZxW2q5JeJchYhWBDqFG8DfevkSvyBo",
+    "9aMpQCpdeJ35kt3JWoi1gvGdDfQwyxGBigx1X49xhbmG"
+   ]
+  },
+  {
+   "quote_mint": "USNv3NkKA27Dh4nsHJDPhW4VoEcTQmjoZyJt2dqdwFu",
+   "symbol": "USO",
+   "name": "United States Oil Fund, LP - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 4,
+   "sampled_complete": 0,
+   "estimated_curves": 302,
+   "sample_bonding_curves": [
+    "EdB656cVq5Hkw81wJYqMVmh9DbqzWQnWaXMFh87hAr56",
+    "44RvbxAh8s3h9JZwti9kTfYQTxxmgR21XpyhC6s2P5fY",
+    "6nW3ghGr72TUP2Cg3YdstHLTkWcYxUrFgyMZBqr2zVbs"
+   ]
+  },
+  {
+   "quote_mint": "GTBxUiw6wJdmmkCGZgRHLyYxqu1vG4KtRpeox6yDpump",
+   "symbol": "JEANPHIL",
+   "name": "Jean Phil",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 4,
+   "sampled_complete": 0,
+   "estimated_curves": 302,
+   "sample_bonding_curves": [
+    "9uDonH3hw2tpWU1WjkDTb4wqMH7RMVPgMPmJXGVjRXbS",
+    "EoazVQRdpbFLa5yqCigpVZzXBUHYDzssx61keGNdWpid",
+    "AyUvEkSiMRyJXZFCENNh6ZeUK828S2kvo85DHWW9nFPq"
+   ]
+  },
+  {
+   "quote_mint": "RBLXDGRD64AtRamHMFVcjqne3Ar7NLWtFtYNtsrf1cE",
+   "symbol": "RBLX",
+   "name": "Roblox - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 4,
+   "sampled_complete": 0,
+   "estimated_curves": 302,
+   "sample_bonding_curves": [
+    "DJtzV4AFTajh9A9cg9xHwDGPgC23uqx625QPjs1NQxTk",
+    "HcSyhqjU7QGbJYyWRpzHVfQd1dWzd3ej3p6HPC99vnh",
+    "HgNGAcR1hTcyYVWPmFybC48QnHqbWtkdudvAQ9ZgGDz"
+   ]
+  },
+  {
+   "quote_mint": "739dnZEG4yaBWFsY8L8ZwrfhGG6dhtCSercW8Umspump",
+   "symbol": "CLAW",
+   "name": "clawpump.tech",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 4,
+   "sampled_complete": 0,
+   "estimated_curves": 302,
+   "sample_bonding_curves": [
+    "Ed9fkZBs7tYeuohGWAYPFS9tnLC58wRpzWsPB94jHbCQ",
+    "3Xf9s7CBhhHv3nqj3NKquk5n33U9s4AeTwsGUYTExczX",
+    "HVNKjW8kYdZCzjPQdMUZxw1nVE7nx7Sd9o6CS6VLLLc"
+   ]
+  },
+  {
+   "quote_mint": "8J69rbLTzWWgUJziFY8jeu5tDwEPBwUz4pKBMr5rpump",
+   "symbol": "WOJAK",
+   "name": "Wojak",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 4,
+   "sampled_complete": 0,
+   "estimated_curves": 302,
+   "sample_bonding_curves": [
+    "DUbff9ZmV6WNwn2joZMwCGk7r5y8aFHfBaydSz8fJTVX",
+    "Ju69diU4PDds2RnUGnLa3rfrDQ3kthAvCDB4uwdbExX",
+    "DDCEb1V6UpFxSEi1upSgw4bDcLN8YkugQyphKG2iETez"
+   ]
+  },
+  {
+   "quote_mint": "iNTCy1qTsUEZQe3DSocLz1ZXXai34Gdw8THQh5rxFaF",
+   "symbol": "INTC",
+   "name": "Intel - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 3,
+   "sampled_complete": 0,
+   "estimated_curves": 226,
+   "sample_bonding_curves": [
+    "K4w2imeaRwFE9gpJQ3mfKcaoDQgkiGYwRYbzqLywP1K",
+    "DDJ6G2N1xq3STFjA47nVz6v7xGGMizvVft5nRvQRxHbG",
+    "51hNKJCEvHaVah5uKV1QjF9c8wMDvqKdbCchswZEN4Eq"
+   ]
+  },
+  {
+   "quote_mint": "he1iusmfkpAdwvxLNGV8Y1iSbj4rUy6yMhEA3fotn9A",
+   "symbol": "hSOL",
+   "name": "Helius Staked SOL",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 3,
+   "sampled_complete": 0,
+   "estimated_curves": 226,
+   "sample_bonding_curves": [
+    "51z58SLP7GuytkJvhw3D8NNyfjSqY7HsgvUzrLQZCAth",
+    "Db9cTHKYJKHCGYUSkZTaWeSwG2HtFQdakrsMYVYxSpRQ",
+    "2aMSetRQLs8FmFZhbpHbwbebRPCg6dzUD67banMpdsK2"
+   ]
+  },
+  {
+   "quote_mint": "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
+   "symbol": "TRUMP",
+   "name": "OFFICIAL TRUMP",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 3,
+   "sampled_complete": 0,
+   "estimated_curves": 226,
+   "sample_bonding_curves": [
+    "GX6xpG4qdcYS3j872k8svMrX2yLdkjeMH6uGcnjqW4Ck",
+    "DJvGcrccsvFrsVgJhjZCpDCETnrPgtkH1Cvf29MuQo4h",
+    "F6RzfjuP6N82NHJGqDdMCFmpWiCs3tvFRehzwDo2sq1A"
+   ]
+  },
+  {
+   "quote_mint": "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R",
+   "symbol": "RAY",
+   "name": "Raydium",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 3,
+   "sampled_complete": 0,
+   "estimated_curves": 226,
+   "sample_bonding_curves": [
+    "AcZfbnSbDytVxkY1eMUePuRMctw8K4D2UWEZFj7y9BT",
+    "5w1d41RtveT1pEG2ioBbBSJZ79naiHZAr19ckKoVeVrj",
+    "F6Mi9QgD6wDQQbtG4VvJyqi5UTPs9xkybyKmRCwdvry3"
+   ]
+  },
+  {
+   "quote_mint": "BPxxfRCXkUVhig4HS1Lh7kZqV6SPJhzfEk4x6fVBjPCy",
+   "symbol": "BP",
+   "name": "Backpack",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 3,
+   "sampled_complete": 0,
+   "estimated_curves": 226,
+   "sample_bonding_curves": [
+    "BqjR5SPXj78YjmjfLcwwyxbaMPbSo8TiSfGE36oFmkD2",
+    "5UfddSSxFH7snKUG3LBZK1gBHj4n5SJmE1XK6HfiT18W",
+    "2aFUrpSpAwEc8M9Py54c8dgpxnmpSHwFbx8ZnFphDHot"
+   ]
+  },
+  {
+   "quote_mint": "Dz9mQ9NzkBcCsuGPFJ3r1bS4wgqKMHBPiVuniW8Mbonk",
+   "symbol": "USELESS",
+   "name": "USELESS COIN",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 3,
+   "sampled_complete": 0,
+   "estimated_curves": 226,
+   "sample_bonding_curves": [
+    "44dnTfbHJnZ1rxQanEgfKPshRymamn2swFJf2tV1vLMe",
+    "3XYZ7XAn5Zt7q62bzkeMUwRnDETTVh5PcxBGz7yXTwjw",
+    "BTVFAykbBXeMD3jLxrrYL75UeDckGXwpMNDqq7fnWKkY"
+   ]
+  },
+  {
+   "quote_mint": "4Zp52aF4hZi9fzH19xpbWKYKQvgLyCN67KFbrQDqeTKh",
+   "symbol": "ZAMA",
+   "name": "Zama",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 3,
+   "sampled_complete": 0,
+   "estimated_curves": 226,
+   "sample_bonding_curves": [
+    "GX1NZdzsj8f7mdmxtkWkXLPRaSBdMxEfHWby3b2qtvN1",
+    "5ntNXF5YTz8JDJBTFzU4i81MZHZgV2J7iLB7PVJQkm5t",
+    "2sjDY5ThBvtJJVmY3jfLsMLA1JDgabTDuhvdMgdXgJ4s"
+   ]
+  },
+  {
+   "quote_mint": "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
+   "symbol": "WETH",
+   "name": "Wrapped Ether (Wormhole)",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "BqVMrg67knETzQdTm97k2nkxifAozd5UQzSVS4h2nJ8S",
+    "8GnqEX5TV2m7NsjaeBcAgAjgQ32vgzUFs3KzZs3rtX6P"
+   ]
+  },
+  {
+   "quote_mint": "Xs6B6zawENwAbWVi7w92rjazLuAr5Az59qgWKcNb45x",
+   "symbol": "BRK.Bx",
+   "name": "Berkshire Hathaway xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "Epo7GbdPQNQuHuib7kFba1r5G8LyZMq49tTbHkVaTU64",
+    "BqY7DzkMv7upfMC8PraS2PQvJvjDydwyChE18EHXr6Pi"
+   ]
+  },
+  {
+   "quote_mint": "6UpQcMAb5xMzxc7ZfPaVMgx3KqsvKZdT5U718BzD5We2",
+   "symbol": "wXRP",
+   "name": "Wrapped XRP",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "5w41p23ZR572DEXQM5ucqnAYibAP3rYHfbMEcDZKxQ6u",
+    "8WEfeQZLnmiG9Au57fuWM9Qu79pmLc44n5JJdq7tqfpN"
+   ]
+  },
+  {
+   "quote_mint": "BArimz1PcKZr8PcPh3tcZ2dg4S7FJLk3cw6R5F8GsHKg",
+   "symbol": "BA",
+   "name": "The Boeing Company - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "E7pXB6D7SJ3N6DKvsowpWiAJAGGKAgZs2aBiCyppVCG2",
+    "Ei4Ds31eUp8Ur2F6jpjjn7rEMcw3uBvj3DkyCsozeMA2"
+   ]
+  },
+  {
+   "quote_mint": "JNJg1znKdF712Phe7L7z52AATAvEjEytBdN2w8Lnh1Y",
+   "symbol": "JNJ",
+   "name": "Johnson & Johnson - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "Ed7Zokcgit2AF3xQ2R615VqC97YmoKj76JZVf12ZQjow",
+    "9aP9DQU9zVESzFF4TkyUbhJUk4VMds6xhod68AcTA1PV"
+   ]
+  },
+  {
+   "quote_mint": "LULUmT9VMttkfAJE236LXJcYJ2tTP7nunrSWR5G1BdS",
+   "symbol": "LULU",
+   "name": "lululemon athletica inc. - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "92Tbuh8JqAcFmrpA6rXUWo5ZZe9J3iJEH2EJAMbpQo4z",
+    "2aN8QrPPoqkRKXML7d5apaT4e4t6jajDkCmafjqYESp1"
+   ]
+  },
+  {
+   "quote_mint": "MGMuubtUEirmkhfEQdmGUh4pr7HuUdMWcZXFtpPbVJD",
+   "symbol": "MGM",
+   "name": "MGM Resorts International - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "DDQcXcp5GH9xmYQ1ByVL3bNCbqFvjNetVbaN5c7kTvyQ",
+    "5UjiLGPyRLaRUFrDKTyTNui32aGoDwGih8sBbyvzTdUq"
+   ]
+  },
+  {
+   "quote_mint": "QUBTAD8C9bMU9LvmMNgKPhrmBGbHvxpu6vfWQtThxxw",
+   "symbol": "QUBT",
+   "name": "Quantum Computing - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "AXBFdt18LXbdpfnzxnETxZyVpWDYvFzbdMthnHi3YMZ",
+    "286T1zK6Yq355i59wWEdYuo6bg8zHXx68b4GrKDHgdtz"
+   ]
+  },
+  {
+   "quote_mint": "SNAPcESrvnH8yUdgeMF6xm1hym9b6hW6s8YeqeHdZFz",
+   "symbol": "SNAP",
+   "name": "Snap - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 1,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "AWNag4MVEx1Eetc5jmqCFENzz8jMdpARgAkjVpd4re6K",
+    "5o15Jyg38X1gYUPxPJbWF8GSjKecguvGVuoGfchdx65M"
+   ]
+  },
+  {
+   "quote_mint": "UPSqUeMHcWbkdg784XuBUEF9DtySSnW9ur5LAVdcuB9",
+   "symbol": "UPS",
+   "name": "United Parcel Service - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "44UAbNMgxz4w7SEUSz2iQEPN2BkzvSN1z7Pb3bt3iu8u",
+    "3XjHhDMYgDMHiNif6kX9XATfoeZ7GXEs6zZnXByUHgGX"
+   ]
+  },
+  {
+   "quote_mint": "BULL151gUXcFV5wXEUqu9Am2L7Qt4bTJRLRuAUjkcspC",
+   "symbol": "BULL",
+   "name": "Webull Corporation Class A Ordinary Shares - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "Eoh2oj2BpFFDVhT2EkNPsk3sXuCDA4utFccLjFrzxQqP",
+    "5Uo6XRfg8Se7Tt6vLfeQtNJxuXKKawhA34Pwn51xhBBH"
+   ]
+  },
+  {
+   "quote_mint": "DKNGQFNGQmoBdXSRGKJ8tTu7uPDasw5JDcfMmWniNfow",
+   "symbol": "DKNG",
+   "name": "DraftKings - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "92L2RHwo6DkVKcbDcxKvrbXENYM24h1ZYmPKkmchJVZk",
+    "2JHSBQYYYhXmiUovWQGTP4kdZSR2YwQ4SMuWnAjuMph6"
+   ]
+  },
+  {
+   "quote_mint": "WENAZ2WyPbmgvUcKfQ8hyMDfBQP9bZ65hsZ5KTFrRGZ",
+   "symbol": "WEN",
+   "name": "The Wendy's Company - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "AWcbrsGRFip5Rx7HQQ5m8wtzH6gr6xuQtXHHwRcAC319",
+    "Ei4ZB73mSx7p6Ye1XeoLDtS481TGm3asCCMqq9XLH91V"
+   ]
+  },
+  {
+   "quote_mint": "Ce2gx9KGXJ6C9Mp5b5x1sn9Mg87JwEbrQby4Zqo3pump",
+   "symbol": "neet",
+   "name": "NotInEmploymentEducationTraining",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "DJk6X3wuTYBEW3p8myCY4SPd5QfMKcTaDLMpdfWowj63",
+    "DJqeNtiSZgjXdKb6LRDxZZVdT1KNVD9RHxGVUi3nULpR"
+   ]
+  },
+  {
+   "quote_mint": "MukLDtJ8Cx9DxLbeyLRSWPSposTMWuwHANbuaudpump",
+   "symbol": "OTC",
+   "name": "OTC",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "GTWsTBAjeBkFv3ujgpwacd3yMQqZubhFwvpgAExLD4o3",
+    "DJek55TuE1SFsHLuRNJa9XEqYebYrzxxnbzYAGV54VVc"
+   ]
+  },
+  {
+   "quote_mint": "CTPoyCwkjMvoJwU4xvZZqoD8tiYk6yDchySiN5gGpump",
+   "symbol": "fone",
+   "name": "apeonfone",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "B1QRKgtTjeZhyptEteMU1mcZaQDpVU83tg4TJAfg1vk",
+    "DTrEy6WznAMdfXWVMDeXGBokNTyUGDkKgzyVCLceKwaq"
+   ]
+  },
+  {
+   "quote_mint": "LinkhB3afbBKb2EQQu7s7umdZceV3wcvAUJhQAfQ23L",
+   "symbol": "LINK",
+   "name": "Chainlink Token",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "GWvPGi7bkcyRRspUaqhg6UtZKcZpoidPy1oQaEzNgJ8f",
+    "417EUSdNwsQ3qTAdKR795GnAwP4Cebh3UYyzDQshPY6H"
+   ]
+  },
+  {
+   "quote_mint": "PTNzAfFAB4LvoUQEUUGrFMyUoRLExMYjH6CcfyQfsVP",
+   "symbol": "PTN",
+   "name": "Palatin Technologies, Inc. Common Stock - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "GX13NManR5vYgatSmjH13tR7dg47icyprvRwpCwXT6Jw",
+    "AH4Uqpr78jxAj3RofAka7a7WZ977eRpYASCmFYaJCgXA"
+   ]
+  },
+  {
+   "quote_mint": "BRVaZKg6J9iF2BEsdpsxJ9NyvN9PPxPZuoQUX2v8qqkk",
+   "symbol": "BROS",
+   "name": "Dutch Bros - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "AtKn4vB6ZMDP77AU9EBhSmycUZ9TP7dMsFV9A5LEBvE",
+    "2JEKDoScuDaPEPvs68xaxok9ecBXj6e6oTCC1zWTpJUC"
+   ]
+  },
+  {
+   "quote_mint": "WULFeyfrj1VJKD9HhRTcW8R4g5HefUA11HDEdBv2WxD",
+   "symbol": "WULF",
+   "name": "TeraWulf - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "JrVYP5EpXjGM7HXtNjNoFHxXMGMiyA91JjsJiP435JD",
+    "2JMXbMgvTyQmKC3P6s14eJBDUEuWbkUchvLDP6JFRtfW"
+   ]
+  },
+  {
+   "quote_mint": "Hg5Ja55T5wESq4vyFoiVCMeHXtGyVA69X2UHq8hgpump",
+   "symbol": "baton",
+   "name": "baton",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "2JNZDx7ZKMJbwDHrcvHJ385zXqs8CG4eKgfZAwA5to7M",
+    "5UcQL7CnyniRUoFBP49YsijoBSNdgbmCh5eHXkxNbedZ"
+   ]
+  },
+  {
+   "quote_mint": "DvdmEnztCmXwBnAbedD48XVGZJSxq31zNvnyftXdpump",
+   "symbol": "pill",
+   "name": "pill",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "9aDKVK4tE4YHwiB1GHVpDY61Ec8NGEU35UH1UZABG1pv",
+    "2sq816z946qHwvCb2vjPT7yMzfd8BGy9n8hiiVdza1vT"
+   ]
+  },
+  {
+   "quote_mint": "uniHfuPhEQSrtpzXpJZDCSq53yaejKKpNhFUiKoHKHV",
+   "symbol": "UNI",
+   "name": "Uniswap",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "AWVq31CxPLFde8beFwTFp4KuohwnFN5W5dDGmzeB5c4e",
+    "DJuDAXaGBbSk8AAYVPewJ6BXTYGVy2kT1synuceXC4Fo"
+   ]
+  },
+  {
+   "quote_mint": "FWDtiB5fXHdVAewPqvHPL2dh4aBC1C6GacQbePoQXKjz",
+   "symbol": "FWDI",
+   "name": "Forward Industries, Inc. - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "E1HDmdb4YqzqEjnCx4p1oLnnG7j5nMzYG4GKdk19LmR",
+    "2svS3v2nUyUjK9ifMurLUuBDfBmFbKJJTb7pTDwUJy7d"
+   ]
+  },
+  {
+   "quote_mint": "H74CYmXgMkYHYuSRsZt6RJb4NYp2u72Vw8BS5huApump",
+   "symbol": "LMAO!",
+   "name": "LMAO!",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 1,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "5nqW9JJTeQdrev9BXYiaN3AZDu3RruB5ejVYGWSwcrTn",
+    "BTRtq4eX2vJjoGaDkci6ZHkgcnK1488CKFpR3LDQWzjh"
+   ]
+  },
+  {
+   "quote_mint": "Ge87EtsjwRQbHaqQmKRno69RFTwh9bfSsm99XNxTpump",
+   "symbol": "Jimothy",
+   "name": "Jimothy The Raccoon",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "Ecy4aowE31RchxwrnNaKbUEsDoxfPUuzPR7453ayvkcZ",
+    "3XcKU7ax9U7UqGBKVwxRTwWFnSqmBsWcB1PuJkm79n5G"
+   ]
+  },
+  {
+   "quote_mint": "CzLTZppPdZtTjyq3WGpHLstoc3GLhu7zH5Zg6xUa6Gv5",
+   "symbol": "COPX",
+   "name": "Global X Copper Miners ETF - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "3XnCewBMgvZY1EK8ZANNMGtaKd2hxYGEhmDx1X5DFacg",
+    "GTjm41yPZe3gdFVMaN8yYNGtEEHENKnFgZFnBpohd7iH"
+   ]
+  },
+  {
+   "quote_mint": "cbLTC4T5NpzSUtQ7ekgEMZGaUPVJY1ko6BUikqa4gGf",
+   "symbol": "cbLTC",
+   "name": "Coinbase Wrapped LTC",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "DTmoaf9uQggyS142KmeNM37hDR1Y1c48AkMxt9HWPdEr",
+    "2JHnKHNNVLCdcVu9bZHg2qZCb94V43CSnEiNrDEQVtra"
+   ]
+  },
+  {
+   "quote_mint": "CbcyNo7m1amFWqEQm2m4PLv1UNvpcL3C1Ujm6AkzpKoU",
+   "symbol": "e/acc",
+   "name": "Effective Accelerationism",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "51pV4sRUcwEizwopUfNdeo97dPFo3vWYHVXxH62y7bmW",
+    "EoXAz7AR1Mr4cwihjo8VoFHG94EtbMjr3rU7XRF8oygM"
+   ]
+  },
+  {
+   "quote_mint": "XsqgsbXwWogGJsNcVZ3TyVouy2MbTkfCFhCGGGcQZ2p",
+   "symbol": "Vx",
+   "name": "Visa xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "not listed now",
+   "sampled_curves": 2,
+   "sampled_complete": 0,
+   "estimated_curves": 151,
+   "sample_bonding_curves": [
+    "9u5noZuHs4TDonTeW531sBttpy44G9PSkPwnAYXC7s9u",
+    "DTu2rkhPF4U7jpuH99ozoVqBh9xKuc2CWbbCz4tTMYGP"
+   ]
+  },
+  {
+   "quote_mint": "MUxEsUKSMACyw5fZf68wxf5FLnZVhtU9CwH8uNNGay1",
+   "symbol": "MU",
+   "name": "Micron Technology - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "9uA8Z87HtAxpLW8WN9rA2uMVwk7RrPRYGzh7scPV1abX"
+   ]
+  },
+  {
+   "quote_mint": "SKHYhSjuRWHgikq8eRKbtBbpABgJSkd7ytQV14i9EQ3",
+   "symbol": "SKHY",
+   "name": "SK Hynix - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "GWzswWKzEa6WATFVcJjYrCgUpL7MggN1kpWvsqPCXPSK"
+   ]
+  },
+  {
+   "quote_mint": "XsfCC9VL4DamVGNgdJpfLXB3sBVa158Gbx8sh7NzmTk",
+   "symbol": "VIDAx",
+   "name": "Vida Global xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "5nx5Hi5HMYWX15shKyix5TcCVEtQonBULDBpVNUQXwcw"
+   ]
+  },
+  {
+   "quote_mint": "TTWofwAge91oFhZs7kpQdyrVRkmevgM88xijGvQFbKo",
+   "symbol": "TTWO",
+   "name": "Take-Two Interactive Software - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "EiDd6dwo54km3yQHHeQWpy9Yuh4h4QMa3s9QKh52veTN"
+   ]
+  },
+  {
+   "quote_mint": "GPRR2u6NS5yBQHWGauoJ9HXgjrTH8dDsrBfTV5zAYvDH",
+   "symbol": "GPRO",
+   "name": "GoPro - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "9uB4bKggXeBPqVQjSUCbtuqTZVCMmSyjSxKpgbFre2mo"
+   ]
+  },
+  {
+   "quote_mint": "XsaBXg8dU5cPM6ehmVctMkVqoiRG2ZjMo1cyBJ3AykQ",
+   "symbol": "KOx",
+   "name": "Coca-Cola xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "2a7QA5kG3zZyDrBEda83MnTqS2z8iFJtuwBc6Lj4r51M"
+   ]
+  },
+  {
+   "quote_mint": "SNDKbwMUQvZhnLnxLduradgLHG5KrPuKwpnrkkGRhfH",
+   "symbol": "SNDK",
+   "name": "Sandisk - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "EoaUeDbN3jss7gdNs9WoHLbBJXvf8JF9dTKd8xiSNRWn"
+   ]
+  },
+  {
+   "quote_mint": "MRNAzXzhNcaEXJPibHEn8cd4vyekCDiivTyEwswLUCT",
+   "symbol": "MRNA",
+   "name": "Moderna - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "EiHACyQmyJmzHsbu83s9ir62P8hofsLkEd1MZJjnZquS"
+   ]
+  },
+  {
+   "quote_mint": "XsgSaSvNSqLTtFuyWPBhK9196Xb9Bbdyjj4fH3cPJGo",
+   "symbol": "AVGOx",
+   "name": "Broadcom xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "GX8DYAJrbrETEieK63SW85G5x8DX5GFRvGza2ngj9UdR"
+   ]
+  },
+  {
+   "quote_mint": "LLYuwZ33keFihgwoxXsBawy31AiRFLFSva32TYq5TvD",
+   "symbol": "LLY",
+   "name": "Eli Lilly and Company - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "JzqxqCZXPHboVTkuGaemwTFpqrp12g9FJkLns2KZshy"
+   ]
+  },
+  {
+   "quote_mint": "MRVLSjkR2ceUBukujaD3xCyHP1H3B2SzpsNTZF546jo",
+   "symbol": "MRVL",
+   "name": "Marvell Technology - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "HdbCSKoWwkvFXaeGM8t2EytuWh7gxs3rnhMfou9zr3M"
+   ]
+  },
+  {
+   "quote_mint": "BMKdM4yUxX12moFqVk195k7coMbaybd4RUKCUdm7D1Sk",
+   "symbol": "IBM",
+   "name": "International Business Machines - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "2sw7BpsRAXtzaJ6Jx5xPzzhjVp4LjUrub7knam3KP64j"
+   ]
+  },
+  {
+   "quote_mint": "RcZmt84VMJv9bDhKqmw1uWDahYrUT468VwAChTnfD8p",
+   "symbol": "RIVN",
+   "name": "Rivian Automotive - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "Dx595iCqnAMibsV4cpavKrL7QGxRZzjLvw9vfgL89Rr"
+   ]
+  },
+  {
+   "quote_mint": "EicWvteVi2fWepEzS3FYWsnuPoP6caZfjnKqNvydLjCH",
+   "symbol": "LIT",
+   "name": "Lighter",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "DJtUx3L2T7UMyiykBBb9qQ6yuUE3ZLYK9hvZNpHCJmB2"
+   ]
+  },
+  {
+   "quote_mint": "taoC6xyv2v8tDLcev4uaGUgV4vdQsWJrGft2kcBRrBY",
+   "symbol": "TAO",
+   "name": "Bittensor",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "92MELLLKd4629kV1T4vaE3vZnsYbzP6dRssmd7czn3A9"
+   ]
+  },
+  {
+   "quote_mint": "Morpho2VPeTr2E1Jx6monxCzF7mqwUnjz74RdwLXYyP",
+   "symbol": "MORPHO",
+   "name": "Morpho",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "44XEXSJpQ6BkVFSC8JC6vwZjSQDfBgeq6xgz54QbfinZ"
+   ]
+  },
+  {
+   "quote_mint": "CZEB3WNZuF2Yz1z2H81RcCk8T7fsw82KB33zqamASVsg",
+   "symbol": "COST",
+   "name": "Costco Wholesale - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "DvZc59u61TRcnLSvGGwuNZdZhY9ocq3CmMUqBSL4XK2"
+   ]
+  },
+  {
+   "quote_mint": "oreoU2P8bN6jkk3jbaiVxYnG1dCXcYxwhwyK9jSybcp",
+   "symbol": "ORE",
+   "name": "ORE",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "2JG4kgwwj5J5MK8BiGZqdf5QUSV3Z6HkST8sqk4sqxLt"
+   ]
+  },
+  {
+   "quote_mint": "DNUTsCvKbKwu2RM72cUuW3TD9YpzArzACcqYQssjPLSk",
+   "symbol": "DNUT",
+   "name": "Krispy Kreme, Inc. Common Stock - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "5nvBBb5BUrESoUbeTdoD9GaRrNU8Uxj7mubkfsstcspk"
+   ]
+  },
+  {
+   "quote_mint": "AavE1kKKnesPw4MuRJmJ9jZs9QzEE8CPxQ3ViczUDfc1",
+   "symbol": "AAVE",
+   "name": "Aave",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "3XY4bhUMrkKYBFcJi6cYQCpCeHT5jeB4AKJFiYyYbmxt"
+   ]
+  },
+  {
+   "quote_mint": "2qEHjDLDLbuBgRYvsxhc5D6uDWAivNFZGan56P1tpump",
+   "symbol": "Pnut",
+   "name": "Peanut the Squirrel",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "GWzmXpqZwH6FbGRgrcmf2rM26YmZx4jvosqRSFx5Swfz"
+   ]
+  },
+  {
+   "quote_mint": "8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn",
+   "symbol": "ZEREBRO",
+   "name": "zerebro",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "41BagMmyZdXBpXTHnkQjnNLFUU1ufB1RcegwzxrKUDKX"
+   ]
+  },
+  {
+   "quote_mint": "HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump",
+   "symbol": "ALCH",
+   "name": "Alchemist AI",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "BTQXhVeU3uFzsr1WfDk8R2GNowdX4u4TCjQs8ezHBGsT"
+   ]
+  },
+  {
+   "quote_mint": "Cm6fNnMk7NfzStP9CZpsQA2v3jjzbcYGAxdJySmHpump",
+   "symbol": "Buttcoin",
+   "name": "Buttcoin",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "DDNJ7SUPdxsVVcrE5bXrXFZabkzozrsaCXM9UH2w21rP"
+   ]
+  },
+  {
+   "quote_mint": "GJAFwWjJ3vnTsrQVabjBVK2TYB1YtRCQXRDfDgUnpump",
+   "symbol": "ACT",
+   "name": "Act I : The AI Prophecy",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "44c5ADRLQbLvF4frvvNVfq5siZ6tM5YPQ1dUj9GkWc1g"
+   ]
+  },
+  {
+   "quote_mint": "6AJcP7wuLwmRYLBNbi825wgguaPsWzPBEHcHndpRpump",
+   "symbol": "VINE",
+   "name": "Vine Coin",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "AH5TevLNZZGP5qmQc2ab5DhbJUgRYxFehNQfRTK9nVuk"
+   ]
+  },
+  {
+   "quote_mint": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+   "symbol": "Bonk",
+   "name": "Bonk",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "AHCs69h9t3KJiBcEicxuZ9qQYuHWYDWCGXQi5Y1UwRiJ"
+   ]
+  },
+  {
+   "quote_mint": "METvsvVRapdj9cFLzq4Tr43xK4tAjQfwX76z3n6mWQL",
+   "symbol": "MET",
+   "name": "Meteora",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 1,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "5Uko7Ug8LdxHLxmoHXcqNoJP833iMgvmVQ4NhXQmqxTP"
+   ]
+  },
+  {
+   "quote_mint": "GkyPYa7NnCFbduLknCfBfP7p8564X1VZhwZYJ6CZpump",
+   "symbol": "CHILLHOUSE",
+   "name": "Chill House",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "Dm9pUe8taVfS2Qp4SWJQP8rbH2LS3wobH8HLFZhhhsE"
+   ]
+  },
+  {
+   "quote_mint": "J3NKxxXZcnNiMjKw9hYb2K4LUxgwB6t1FtPtQVsv3KFr",
+   "symbol": "SPX",
+   "name": "SPX6900 (Wormhole)",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "2JMu5nTt6LTr3mq2Hg6Zz3J5g5wvPY8knUW3SRypTcEz"
+   ]
+  },
+  {
+   "quote_mint": "63LfDmNb3MQ8mw9MtZ2To9bEA2M71kZUUGq5tiJxcqj9",
+   "symbol": "GIGA",
+   "name": "GIGACHAD",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "2JAHJ4krmcXxAqDvAiLMffugJHFhjvv2fwgXxya1vPhJ"
+   ]
+  },
+  {
+   "quote_mint": "2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv",
+   "symbol": "PENGU",
+   "name": "Pudgy Penguins",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "HfE9yLtWFcFzrga2LZqcW4PQiQAcZzJBtTL6ge1kTns"
+   ]
+  },
+  {
+   "quote_mint": "Tqj8yFmagrg7oorpQkVGYR52r96RFTamvWfth9bpump",
+   "symbol": "KINS",
+   "name": "Kintara",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "BqX11uTQ6yitL9oQ2qwTyJhxb943UuPp6vWF4eSt6RiR"
+   ]
+  },
+  {
+   "quote_mint": "FLWSojG1gB5VStYR3Sb4nQFRt43UBYkqih1j2CpVLqgd",
+   "symbol": "FLWS",
+   "name": "1-800-FLOWERS.COM - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "9u13xDbcoQTq4n3MUGSbt5dd3eMGVXm4rtP4waAxZ3zt"
+   ]
+  },
+  {
+   "quote_mint": "LUV9GB51PNZNRyzzyYK3rtqFfvDvWtRiXZ34wVq2HrX",
+   "symbol": "LUV",
+   "name": "Southwest Airlines Co. - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "EpmnT3JHnCbWQtET8mtngSg66RdEjoyXxz2HVsJGVuso"
+   ]
+  },
+  {
+   "quote_mint": "RUMsPfFZFnN1ZmGANwP7FNMJMjKH4m9RiMePrtVtLe7",
+   "symbol": "RUM",
+   "name": "RUM Group Inc. - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "2J8PwBPyFspipwEruVqzq3NGqMnMxWKAq1kTkux2SXKZ"
+   ]
+  },
+  {
+   "quote_mint": "3ZLekZYq2qkZiSpnSvabjit34tUkjSwD1JFuW9as9wBG",
+   "symbol": "NEAR",
+   "name": "NEAR",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "DJtZ9yuVgx8vW7nhGATBW7qiU1hxPjUJCRpuKUxW4YWt"
+   ]
+  },
+  {
+   "quote_mint": "BCdwQBAn8dYB5YjTsoB6TdHAWokxv28k2oZUodERpump",
+   "symbol": "MANIFEST",
+   "name": "Manifesting",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "9uB2Kz5H2C4aUs8K6rC4eaE7CAsPZj9pHvBdAbEvsbPq"
+   ]
+  },
+  {
+   "quote_mint": "4nV5gNwwP68zUDat26ySChREqVaQaLudfJBkSgEzpump",
+   "symbol": "BOBO",
+   "name": "Bobo",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "27xhfXTJJ25DY4HpxsDFSmo9TYH25w4gb3VYXr7aiRzv"
+   ]
+  },
+  {
+   "quote_mint": "ARBzQTYDCW2KnVEjs1Mc81LekB1ibVFZKbSVmorkoT9d",
+   "symbol": "ARB",
+   "name": "Arbitrum",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "5UjrM61sJz5LHWPNMHdZ5zAJ3g5cSwutZN25nR7PZVJs"
+   ]
+  },
+  {
+   "quote_mint": "LMT3i1BHgixFqPUgcyteJhnEz2dpy9i3cYy4pi9BoeV",
+   "symbol": "LMT",
+   "name": "Lockheed Martin - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "5UjanBNhuXdiXJxnrtcnzwznhvwfqvgTXqp9PbrW7QcG"
+   ]
+  },
+  {
+   "quote_mint": "suifhC9gU1VbJAPYPTBkHJyyyStKGLLYPVDTmPoqbvA",
+   "symbol": "SUI",
+   "name": "Sui",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "Db98MY5P9Hm3i8C8fupoDWhmjZhNT5kydY6uY6XEPsGA"
+   ]
+  },
+  {
+   "quote_mint": "URARfsinxCRw4JpvQhuT4CxavdZXZEMjv9ZwWmWpwag",
+   "symbol": "URA",
+   "name": "Global X Uranium ETF - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "9aP6RWWvmUUTA3ouh2Famj5LpDJMtApci7aKyvpsq1nV"
+   ]
+  },
+  {
+   "quote_mint": "NQ5hSuXQZrbnrwcDVk2qN73njjd3E3v3badYHnj5thF",
+   "symbol": "IONQ",
+   "name": "IonQ - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "DUTsCxgZGbdJYNiVmm4tHzofZ9hm3hUdo3oZoDZPbJii"
+   ]
+  },
+  {
+   "quote_mint": "ARMbSB1MBRQrY6PNMao1HdQ431VafC6JRJCsGZ2Yv3iJ",
+   "symbol": "ARM",
+   "name": "Arm Holdings - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "DayagGJGndnMS3YAURnzHFE3whjrKxr2nWNHL7cfPD8J"
+   ]
+  },
+  {
+   "quote_mint": "5UUH9RTDiSpq6HKS6bp4NdU9PNJpXRXuiw6ShBTBhgH2",
+   "symbol": "TROLL",
+   "name": "TROLL",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "5nsWpjAdHpc6nu4a8GWwR6gWcrZ5hj3DrUMCVUBKLNhJ"
+   ]
+  },
+  {
+   "quote_mint": "CRWVJeR2yEZuDUKYfGuKCHvLz8ywn4LGvovHfy5WiFmi",
+   "symbol": "CRWV",
+   "name": "CoreWeave - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "6nPfhWgciovopP7GbmZZGKLtYCoPERpysbD38xo4hzcr"
+   ]
+  },
+  {
+   "quote_mint": "RENzhrJQgmAnfcLhU1U5XwAMc6TC15UA6jCbPBaasnj",
+   "symbol": "IREN",
+   "name": "IREN - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "5nnjBMMwKJoyE1pZsFu8Prm7XBnaUqKX9HFiuauJwptw"
+   ]
+  },
+  {
+   "quote_mint": "SQQQAa3gUxgnqcEsdjPA4RQNQBgB97TnG2hJhk2WaGE",
+   "symbol": "SQQQ",
+   "name": "ProShares UltraPro Short QQQ - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "44SnTfiMTxoKW9MHG9G5HZmrTLhLa8m7P3bgHaBphxgi"
+   ]
+  },
+  {
+   "quote_mint": "7GUnr7krtQhJwd6ASY2VUprd9t4c64zcgCsjdmZepump",
+   "symbol": "NPC",
+   "name": "NPCs",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "51n46Przsn9LnozhQycm1moF5gfcTifhk1KS5NBQXGwR"
+   ]
+  },
+  {
+   "quote_mint": "XsaHND8sHyfMfsWPj6kSdd5VwvCayZvjYgKmmcNL5qh",
+   "symbol": "XOMx",
+   "name": "Exxon Mobil xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "not listed now",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "GTm8nSuvFaKEvaEK3Wjpx4LZX2QG6A7e1iHXv37qjXzq"
+   ]
+  },
+  {
+   "quote_mint": "XsXcJ6GZ9kVnjqGsjBnktRcuwMBmvKWh8S93RefZ1rF",
+   "symbol": "AMDx",
+   "name": "AMD xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "not listed now",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "AWJyCsB49QhCBzAhRDq93nCbrouVQYez9U6ZesGat3TX"
+   ]
+  },
+  {
+   "quote_mint": "Dst93spXQEXxFzwYbFrQRnFYBYpw7AzB2QyALEeP4NGQ",
+   "symbol": "AFC",
+   "name": "Arsenal FC",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "not listed now",
+   "sampled_curves": 1,
+   "sampled_complete": 0,
+   "estimated_curves": 75,
+   "sample_bonding_curves": [
+    "DTpRfDdZfxnCWSATe4fYVVjpR6gpPzNZj4zMPiwZduW6"
+   ]
+  },
+  {
+   "quote_mint": "DRAMjSWR7HRfJKjRkvQWYL2bcaejaVhuxEcjf4pAY4Cw",
+   "symbol": "DRAM",
+   "name": "Roundhill Memory ETF - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "NBiSF3UaVUFtRzHwAfxyHsBCAZWGEKnMpewAE4oh7BG",
+   "symbol": "NBIS",
+   "name": "Nebius Group N.V. - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "PFER6ENqP8r8NF3CqVt4mFowxsin3V5MLidBNQFCC3x",
+   "symbol": "PFE",
+   "name": "Pfizer - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "SH55hfaipFAbwT42nQYhRoM5o5t61QpkmJ6p62vXB3m",
+   "symbol": "SHOP",
+   "name": "Shopify - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "SV151D5pjygAKA8aJJcKzm4wFnRX5G92Fye94jQJk7g",
+   "symbol": "SV151",
+   "name": "Scarlet & Violet 151",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "PEAQjk7SRS6rXHVFFmpRr7zrC4g5ZuEebpwTxvaLr3b",
+   "symbol": "PEAQ",
+   "name": "peaq",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "5eyib4qghYGHNh7VvxSFGYLFJSanjq9hug9fR52kksnm",
+   "symbol": "PSG",
+   "name": "Paris Saint-Germain",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "SLXdx4BUt2v9uJQNzWqSfzTJ9UKLUDsvxHFMEEdrfgq",
+   "symbol": "SLX",
+   "name": "Solstice",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "chipCAT7vi5CZtbZsn9z7iMPXvFwyAnKz3QFu8XVuHm",
+   "symbol": "CHIP",
+   "name": "USD.AI",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "Bi11Je4MH3PpyCNiuTAepRbsA5U6DK3DJy79ZFthddX",
+   "symbol": "BILL",
+   "name": "Billions Network Token",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "DELL2aRKQz7DMq5DrKLtkn47ZCnbxXPZXrSGbkmd13wy",
+   "symbol": "DELL",
+   "name": "Dell Technologies - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "HTZsLG4zqaNvWMwXSLHH3GG5KyJpKwpBRsKVdMG6hvzP",
+   "symbol": "HTZ",
+   "name": "Hertz Global Holdings, Inc Common Stock - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "SPHRp8cZaSQBTp1KMNP4V1X821SXhXWt4Q2yLdyHzju",
+   "symbol": "SPHR",
+   "name": "Sphere Entertainment Co. - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "CrAr4RRJMBVwRsZtT62pEhfA9H5utymC2mVx8e7FreP2",
+   "symbol": "MON",
+   "name": "Monad",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "Xs2yquAgsHByNzx68WJC55WHjHBvG9JsMB7CWjTLyPy",
+   "symbol": "DFDVx",
+   "name": "DFDV xStock",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "ED5nyyWEzpPPiWimP8vYm7sD7TD3LAt3Q3gRTWHzPJBY",
+   "symbol": "MOODENG",
+   "name": "Moo Deng",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "Dfh5DzRgSvvCFDoYc2ciTkMrbDfRKybA4SoFbPmApump",
+   "symbol": "pippin",
+   "name": "Pippin",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "Eg2ymQ2aQqjMcibnmTt8erC6Tvk9PVpJZCxvVPJz2agu",
+   "symbol": "PUMPCADE",
+   "name": "PUMPCADE",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "HgBRWfYxEfvPhtqkaeymCQtHCrKE46qQ43pKe8HCpump",
+   "symbol": "Bert",
+   "name": "Bertram The Pomeranian",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump",
+   "symbol": "GOAT",
+   "name": "Goatseus Maximus",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "DtR4D9FtVoTX2569gaL837ZgrB6wNjj6tkmnX9Rdk9B2",
+   "symbol": "aura",
+   "name": "aura",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "Df6yfrKC8kZE3KNkrHERKzAetSxbrWeniQfyJY4Jpump",
+   "symbol": "CHILLGUY",
+   "name": "Just a chill guy",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "6NwarBvDkXhByqVp2Qkq5i9XbtA2B3Bwe8SWGu9vpump",
+   "symbol": "Cupsey",
+   "name": "Cupsey",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3",
+   "symbol": "SKR",
+   "name": "Seeker",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "A13oRB9FFaiUjfi6LdCg6p9ka1u8SfGkUFs4SKvPpump",
+   "symbol": "TOAD",
+   "name": "The Toad Pepe",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "CB9dDufT3ZuQXqqSfa1c5kY935TEreyBw9XJXxHKpump",
+   "symbol": "USDUC",
+   "name": "unstable coin",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "H8xQ6poBjB9DTPMDTKWzWPrnxu4bDEhybxiouF8Ppump",
+   "symbol": "Tokabu",
+   "name": "The Spirit of Gambling",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "9AvytnUKsLxPxFHFqS6VLxaxt5p6BhYNr53SD2Chpump",
+   "symbol": "67",
+   "name": "The Official 67 Coin",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "76EDL5qNcte2ZH29quTaFzagXjWAEY83CATEjyA6pump",
+   "symbol": "gork",
+   "name": "@gork",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "8PzFWyLpCVEmbZmVJcaRTU5r69XKJx1rd7YGpWvnpump",
+   "symbol": "Percolator",
+   "name": "Percolator",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "BcHEaaTCvycPwwsJ9yQTXdHP9X2gCLkznDbZ8VySpump",
+   "symbol": "Jotchua",
+   "name": "Jotchua",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "HcRLc9VDgjLeK154xDawfb1dmVJ98DoSqcwTHGqiDeJR",
+   "symbol": "ZCAT",
+   "name": "Anonymous Cat",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "SCHHJ3jRdSjeFEVAaLrnYdx3Brphn92Ys7z1qkiCtPX",
+   "symbol": "SCHH",
+   "name": "Schwab U.S. REIT ETF - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "8wxkvAfEns76yBzu4MnbV7VnXWjg3iDPA9uwAQ6cpump",
+   "symbol": "SOLANGELES",
+   "name": "SolAngeles",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "FLYRq3en8r2Z69gN3KyAnDrvnitEJNkwPYY7favinHeD",
+   "symbol": "FLY",
+   "name": "Firefly Aerospace - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "AMD8XwJXgQ9WV45Wyj9yFLejxzf2J6VM1PJY8bJEjeES",
+   "symbol": "AMD",
+   "name": "Advanced Micro Devices - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "BBosJLw8ZzoATiEyywiifx7AgmrD2Cm3XjFWbhbRhChy",
+   "symbol": "BB",
+   "name": "BlackBerry - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "69LjZUUzxj3Cb3Fxeo1X4QpYEQTboApkhXTysPpbpump",
+   "symbol": "CODEC",
+   "name": "Codec Flow",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "1NJMqVM4PadjuzYmeB7zV7q7DV8oB3ExaQCd9x6KsLz",
+   "symbol": "INJ",
+   "name": "Injective",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "AywAYdNJnSLSXwKWYxDciPjqGRnwp4iZdQptuuQTpump",
+   "symbol": "MICHI",
+   "name": "michi",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "BABANGA4JE7Kkam4nTrALAwAVgsNJUuFJnnkF7S16BZp",
+   "symbol": "BABA",
+   "name": "Alibaba Group Holding - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "CYPHuMmCL1GxJWa2tsPhLKykC7GrHJTCHwbXD4g5uawK",
+   "symbol": "CYPH",
+   "name": "Cypherpunk Technologies - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "DNhQZ1CE9qZ2FNrVhsCXwQJ2vZG8ufZkcYakTS5Jpump",
+   "symbol": "ZAUTH",
+   "name": "zauthx402",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "C1MHyoTJpRTeS9AQCyspNVu2EWAYCZwmJ1jNkEArFP1f",
+   "symbol": "APE",
+   "name": "ApeCoin",
+   "token_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "Hh3oTaqDCKKfdBgsQEvxp9sUwyNf8x9qmKqEMLBWpump",
+   "symbol": "HODL",
+   "name": "HODL",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  },
+  {
+   "quote_mint": "EWY4owSJYMpwN33qGDu5gGxpkQkpMJu8ZUsQJaNZG5dv",
+   "symbol": "EWY",
+   "name": "iShares MSCI South Korea ETF - Backpack Securities",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "admitted_by": "QuoteControl",
+   "sampled_curves": 0,
+   "sampled_complete": 0,
+   "estimated_curves": 0,
+   "sample_bonding_curves": []
+  }
+ ],
+ "quote_control_entries": [
+  {
+   "mint": "3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh",
+   "initial_virtual_quote_reserves": 5083830
+  },
+  {
+   "mint": "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
+   "initial_virtual_quote_reserves": 159001133
+  },
+  {
+   "mint": "MUxEsUKSMACyw5fZf68wxf5FLnZVhtU9CwH8uNNGay1",
+   "initial_virtual_quote_reserves": 3977735
+  },
+  {
+   "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+   "initial_virtual_quote_reserves": 557158400
+  },
+  {
+   "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
+   "initial_virtual_quote_reserves": 4822112575
+  },
+  {
+   "mint": "SKHYhSjuRWHgikq8eRKbtBbpABgJSkd7ytQV14i9EQ3",
+   "initial_virtual_quote_reserves": 22445246
+  },
+  {
+   "mint": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
+   "initial_virtual_quote_reserves": 1153586847
+  },
+  {
+   "mint": "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ",
+   "initial_virtual_quote_reserves": 578098806
+  },
+  {
+   "mint": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
+   "initial_virtual_quote_reserves": 1899642776
+  },
+  {
+   "mint": "SPCXxcqXj6e5dJDVNovHN8744zkbhM2bYudU45BimGb",
+   "initial_virtual_quote_reserves": 29013800
+  },
+  {
+   "mint": "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ",
+   "initial_virtual_quote_reserves": 2703977945
+  },
+  {
+   "mint": "Xs7ZdzSHLU9ftNJsii5fCeJhoRWSC32SQGzGQtePxNu",
+   "initial_virtual_quote_reserves": 2209682918
+  },
+  {
+   "mint": "Xsv9hRk1z5ystj9MhnA7Lq4vjSsLwzL2nxrwmwtD3re",
+   "initial_virtual_quote_reserves": 1096364694
+  },
+  {
+   "mint": "XsvNBAYkrDRNhA7wPHQfX3ZUXZyZLdnCQDfHZ56bzpg",
+   "initial_virtual_quote_reserves": 3593575775
+  },
+  {
+   "mint": "XsfCC9VL4DamVGNgdJpfLXB3sBVa158Gbx8sh7NzmTk",
+   "initial_virtual_quote_reserves": 251503551610
+  },
+  {
+   "mint": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
+   "initial_virtual_quote_reserves": 1256972333
+  },
+  {
+   "mint": "XsqE9cRRpzxcGKDXj1BJ7Xmg4GRhZoyY1KpmGSxAWT2",
+   "initial_virtual_quote_reserves": 1800146650
+  },
+  {
+   "mint": "NKEda5nHhNGgjrE9nDdMvaEmkmJ96qqxzBVZEcKmjSg",
+   "initial_virtual_quote_reserves": 120035640
+  },
+  {
+   "mint": "DRAMjSWR7HRfJKjRkvQWYL2bcaejaVhuxEcjf4pAY4Cw",
+   "initial_virtual_quote_reserves": 69356354
+  },
+  {
+   "mint": "XsoBhf2ufR8fTyNSjqfU71DYGaE6Z3SUGAidpzriAA4",
+   "initial_virtual_quote_reserves": 2266289946
+  },
+  {
+   "mint": "XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX",
+   "initial_virtual_quote_reserves": 830374398
+  },
+  {
+   "mint": "BoTx8y9ynfdxf5ZjWtCoBVkff52qKA82ysaLU8ZM6d8T",
+   "initial_virtual_quote_reserves": 148734729
+  },
+  {
+   "mint": "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN",
+   "initial_virtual_quote_reserves": 1250312424
+  },
+  {
+   "mint": "TTWofwAge91oFhZs7kpQdyrVRkmevgM88xijGvQFbKo",
+   "initial_virtual_quote_reserves": 21381038
+  },
+  {
+   "mint": "GPRR2u6NS5yBQHWGauoJ9HXgjrTH8dDsrBfTV5zAYvDH",
+   "initial_virtual_quote_reserves": 3334785009
+  },
+  {
+   "mint": "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu",
+   "initial_virtual_quote_reserves": 569864000
+  },
+  {
+   "mint": "Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg",
+   "initial_virtual_quote_reserves": 1718344670
+  },
+  {
+   "mint": "XsaBXg8dU5cPM6ehmVctMkVqoiRG2ZjMo1cyBJ3AykQ",
+   "initial_virtual_quote_reserves": 4878728762
+  },
+  {
+   "mint": "Xsf9mBktVB9BSU5kf4nHxPq5hCBJ2j2ui3ecFGxPRGc",
+   "initial_virtual_quote_reserves": 18214415288
+  },
+  {
+   "mint": "Xs6B6zawENwAbWVi7w92rjazLuAr5Az59qgWKcNb45x",
+   "initial_virtual_quote_reserves": 848506438
+  },
+  {
+   "mint": "SNDKbwMUQvZhnLnxLduradgLHG5KrPuKwpnrkkGRhfH",
+   "initial_virtual_quote_reserves": 2416149
+  },
+  {
+   "mint": "AMC1qwR9KhiyrQBRPrxnfo4JfMeMZqEBvt5tgTytNNoc",
+   "initial_virtual_quote_reserves": 1450596323
+  },
+  {
+   "mint": "MRNAzXzhNcaEXJPibHEn8cd4vyekCDiivTyEwswLUCT",
+   "initial_virtual_quote_reserves": 21746953
+  },
+  {
+   "mint": "XsgSaSvNSqLTtFuyWPBhK9196Xb9Bbdyjj4fH3cPJGo",
+   "initial_virtual_quote_reserves": 1235765898
+  },
+  {
+   "mint": "LLYuwZ33keFihgwoxXsBawy31AiRFLFSva32TYq5TvD",
+   "initial_virtual_quote_reserves": 3613358
+  },
+  {
+   "mint": "iNTCy1qTsUEZQe3DSocLz1ZXXai34Gdw8THQh5rxFaF",
+   "initial_virtual_quote_reserves": 34732982
+  },
+  {
+   "mint": "98sMhvDwXj1RQi5c5Mndm3vPe9cBqPrbLaufMXFNMh5g",
+   "initial_virtual_quote_reserves": 46885327603
+  },
+  {
+   "mint": "6UpQcMAb5xMzxc7ZfPaVMgx3KqsvKZdT5U718BzD5We2",
+   "initial_virtual_quote_reserves": 2806274937
+  },
+  {
+   "mint": "WXMRyRZhsa19ety5erZhHg4N3xj3EVN92u94422teJp",
+   "initial_virtual_quote_reserves": 7803581363922
+  },
+  {
+   "mint": "NBiSF3UaVUFtRzHwAfxyHsBCAZWGEKnMpewAE4oh7BG",
+   "initial_virtual_quote_reserves": 18084375
+  },
+  {
+   "mint": "MRVLSjkR2ceUBukujaD3xCyHP1H3B2SzpsNTZF546jo",
+   "initial_virtual_quote_reserves": 16685497
+  },
+  {
+   "mint": "BArimz1PcKZr8PcPh3tcZ2dg4S7FJLk3cw6R5F8GsHKg",
+   "initial_virtual_quote_reserves": 21724274
+  },
+  {
+   "mint": "DJTu7vi8norVzdVAffgvb39VP7wjKeTsgaMBJrzfxvoF",
+   "initial_virtual_quote_reserves": 472430925
+  },
+  {
+   "mint": "HiMSSzzwkZkrXJ4PGVJRdtfLaANeAztjjcgk5Dxe7Lwx",
+   "initial_virtual_quote_reserves": 146572166
+  },
+  {
+   "mint": "BMKdM4yUxX12moFqVk195k7coMbaybd4RUKCUdm7D1Sk",
+   "initial_virtual_quote_reserves": 18886275
+  },
+  {
+   "mint": "JNJg1znKdF712Phe7L7z52AATAvEjEytBdN2w8Lnh1Y",
+   "initial_virtual_quote_reserves": 15673337
+  },
+  {
+   "mint": "LULUmT9VMttkfAJE236LXJcYJ2tTP7nunrSWR5G1BdS",
+   "initial_virtual_quote_reserves": 42762200
+  },
+  {
+   "mint": "MGMuubtUEirmkhfEQdmGUh4pr7HuUdMWcZXFtpPbVJD",
+   "initial_virtual_quote_reserves": 126376161
+  },
+  {
+   "mint": "PFER6ENqP8r8NF3CqVt4mFowxsin3V5MLidBNQFCC3x",
+   "initial_virtual_quote_reserves": 151013957
+  },
+  {
+   "mint": "QUBTAD8C9bMU9LvmMNgKPhrmBGbHvxpu6vfWQtThxxw",
+   "initial_virtual_quote_reserves": 482366601
+  },
+  {
+   "mint": "RDDTGbhHwVXfyCvQMXzzowKjf5qrYBZAnehoXW83ooh",
+   "initial_virtual_quote_reserves": 28523512
+  },
+  {
+   "mint": "RcZmt84VMJv9bDhKqmw1uWDahYrUT468VwAChTnfD8p",
+   "initial_virtual_quote_reserves": 280154220
+  },
+  {
+   "mint": "SH55hfaipFAbwT42nQYhRoM5o5t61QpkmJ6p62vXB3m",
+   "initial_virtual_quote_reserves": 30188246
+  },
+  {
+   "mint": "SNAPcESrvnH8yUdgeMF6xm1hym9b6hW6s8YeqeHdZFz",
+   "initial_virtual_quote_reserves": 790423598
+  },
+  {
+   "mint": "UPSqUeMHcWbkdg784XuBUEF9DtySSnW9ur5LAVdcuB9",
+   "initial_virtual_quote_reserves": 45756086
+  },
+  {
+   "mint": "EicWvteVi2fWepEzS3FYWsnuPoP6caZfjnKqNvydLjCH",
+   "initial_virtual_quote_reserves": 90118586399
+  },
+  {
+   "mint": "taoC6xyv2v8tDLcev4uaGUgV4vdQsWJrGft2kcBRrBY",
+   "initial_virtual_quote_reserves": 13383324248
+  },
+  {
+   "mint": "DoGEV7LASBkQbibMc5k5vKnTZoMg423GpJ5QtJEGfm7R",
+   "initial_virtual_quote_reserves": 4424767796305
+  },
+  {
+   "mint": "Morpho2VPeTr2E1Jx6monxCzF7mqwUnjz74RdwLXYyP",
+   "initial_virtual_quote_reserves": 158009957194
+  },
+  {
+   "mint": "SV151D5pjygAKA8aJJcKzm4wFnRX5G92Fye94jQJk7g",
+   "initial_virtual_quote_reserves": 13653789518
+  },
+  {
+   "mint": "PEAQjk7SRS6rXHVFFmpRr7zrC4g5ZuEebpwTxvaLr3b",
+   "initial_virtual_quote_reserves": 99811461755580
+  },
+  {
+   "mint": "5eyib4qghYGHNh7VvxSFGYLFJSanjq9hug9fR52kksnm",
+   "initial_virtual_quote_reserves": 9242679547668
+  },
+  {
+   "mint": "poNSfquKq512ApeYjVghwViSun4x1MhCqHVH2Paq4jN",
+   "initial_virtual_quote_reserves": 669561323887
+  },
+  {
+   "mint": "SLXdx4BUt2v9uJQNzWqSfzTJ9UKLUDsvxHFMEEdrfgq",
+   "initial_virtual_quote_reserves": 61423168023
+  },
+  {
+   "mint": "chipCAT7vi5CZtbZsn9z7iMPXvFwyAnKz3QFu8XVuHm",
+   "initial_virtual_quote_reserves": 86969165518973
+  },
+  {
+   "mint": "Bi11Je4MH3PpyCNiuTAepRbsA5U6DK3DJy79ZFthddX",
+   "initial_virtual_quote_reserves": 30374328097879
+  },
+  {
+   "mint": "CashcatZMRn4Jv8sPQZUSsbTLi2PcPe1ssqbHcnaJqSS",
+   "initial_virtual_quote_reserves": 2387771982817
+  },
+  {
+   "mint": "pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn",
+   "initial_virtual_quote_reserves": 976772845371
+  },
+  {
+   "mint": "BULL151gUXcFV5wXEUqu9Am2L7Qt4bTJRLRuAUjkcspC",
+   "initial_virtual_quote_reserves": 606956736
+  },
+  {
+   "mint": "CZEB3WNZuF2Yz1z2H81RcCk8T7fsw82KB33zqamASVsg",
+   "initial_virtual_quote_reserves": 4651175
+  },
+  {
+   "mint": "DELL2aRKQz7DMq5DrKLtkn47ZCnbxXPZXrSGbkmd13wy",
+   "initial_virtual_quote_reserves": 7648285
+  },
+  {
+   "mint": "9cRCn9rGT8V2imeM2BaKs13yhMEais3ruM3rPvTGpump",
+   "initial_virtual_quote_reserves": 24609862012
+  },
+  {
+   "mint": "DKNGQFNGQmoBdXSRGKJ8tTu7uPDasw5JDcfMmWniNfow",
+   "initial_virtual_quote_reserves": 195322565
+  },
+  {
+   "mint": "oreoU2P8bN6jkk3jbaiVxYnG1dCXcYxwhwyK9jSybcp",
+   "initial_virtual_quote_reserves": 5027959236970
+  },
+  {
+   "mint": "GRNDYDpqwpCm6jVxpbh4xT5AM4r3p391qYsKTHqgaET2",
+   "initial_virtual_quote_reserves": 271735802
+  },
+  {
+   "mint": "DNUTsCvKbKwu2RM72cUuW3TD9YpzArzACcqYQssjPLSk",
+   "initial_virtual_quote_reserves": 1529586838
+  },
+  {
+   "mint": "WENAZ2WyPbmgvUcKfQ8hyMDfBQP9bZ65hsZ5KTFrRGZ",
+   "initial_virtual_quote_reserves": 656344490
+  },
+  {
+   "mint": "HTZsLG4zqaNvWMwXSLHH3GG5KyJpKwpBRsKVdMG6hvzP",
+   "initial_virtual_quote_reserves": 2471337830
+  },
+  {
+   "mint": "SPHRp8cZaSQBTp1KMNP4V1X821SXhXWt4Q2yLdyHzju",
+   "initial_virtual_quote_reserves": 30370704
+  },
+  {
+   "mint": "CrAr4RRJMBVwRsZtT62pEhfA9H5utymC2mVx8e7FreP2",
+   "initial_virtual_quote_reserves": 16253292819139
+  },
+  {
+   "mint": "Xs2yquAgsHByNzx68WJC55WHjHBvG9JsMB7CWjTLyPy",
+   "initial_virtual_quote_reserves": 71101876545
+  },
+  {
+   "mint": "AavE1kKKnesPw4MuRJmJ9jZs9QzEE8CPxQ3ViczUDfc1",
+   "initial_virtual_quote_reserves": 2796880166
+  },
+  {
+   "mint": "2qEHjDLDLbuBgRYvsxhc5D6uDWAivNFZGan56P1tpump",
+   "initial_virtual_quote_reserves": 76529952980
+  },
+  {
+   "mint": "ED5nyyWEzpPPiWimP8vYm7sD7TD3LAt3Q3gRTWHzPJBY",
+   "initial_virtual_quote_reserves": 87582483141
+  },
+  {
+   "mint": "8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn",
+   "initial_virtual_quote_reserves": 132789519017
+  },
+  {
+   "mint": "HNg5PYJmtqcmzXrv6S9zP1CDKk5BgDuyFBxbvNApump",
+   "initial_virtual_quote_reserves": 78727582105
+  },
+  {
+   "mint": "Ce2gx9KGXJ6C9Mp5b5x1sn9Mg87JwEbrQby4Zqo3pump",
+   "initial_virtual_quote_reserves": 95494216983
+  },
+  {
+   "mint": "Dfh5DzRgSvvCFDoYc2ciTkMrbDfRKybA4SoFbPmApump",
+   "initial_virtual_quote_reserves": 222764389963
+  },
+  {
+   "mint": "Eg2ymQ2aQqjMcibnmTt8erC6Tvk9PVpJZCxvVPJz2agu",
+   "initial_virtual_quote_reserves": 462890627814
+  },
+  {
+   "mint": "MukLDtJ8Cx9DxLbeyLRSWPSposTMWuwHANbuaudpump",
+   "initial_virtual_quote_reserves": 790456762611
+  },
+  {
+   "mint": "HgBRWfYxEfvPhtqkaeymCQtHCrKE46qQ43pKe8HCpump",
+   "initial_virtual_quote_reserves": 257194597570
+  },
+  {
+   "mint": "CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump",
+   "initial_virtual_quote_reserves": 216365614021
+  },
+  {
+   "mint": "DtR4D9FtVoTX2569gaL837ZgrB6wNjj6tkmnX9Rdk9B2",
+   "initial_virtual_quote_reserves": 433138135895
+  },
+  {
+   "mint": "Df6yfrKC8kZE3KNkrHERKzAetSxbrWeniQfyJY4Jpump",
+   "initial_virtual_quote_reserves": 311278089468
+  },
+  {
+   "mint": "CTPoyCwkjMvoJwU4xvZZqoD8tiYk6yDchySiN5gGpump",
+   "initial_virtual_quote_reserves": 732996251401
+  },
+  {
+   "mint": "Cm6fNnMk7NfzStP9CZpsQA2v3jjzbcYGAxdJySmHpump",
+   "initial_virtual_quote_reserves": 317435303305
+  },
+  {
+   "mint": "GJAFwWjJ3vnTsrQVabjBVK2TYB1YtRCQXRDfDgUnpump",
+   "initial_virtual_quote_reserves": 385000501004
+  },
+  {
+   "mint": "J8PSdNP3QewKq2Z1JJJFDMaqF7KcaiJhR7gbr5KZpump",
+   "initial_virtual_quote_reserves": 470136128670
+  },
+  {
+   "mint": "6AJcP7wuLwmRYLBNbi825wgguaPsWzPBEHcHndpRpump",
+   "initial_virtual_quote_reserves": 527281316193
+  },
+  {
+   "mint": "6NwarBvDkXhByqVp2Qkq5i9XbtA2B3Bwe8SWGu9vpump",
+   "initial_virtual_quote_reserves": 676918824752
+  },
+  {
+   "mint": "he1iusmfkpAdwvxLNGV8Y1iSbj4rUy6yMhEA3fotn9A",
+   "initial_virtual_quote_reserves": 29694623862
+  },
+  {
+   "mint": "SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3",
+   "initial_virtual_quote_reserves": 219594480200
+  },
+  {
+   "mint": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+   "initial_virtual_quote_reserves": 116085966364280
+  },
+  {
+   "mint": "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
+   "initial_virtual_quote_reserves": 17419478617
+  },
+  {
+   "mint": "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
+   "initial_virtual_quote_reserves": 2030499799
+  },
+  {
+   "mint": "METvsvVRapdj9cFLzq4Tr43xK4tAjQfwX76z3n6mWQL",
+   "initial_virtual_quote_reserves": 12089695810
+  },
+  {
+   "mint": "8XtRWb4uAAJFMP4QQhoYYCWR6XXb7ybcCdiqPwz9s5WS",
+   "initial_virtual_quote_reserves": 1077034890965
+  },
+  {
+   "mint": "GkyPYa7NnCFbduLknCfBfP7p8564X1VZhwZYJ6CZpump",
+   "initial_virtual_quote_reserves": 2687060135862
+  },
+  {
+   "mint": "J3NKxxXZcnNiMjKw9hYb2K4LUxgwB6t1FtPtQVsv3KFr",
+   "initial_virtual_quote_reserves": 941367304322
+  },
+  {
+   "mint": "63LfDmNb3MQ8mw9MtZ2To9bEA2M71kZUUGq5tiJxcqj9",
+   "initial_virtual_quote_reserves": 183056651336
+  },
+  {
+   "mint": "2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv",
+   "initial_virtual_quote_reserves": 426641137733
+  },
+  {
+   "mint": "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R",
+   "initial_virtual_quote_reserves": 2113959652
+  },
+  {
+   "mint": "A13oRB9FFaiUjfi6LdCg6p9ka1u8SfGkUFs4SKvPpump",
+   "initial_virtual_quote_reserves": 1894301709936
+  },
+  {
+   "mint": "CB9dDufT3ZuQXqqSfa1c5kY935TEreyBw9XJXxHKpump",
+   "initial_virtual_quote_reserves": 1405589486079
+  },
+  {
+   "mint": "H8xQ6poBjB9DTPMDTKWzWPrnxu4bDEhybxiouF8Ppump",
+   "initial_virtual_quote_reserves": 2580409150396
+  },
+  {
+   "mint": "9AvytnUKsLxPxFHFqS6VLxaxt5p6BhYNr53SD2Chpump",
+   "initial_virtual_quote_reserves": 2587887477557
+  },
+  {
+   "mint": "76EDL5qNcte2ZH29quTaFzagXjWAEY83CATEjyA6pump",
+   "initial_virtual_quote_reserves": 2758759437071
+  },
+  {
+   "mint": "Tqj8yFmagrg7oorpQkVGYR52r96RFTamvWfth9bpump",
+   "initial_virtual_quote_reserves": 3682475701301
+  },
+  {
+   "mint": "8PzFWyLpCVEmbZmVJcaRTU5r69XKJx1rd7YGpWvnpump",
+   "initial_virtual_quote_reserves": 1823610266226
+  },
+  {
+   "mint": "BcHEaaTCvycPwwsJ9yQTXdHP9X2gCLkznDbZ8VySpump",
+   "initial_virtual_quote_reserves": 2585049807007
+  },
+  {
+   "mint": "HcRLc9VDgjLeK154xDawfb1dmVJ98DoSqcwTHGqiDeJR",
+   "initial_virtual_quote_reserves": 53230431266605
+  },
+  {
+   "mint": "6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx",
+   "initial_virtual_quote_reserves": 14674513308842
+  },
+  {
+   "mint": "FLWSojG1gB5VStYR3Sb4nQFRt43UBYkqih1j2CpVLqgd",
+   "initial_virtual_quote_reserves": 1605393898
+  },
+  {
+   "mint": "LinkhB3afbBKb2EQQu7s7umdZceV3wcvAUJhQAfQ23L",
+   "initial_virtual_quote_reserves": 304113500536
+  },
+  {
+   "mint": "SCHHJ3jRdSjeFEVAaLrnYdx3Brphn92Ys7z1qkiCtPX",
+   "initial_virtual_quote_reserves": 195883788
+  },
+  {
+   "mint": "8wxkvAfEns76yBzu4MnbV7VnXWjg3iDPA9uwAQ6cpump",
+   "initial_virtual_quote_reserves": 2677278941285
+  },
+  {
+   "mint": "PTNzAfFAB4LvoUQEUUGrFMyUoRLExMYjH6CcfyQfsVP",
+   "initial_virtual_quote_reserves": 436058724
+  },
+  {
+   "mint": "FLYRq3en8r2Z69gN3KyAnDrvnitEJNkwPYY7favinHeD",
+   "initial_virtual_quote_reserves": 195710285
+  },
+  {
+   "mint": "BRVaZKg6J9iF2BEsdpsxJ9NyvN9PPxPZuoQUX2v8qqkk",
+   "initial_virtual_quote_reserves": 112992514
+  },
+  {
+   "mint": "AMD8XwJXgQ9WV45Wyj9yFLejxzf2J6VM1PJY8bJEjeES",
+   "initial_virtual_quote_reserves": 6844710
+  },
+  {
+   "mint": "LUV9GB51PNZNRyzzyYK3rtqFfvDvWtRiXZ34wVq2HrX",
+   "initial_virtual_quote_reserves": 102129757
+  },
+  {
+   "mint": "WULFeyfrj1VJKD9HhRTcW8R4g5HefUA11HDEdBv2WxD",
+   "initial_virtual_quote_reserves": 270595887
+  },
+  {
+   "mint": "RUMsPfFZFnN1ZmGANwP7FNMJMjKH4m9RiMePrtVtLe7",
+   "initial_virtual_quote_reserves": 517713021
+  },
+  {
+   "mint": "98kfF7rmsg1QDUEoCqNE7g7M1FdrTt92TEp2CLzypump",
+   "initial_virtual_quote_reserves": 109043786123
+  },
+  {
+   "mint": "USNv3NkKA27Dh4nsHJDPhW4VoEcTQmjoZyJt2dqdwFu",
+   "initial_virtual_quote_reserves": 28872592
+  },
+  {
+   "mint": "PEPEqnuuCDbBC89p1u9vpnP1KQ2oj1xTcQBsjt9X55m",
+   "initial_virtual_quote_reserves": 9878366285771
+  },
+  {
+   "mint": "BBosJLw8ZzoATiEyywiifx7AgmrD2Cm3XjFWbhbRhChy",
+   "initial_virtual_quote_reserves": 526876055
+  },
+  {
+   "mint": "Ai66LHZG9MCzg1WKdawwqduVAXpNDUuV8M3uyq5ppump",
+   "initial_virtual_quote_reserves": 46178387277
+  },
+  {
+   "mint": "GTBxUiw6wJdmmkCGZgRHLyYxqu1vG4KtRpeox6yDpump",
+   "initial_virtual_quote_reserves": 849753548435
+  },
+  {
+   "mint": "Hg5Ja55T5wESq4vyFoiVCMeHXtGyVA69X2UHq8hgpump",
+   "initial_virtual_quote_reserves": 2138096313168
+  },
+  {
+   "mint": "DvdmEnztCmXwBnAbedD48XVGZJSxq31zNvnyftXdpump",
+   "initial_virtual_quote_reserves": 1289171019127
+  },
+  {
+   "mint": "69LjZUUzxj3Cb3Fxeo1X4QpYEQTboApkhXTysPpbpump",
+   "initial_virtual_quote_reserves": 347207074551
+  },
+  {
+   "mint": "3ZLekZYq2qkZiSpnSvabjit34tUkjSwD1JFuW9as9wBG",
+   "initial_virtual_quote_reserves": 888432155283
+  },
+  {
+   "mint": "BCdwQBAn8dYB5YjTsoB6TdHAWokxv28k2oZUodERpump",
+   "initial_virtual_quote_reserves": 332915714744
+  },
+  {
+   "mint": "1NJMqVM4PadjuzYmeB7zV7q7DV8oB3ExaQCd9x6KsLz",
+   "initial_virtual_quote_reserves": 562693871597
+  },
+  {
+   "mint": "AywAYdNJnSLSXwKWYxDciPjqGRnwp4iZdQptuuQTpump",
+   "initial_virtual_quote_reserves": 1202422140108
+  },
+  {
+   "mint": "BPxxfRCXkUVhig4HS1Lh7kZqV6SPJhzfEk4x6fVBjPCy",
+   "initial_virtual_quote_reserves": 3170290152324
+  },
+  {
+   "mint": "uniHfuPhEQSrtpzXpJZDCSq53yaejKKpNhFUiKoHKHV",
+   "initial_virtual_quote_reserves": 45045733232
+  },
+  {
+   "mint": "FWDtiB5fXHdVAewPqvHPL2dh4aBC1C6GacQbePoQXKjz",
+   "initial_virtual_quote_reserves": 502768890
+  },
+  {
+   "mint": "BABANGA4JE7Kkam4nTrALAwAVgsNJUuFJnnkF7S16BZp",
+   "initial_virtual_quote_reserves": 39125609
+  },
+  {
+   "mint": "4nV5gNwwP68zUDat26ySChREqVaQaLudfJBkSgEzpump",
+   "initial_virtual_quote_reserves": 710605161178
+  },
+  {
+   "mint": "CYPHuMmCL1GxJWa2tsPhLKykC7GrHJTCHwbXD4g5uawK",
+   "initial_virtual_quote_reserves": 1045964910
+  },
+  {
+   "mint": "ARBzQTYDCW2KnVEjs1Mc81LekB1ibVFZKbSVmorkoT9d",
+   "initial_virtual_quote_reserves": 1943430515211
+  },
+  {
+   "mint": "H74CYmXgMkYHYuSRsZt6RJb4NYp2u72Vw8BS5huApump",
+   "initial_virtual_quote_reserves": 1773246980986
+  },
+  {
+   "mint": "DNhQZ1CE9qZ2FNrVhsCXwQJ2vZG8ufZkcYakTS5Jpump",
+   "initial_virtual_quote_reserves": 2167385217147
+  },
+  {
+   "mint": "Ge87EtsjwRQbHaqQmKRno69RFTwh9bfSsm99XNxTpump",
+   "initial_virtual_quote_reserves": 824640404854
+  },
+  {
+   "mint": "A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS",
+   "initial_virtual_quote_reserves": 275374605
+  },
+  {
+   "mint": "LMT3i1BHgixFqPUgcyteJhnEz2dpy9i3cYy4pi9BoeV",
+   "initial_virtual_quote_reserves": 8283707
+  },
+  {
+   "mint": "CARDSccUMFKoPRZxt5vt3ksUbxEFEcnZ3H2pd3dKxYjp",
+   "initial_virtual_quote_reserves": 23363311643
+  },
+  {
+   "mint": "RBLXDGRD64AtRamHMFVcjqne3Ar7NLWtFtYNtsrf1cE",
+   "initial_virtual_quote_reserves": 94297548
+  },
+  {
+   "mint": "suifhC9gU1VbJAPYPTBkHJyyyStKGLLYPVDTmPoqbvA",
+   "initial_virtual_quote_reserves": 369255258338
+  },
+  {
+   "mint": "URARfsinxCRw4JpvQhuT4CxavdZXZEMjv9ZwWmWpwag",
+   "initial_virtual_quote_reserves": 108320149
+  },
+  {
+   "mint": "CzLTZppPdZtTjyq3WGpHLstoc3GLhu7zH5Zg6xUa6Gv5",
+   "initial_virtual_quote_reserves": 50444471
+  },
+  {
+   "mint": "NQ5hSuXQZrbnrwcDVk2qN73njjd3E3v3badYHnj5thF",
+   "initial_virtual_quote_reserves": 73249232
+  },
+  {
+   "mint": "C1MHyoTJpRTeS9AQCyspNVu2EWAYCZwmJ1jNkEArFP1f",
+   "initial_virtual_quote_reserves": 21342127210245
+  },
+  {
+   "mint": "ARMbSB1MBRQrY6PNMao1HdQ431VafC6JRJCsGZ2Yv3iJ",
+   "initial_virtual_quote_reserves": 9861129
+  },
+  {
+   "mint": "Dz9mQ9NzkBcCsuGPFJ3r1bS4wgqKMHBPiVuniW8Mbonk",
+   "initial_virtual_quote_reserves": 11685897225
+  },
+  {
+   "mint": "739dnZEG4yaBWFsY8L8ZwrfhGG6dhtCSercW8Umspump",
+   "initial_virtual_quote_reserves": 286013501979
+  },
+  {
+   "mint": "CbyTNf7UPzvewHh4Zp6umogM2RWahhmGRJWLJnPwpump",
+   "initial_virtual_quote_reserves": 1805922574232
+  },
+  {
+   "mint": "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump",
+   "initial_virtual_quote_reserves": 17095713776
+  },
+  {
+   "mint": "5UUH9RTDiSpq6HKS6bp4NdU9PNJpXRXuiw6ShBTBhgH2",
+   "initial_virtual_quote_reserves": 66171512952
+  },
+  {
+   "mint": "CRWVJeR2yEZuDUKYfGuKCHvLz8ywn4LGvovHfy5WiFmi",
+   "initial_virtual_quote_reserves": 49605517
+  },
+  {
+   "mint": "4Zp52aF4hZi9fzH19xpbWKYKQvgLyCN67KFbrQDqeTKh",
+   "initial_virtual_quote_reserves": 48723374079275
+  },
+  {
+   "mint": "RENzhrJQgmAnfcLhU1U5XwAMc6TC15UA6jCbPBaasnj",
+   "initial_virtual_quote_reserves": 97723617
+  },
+  {
+   "mint": "SQQQAa3gUxgnqcEsdjPA4RQNQBgB97TnG2hJhk2WaGE",
+   "initial_virtual_quote_reserves": 127533124
+  },
+  {
+   "mint": "7GUnr7krtQhJwd6ASY2VUprd9t4c64zcgCsjdmZepump",
+   "initial_virtual_quote_reserves": 4292745963344
+  },
+  {
+   "mint": "cbLTC4T5NpzSUtQ7ekgEMZGaUPVJY1ko6BUikqa4gGf",
+   "initial_virtual_quote_reserves": 5987935564
+  },
+  {
+   "mint": "8J69rbLTzWWgUJziFY8jeu5tDwEPBwUz4pKBMr5rpump",
+   "initial_virtual_quote_reserves": 1748164550229
+  },
+  {
+   "mint": "CbcyNo7m1amFWqEQm2m4PLv1UNvpcL3C1Ujm6AkzpKoU",
+   "initial_virtual_quote_reserves": 245565926475
+  },
+  {
+   "mint": "Hh3oTaqDCKKfdBgsQEvxp9sUwyNf8x9qmKqEMLBWpump",
+   "initial_virtual_quote_reserves": 1550831954280
+  },
+  {
+   "mint": "EWY4owSJYMpwN33qGDu5gGxpkQkpMJu8ZUsQJaNZG5dv",
+   "initial_virtual_quote_reserves": 21299536
+  }
+ ]
+}

@@ -25,7 +25,7 @@ Only 26 graduated tokens are above $1M market cap and 252 above $100K; the long 
 
 | Piece | Program / account |
 |---|---|
-| Bonding curve (current path, since 2026-08-28) | Raydium LaunchLab `LanMV9sAd7wArD4vJFi2qDdfnVhFxYSUg6eADduJ3uj` |
+| Bonding curve (current path; first pool on-chain 2026-08-28, public release 2026-09-05) | Raydium LaunchLab `LanMV9sAd7wArD4vJFi2qDdfnVhFxYSUg6eADduJ3uj` |
 | Post-graduation AMM | Raydium CPMM `CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C` |
 | LP lock and Fee Key NFTs | Raydium Liquidity Locking `LockrWmn6K5twhz3y9w1dQERbmgSaRkfnTeTKbpofwE` |
 | Earlier launch paths | Raydium CLMM `CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK`, pump.fun and PumpSwap |
