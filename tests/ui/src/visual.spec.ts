@@ -25,8 +25,9 @@ async function snap(page: Page, name: string, mask = dynamic) {
   // Check the settled page: hydrated, images in and web fonts swapped.
   await page.waitForLoadState("networkidle");
   await page.evaluate(() => document.fonts.ready);
-  await expectNoHorizontalOverflow(page);
+  // The truncation check waits for hydration, so the overflow check after it sees the finished layout.
   await expectNoTruncatedText(page);
+  await expectNoHorizontalOverflow(page);
   // A full-page capture of a scrolled page stitches the sticky header into the middle.
   await page.evaluate(() => window.scrollTo(0, 0));
   // After the scroll the pointer rests over whatever now sits where it last clicked; park it on the page's corner so no field shows a hover.
@@ -63,8 +64,9 @@ test("board Quote Asset filter, open", async ({ page }) => {
   await expect(list.getByRole("option").first()).toHaveText("All Quote Assets");
   await page.waitForLoadState("networkidle");
   await page.evaluate(() => document.fonts.ready);
-  await expectNoHorizontalOverflow(page);
+  // The truncation check waits for hydration, so the overflow check after it sees the finished layout.
   await expectNoTruncatedText(page);
+  await expectNoHorizontalOverflow(page);
   // Masks paint over everything, the open list included, so only the button and its list are captured, with nothing to mask.
   // The button is brought up below the sticky header so the whole list is in view.
   await trigger.evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 96));
