@@ -1,0 +1,23 @@
+{
+  "name": "launchpad",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.0.8",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "localnet": "pnpm --filter @launchpad/localnet start",
+    "test:backend": "pnpm --filter @launchpad/tests-backend test",
+    "test:ui": "pnpm --filter @launchpad/tests-ui test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.11.0",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.70.1"
+  }
+}
