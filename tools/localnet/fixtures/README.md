@@ -11,5 +11,6 @@ Dumped from devnet on 2026-09-27 with `solana program dump` and `solana account 
 
 Raydium's admin creates GlobalConfigs, so the local chain plants its own: at startup it copies the SOL GlobalConfig into a GlobalConfig for every mint in `quotes/`, at that mint's PDA under the devnet program, with only the quote mint changed.
 Adding a quote mint to `quotes/` is all it takes to make it a Quote Asset locally.
+The local chain also makes the local admin key the mint authority of every cloned quote mint, so tests can hand wallets USDC or a stock to trade with (`mintLocalQuote`).
 
 Refresh them with `pnpm --filter @launchpad/localnet refresh-fixtures` only when Raydium upgrades the devnet programs.
