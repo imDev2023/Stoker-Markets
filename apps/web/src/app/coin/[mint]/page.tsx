@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getCandles, getLaunch, getPlatform, listTrades } from "@/lib/api";
+import { getCandles, getHolders, getLaunch, getPlatform, listTrades } from "@/lib/api";
 import { explorerUrl, formatUtc, quoteTicker, shortAddress } from "@/lib/format";
 import { CoinMarket } from "@/components/CoinMarket";
 import { CopyButton } from "@/components/CopyButton";
@@ -17,8 +17,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CoinPage({ params }: Props) {
   const { mint } = await params;
-  const [launch, platform, trades, candles] = await Promise.all([
+  const [launch, platform, trades, candles, holders] = await Promise.all([
     getLaunch(mint), getPlatform(), listTrades(mint), getCandles(mint, "1m"),
+    // A 404 (no such coin) or an unreadable chain leaves the card to retry, rather than failing the page.
+    getHolders(mint).catch(() => null),
   ]);
   if (!launch) notFound();
   const quote = quoteTicker(launch.quote);
@@ -60,7 +62,7 @@ export default async function CoinPage({ params }: Props) {
 
       {launch.description && <p className={styles.description}>{launch.description}</p>}
 
-      <CoinMarket initial={launch} platform={platform} initialTrades={trades.trades} initialCandles={candles} renderedAt={Date.now()} />
+      <CoinMarket initial={launch} platform={platform} initialTrades={trades.trades} initialCandles={candles} initialHolders={holders} renderedAt={Date.now()} />
 
       <section className={styles.panels}>
         <dl className={styles.facts}>

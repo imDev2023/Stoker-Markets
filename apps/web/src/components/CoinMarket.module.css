@@ -28,4 +28,5 @@
   .trade { order: 2; }
   .chart { order: 3; }
   .history { order: 4; }
+  .holders { order: 5; }
 }
