@@ -1,0 +1,128 @@
+OK   fund wallets from admin: https://explorer.solana.com/tx/2YoKAmjzruvy6XKfmS4XdHm9EvDxLteqtz7BMm2Y7a74Vsrbx8sR3n9vYL5owZWmRjSbqSzY2NXkBSUegqyU1DPf?cluster=devnet
+admin 6QHxB5uiQaHbPGjvoMmUC6Uo3vTvnPU4DXXHuy2qKrvr 0.429995 SOL
+creator DVHeYjJMM7QEkfJtSz2Zry6ijyetrrZXLg4qjqVWWqeD 0.1 SOL
+trader 4k4xBWqEeEsFvkcTAKNgdGHk6cZWeVQZdrEAHnUo1fVv 0.45 SOL
+feewallet CS3BmN59bWPzV5bVfGPFRnnTjUr1mLBoHPkqGsNPDqvH 0.02 SOL
+OK   q2 create_platform_config: https://explorer.solana.com/tx/5zJesv9ssXtoFvwHG5abnLpTFVFt3G2oodmMVHr27P6XmaUUx9DqaE1jXyX9381pRGPMsXQCUHLYSwcwU5iajoHi?cluster=devnet
+PlatformConfig GuEwao9TZQDDCR8r6a1VTVDdmztLBPVUWhXf8TPNxgwS size 944 rent 5445760
+{
+ "epoch": "1168",
+ "platform_fee_wallet": "CS3BmN59bWPzV5bVfGPFRnnTjUr1mLBoHPkqGsNPDqvH",
+ "platform_nft_wallet": "CS3BmN59bWPzV5bVfGPFRnnTjUr1mLBoHPkqGsNPDqvH",
+ "platform_scale": "1000000",
+ "creator_scale": "0",
+ "burn_scale": "0",
+ "fee_rate": "10000",
+ "name": "PAND432 Spike",
+ "web": "https://example.invalid/pand-432",
+ "img": "https://example.invalid/pand-432.png",
+ "cpswap_config": "5MxLgy9oPdTC3YgkiePHqr3EoCRD9uLVYRQS2ANAs7wy",
+ "creator_fee_rate": "5000",
+ "transfer_fee_extension_auth": "CS3BmN59bWPzV5bVfGPFRnnTjUr1mLBoHPkqGsNPDqvH",
+ "platform_vesting_wallet": "CS3BmN59bWPzV5bVfGPFRnnTjUr1mLBoHPkqGsNPDqvH",
+ "platform_vesting_scale": "0",
+ "platform_cp_creator": "11111111111111111111111111111111",
+ "restrict_global_config": 0,
+ "restrict_curve_param": 0,
+ "curve_rule_manager": "11111111111111111111111111111111"
+}
+OK   q3 initialize_v2 (SPL base, amm_fee_on=QuoteToken): https://explorer.solana.com/tx/5A3qf8MsuAafud73fkzoKFDfa24kFkg1Bdw5mcjgNgVJzinjt8wDKj2xvtTQrvdLcMsqA3gSnH3neCjsjJvLwZ7g?cluster=devnet
+pool WDh15wimWAAb1wvTK8vH7YuvLNZHiNixGsZeZvt4wNE base mint 9k4MHebuEmAE5FH3hr8yKpGNE57XY4hjUMKyfzmatHcd
+{"label":"before trades","pool_status":0,"real_quote":"0","pool_platform_fee_field":"0","pool_protocol_fee_field":"0","platform_fee_vault":"0.000000000","creator_fee_vault":"0.000000000","creator_wsol":"0.000000000","feewallet_wsol":"0.000000000"}
+OK   q3 trader wraps 0.1 SOL: https://explorer.solana.com/tx/2UQ5mucTQt7BQin9VmMamAzRAwr8RQxD2WkM3x8nys887NhneMJg7nNMmMYq6cEy6mqbhP3ofsH7QWb7XJFkv3ty?cluster=devnet
+OK   q3 trader buy 0.03 SOL: https://explorer.solana.com/tx/5WoPdngMBUDX48U8Y661zUe47ppNWxNhS4SpXQXPeMdyPaDKHcmBs4DGWgpnDNdxzBAwLWjccpQe1biBtHx77Egi?cluster=devnet
+   TradeEvent [{"amount_in":"30000000","amount_out":"316068088566841","protocol_fee":"75000","platform_fee":"300000","creator_fee":"150000","direction":"Buy"}]
+OK   q3 trader sell half: https://explorer.solana.com/tx/4JxDJoariNanL9c1osEcd5csRGw648XAH3XoVrhFZGwLxKXcnmJA3XpTHeZ8Kt1uKdyRACfyfgDgCCZKkc32Y5cd?cluster=devnet
+   TradeEvent [{"amount_in":"158034044283420","amount_out":"16980456","protocol_fee":"43208","platform_fee":"172829","creator_fee":"86414","direction":"Sell"}]
+OK   q3 trader buy 0.02 SOL: https://explorer.solana.com/tx/61RtdEcWNi94nkpwUXq1gusm7cyqCW7ggJLetKJ6CQEaeSHdtKvrnGdnjz6kvRPTB3KPYbMRRuQ17GKZ9rTWrnSD?cluster=devnet
+   TradeEvent [{"amount_in":"20000000","amount_out":"175526450807189","protocol_fee":"50000","platform_fee":"200000","creator_fee":"100000","direction":"Buy"}]
+{"label":"after trades, before claims","pool_status":0,"real_quote":"31842093","pool_platform_fee_field":"0","pool_protocol_fee_field":"168208","platform_fee_vault":"0.000672829","creator_fee_vault":"0.000336414","creator_wsol":"0.000000000","feewallet_wsol":"0.000000000"}
+OK   q3 claim_creator_fee (creator): https://explorer.solana.com/tx/2o9BXxDCFD5sdTXTQyrHfXETwJjvNu8FhXmbYmhvi4gfF3cmGVnkPe1fU2eQwnuF7CpRqrqnofn3kY6ipZ11VLa7?cluster=devnet
+OK   q3 claim_platform_fee_from_vault (fee wallet): https://explorer.solana.com/tx/3B843i5Wtdn1RBBezDQgVRodrxG5c9dNFJ6pqotW1dSLPFkkQg4xDoTyisynVfLrm3KfByGmqXoD95WEosuN9DND?cluster=devnet
+FAIL (expected) q3 claim_platform_fee (pool-level, fee wallet): Program log: AnchorError occurred. Error Code: NoAssetsToCollect. Error Number: 6009. Error Message: No assets to collect. | Program DRay6fNdQ5J82H7xV6uq2aV3mNrUZ1J4PgSKsWgptcm6 failed: custom program error: 0x1779
+FAIL (expected) q3 claim_creator_fee by NON-creator (trader) must fail: Program log: AnchorError caused by account: creator_fee_vault. Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized. | Program DRay6fNdQ5J82H7xV6uq2aV3mNrUZ1J4PgSKsWgptcm6 failed: custom program error: 0xbc4
+{"label":"after claims","pool_status":0,"real_quote":"31842093","pool_platform_fee_field":"0","pool_protocol_fee_field":"168208","platform_fee_vault":"0.000000000","creator_fee_vault":"0.000000000","creator_wsol":"0.000336414","feewallet_wsol":"0.000672829"}
+OK   q3b initialize_with_token_2022 (1% transfer fee): https://explorer.solana.com/tx/3P7vq2zy6WvBnEXezKizBpWBFnbLP9zDLL5zAsVrMnVtpR6CvrDAKVi3i5irXYnxKFoeSyzbKhjFmM6Yw3kT11mG?cluster=devnet
+OK   q3b trader wraps 0.02 SOL: https://explorer.solana.com/tx/dLky67U5rRhi7S5XEwTm6KuRkyhLsq8KmRMmUFhMwEsB5HskLmgYH1AK5zM6ZTWgm4X94iKEyb3KXc7d254dGwW?cluster=devnet
+OK   q3b trader buy 0.01 SOL of the Token-2022 coin: https://explorer.solana.com/tx/3dANkhAt7ieokhkaoeCTtPHrAJf1HNFBF6tM8RjVrR5npbrvTWRv41EMMQ6g8MMPNSKk5uQbKtyocbHn37GW39XX?cluster=devnet
+curve amount_out 5940825604881 trader received 5881417348832 (difference = 1% transfer fee withheld)
+OK   q3b trader sells half back: https://explorer.solana.com/tx/AZNTBRiZp9L4Q1frxqPykn3peam1RtsLkFipBrP2EqgWAmvzC1afr8rnoDVBkb326CUnwT5KmbPEp4Y7x3YAmaC?cluster=devnet
+{
+ "mintAuthority": null,
+ "freezeAuthority": null,
+ "extensions": [
+  {
+   "extension": "metadataPointer",
+   "state": {
+    "authority": null,
+    "metadataAddress": "5v7YVWK8o6wNrEmk4V9pCbuWWjs8pnMsv2pLP1fKoQku"
+   }
+  },
+  {
+   "extension": "transferFeeConfig",
+   "state": {
+    "newerTransferFee": {
+     "epoch": 1168,
+     "maximumFee": 1000000000000000,
+     "transferFeeBasisPoints": 100
+    },
+    "olderTransferFee": {
+     "epoch": 1168,
+     "maximumFee": 1000000000000000,
+     "transferFeeBasisPoints": 100
+    },
+    "transferFeeConfigAuthority": "5xqNaZXX5eUi4p5HU4oz9i5QnwRNT2y6oN7yyn4qENeq",
+    "withdrawWithheldAuthority": "CS3BmN59bWPzV5bVfGPFRnnTjUr1mLBoHPkqGsNPDqvH",
+    "withheldAmount": 0
+   }
+  },
+  {
+   "extension": "tokenMetadata",
+   "state": {
+    "additionalMetadata": [],
+    "mint": "5v7YVWK8o6wNrEmk4V9pCbuWWjs8pnMsv2pLP1fKoQku",
+    "name": "Spike T22",
+    "symbol": "SPKT",
+    "updateAuthority": "5xqNaZXX5eUi4p5HU4oz9i5QnwRNT2y6oN7yyn4qENeq",
+    "uri": "https://example.invalid/spkt.json"
+   }
+  }
+ ]
+}
+OK   q3c trader wraps 0.02 SOL: https://explorer.solana.com/tx/5EKJZxabonno5RGZTa63gRbEaxMK8xkHRG7sQr3tQRsTRg2a5Fhy7wuJVqqrFqNfUKEiuPyFRkQSZ9crce2gQQFr?cluster=devnet
+FAIL (expected) q3c buy WITHOUT fee-vault remaining accounts: Program log: AnchorError occurred. Error Code: NotEnoughRemainingAccounts. Error Number: 6018. Error Message: Not enough remaining accounts. | Program DRay6fNdQ5J82H7xV6uq2aV3mNrUZ1J4PgSKsWgptcm6 failed: custom program error: 0x1782
+TradeEvent fees null
+before {"pool_platform_fee_field":"0","pool_protocol_fee_field":"37071","platform_fee_vault":"148284","creator_fee_vault":"74142"} after {"pool_platform_fee_field":"0","pool_protocol_fee_field":"37071","platform_fee_vault":"148284","creator_fee_vault":"74142"}
+after pool-level claim {"pool_platform_fee_field":"0","pool_protocol_fee_field":"37071","platform_fee_vault":"148284","creator_fee_vault":"74142"}
+fund raising 0.200000000 raised 0.031842093 buying with 0.171253086
+OK   q4 trader wraps SOL for the final buy: https://explorer.solana.com/tx/3RPbehpQhw3GHQVwovfmfJUZvAvyx1NCf715PdsWTLA3GzQSed4EWhUvDxANotMmSjCKoDq4gD6m7daRvwCXfzdg?cluster=devnet
+OK   q4 trader buys to completion: https://explorer.solana.com/tx/eMZHyWwbbFvuJxixTVovp9Cd6PStYjuUxC4RLMmjAawjyWiuYPTfoY3YgyYQAz39uXovwwuHsdU5Gg2zvYgEAUJ?cluster=devnet
+   TradeEvent {"amount_in":"171153089","amount_out":"459539504909390","pool_status":{"Migrate":{}},"creator_fee":"855765","platform_fee":"1711531"} wsol spent 0.171153089
+pool status 1 (0 funding, 1 waiting for migration, 2 migrated)
+waiting for Raydium's devnet crank to migrate (polling every 15 s, up to 20 min)
+migrated by DRayP1Yav394wpS47WQJ5Qm6d95WTQFtGGh54cVQFmhF tx 2dvPMLcWMmsyqzrY3Q7eCW7Z29WTyPvPAxfyBPpu4DqXAsV7sDcEghg1AqJCg1aQWXPvD51zHZqwLi6VHipMAJwW fee NFT mint C3dTtQxEasUBibMB2aN88B1GwyrmdTxq2erwyC52Hzr4
+CPMM pool GTWSDphjNcDTMRgimMyK8x8UU1TLLDmYvVremJiTHy3d {"poolCreator":"DVHeYjJMM7QEkfJtSz2Zry6ijyetrrZXLg4qjqVWWqeD","configId":"5MxLgy9oPdTC3YgkiePHqr3EoCRD9uLVYRQS2ANAs7wy","mintA":"So11111111111111111111111111111111111111112","mintB":"9k4MHebuEmAE5FH3hr8yKpGNE57XY4hjUMKyfzmatHcd","enableCreatorFee":"true","feeOn":"1","creatorFeesMintA":"0","creatorFeesMintB":"0"}
+locked LP state {"lockedLpAmount":"203420747155","claimedLpAmount":"0","unclaimedLpAmount":"0","poolId":"GTWSDphjNcDTMRgimMyK8x8UU1TLLDmYvVremJiTHy3d","feeNftMint":"C3dTtQxEasUBibMB2aN88B1GwyrmdTxq2erwyC52Hzr4","lockedOwner":"5xqNaZXX5eUi4p5HU4oz9i5QnwRNT2y6oN7yyn4qENeq"} fee NFT balance of fee wallet 1
+OK   q4 trader wraps 0.05 SOL for CPMM swaps: https://explorer.solana.com/tx/2BGSwCF18y2Lg12byLmittDr6WbuXgV8tqyW15g9SibVXxdLcXFGaVqg3JGLover37axC7DGx8ZgcXAxtTZM18kB?cluster=devnet
+OK   q4 CPMM swap: trader buys with 0.04 WSOL: https://explorer.solana.com/tx/5QxYYdPDc2H7PNLBeACP8KTiw23tKKEpWZ4Ro6dmNWLddcwVDWoL1qehPkpo75QXbByZY9xw66pMinL8SCGX8huC?cluster=devnet
+OK   q4 CPMM swap: trader sells a quarter of its tokens: https://explorer.solana.com/tx/P66cRw3PD44g53FmiSoFBqUBaiiWiffxRHxM4K3gdhP7FrFGjfk75puvdvPE75SWb2qGTyhDxjboWBKgBhg5kE2?cluster=devnet
+creator fee accrued in CPMM pool {"creatorFeesMintA":"426590","creatorFeesMintB":"0","quoteIs":"A"}
+FAIL (expected) q4 CPMM collect_creator_fee by a NON-creator (trader) must fail: Program log: AnchorError caused by account: creator. Error Code: ConstraintAddress. Error Number: 2012. Error Message: An address constraint was violated. | Program DRaycpLY18LhpbydsBWbVJtxpNv9oXPgjRSfpF2bWpYb failed: custom program error: 0x7dc
+OK   q4 CPMM collect_creator_fee (token creator): https://explorer.solana.com/tx/6JPkY5v6uDHAs3K1m7GTr54Bc4hYPftMfVPSV9fMYtZ6z4GTczxsC47Hk7xJWp66CUMYBPnfm3sj9s6R5y2J5N5?cluster=devnet
+creator balances before {"wsol":"336414","base":"0"} after {"wsol":"763004","base":"0"}
+FAIL (expected) q4 locker collect_cp_fees by a wallet WITHOUT the Fee Key NFT (trader) must fail: Program log: AnchorError caused by account: fee_nft_account. Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized. | Program DRay25Usp3YJAi7beckgpGUC7mGJ2cR1AVPxhYfwVCUX failed: custom program error: 0xbc4
+OK   q4 locker collect_cp_fees (fee wallet holds the Fee Key NFT): https://explorer.solana.com/tx/5KSVsdkDu1UT5WaggiF14EdeoYKwPJhkCZ52ZCRF5qGHKyAM6bTHa1czC25ijCZrqnqs6SAKTwVMv9yoKVVWVxH4?cluster=devnet
+fee wallet before {"wsol":"672829","base":"0"} after {"wsol":"754519","base":"283649964278"}
+locked LP before {"lockedLpAmount":"203420747155","claimedLpAmount":"0","unclaimedLpAmount":"0","poolId":"GTWSDphjNcDTMRgimMyK8x8UU1TLLDmYvVremJiTHy3d","feeNftMint":"C3dTtQxEasUBibMB2aN88B1GwyrmdTxq2erwyC52Hzr4","lockedOwner":"5xqNaZXX5eUi4p5HU4oz9i5QnwRNT2y6oN7yyn4qENeq"} after {"lockedLpAmount":"203268639147","claimedLpAmount":"152108008","unclaimedLpAmount":"0","poolId":"GTWSDphjNcDTMRgimMyK8x8UU1TLLDmYvVremJiTHy3d","feeNftMint":"C3dTtQxEasUBibMB2aN88B1GwyrmdTxq2erwyC52Hzr4","lockedOwner":"5xqNaZXX5eUi4p5HU4oz9i5QnwRNT2y6oN7yyn4qENeq"}
+OK   q4b trader wraps 0.02 SOL: https://explorer.solana.com/tx/4HwMwEeZbDgffQbJbvgnEFnSN96fiKX6K1aCK5Lg8M65BXDrqt7R9kni7nRKHWPKazFwHFRWC4i9KrbWLTrdTwoU?cluster=devnet
+OK   q4b CPMM swap: trader buys with 0.02 WSOL: https://explorer.solana.com/tx/5TpbhDCczho7wc8GVWr7gK7UpkRDSbszCKmkU1WsMUT3k8zzjUKxw11JvoAWqow7KLkGvjPHUy1J8CxzFTDuFNxk?cluster=devnet
+OK   q4b CPMM collect_creator_fee_permissionless (fee wallet pays, creator receives): https://explorer.solana.com/tx/29FRGgzmvh4vYYaP4gA5zCcnkpB9AX3xNdHrqGMy3YvQrRTXzPxaTxUs9NEq59WoRN8wr9si8eBcXLaKwqYkcQQC?cluster=devnet
+before {"accruedA":"50000","creatorWsol":"763004"} after {"accruedA":"0","creatorWsol":"813004"}
+FAIL (expected) q4 probe: launch with total_quote_fund_raising = 0: Program log: AnchorError thrown in programs/launchpad/src/curve/constant_product.rs:41. Error Code: InvalidInput. Error Number: 6002. Error Message: InvalidInput. | Program DRay6fNdQ5J82H7xV6uq2aV3mNrUZ1J4PgSKsWgptcm6 failed: custom program error: 0x1772
+OK   q4 probe: trader wraps 0.01 SOL: https://explorer.solana.com/tx/3n7b9LUkGyay9UwgqDQwHbpJco9E7dnkx3fdeNXd3bGHWqT55AdrF7AmbCtwjgPVScveKPjcE8YfjvysMeDFfy82?cluster=devnet
+OK   q4 probe: launch with total_quote_fund_raising = 1 lamports: https://explorer.solana.com/tx/4dNCaVJCZJZ6TFhzfghDug75VKQnkNESnrFZBp7ZTp56ikgrU8m1FrYkmMD573sbgfY8QsH3xRzHixbJtSR48N9u?cluster=devnet
+FAIL (expected) q4 probe: buy the 1-lamport pool to completion: Program log: AnchorError thrown in programs/launchpad/src/states/pool.rs:624. Error Code: RequireGteViolated. Error Number: 2506. Error Message: A require_gte expression was violated. | Program DRay6fNdQ5J82H7xV6uq2aV3mNrUZ1J4PgSKsWgptcm6 failed: custom program error: 0x9ca
+{"target_lamports":1,"mint":"8WDty4L4ZGzg7DyjJWaE7AZeSmCJGnfgcRHtMspC26E2","launch":"4dNCaVJCZJZ6TFhzfghDug75VKQnkNESnrFZBp7ZTp56ikgrU8m1FrYkmMD573sbgfY8QsH3xRzHixbJtSR48N9u","buy":null,"status":0,"real_quote":"0"}
+OK   q4 probe: launch with total_quote_fund_raising = 1000 lamports: https://explorer.solana.com/tx/5qmAsiwLyAGrBLCbHTNgVSXbfvXqKQHYH5Pd4YFeu8v4XrcGWsWavMNVZhYjzTszju2TpxyhmTGJnQJBT5vGPbjw?cluster=devnet
+OK   q4 probe: buy the 1000-lamport pool to completion: https://explorer.solana.com/tx/64Vog9iHwLrVsjm43cZodcAk6zNThvCq9yzpBcUgdc2KPVGc1D6Gs3ce4fHTf28sQ732PLuTRuekGiGEwTX6aXqr?cluster=devnet
+{"target_lamports":1000,"mint":"AVh7m47cgA1nyFSbdbzApFS1yLZVhcjEtweCvtdB5Hxw","launch":"5qmAsiwLyAGrBLCbHTNgVSXbfvXqKQHYH5Pd4YFeu8v4XrcGWsWavMNVZhYjzTszju2TpxyhmTGJnQJBT5vGPbjw","buy":"64Vog9iHwLrVsjm43cZodcAk6zNThvCq9yzpBcUgdc2KPVGc1D6Gs3ce4fHTf28sQ732PLuTRuekGiGEwTX6aXqr","status":1,"real_quote":"997"}

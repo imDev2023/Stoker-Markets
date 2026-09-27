@@ -9,12 +9,12 @@ stonkfun.xyz was not touched.
 | # | Question | Answer | Where the evidence comes from |
 |---|---|---|---|
 | 1 | LaunchLab, CPMM and lock deployed on devnet, and which GlobalConfigs exist | Confirmed | Real devnet, read-only |
-| 2 | Our own PlatformConfig with creator fee 0.5% and platform fee 1% | Confirmed on a devnet fork; real devnet run blocked on funding | Local fork of devnet |
-| 3 | Launch, trade, creator and platform fee accrual and claims | Confirmed on a devnet fork; real devnet run blocked on funding | Local fork of devnet |
-| 4 | Graduate, migrate, post-migration creator fee and Fee Key NFT | Confirmed on a devnet fork; who may migrate confirmed on real devnet | Local fork plus real devnet simulation and crank history |
+| 2 | Our own PlatformConfig with creator fee 0.5% and platform fee 1% | Confirmed on real devnet (2026-09-27) and on a devnet fork | Real devnet, plus a local fork |
+| 3 | Launch, trade, creator and platform fee accrual and claims | Confirmed on real devnet (2026-09-27) and on a devnet fork | Real devnet, plus a local fork |
+| 4 | Graduate, migrate, post-migration creator fee and Fee Key NFT | Confirmed on real devnet (2026-09-27): Raydium's crank migrated our pool 9 s after it completed | Real devnet, plus a local fork |
 | 5 | Every mainnet GlobalConfig, quote mints classified, Token-2022 extensions | Confirmed | Mainnet via Helius, read-only |
 
-### Why questions 2 to 4 ran on a fork
+### Why questions 2 to 4 first ran on a fork
 
 Devnet SOL could not be obtained on 2026-09-26.
 The public faucet (`api.devnet.solana.com`) answered 429 "airdrop limit today" for every amount down to 0.2 SOL.
@@ -28,19 +28,49 @@ The devnet SOL GlobalConfig is copied with one change: its `migrate_to_cpswap_wa
 Everything else is the unmodified devnet state and code.
 Fork signatures below are real, confirmed transactions on that validator, but they have no public explorer page.
 
-**To get devnet explorer links, send at least 0.6 SOL (1 SOL recommended) on devnet to `6QHxB5uiQaHbPGjvoMmUC6Uo3vTvnPU4DXXHuy2qKrvr`, then run `CLUSTER=devnet ./run.sh`.**
-`src/fund.ts` spreads it to the other wallets (creator 0.1, trader 0.45, fee wallet 0.02) and refuses to start if the balance is short.
-On devnet Raydium's crank does the migration and pays its 0.15 SOL CPMM fee, and `src/q4_graduate.ts` waits for it.
-The Helius faucet should also allow another 1 SOL tomorrow (`solana airdrop 1 6QHxB5uiQaHbPGjvoMmUC6Uo3vTvnPU4DXXHuy2qKrvr -u "https://devnet.helius-rpc.com/?api-key=..."`).
+## Real devnet run (2026-09-27)
 
-### Throwaway wallets (keys in `.keys/`, git-ignored)
+The owner's own devnet wallet funded the admin wallet with 1 SOL (tx [6613hi...](https://explorer.solana.com/tx/6613hiVT3gv7FMCZXKZhyvciXUBBDT5nt5Q55NNkNEJAKF6GbNPj52YEjakBGFRnVYySW3UG9C2a1gw8KTkaTun2?cluster=devnet)), and `CLUSTER=devnet ./run.sh` then passed every step with the same results as the fork.
+Raydium's devnet crank (`DRayP1Yav394wpS47WQJ5Qm6d95WTQFtGGh54cVQFmhF`) migrated our pool with no action from us: the completing buy landed at slot 504846388 and the migration ([tx](https://explorer.solana.com/tx/2dvPMLcWMmsyqzrY3Q7eCW7Z29WTyPvPAxfyBPpu4DqXAsV7sDcEghg1AqJCg1aQWXPvD51zHZqwLi6VHipMAJwW?cluster=devnet)) at slot 504846429, 9 seconds later.
+This settles the last open question: Raydium's crank migrates pools from a brand-new platform, so Graduation needs no Raydium contact.
+The CPMM pool `GTWSDphjNcDTMRgimMyK8x8UU1TLLDmYvVremJiTHy3d` uses config `5MxLgy...`, and the Fee Key NFT `C3dTtQxEasUBibMB2aN88B1GwyrmdTxq2erwyC52Hzr4` went to our fee wallet.
+The full log is `out/devnet_run.log`; state and evidence are in `out/devnet/`.
 
-| Role | Address |
-|---|---|
-| Platform admin (also the fork's migrate wallet) | `6QHxB5uiQaHbPGjvoMmUC6Uo3vTvnPU4DXXHuy2qKrvr` |
-| Token creator | `DVHeYjJMM7QEkfJtSz2Zry6ijyetrrZXLg4qjqVWWqeD` |
-| Trader | `4k4xBWqEeEsFvkcTAKNgdGHk6cZWeVQZdrEAHnUo1fVv` |
-| Our fee wallet (fee, NFT, vesting and transfer-fee authority) | `CS3BmN59bWPzV5bVfGPFRnnTjUr1mLBoHPkqGsNPDqvH` |
+- OK: fund wallets from admin: [tx](https://explorer.solana.com/tx/2YoKAmjzruvy6XKfmS4XdHm9EvDxLteqtz7BMm2Y7a74Vsrbx8sR3n9vYL5owZWmRjSbqSzY2NXkBSUegqyU1DPf?cluster=devnet)
+- OK: q2 create_platform_config: [tx](https://explorer.solana.com/tx/5zJesv9ssXtoFvwHG5abnLpTFVFt3G2oodmMVHr27P6XmaUUx9DqaE1jXyX9381pRGPMsXQCUHLYSwcwU5iajoHi?cluster=devnet)
+- OK: q3 initialize_v2 (SPL base, amm_fee_on=QuoteToken): [tx](https://explorer.solana.com/tx/5A3qf8MsuAafud73fkzoKFDfa24kFkg1Bdw5mcjgNgVJzinjt8wDKj2xvtTQrvdLcMsqA3gSnH3neCjsjJvLwZ7g?cluster=devnet)
+- OK: q3 trader wraps 0.1 SOL: [tx](https://explorer.solana.com/tx/2UQ5mucTQt7BQin9VmMamAzRAwr8RQxD2WkM3x8nys887NhneMJg7nNMmMYq6cEy6mqbhP3ofsH7QWb7XJFkv3ty?cluster=devnet)
+- OK: q3 trader buy 0.03 SOL: [tx](https://explorer.solana.com/tx/5WoPdngMBUDX48U8Y661zUe47ppNWxNhS4SpXQXPeMdyPaDKHcmBs4DGWgpnDNdxzBAwLWjccpQe1biBtHx77Egi?cluster=devnet)
+- OK: q3 trader sell half: [tx](https://explorer.solana.com/tx/4JxDJoariNanL9c1osEcd5csRGw648XAH3XoVrhFZGwLxKXcnmJA3XpTHeZ8Kt1uKdyRACfyfgDgCCZKkc32Y5cd?cluster=devnet)
+- OK: q3 trader buy 0.02 SOL: [tx](https://explorer.solana.com/tx/61RtdEcWNi94nkpwUXq1gusm7cyqCW7ggJLetKJ6CQEaeSHdtKvrnGdnjz6kvRPTB3KPYbMRRuQ17GKZ9rTWrnSD?cluster=devnet)
+- OK: q3 claim_creator_fee (creator): [tx](https://explorer.solana.com/tx/2o9BXxDCFD5sdTXTQyrHfXETwJjvNu8FhXmbYmhvi4gfF3cmGVnkPe1fU2eQwnuF7CpRqrqnofn3kY6ipZ11VLa7?cluster=devnet)
+- OK: q3 claim_platform_fee_from_vault (fee wallet): [tx](https://explorer.solana.com/tx/3B843i5Wtdn1RBBezDQgVRodrxG5c9dNFJ6pqotW1dSLPFkkQg4xDoTyisynVfLrm3KfByGmqXoD95WEosuN9DND?cluster=devnet)
+- Expected failure: q3 claim_platform_fee (pool-level, fee wallet) (error 6009)
+- Expected failure: q3 claim_creator_fee by NON-creator (trader) must fail (error 3012)
+- OK: q3b initialize_with_token_2022 (1% transfer fee): [tx](https://explorer.solana.com/tx/3P7vq2zy6WvBnEXezKizBpWBFnbLP9zDLL5zAsVrMnVtpR6CvrDAKVi3i5irXYnxKFoeSyzbKhjFmM6Yw3kT11mG?cluster=devnet)
+- OK: q3b trader wraps 0.02 SOL: [tx](https://explorer.solana.com/tx/dLky67U5rRhi7S5XEwTm6KuRkyhLsq8KmRMmUFhMwEsB5HskLmgYH1AK5zM6ZTWgm4X94iKEyb3KXc7d254dGwW?cluster=devnet)
+- OK: q3b trader buy 0.01 SOL of the Token-2022 coin: [tx](https://explorer.solana.com/tx/3dANkhAt7ieokhkaoeCTtPHrAJf1HNFBF6tM8RjVrR5npbrvTWRv41EMMQ6g8MMPNSKk5uQbKtyocbHn37GW39XX?cluster=devnet)
+- OK: q3b trader sells half back: [tx](https://explorer.solana.com/tx/AZNTBRiZp9L4Q1frxqPykn3peam1RtsLkFipBrP2EqgWAmvzC1afr8rnoDVBkb326CUnwT5KmbPEp4Y7x3YAmaC?cluster=devnet)
+- OK: q3c trader wraps 0.02 SOL: [tx](https://explorer.solana.com/tx/5EKJZxabonno5RGZTa63gRbEaxMK8xkHRG7sQr3tQRsTRg2a5Fhy7wuJVqqrFqNfUKEiuPyFRkQSZ9crce2gQQFr?cluster=devnet)
+- Expected failure: q3c buy WITHOUT fee-vault remaining accounts (error 6018)
+- OK: q4 trader wraps SOL for the final buy: [tx](https://explorer.solana.com/tx/3RPbehpQhw3GHQVwovfmfJUZvAvyx1NCf715PdsWTLA3GzQSed4EWhUvDxANotMmSjCKoDq4gD6m7daRvwCXfzdg?cluster=devnet)
+- OK: q4 trader buys to completion: [tx](https://explorer.solana.com/tx/eMZHyWwbbFvuJxixTVovp9Cd6PStYjuUxC4RLMmjAawjyWiuYPTfoY3YgyYQAz39uXovwwuHsdU5Gg2zvYgEAUJ?cluster=devnet)
+- OK: q4 trader wraps 0.05 SOL for CPMM swaps: [tx](https://explorer.solana.com/tx/2BGSwCF18y2Lg12byLmittDr6WbuXgV8tqyW15g9SibVXxdLcXFGaVqg3JGLover37axC7DGx8ZgcXAxtTZM18kB?cluster=devnet)
+- OK: q4 CPMM swap: trader buys with 0.04 WSOL: [tx](https://explorer.solana.com/tx/5QxYYdPDc2H7PNLBeACP8KTiw23tKKEpWZ4Ro6dmNWLddcwVDWoL1qehPkpo75QXbByZY9xw66pMinL8SCGX8huC?cluster=devnet)
+- OK: q4 CPMM swap: trader sells a quarter of its tokens: [tx](https://explorer.solana.com/tx/P66cRw3PD44g53FmiSoFBqUBaiiWiffxRHxM4K3gdhP7FrFGjfk75puvdvPE75SWb2qGTyhDxjboWBKgBhg5kE2?cluster=devnet)
+- Expected failure: q4 CPMM collect_creator_fee by a NON-creator (trader) must fail (error 2012)
+- OK: q4 CPMM collect_creator_fee (token creator): [tx](https://explorer.solana.com/tx/6JPkY5v6uDHAs3K1m7GTr54Bc4hYPftMfVPSV9fMYtZ6z4GTczxsC47Hk7xJWp66CUMYBPnfm3sj9s6R5y2J5N5?cluster=devnet)
+- Expected failure: q4 locker collect_cp_fees by a wallet WITHOUT the Fee Key NFT (trader) must fail (error 3012)
+- OK: q4 locker collect_cp_fees (fee wallet holds the Fee Key NFT): [tx](https://explorer.solana.com/tx/5KSVsdkDu1UT5WaggiF14EdeoYKwPJhkCZ52ZCRF5qGHKyAM6bTHa1czC25ijCZrqnqs6SAKTwVMv9yoKVVWVxH4?cluster=devnet)
+- OK: q4b trader wraps 0.02 SOL: [tx](https://explorer.solana.com/tx/4HwMwEeZbDgffQbJbvgnEFnSN96fiKX6K1aCK5Lg8M65BXDrqt7R9kni7nRKHWPKazFwHFRWC4i9KrbWLTrdTwoU?cluster=devnet)
+- OK: q4b CPMM swap: trader buys with 0.02 WSOL: [tx](https://explorer.solana.com/tx/5TpbhDCczho7wc8GVWr7gK7UpkRDSbszCKmkU1WsMUT3k8zzjUKxw11JvoAWqow7KLkGvjPHUy1J8CxzFTDuFNxk?cluster=devnet)
+- OK: q4b CPMM collect_creator_fee_permissionless (fee wallet pays, creator receives): [tx](https://explorer.solana.com/tx/29FRGgzmvh4vYYaP4gA5zCcnkpB9AX3xNdHrqGMy3YvQrRTXzPxaTxUs9NEq59WoRN8wr9si8eBcXLaKwqYkcQQC?cluster=devnet)
+- Expected failure: q4 probe (error 6002)
+- OK: q4 probe: trader wraps 0.01 SOL: [tx](https://explorer.solana.com/tx/3n7b9LUkGyay9UwgqDQwHbpJco9E7dnkx3fdeNXd3bGHWqT55AdrF7AmbCtwjgPVScveKPjcE8YfjvysMeDFfy82?cluster=devnet)
+- OK: q4 probe: launch with total_quote_fund_raising = 1 lamports: [tx](https://explorer.solana.com/tx/4dNCaVJCZJZ6TFhzfghDug75VKQnkNESnrFZBp7ZTp56ikgrU8m1FrYkmMD573sbgfY8QsH3xRzHixbJtSR48N9u?cluster=devnet)
+- Expected failure: q4 probe (error 2506)
+- OK: q4 probe: launch with total_quote_fund_raising = 1000 lamports: [tx](https://explorer.solana.com/tx/5qmAsiwLyAGrBLCbHTNgVSXbfvXqKQHYH5Pd4YFeu8v4XrcGWsWavMNVZhYjzTszju2TpxyhmTGJnQJBT5vGPbjw?cluster=devnet)
+- OK: q4 probe: buy the 1000-lamport pool to completion: [tx](https://explorer.solana.com/tx/64Vog9iHwLrVsjm43cZodcAk6zNThvCq9yzpBcUgdc2KPVGc1D6Gs3ce4fHTf28sQ732PLuTRuekGiGEwTX6aXqr?cluster=devnet)
 
 ## 1. Is LaunchLab deployed on devnet, and which GlobalConfigs exist?
 
@@ -163,7 +193,7 @@ On mainnet all 571 GlobalConfigs name `RAYpQbFNq9i3mu6cKpTKKRwwHFDeK5AuZz8xvxUrC
 
 Raydium's devnet crank migrates automatically.
 Its last 200 transactions contain migrations for pools of several third-party platforms, usually 4 to 8 seconds after the completing trade (`out/devnet_migrations_sample.json`), for example [`5ZpE81mU...`](https://explorer.solana.com/tx/5ZpE81mU5gVsxRJE3tvVXnYoPGDARCWq4PgmA5AdB3kxm2YGbZdnkQ6D8C3wTqq9KriPtvcer1Lv9415KkRd9L1M?cluster=devnet) and a burn-scale platform [`W5UaseW2...`](https://explorer.solana.com/tx/W5UaseW2p6XY7QzUa4vx6yT3kwdYh9XnfmBz1eMBoLspoZTbuEEWNEdFS5qstGsnoPfshcBo6m3dhSmctzcNqc9?cluster=devnet).
-Whether it also picks up our own new platform is the one thing only the funded devnet run can prove; `src/q4_graduate.ts` waits up to 20 minutes for it.
+The funded devnet run on 2026-09-27 proved it also picks up our own new platform: it migrated our pool 9 seconds after the curve completed (see "Real devnet run" above).
 
 The migrate instruction takes 28 named accounts plus 10 remaining accounts when `platform_scale` is 100%: platform NFT wallet, a fresh Fee Key NFT mint (co-signer), its ATA, the locker's `["locked_liquidity", nft_mint]` PDA, the NFT's Metaplex metadata, the pool creator, the CPMM permission PDA `["permission", launchlab_authority]`, `platform_cp_creator`, and the CPMM `["support_mint", mint]` PDAs for quote then base.
 It is too large for a legacy transaction (1,471 bytes), so it needs a v0 transaction with an address lookup table.
