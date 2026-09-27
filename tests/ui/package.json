@@ -11,6 +11,7 @@
     "@launchpad/localnet": "workspace:*",
     "@launchpad/stack": "workspace:*",
     "@playwright/test": "^1.63.0",
+    "@solana/spl-token": "^0.4.15",
     "@solana/web3.js": "^1.99.0",
     "@types/node": "^24.0.0"
   }
