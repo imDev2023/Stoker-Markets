@@ -5,7 +5,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 
 ## Read first
 
-1. GitHub issue #5 (`gh issue view 5`) - the v1 PRD; slices are issues #8 to #23, each with "Blocked by".
+1. GitHub issue #5 (`gh issue view 5`) - the v1 PRD; slices are issues #8 to #23, each with "Blocked by". A slice's latest comment is its current status.
 2. `CONTEXT.md` - the domain glossary; use its terms in code, issues and UI copy.
 3. `docs/adr/` - fee model (0001), Cloudflare hosting (0002), server-built transactions (0003), key custody (0004).
 4. `spike/launchlab-devnet/README.md` - what LaunchLab really does on devnet, with tx evidence and gotchas.
@@ -36,16 +36,19 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 - Asset pairing is not StonkFun-only: pump.fun has admin-listed custom quotes since 2026-09-09 (`research/competitors/README.md`). Our wedge is open (any Raydium GlobalConfig quote, 571 on mainnet) plus trustless (Creator Fee paid by the chain).
 - Only Raydium's migrate wallet can graduate a pool, and its crank migrates a new platform's pools within seconds (proven on real devnet 2026-09-27).
 - A new Quote Asset needs Raydium to create its GlobalConfig; only the Platform Token's is planned (after it graduates).
+- The disclaimer's excluded list (US, UK, Canada, sanctioned countries) is confirmed by the owner.
+- Metadata stays on R2 plus Postgres for v1, on a domain we keep for good; a coin's metadata URL can never change after launch, and the API refuses a temporary address on mainnet. Arweave only via ArDrive Turbo, since Irys retires its Arweave endpoints on 2026-11-01 (#23).
 
 ## Traps
 
-- Never import `@launchpad/chain` or `@raydium-io/raydium-sdk-v2` from `apps/web` (GPL, ADR 0003).
+- `apps/web` never imports `@launchpad/chain`, the Raydium SDK or Anchor (GPL, ADR 0003); ESLint and a UI test enforce it.
 - The `PlatformConfig` address is derived from the admin key and the admin can never change (ADR 0004).
 - Our platform sets `restrict_curve_param`, so every launch must pass the curve-rule PDA as the last account; a mismatched shape fails with 6025 `CurveParamNotMatchPlatformRule`.
 - Trades must include the platform and creator fee-vault accounts or fail with 6018.
 - Decode Helius payloads as raw RPC `getTransaction` JSON (`accountKeys` strings); web3.js's parsed `getTransaction` object has a different shape.
 - `solana account --output json` dumps `rentEpoch` as u64 max; a JSON round-trip turns it into a float the validator rejects, so write 0.
 - TypeScript is pinned to 6.0 because typescript-eslint doesn't support 7. pnpm 11 needs `allowBuilds` in `pnpm-workspace.yaml` for native deps.
+- A `container-type: inline-size` box has no width of its own: in a column flex with `align-items: flex-start` it collapses to 0 and anything sized in `cqi` vanishes. `PairMark` measures its glyphs to fit, because per-character estimates break on wide letters like W.
 - `grep` in this shell is aliased to ugrep with different flags; use `/usr/bin/grep` in scripts.
 - Test `next dev` runs rewrite `apps/web/next-env.d.ts` to point at their throwaway build folder; the web `typecheck` runs `next typegen` first, so ignore that file.
 - `agent-browser screenshot` needs absolute paths. Firecrawl is out of credits.
