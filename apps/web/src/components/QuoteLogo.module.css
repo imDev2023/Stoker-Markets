@@ -1,0 +1,21 @@
+.logo,
+.monogram {
+  flex: none;
+  border-radius: 999px;
+}
+
+.logo {
+  object-fit: cover;
+  background: var(--plate);
+}
+
+.monogram {
+  display: inline-grid;
+  place-items: center;
+  background: var(--plate);
+  color: var(--cobalt-strong);
+  font-family: var(--font-display);
+  font-stretch: 125%;
+  font-weight: 800;
+  line-height: 1;
+}

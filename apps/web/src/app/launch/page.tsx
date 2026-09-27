@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { getPlatform } from "@/lib/api";
+import { getPlatform, listQuotes } from "@/lib/api";
 import { LaunchForm } from "@/components/LaunchForm";
 
 export const metadata: Metadata = { title: "Launch a coin" };
 
 export default async function LaunchPage() {
-  const platform = await getPlatform();
-  return <LaunchForm platform={platform} />;
+  const [platform, { quotes }] = await Promise.all([getPlatform(), listQuotes()]);
+  return <LaunchForm platform={platform} quotes={quotes} />;
 }
