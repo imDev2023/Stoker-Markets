@@ -31,10 +31,19 @@ export function LaunchCard({ launch, now }: { launch: LaunchSummary; now: number
             <time dateTime={launch.createdAt}>{timeAgo(launch.createdAt, now)}</time>
           </dd>
         </div>
-        <div>
-          <dt>Graduates at</dt>
-          <dd>{formatAmount(launch.graduationTarget, launch.quote.decimals)} {quote}</dd>
-        </div>
+        {launch.curve.status === "live" ? (
+          <div>
+            <dt>Graduates at</dt>
+            <dd>{formatAmount(launch.graduationTarget, launch.quote.decimals)} {quote}</dd>
+          </div>
+        ) : (
+          <div>
+            <dt>Graduation</dt>
+            <dd className={launch.curve.status === "graduated" ? styles.graduated : styles.graduating}>
+              {launch.curve.status === "graduated" ? "Graduated" : "In progress"}
+            </dd>
+          </div>
+        )}
       </dl>
     </Link>
   );

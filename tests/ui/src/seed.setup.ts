@@ -2,7 +2,9 @@
 // Names and tickers run to the contract's limits to catch text that overflows its box.
 import { test as setup } from "@playwright/test";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { claimViaApi, fundedKeypair, fundQuote, launchViaApi, SEED_CREATOR, tradeViaApi, type LaunchFields } from "./fixtures";
+import {
+  claimViaApi, coinBalance, fundedKeypair, fundQuote, graduate, launchViaApi, SEED_CREATOR, SEED_HOLDER, tradeViaApi, type LaunchFields,
+} from "./fixtures";
 
 export const SEEDED: LaunchFields[] = [
   { name: "Harbor Lights", symbol: "HRBR", description: "A coin for the night shift at the port." },
@@ -19,6 +21,9 @@ export const SEEDED: LaunchFields[] = [
   },
   { name: "Signal Fire", symbol: "$FIRE", description: "Short." },
 ];
+
+/** A coin Raydium moved into its pool, which has traded there since. */
+const GRADUATED: LaunchFields = { name: "Cap and Gown", symbol: "GOWN", description: "Graduated, and trading in its Raydium pool." };
 
 /** Trades on the first seeded coin, so its page has a chart, a history and a price. Fixed amounts keep prices fixed. */
 const TRADES = [
@@ -43,4 +48,13 @@ setup("seed the board", async () => {
   // Dollar Paired is bought in USDC, so a non-SOL coin page has a trade and the Creator has USDC to claim.
   await fundQuote(trader.publicKey, "USDC", 30_000_000n);
   await tradeViaApi(trader, mints.get("Dollar Paired")!, "buy", 30_000_000n);
+
+  // Cap and Gown sells out, Raydium's crank (played by the local migrate wallet) moves it to its pool, and it trades there.
+  // Its trader is fixed, so a visual test can hand the test wallet some of its coins without moving the pool.
+  const graduated = await launchViaApi(creator, GRADUATED);
+  const holder = await fundedKeypair(5, SEED_HOLDER);
+  await tradeViaApi(holder, graduated, "buy", BigInt(2 * LAMPORTS_PER_SOL));
+  await graduate(graduated);
+  await tradeViaApi(holder, graduated, "buy", BigInt(0.5 * LAMPORTS_PER_SOL));
+  await tradeViaApi(holder, graduated, "sell", (await coinBalance(holder, graduated)) / 4n);
 });

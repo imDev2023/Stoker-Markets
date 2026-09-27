@@ -22,6 +22,15 @@ export default async function CoinPage({ params }: Props) {
   ]);
   if (!launch) notFound();
   const quote = quoteTicker(launch.quote);
+  const addresses: (readonly [label: string, value: string, kind: "address" | "tx"])[] = [
+    ["Creator", launch.creator, "address"],
+    ["Coin", launch.mint, "address"],
+    ["Curve", launch.pool, "address"],
+    ["Launch transaction", launch.createdSignature, "tx"],
+    ...(launch.graduation
+      ? ([["Raydium pool", launch.graduation.pool, "address"], ["Graduation transaction", launch.graduation.signature, "tx"]] as const)
+      : []),
+  ];
   const links = [
     ["Website", launch.links.website],
     ["X", launch.links.x],
@@ -71,17 +80,18 @@ export default async function CoinPage({ params }: Props) {
               </time>
             </dd>
           </div>
+          {launch.graduation && (
+            <div>
+              <dt>Graduated</dt>
+              <dd>
+                <time dateTime={launch.graduation.graduatedAt}>{formatUtc(launch.graduation.graduatedAt)}</time>
+              </dd>
+            </div>
+          )}
         </dl>
 
         <dl className={styles.addresses}>
-          {(
-            [
-              ["Creator", launch.creator, "address"],
-              ["Coin", launch.mint, "address"],
-              ["Curve", launch.pool, "address"],
-              ["Launch transaction", launch.createdSignature, "tx"],
-            ] as const
-          ).map(([label, value, kind]) => (
+          {addresses.map(([label, value, kind]) => (
             <div key={label}>
               <dt>{label}</dt>
               <dd>

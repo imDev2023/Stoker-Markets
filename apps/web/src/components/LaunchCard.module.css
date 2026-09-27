@@ -81,3 +81,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.facts .graduating {
+  color: var(--cobalt-strong);
+}
+
+.facts .graduated {
+  color: var(--verified);
+}
+
+.facts .graduated::before {
+  content: "✓ ";
+}

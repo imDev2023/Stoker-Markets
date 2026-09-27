@@ -3,7 +3,7 @@
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey, VersionedTransaction } from "@solana/web3.js";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import type { LaunchSummary, PlatformInfo, PreparedTrade, TradeQuote, TradeSide } from "@launchpad/contract";
+import type { LaunchSummary, PlatformInfo, PreparedTrade, TradeQuote, TradeSide, TradeVenue } from "@launchpad/contract";
 import { getQuote, listTrades, prepareTrade, reportTransaction } from "@/lib/api";
 import { COIN_DECIMALS, explorerUrl, formatUnits, isSol, parseUnits, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
@@ -25,11 +25,12 @@ const SLIPPAGE_BPS = [50, 100, 200, 500] as const;
 /** Buy presets, in SOL or their worth in any other Quote Asset. */
 const BUY_PRESETS_SOL = [0.1, 0.5, 1] as const;
 const SELL_PRESETS = [25, 50, 100] as const;
-const RAYDIUM_FEE_PCT = 0.25;
 const QUOTE_DEBOUNCE_MS = 250;
-// LaunchLab's ExceededSlippage error, as a transaction error and as the RPC's preflight log writes it.
-const EXCEEDED_SLIPPAGE = 6004;
-const exceededSlippage = (text: string) => text.includes(`"Custom":${EXCEEDED_SLIPPAGE}`) || text.includes(`0x${EXCEEDED_SLIPPAGE.toString(16)}`);
+// The ExceededSlippage error of LaunchLab (the curve) and of Raydium's CPMM (the pool after Graduation), as a
+// transaction error and as the RPC's preflight log writes it.
+const EXCEEDED_SLIPPAGE: Record<TradeVenue, number> = { curve: 6004, pool: 6005 };
+const exceededSlippage = (text: string, venue: TradeVenue) =>
+  text.includes(`"Custom":${EXCEEDED_SLIPPAGE[venue]}`) || text.includes(`0x${EXCEEDED_SLIPPAGE[venue].toString(16)}`);
 
 export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSummary; platform: PlatformInfo; onTraded: () => void }) {
   const { connection } = useConnection();
@@ -51,6 +52,8 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
   const solPair = isSol(launch.quote);
   const payDecimals = side === "buy" ? quoteDecimals : COIN_DECIMALS;
   const getDecimals = side === "buy" ? COIN_DECIMALS : quoteDecimals;
+  // After Graduation the coin trades in its Raydium pool; the API routes quotes and trades there by itself.
+  const venue: TradeVenue = launch.curve.status === "graduated" ? "pool" : "curve";
   const paySymbol = side === "buy" ? quoteSymbol : launch.symbol;
   const getSymbol = side === "buy" ? launch.symbol : quoteSymbol;
   const amount = parseUnits(amountText, payDecimals);
@@ -81,7 +84,8 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
 
   useEffect(() => void refreshBalances(), [refreshBalances]);
 
-  // A live quote while the trader types, so the fees and what they get are visible before anything is signed.
+  // A live quote while the trader types, so the fees and what they get are visible before anything is signed. It is
+  // fetched again when the coin graduates, since it then trades in its pool at another price and other fees.
   useEffect(() => {
     setQuote(null);
     setQuoteError(null);
@@ -98,7 +102,7 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
       abort.abort();
       clearTimeout(timer);
     };
-  }, [launch.mint, side, amount, slippageBps]);
+  }, [launch.mint, side, amount, slippageBps, venue]);
 
   function edit(next: () => void) {
     setError(null);
@@ -117,7 +121,7 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
         sigVerify: false,
         accounts: { addresses: [publicKey.toBase58()], encoding: "base64" },
       });
-      if (sim.value.err) throw new Error(simulationError(sim.value.err, sim.value.logs ?? [], solPair ? null : quoteSymbol));
+      if (sim.value.err) throw new Error(simulationError(sim.value.err, sim.value.logs ?? [], solPair ? null : quoteSymbol, prepared.quote.venue));
       const before = BigInt(await connection.getBalance(publicKey, "confirmed"));
       // The simulated balance already has the network fee taken off.
       const after = BigInt(sim.value.accounts?.[0]?.lamports ?? before);
@@ -142,7 +146,7 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
       );
       if (result.value.err) {
         setError(
-          exceededSlippage(JSON.stringify(result.value.err))
+          exceededSlippage(JSON.stringify(result.value.err), r.prepared.quote.venue)
             ? "The price moved past your slippage before the trade landed, so nothing was traded and only the network fee was charged. Try again, or allow more slippage."
             : "The trade failed on-chain, so nothing was traded and only the network fee was charged. Try again.",
         );
@@ -161,7 +165,7 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
       setError(
         /reject|declin|cancel/i.test(message)
           ? "You declined the transaction in your wallet. Nothing was traded."
-          : exceededSlippage(message)
+          : exceededSlippage(message, r.prepared.quote.venue)
             ? "The price moved past your slippage before the trade was sent, so nothing was traded or charged. Check the new quote and try again, or allow more slippage."
             : "The trade couldn't be sent. Nothing was traded; try again in a moment.",
       );
@@ -186,14 +190,14 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
     </p>
   );
 
-  // A buy that sells out the curve lands here too, so its confirmation stays on screen.
-  if (launch.curve.status !== "live") {
+  // A buy that sells out the curve lands here too, so its confirmation stays on screen until the pool opens.
+  if (launch.curve.status === "graduating") {
     return (
       <section className={`${styles.card} ${styles.form}`} aria-labelledby="trade-title">
         <h2 id="trade-title" className={styles.title}>Trade</h2>
         {confirmation}
         <p className={styles.closed}>
-          The curve sold out, so this coin no longer trades here. It trades on Raydium once it has moved to its pool.
+          Trading pauses while Raydium moves the coin to its pool, and opens here again in a few seconds.
         </p>
       </section>
     );
@@ -202,12 +206,23 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
   const r = step.kind === "reviewing" || step.kind === "signing" || step.kind === "confirming" ? step.review : null;
   const shown = r?.prepared.quote ?? quote;
   const moved = shown ? ((shown.priceAfter - shown.priceBefore) / shown.priceBefore) * 100 : 0;
-  const totalFees = shown ? BigInt(shown.fees.raydium) + BigInt(shown.fees.platform) + BigInt(shown.fees.creator) : 0n;
-  const fees = [
-    ["Raydium", RAYDIUM_FEE_PCT, shown?.fees.raydium],
-    ["Platform fee", platform.platformFeeBps / 100, shown?.fees.platform],
-    ["Creator fee", platform.creatorFeeBps / 100, shown?.fees.creator],
-  ] as const;
+  // In the pool a sell pays the pool's own fee in the coins going in; every other fee is in the Quote Asset.
+  const poolFeeInCoins = shown?.venue === "pool" && shown.side === "sell";
+  const quoteFees = shown
+    ? BigInt(shown.fees.platform) + BigInt(shown.fees.creator) + (poolFeeInCoins ? 0n : BigInt(shown.fees.raydium))
+    : 0n;
+  const fees: { label: string; pct: number; raw: string; coins: boolean }[] = !shown
+    ? []
+    : shown.venue === "pool"
+      ? [
+          { label: "Raydium pool fee", pct: shown.feeBps.raydium / 100, raw: shown.fees.raydium, coins: poolFeeInCoins },
+          { label: "Platform fee", pct: shown.feeBps.platform / 100, raw: shown.fees.platform, coins: false },
+        ]
+      : [
+          { label: "Raydium", pct: shown.feeBps.raydium / 100, raw: shown.fees.raydium, coins: false },
+          { label: "Platform fee", pct: shown.feeBps.platform / 100, raw: shown.fees.platform, coins: false },
+          { label: "Creator fee", pct: shown.feeBps.creator / 100, raw: shown.fees.creator, coins: false },
+        ];
 
   return (
     <section className={styles.card} aria-labelledby="trade-title">
@@ -260,7 +275,9 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
                   : `You have ${formatUnits(held!.toString(), payDecimals)} ${paySymbol}. Enter a smaller amount.`
                 : side === "buy"
                   ? `Paid in ${quoteSymbol}, fees included.`
-                  : `The coins you sell go back to the curve.`}
+                  : venue === "pool"
+                    ? "The coins you sell go to the coin's Raydium pool."
+                    : "The coins you sell go back to the curve."}
           </p>
           <div className={styles.presets}>
             {side === "buy"
@@ -320,22 +337,34 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
               <div className={styles.feeTotal}>
                 <dt>Fees</dt>
                 <dd>
-                  <span className="mono">{formatUnits(totalFees.toString(), quoteDecimals, 6)}</span> {quoteSymbol}
+                  <span className="mono">{formatUnits(quoteFees.toString(), quoteDecimals, 6)}</span> {quoteSymbol}
+                  {poolFeeInCoins && (
+                    <>
+                      {" "}+ <span className="mono">{formatUnits(shown.fees.raydium, COIN_DECIMALS, 0)}</span> {launch.symbol}
+                    </>
+                  )}
                 </dd>
               </div>
-              {fees.map(([label, pct, raw]) => (
-                <div key={label} className={styles.fee}>
+              {fees.map((f) => (
+                <div key={f.label} className={styles.fee}>
                   <dt>
-                    {label} <span className="mono">{pct}%</span>
+                    {f.label} <span className="mono">{f.pct}%</span>
                   </dt>
                   <dd>
-                    <span className="mono">{formatUnits(raw ?? "0", quoteDecimals, 6)}</span> {quoteSymbol}
+                    {f.coins ? (
+                      <><span className="mono">{formatUnits(f.raw, COIN_DECIMALS, 0)}</span> {launch.symbol}</>
+                    ) : (
+                      <><span className="mono">{formatUnits(f.raw, quoteDecimals, 6)}</span> {quoteSymbol}</>
+                    )}
                   </dd>
                 </div>
               ))}
             </dl>
           ) : (
-            <p className={styles.quoteHint}>Enter an amount to see what you get and every fee you pay.</p>
+            <p className={styles.quoteHint}>
+              {venue === "pool" && "This coin trades in its Raydium pool now. "}
+              Enter an amount to see what you get and every fee you pay.
+            </p>
           )}
           {shown?.completesCurve && (
             <p className={styles.completes}>
@@ -416,7 +445,6 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
 
 /** Turns an API or wallet error into what happened and what to do next. */
 function tradeError(message: string) {
-  if (/sold out/.test(message)) return "This coin's curve has sold out, so it no longer trades here.";
   if (/too small/.test(message)) return "That amount is too small to trade. Enter a larger amount.";
   if (/more than the curve has sold/.test(message)) return "That's more coins than the curve has sold. Enter a smaller amount.";
   if (/^[A-Z]/.test(message) && message.endsWith(".")) return message;
@@ -439,7 +467,7 @@ function buyPresets(launch: LaunchSummary, platform: PlatformInfo) {
 }
 
 /** Turns a failed simulation into something the trader can act on; `quote` is the Quote Asset's ticker when it isn't SOL. */
-function simulationError(err: unknown, logs: string[], quote: string | null) {
+function simulationError(err: unknown, logs: string[], quote: string | null, venue: TradeVenue) {
   const text = `${JSON.stringify(err)} ${logs.join(" ")}`;
   if (quote && /insufficient funds|"Custom":1\b/.test(text) && !/insufficient lamports|InsufficientFundsForRent/.test(text))
     return `Your wallet doesn't have enough ${quote} for this trade. Lower the amount or add ${quote}.`;
@@ -448,6 +476,6 @@ function simulationError(err: unknown, logs: string[], quote: string | null) {
       ? "Your wallet doesn't have enough SOL for this trade's network fees. Add SOL and try again."
       : "Your wallet doesn't have enough to cover this trade and its network fees. Lower the amount or add SOL.";
   if (/AccountNotFound/.test(text)) return "Your wallet has no SOL yet. Add SOL and try again.";
-  if (exceededSlippage(text)) return "The price has moved past your slippage. Check the new quote and try again.";
+  if (exceededSlippage(text, venue)) return "The price has moved past your slippage. Check the new quote and try again.";
   return "The trade would fail on-chain, so nothing was sent. Try again in a moment.";
 }
