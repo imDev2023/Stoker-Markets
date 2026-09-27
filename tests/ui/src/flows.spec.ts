@@ -1,48 +1,10 @@
 // What a Creator does in the web app, end to end against the real chain and API.
-import { Connection, Keypair, LAMPORTS_PER_SOL, SystemProgram, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
-import type { Page } from "@playwright/test";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
-  COIN_PNG, creatorFeeVault, expect, fundedKeypair, launchViaApi, listLaunches, sol, solBalance, test, tradeViaApi,
+  COIN_PNG, creatorFeeVault, drain, expect, fundedKeypair, launchViaApi, listLaunches, sol, solBalance, test, tradeViaApi,
 } from "./fixtures";
+import { acceptDisclaimer, COIN, connectWallet, disclaimer, fillForm, formAlert, review } from "./launchPage";
 import { TEST_WALLET_NAME } from "./wallet";
-
-const COIN = {
-  name: "Tracer Bullet",
-  symbol: "TRCR",
-  description: "The first coin through the whole system: form, API, wallet, chain, indexer, board.",
-  website: "https://example.com/tracer",
-  x: "https://x.com/tracer",
-  telegram: "https://t.me/tracer",
-};
-
-async function connectWallet(page: Page) {
-  await page.getByRole("main").getByRole("button", { name: "Connect wallet" }).click();
-  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
-  await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
-}
-
-async function fillForm(page: Page, coin: Partial<typeof COIN> = COIN) {
-  await page.locator('input[type="file"]').setInputFiles({ name: "coin.png", mimeType: "image/png", buffer: COIN_PNG });
-  await page.getByLabel("Name").fill(coin.name ?? COIN.name);
-  await page.getByLabel("Ticker").fill(coin.symbol ?? COIN.symbol);
-  if (coin.description) await page.getByLabel("Description").fill(coin.description);
-  if (coin.website) await page.getByLabel("Website").fill(coin.website);
-  if (coin.x) await page.getByLabel(/^X\b/).fill(coin.x);
-  if (coin.telegram) await page.getByLabel("Telegram").fill(coin.telegram);
-}
-
-const disclaimer = (page: Page) => page.getByRole("dialog", { name: "Before you launch" });
-const formAlert = (page: Page) => page.getByRole("main").getByRole("alert");
-const review = (page: Page) => page.getByRole("region", { name: "Review your launch" });
-
-async function acceptDisclaimer(page: Page) {
-  const dialog = disclaimer(page);
-  await expect(dialog).toBeVisible();
-  const cont = dialog.getByRole("button", { name: "Continue" });
-  await expect(cont).toBeDisabled();
-  await dialog.getByRole("checkbox").check();
-  await cont.click();
-}
 
 test("a Creator launches a SOL-paired coin and finds it on the board and its coin page", async ({ page, wallet, stack }) => {
   await page.goto("/launch");
@@ -146,12 +108,9 @@ test("declining in the wallet launches nothing and says so", async ({ page, wall
   expect(await listLaunches()).toHaveLength(before.length);
 });
 
-test("a wallet without enough SOL is told so before signing", async ({ page, wallet, stack }) => {
+test("a wallet without enough SOL is told so before signing", async ({ page, wallet }) => {
   // Leave the wallet 0.005 SOL, well under the rent a launch pays.
-  const conn = new Connection(stack.rpcUrl, "confirmed");
-  const spend = (await conn.getBalance(wallet.keypair.publicKey)) - 0.005 * LAMPORTS_PER_SOL - 5_000;
-  const drain = SystemProgram.transfer({ fromPubkey: wallet.keypair.publicKey, toPubkey: Keypair.generate().publicKey, lamports: spend });
-  await sendAndConfirmTransaction(conn, new Transaction().add(drain), [wallet.keypair]);
+  await drain(wallet.keypair, 0.005);
 
   await page.goto("/launch");
   await connectWallet(page);

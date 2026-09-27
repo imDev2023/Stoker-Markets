@@ -2,12 +2,15 @@
 // run (addresses, times, costs) are masked; everything else must match to the pixel.
 import type { Page } from "@playwright/test";
 import {
-  COIN_PNG, expect, expectNoHorizontalOverflow, expectNoTruncatedText, giveCoins, listLaunches, SEED_CREATOR, SEED_HOLDER, test,
+  COIN_PNG, drain, expect, expectNoHorizontalOverflow, expectNoTruncatedText, fixedKeypair, giveCoins, listLaunches, SEED_CREATOR, SEED_HOLDER,
+  test,
 } from "./fixtures";
+import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING } from "./seedData";
 import { installTestWallet, TEST_WALLET_NAME } from "./wallet";
 
-// The chart's time axis and candle spacing follow the clock, so its canvases are masked like any other time.
-const dynamic = (page: Page) => [page.locator("time"), page.locator(".mono:not(input)"), page.locator("canvas")];
+// The chart's time axis and candle spacing follow the clock, so its canvases are masked like any other time. Only what is
+// visible: content of a closed <details> still has a box, and masking it would paint over whatever is on screen there.
+const dynamic = (page: Page) => ["time", ".mono:not(input)", "canvas"].map((s) => page.locator(s).filter({ visible: true }));
 
 /**
  * A traded coin's amounts and prices follow from the fixed seed trades, so only what really varies is masked: times, the
@@ -25,6 +28,15 @@ async function snap(page: Page, name: string, mask = dynamic) {
   // Check the settled page: hydrated, images in and web fonts swapped.
   await page.waitForLoadState("networkidle");
   await page.evaluate(() => document.fonts.ready);
+  // A full-page capture doesn't scroll, so lazy images far below the fold (a long board) would load or not depending on
+  // timing. Scroll past every one, as a reader would, and wait for them all; the page's own markup is left alone.
+  await page.evaluate(async () => {
+    for (let y = 0; y < document.documentElement.scrollHeight; y += window.innerHeight) {
+      window.scrollTo(0, y);
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+    await Promise.all([...document.images].map((img) => img.decode().catch(() => undefined)));
+  });
   // The truncation check waits for hydration, so the overflow check after it sees the finished layout.
   await expectNoTruncatedText(page);
   await expectNoHorizontalOverflow(page);
@@ -234,6 +246,76 @@ test("launch review against a tokenized stock", async ({ page, wallet }) => {
   await expect(page.getByRole("region", { name: "Review your launch" })).toContainText("0.83333333 NVDAx");
   await snap(page, "launch-review-stock.png");
   expect(wallet.requests).toHaveLength(0);
+});
+
+const OPTION_WALLETS = [1, 2, 3].map((n) => fixedKeypair(`options wallet ${n}`).publicKey.toBase58());
+
+async function launchFormWithOptions(page: Page, airdrop: string) {
+  await page.goto("/launch");
+  await page.getByRole("main").getByRole("button", { name: "Connect wallet" }).click();
+  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
+  await page.locator('input[type="file"]').setInputFiles({ name: "coin.png", mimeType: "image/png", buffer: COIN_PNG });
+  await page.getByLabel("Name").fill("Party Favors");
+  await page.getByLabel("Ticker").fill("PARTY");
+  await page.getByLabel(/^First buy/).fill("0.1");
+  await page.getByRole("checkbox", { name: "Airdrop part of your first buy to other wallets" }).check();
+  await page.getByLabel("Wallets and amounts").fill(airdrop);
+}
+
+test("launch form with a first buy and an airdrop", async ({ page, wallet }) => {
+  await launchFormWithOptions(page, OPTION_WALLETS.map((w, i) => `${w}, ${(i + 1) * 250_000}`).join("\n"));
+  await expect(page.getByText(/^You get/)).toBeVisible();
+  await expect(page.getByText(/^3 wallets get/)).toBeVisible();
+  await snap(page, "launch-options.png");
+
+  await page.getByRole("button", { name: "Review launch" }).click();
+  const dialog = page.getByRole("dialog", { name: "Before you launch" });
+  await dialog.getByRole("checkbox").check();
+  await dialog.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("region", { name: "Review your launch" })).toBeVisible();
+  await snap(page, "launch-review-options.png");
+  expect(wallet.requests).toHaveLength(0);
+});
+
+test("launch form with a mistake in the airdrop list", async ({ page, wallet }) => {
+  await launchFormWithOptions(page, `${OPTION_WALLETS[0]}, 250000\n${OPTION_WALLETS[0]}, 500000`);
+  await expect(page.getByText("Line 2: this wallet is already on line 1.")).toBeVisible();
+  await snap(page, "launch-options-error.png");
+  expect(wallet.requests).toHaveLength(0);
+});
+
+test("launch the network refused", async ({ page, wallet }) => {
+  await launchFormWithOptions(page, OPTION_WALLETS.map((w) => `${w}, 250000`).join("\n"));
+  await page.getByRole("button", { name: "Review launch" }).click();
+  const dialog = page.getByRole("dialog", { name: "Before you launch" });
+  await dialog.getByRole("checkbox").check();
+  await dialog.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("region", { name: "Review your launch" })).toBeVisible();
+  await drain(wallet.keypair, 0.01);
+  await page.getByRole("button", { name: "Sign and launch" }).click();
+  await expect(page.getByRole("region", { name: "Launch not confirmed" })).toBeVisible();
+  await snap(page, "launch-failed.png");
+});
+
+test("coin page with an airdrop to send, seen by its creator", async ({ page }) => {
+  await installTestWallet(page, AIRDROP_CREATOR);
+  await page.goto(`/coin/${await mintOf(AIRDROP_SENDING.name)}`);
+  await page.getByRole("banner").getByRole("button", { name: "Connect wallet" }).click();
+  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await expect(page.getByRole("region", { name: "Airdrop" }).getByRole("button", { name: "Send airdrop" })).toBeVisible();
+  await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
+  await snap(page, "coin-airdrop.png");
+});
+
+test("coin page with a paid airdrop", async ({ page }) => {
+  await page.goto(`/coin/${await mintOf(AIRDROP_PAID.name)}`);
+  const card = page.getByRole("region", { name: "Airdrop" });
+  await expect(card).toContainText("3 of 3 paid");
+  await card.getByText("Show the 3 wallets").click();
+  await expect(card.getByRole("link", { name: "Paid" })).toHaveCount(3);
+  await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
+  await snap(page, "coin-airdrop-paid.png");
 });
 
 test("header wallet menu when connected", async ({ page, wallet }) => {

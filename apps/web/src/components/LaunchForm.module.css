@@ -267,6 +267,11 @@
   margin: 0;
 }
 
+/* An amount and its unit stay on one line. */
+.review :global(.mono) {
+  white-space: nowrap;
+}
+
 .actions {
   display: flex;
   gap: 10px;

@@ -1,6 +1,6 @@
 import {
-  ApiError, CandleList, CreatorFeeClaimList, CreatorFees, HolderList, LaunchList, LaunchQuoteList, LaunchSummary, PlatformInfo,
-  PreparedCreatorFeeClaim, PreparedLaunch, PreparedTrade, QuoteAssetList, TradeList, TradeQuote,
+  AirdropStatus, ApiError, CandleList, CreatorFeeClaimList, CreatorFees, FirstBuyQuote, HolderList, LaunchList, LaunchQuoteList,
+  LaunchSummary, PlatformInfo, PreparedAirdrop, PreparedCreatorFeeClaim, PreparedLaunch, PreparedTrade, QuoteAssetList, TradeList, TradeQuote,
   type CandleInterval, type CurveStatus, type LaunchSort, type PrepareCreatorFeeClaimRequest, type PrepareTradeRequest,
   type QuoteCategory, type TradeQuoteQuery,
 } from "@launchpad/contract";
@@ -8,11 +8,18 @@ import {
 /** The web app is a client of the public API like any other; it never builds transactions itself (ADR 0003). */
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8791").replace(/\/$/, "");
 
+/** An error answer from the API, with its HTTP status so callers can tell a refusal from a failure. */
+export class ApiRequestError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+  }
+}
+
 async function read<T>(res: Response, schema: { parse: (v: unknown) => T }): Promise<T> {
   const body: unknown = await res.json().catch(() => null);
   if (!res.ok) {
     const err = ApiError.safeParse(body);
-    throw new Error(err.success ? err.data.error : `Request failed (${res.status})`);
+    throw new ApiRequestError(err.success ? err.data.error : `Request failed (${res.status})`, res.status);
   }
   return schema.parse(body);
 }
@@ -58,6 +65,27 @@ export async function getLaunch(mint: string): Promise<LaunchSummary | null> {
 
 export async function prepareLaunch(form: FormData) {
   return read(await fetch(`${API_URL}/v1/launches/prepare`, { method: "POST", body: form }), PreparedLaunch);
+}
+
+/** Prepares an earlier launch again, for the same coin address; a 409 means that coin has already launched. */
+export async function retryLaunch(mint: string) {
+  return read(await fetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/prepare`, { method: "POST" }), PreparedLaunch);
+}
+
+/** What a first buy of `firstBuy` raw Quote Asset units gets on a new coin. */
+export async function getLaunchQuote(quoteMint: string, firstBuy: string, signal?: AbortSignal) {
+  return read(await fetch(`${API_URL}/v1/launch-quote?${new URLSearchParams({ quoteMint, firstBuy })}`, { cache: "no-store", signal }), FirstBuyQuote);
+}
+
+/** A coin's airdrop and which wallets it has paid; null if the coin has none. */
+export async function getAirdrop(mint: string): Promise<AirdropStatus | null> {
+  const res = await fetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/airdrop`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  return read(res, AirdropStatus);
+}
+
+export async function prepareAirdrop(mint: string) {
+  return read(await fetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/airdrop/prepare`, { method: "POST" }), PreparedAirdrop);
 }
 
 export async function getQuote(mint: string, q: TradeQuoteQuery, signal?: AbortSignal) {

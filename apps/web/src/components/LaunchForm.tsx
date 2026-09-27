@@ -1,25 +1,34 @@
 "use client";
 
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { LAMPORTS_PER_SOL, VersionedTransaction } from "@solana/web3.js";
+import {
+  LAMPORTS_PER_SOL, SendTransactionError, TransactionExpiredBlockheightExceededError, VersionedTransaction,
+} from "@solana/web3.js";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { LAUNCH_IMAGE_MAX_BYTES, type PlatformInfo, type PreparedLaunch, type QuoteAsset } from "@launchpad/contract";
-import { prepareLaunch, reportTransaction } from "@/lib/api";
-import { formatAmount, formatUnits, isSol, quoteTicker, SOL_DECIMALS } from "@/lib/format";
+import { ApiRequestError, prepareLaunch, reportTransaction, retryLaunch } from "@/lib/api";
+import { COIN_DECIMALS, formatAmount, formatUnits, isSol, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
+import { LaunchOptions, supplyShare, useLaunchOptions } from "./LaunchOptions";
 import { PairMark } from "./PairMark";
 import { QuotePicker } from "./QuotePicker";
 import { WalletButton } from "./WalletButton";
 import styles from "./LaunchForm.module.css";
 
 type Review = { prepared: PreparedLaunch; quote: QuoteAsset; tx: VersionedTransaction; costLamports: number };
+/**
+ * An attempt that was signed and handed to the network but did not visibly land. Trying again prepares the same coin,
+ * so it can never launch twice. While it is `uncertain` whether it landed, the Creator can't start over with a new coin.
+ */
+type Failed = { kind: "failed"; mint: string; quote: QuoteAsset; uncertain: boolean };
 type Step =
   | { kind: "editing" }
-  | { kind: "preparing" }
+  | { kind: "preparing"; retrying?: Failed }
   | { kind: "reviewing"; review: Review }
   | { kind: "signing"; review: Review }
-  | { kind: "confirming"; review: Review; signature: string };
+  | { kind: "confirming"; review: Review; signature: string }
+  | Failed;
 
 const DESCRIPTION_MAX = 1000;
 
@@ -43,6 +52,8 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
   useEffect(() => () => { if (imageUrl) URL.revokeObjectURL(imageUrl); }, [imageUrl]);
 
   const quote = quotes.find((q) => q.mint === quoteMint) ?? null;
+  // The launch options work in whichever Quote Asset is chosen: its ticker and decimals, and quotes priced in it.
+  const options = useLaunchOptions(quote && { mint: quote.mint, symbol: quoteTicker(quote), decimals: quote.decimals }, publicKey?.toBase58() ?? null);
   const busy = step.kind !== "editing";
 
   function pickImage(file: File | undefined) {
@@ -50,6 +61,20 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
     if (!file) return setImage(null);
     if (file.size > LAUNCH_IMAGE_MAX_BYTES) return setError("The image is larger than 2 MB. Choose a smaller one.");
     setImage(file);
+  }
+
+  /** Simulates a prepared launch before any signature is asked for, so the review shows what the wallet really pays. */
+  async function toReview(prepared: PreparedLaunch, quote: QuoteAsset): Promise<Review> {
+    const tx = VersionedTransaction.deserialize(Uint8Array.from(atob(prepared.transaction), (c) => c.charCodeAt(0)));
+    const sim = await connection.simulateTransaction(tx, {
+      sigVerify: false,
+      accounts: { addresses: [publicKey!.toBase58()], encoding: "base64" },
+    });
+    if (sim.value.err) throw new Error(simulationError(sim.value.err, sim.value.logs ?? []));
+    const before = await connection.getBalance(publicKey!, "confirmed");
+    // The simulated balance already has the network fee taken off.
+    const after = sim.value.accounts?.[0]?.lamports ?? before;
+    return { prepared, quote, tx, costLamports: before - after };
   }
 
   async function prepare() {
@@ -63,44 +88,53 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
       form.set("symbol", symbol.trim());
       form.set("description", description.trim());
       for (const [k, v] of [["website", website], ["x", x], ["telegram", telegram]] as const) if (v.trim()) form.set(k, v.trim());
+      for (const [k, v] of options.fields()) form.set(k, v);
       form.set("image", image!);
-      const prepared = await prepareLaunch(form);
-      const tx = VersionedTransaction.deserialize(Uint8Array.from(atob(prepared.transaction), (c) => c.charCodeAt(0)));
-
-      // Simulate before asking for a signature, so the review shows what the wallet will actually pay.
-      const sim = await connection.simulateTransaction(tx, {
-        sigVerify: false,
-        accounts: { addresses: [publicKey.toBase58()], encoding: "base64" },
-      });
-      if (sim.value.err) throw new Error(simulationError(sim.value.err, sim.value.logs ?? []));
-      const before = await connection.getBalance(publicKey, "confirmed");
-      // The simulated balance already has the network fee taken off.
-      const after = sim.value.accounts?.[0]?.lamports ?? before;
-      setStep({ kind: "reviewing", review: { prepared, quote, tx, costLamports: before - after } });
+      setStep({ kind: "reviewing", review: await toReview(await prepareLaunch(form), quote) });
     } catch (e) {
       setError((e as Error).message);
       setStep({ kind: "editing" });
     }
   }
 
+  /** Prepares the same coin again after a failed attempt; if that attempt landed after all, goes to the coin. */
+  async function retry(failed: Failed) {
+    setError(null);
+    setStep({ kind: "preparing", retrying: failed });
+    try {
+      setStep({ kind: "reviewing", review: await toReview(await retryLaunch(failed.mint), failed.quote) });
+    } catch (e) {
+      if (e instanceof ApiRequestError && e.status === 409 && /already launched/.test(e.message)) return router.push(`/coin/${failed.mint}`);
+      setError((e as Error).message);
+      setStep(failed);
+    }
+  }
+
   async function signAndLaunch(review: Review) {
     if (!signTransaction) return setError("This wallet can't sign transactions. Try another wallet.");
     setStep({ kind: "signing", review });
+    let signed: VersionedTransaction;
     try {
-      const signed = await signTransaction(review.tx);
+      signed = await signTransaction(review.tx);
+    } catch (e) {
+      const message = (e as Error).message ?? "";
+      setError(/reject|declin|cancel/i.test(message) ? "You declined the transaction in your wallet. Nothing was launched." : message);
+      return setStep({ kind: "editing" });
+    }
+    try {
       const signature = await connection.sendRawTransaction(signed.serialize());
       setStep({ kind: "confirming", review, signature });
       const result = await connection.confirmTransaction(
         { signature, blockhash: signed.message.recentBlockhash, lastValidBlockHeight: review.prepared.lastValidBlockHeight },
         "confirmed",
       );
-      if (result.value.err) throw new Error("The launch transaction failed on-chain. Nothing was created; try again.");
+      if (result.value.err) throw new LaunchFailed(onChainError(result.value.err));
       await reportTransaction(signature);
       router.push(`/coin/${review.prepared.mint}`);
     } catch (e) {
-      const message = (e as Error).message ?? "";
-      setError(/reject|declin|cancel/i.test(message) ? "You declined the transaction in your wallet. Nothing was launched." : message);
-      setStep({ kind: "editing" });
+      const failure = launchFailure(e);
+      setError(failure.message);
+      setStep({ kind: "failed", mint: review.prepared.mint, quote: review.quote, uncertain: failure.uncertain });
     }
   }
 
@@ -109,11 +143,13 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
     setError(null);
     if (!image) return setError("Add an image for your coin.");
     if (!quote?.launchable) return setError("Choose a Quote Asset to pair your coin with.");
+    if (options.problem) return setError(options.problem);
     if (!hasAcceptedDisclaimer()) return setDisclaimerOpen(true);
     void prepare();
   }
 
   const review = step.kind === "reviewing" || step.kind === "signing" || step.kind === "confirming" ? step.review : null;
+  const failed = step.kind === "failed" ? step : step.kind === "preparing" ? (step.retrying ?? null) : null;
 
   return (
     <div className={`shell ${styles.page}`}>
@@ -176,6 +212,8 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
               <input type="url" value={telegram} onChange={(e) => setTelegram(e.target.value)} placeholder="https://t.me/" />
             </label>
           </div>
+
+          <LaunchOptions options={options} coin={symbol} />
         </fieldset>
 
         <dl className={styles.terms}>
@@ -195,15 +233,27 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
           </p>
         )}
 
-        {review ? (
-          <div className={styles.review} role="region" aria-label="Review your launch">
+        {failed ? (
+          <div className={styles.review} role="region" aria-label="Launch not confirmed">
             <p>
-              Launching <strong>{symbol}</strong> paired with {quoteTicker(review.quote)}. It graduates at{" "}
-              <strong>{formatUnits(review.prepared.graduationTarget.raw, review.quote.decimals, review.quote.decimals)} {quoteTicker(review.quote)}</strong>{" "}
-              raised. Your wallet pays about{" "}
-              <strong className="mono">{(review.costLamports / LAMPORTS_PER_SOL).toFixed(4)} SOL</strong> in network fees
-              and account rent.
+              {failed.uncertain
+                ? "Trying again checks the chain first: if your coin did launch, you go straight to it. It can never launch twice."
+                : "Try again with the same coin, or edit it first."}
             </p>
+            <div className={styles.actions}>
+              {!failed.uncertain && (
+                <button type="button" className={styles.secondary} onClick={() => { setError(null); setStep({ kind: "editing" }); }} disabled={step.kind !== "failed"}>
+                  Edit
+                </button>
+              )}
+              <button type="button" className={styles.primary} onClick={() => retry(failed)} disabled={step.kind !== "failed"}>
+                {step.kind === "preparing" ? "Checking…" : "Try again"}
+              </button>
+            </div>
+          </div>
+        ) : review ? (
+          <div className={styles.review} role="region" aria-label="Review your launch">
+            <ReviewText review={review} symbol={symbol} />
             <div className={styles.actions}>
               <button type="button" className={styles.secondary} onClick={() => setStep({ kind: "editing" })} disabled={step.kind !== "reviewing"}>
                 Edit
@@ -251,6 +301,55 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
   );
 }
 
+/** What the launch will do, with every amount in the unit it is paid in. */
+function ReviewText({ review, symbol }: { review: Review; symbol: string }) {
+  const { prepared, quote } = review;
+  const ticker = quoteTicker(quote);
+  const sol = <strong className="mono">{(review.costLamports / LAMPORTS_PER_SOL).toFixed(4)} SOL</strong>;
+  const graduates = (
+    <>
+      It graduates at <strong>{formatUnits(prepared.graduationTarget.raw, quote.decimals, quote.decimals)} {ticker}</strong> raised.
+    </>
+  );
+  const firstBuy = prepared.firstBuy;
+  return (
+    <>
+      {firstBuy ? (
+        <p>
+          Launching <strong>{symbol}</strong> paired with {ticker}, with your first buy of{" "}
+          <span className="mono">{formatUnits(firstBuy.amountIn, quote.decimals, quote.decimals)}</span> {ticker} for{" "}
+          <span className="mono">{formatUnits(firstBuy.amountOut, COIN_DECIMALS, 0)}</span> {symbol} (
+          {supplyShare(BigInt(firstBuy.amountOut))} of the supply). {graduates}{" "}
+          {isSol(quote) ? (
+            <>Your wallet pays about {sol}, including the first buy, network fees and account rent.</>
+          ) : (
+            <>Your wallet pays the {ticker} and about {sol} in network fees and account rent.</>
+          )}{" "}
+          Like any trade, the first buy pays the Creator Fee: its{" "}
+          <span className="mono">{formatUnits(firstBuy.fees.creator, quote.decimals, quote.decimals)}</span> {ticker} goes to your own
+          Creator Fee, yours to claim back.
+        </p>
+      ) : (
+        <p>
+          Launching <strong>{symbol}</strong> paired with {ticker}. {graduates} Your wallet pays about {sol} in network fees
+          and account rent.
+        </p>
+      )}
+      {prepared.airdrop && (
+        <p>
+          Then send the airdrop from your coin&apos;s page: {prepared.airdrop.recipients}{" "}
+          {prepared.airdrop.recipients === 1 ? "wallet gets" : "wallets get"}{" "}
+          <span className="mono">{formatUnits(prepared.airdrop.amount, COIN_DECIMALS, COIN_DECIMALS)}</span> {symbol}. Your wallet signs{" "}
+          {prepared.airdrop.transactions === 1 ? "one transaction" : `all ${prepared.airdrop.transactions} transactions at once`} and
+          pays about{" "}
+          <span className="mono">{(Number(prepared.airdrop.costLamports) / LAMPORTS_PER_SOL).toFixed(4)} SOL</span> more in account
+          rent and network fees.
+        </p>
+      )}
+    </>
+  );
+}
+
 /** The Graduation Target in the Quote Asset and, for anything but SOL, what it is worth in SOL today. */
 function GraduationTerms({ quote }: { quote: QuoteAsset }) {
   const target = quote.graduationTarget;
@@ -269,8 +368,47 @@ function GraduationTerms({ quote }: { quote: QuoteAsset }) {
 /** Turns a failed simulation into something the Creator can act on. */
 function simulationError(err: unknown, logs: string[]) {
   const text = `${JSON.stringify(err)} ${logs.join(" ")}`;
-  if (/insufficient (lamports|funds)|InsufficientFundsForRent|0x1\b/.test(text))
+  if (/insufficient (lamports|funds)|InsufficientFundsForRent|0x1\b|"Custom":1\b/.test(text))
     return "Your wallet doesn't have enough SOL to pay for the launch. Add SOL and try again.";
   if (/AccountNotFound/.test(text)) return "Your wallet has no SOL yet. Add SOL and try again.";
   return "The launch would fail on-chain, so nothing was sent. Try again in a moment.";
+}
+
+// LaunchLab's ExceededSlippage: the First Buy would get fewer coins than quoted, which only happens if the fees changed.
+const EXCEEDED_SLIPPAGE = 6004;
+
+/** Why a launch that reached the chain failed there. Nothing was created: the launch and its First Buy are one transaction. */
+function onChainError(err: unknown) {
+  const text = JSON.stringify(err);
+  if (text.includes(`"Custom":${EXCEEDED_SLIPPAGE}`))
+    return "Your first buy would have got fewer coins than quoted, because the fees changed. Nothing was created; try again.";
+  if (/"Custom":1\b|InsufficientFunds/.test(text)) return "Your wallet didn't have enough SOL for the launch. Nothing was created; add SOL and try again.";
+  return "The launch transaction failed on-chain. Nothing was created; try again.";
+}
+
+/** A launch that reached the chain and failed there, with the reason in the Creator's words. */
+class LaunchFailed extends Error {}
+
+/**
+ * Sorts a failure after signing into what is known. The node refusing the transaction (its preflight check failed), the
+ * chain failing it, or its blockhash expiring all mean nothing was created. Anything else, such as a dropped connection,
+ * leaves it uncertain whether the coin launched.
+ */
+function launchFailure(e: unknown): { message: string; uncertain: boolean } {
+  if (e instanceof LaunchFailed) return { message: e.message, uncertain: false };
+  if (e instanceof TransactionExpiredBlockheightExceededError)
+    return { message: "The launch transaction expired before it landed, so nothing was created. Try again.", uncertain: false };
+  if (e instanceof SendTransactionError && e.logs) {
+    const text = `${e.message} ${e.logs.join(" ")}`;
+    return {
+      message: /insufficient (lamports|funds)|InsufficientFundsForRent|0x1\b|debit an account/.test(text)
+        ? "Your wallet no longer has enough SOL to pay for the launch, so it wasn't sent and nothing was created. Add SOL and try again."
+        : "The network refused the launch transaction, so nothing was created. Try again.",
+      uncertain: false,
+    };
+  }
+  return {
+    message: "We couldn't confirm whether your coin launched. Check your connection, then try again.",
+    uncertain: true,
+  };
 }
