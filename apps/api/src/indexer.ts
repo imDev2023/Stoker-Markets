@@ -1,24 +1,30 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import {
-  curvePrice, decodeTransaction, type CreatorFeeClaimed, type LaunchCreated, type RawTransaction, type TradeExecuted,
+  curvePrice, decodeTransaction, poolPrice, type CreatorFeeClaimed, type Graduated, type LaunchCreated, type PoolSwapExecuted,
+  type RawTransaction, type TradeExecuted,
 } from "@launchpad/chain";
-import { creatorFeeClaims, curves, launches, trades, type Db } from "@launchpad/db";
+import { creatorFeeClaims, curves, graduations, launches, operatorAlerts, trades, type Db } from "@launchpad/db";
 import type { Config } from "./env";
 
+export type IndexResult = { launched: number; traded: number; claimed: number; graduated: number };
+
 /**
- * Writes the Launches, curve trades and Creator Fee claims in a batch of confirmed transactions. Launches and trades count
- * only on our PlatformConfig. A claim names no platform (a Creator's vault serves all of them), so it counts when its
- * Creator has launched on our platform.
+ * Writes the Launches, curve trades, Creator Fee claims, Graduations and pool trades in a batch of confirmed transactions.
+ * Launches, trades and Graduations count only on our PlatformConfig. A claim names no platform (a Creator's vault serves
+ * all of them), so it counts when its Creator has launched on our platform; a pool trade, when its pool is one our
+ * Launches graduated into.
  * Idempotent: the same transaction delivered twice (webhook retries, the client fast path, backfills) writes one row.
  */
-export async function indexTransactions(db: Db, cfg: Config, txs: RawTransaction[]) {
-  let launched = 0;
-  let traded = 0;
-  let claimed = 0;
+export async function indexTransactions(db: Db, cfg: Config, txs: RawTransaction[]): Promise<IndexResult> {
+  const result: IndexResult = { launched: 0, traded: 0, claimed: 0, graduated: 0 };
   for (const tx of txs) {
-    for (const e of decodeTransaction(tx, cfg.launchlab)) {
+    for (const e of decodeTransaction(tx, cfg)) {
       if (e.kind === "creator_fee_claimed") {
-        claimed += await indexClaim(db, e);
+        result.claimed += await indexClaim(db, e);
+        continue;
+      }
+      if (e.kind === "pool_swap") {
+        result.traded += await indexPoolTrade(db, e);
         continue;
       }
       if (!e.platformConfig.equals(cfg.platformConfig)) continue;
@@ -28,11 +34,12 @@ export async function indexTransactions(db: Db, cfg: Config, txs: RawTransaction
           console.warn("ignoring a launch outside our launch shape", e.signature);
           continue;
         }
-        launched += await indexLaunch(db, e);
-      } else traded += await indexTrade(db, e);
+        result.launched += await indexLaunch(db, e);
+      } else if (e.kind === "trade") result.traded += await indexTrade(db, e);
+      else result.graduated += await indexGraduation(db, e);
     }
   }
-  return { launched, traded, claimed };
+  return result;
 }
 
 const time = (blockTime: number | null) => new Date((blockTime ?? Math.floor(Date.now() / 1000)) * 1000);
@@ -71,6 +78,7 @@ async function indexTrade(db: Db, e: TradeExecuted) {
       signature: e.signature,
       eventIndex: e.index,
       mint,
+      venue: "curve",
       trader: e.trader.toBase58(),
       side: e.side,
       baseAmount: (e.side === "buy" ? e.amountOut : e.amountIn).toString(),
@@ -88,6 +96,7 @@ async function indexTrade(db: Db, e: TradeExecuted) {
 
   // The curve moves to a trade from a later slot, or to the next trade in the same slot, which starts where the stored
   // state ends. Replays and late deliveries of earlier trades never move it backwards.
+  // The buy that sells the curve out stamps when it did, which the graduation watch measures from.
   await db
     .insert(curves)
     .values({
@@ -97,6 +106,7 @@ async function indexTrade(db: Db, e: TradeExecuted) {
       price,
       status: e.status,
       slot: e.slot,
+      completedAt: e.status === "live" ? null : time(e.blockTime),
     })
     .onConflictDoUpdate({
       target: curves.mint,
@@ -106,6 +116,7 @@ async function indexTrade(db: Db, e: TradeExecuted) {
         price: sql`excluded.price`,
         status: sql`excluded.status`,
         slot: sql`excluded.slot`,
+        completedAt: sql`coalesce(${curves.completedAt}, excluded.completed_at)`,
         updatedAt: sql`now()`,
       },
       setWhere: sql`excluded.slot > ${curves.slot} or (excluded.slot = ${curves.slot} and ${curves.realBase} = ${e.before.realBase.toString()} and ${curves.realQuote} = ${e.before.realQuote.toString()})`,
@@ -131,6 +142,66 @@ async function indexClaim(db: Db, e: CreatorFeeClaimed) {
     })
     .onConflictDoNothing()
     .returning({ signature: creatorFeeClaims.signature });
+  return inserted.length;
+}
+
+/** Raydium migrated one of our curves: the Launch has graduated, and any alert about it waiting is resolved. */
+async function indexGraduation(db: Db, e: Graduated) {
+  const mint = e.baseMint.toBase58();
+  const inserted = await db
+    .insert(graduations)
+    .values({ mint, pool: e.pool.toBase58(), signature: e.signature, slot: e.slot, graduatedAt: time(e.blockTime) })
+    .onConflictDoNothing()
+    .returning({ mint: graduations.mint });
+  await db
+    .update(operatorAlerts)
+    .set({ resolvedAt: sql`now()` })
+    .where(and(eq(operatorAlerts.kind, "graduation_stuck"), eq(operatorAlerts.subject, mint), isNull(operatorAlerts.resolvedAt)));
+  return inserted.length;
+}
+
+/** A trade in a pool one of our Launches graduated into; swaps in any other pool are ignored. */
+async function indexPoolTrade(db: Db, e: PoolSwapExecuted) {
+  const [g] = await db
+    .select({ mint: graduations.mint, quoteMint: launches.quoteMint })
+    .from(graduations)
+    .innerJoin(launches, eq(launches.mint, graduations.mint))
+    .where(eq(graduations.pool, e.pool.toBase58()))
+    .limit(1);
+  if (!g) return 0;
+  const buy = e.inputMint.toBase58() === g.quoteMint;
+  // Prices are Quote Asset per coin at the pool's constant-product position, fees excluded.
+  const price = ([input, output]: typeof e.before) =>
+    buy ? poolPrice(output, input, e.outputDecimals, e.inputDecimals) : poolPrice(input, output, e.inputDecimals, e.outputDecimals);
+  const priceAfter = price(e.after);
+  const inserted = await db
+    .insert(trades)
+    .values({
+      signature: e.signature,
+      eventIndex: e.index,
+      mint: g.mint,
+      venue: "pool",
+      trader: e.trader.toBase58(),
+      side: buy ? "buy" : "sell",
+      baseAmount: (buy ? e.amountOut : e.amountIn).toString(),
+      quoteAmount: (buy ? e.amountIn : e.amountOut).toString(),
+      protocolFee: e.tradeFee.toString(),
+      // Our platform is every graduated pool's creator, so the pool's creator fee is platform revenue (ADR 0001).
+      platformFee: e.creatorFee.toString(),
+      creatorFee: "0",
+      priceBefore: price(e.before),
+      priceAfter,
+      slot: e.slot,
+      blockTime: time(e.blockTime),
+    })
+    .onConflictDoNothing()
+    .returning({ signature: trades.signature });
+  // The pool's price follows its latest trade by slot; within one slot, the last one indexed wins. Replays never move it.
+  if (inserted.length > 0)
+    await db
+      .update(graduations)
+      .set({ price: priceAfter, priceSlot: e.slot })
+      .where(and(eq(graduations.mint, g.mint), sql`coalesce(${graduations.priceSlot}, 0) <= ${e.slot}`));
   return inserted.length;
 }
 

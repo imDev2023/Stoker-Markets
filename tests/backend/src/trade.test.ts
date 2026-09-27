@@ -1,34 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
-  ComputeBudgetProgram, Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction, VersionedTransaction, sendAndConfirmTransaction,
+  ComputeBudgetProgram, Keypair, PublicKey, Transaction, VersionedTransaction, sendAndConfirmTransaction,
 } from "@solana/web3.js";
-import { ACCOUNT_SIZE, TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { ACCOUNT_SIZE, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import BN from "bn.js";
 import {
   createCurveRuleIx, createPlatformConfigIx, initializeV2Ix, launchlabCoder, launchlabPdas, loadCurve, prepareTrade as buildTrade,
   WSOL_MINT,
 } from "@launchpad/chain";
 import { CPSWAP_CONFIG, SOL_GLOBAL_CONFIG } from "@launchpad/localnet";
-import { CandleList, TradeList, TradeQuote } from "@launchpad/contract";
+import { CandleList, TradeQuote } from "@launchpad/contract";
 import {
-  connection, deliverWebhook, env, fundedWallet, getLaunch, launch, networkFee, prepared, prepareTrade, signAndSend, solOf, tokenBalance,
-  trade,
+  SOL, coinsOf, connection, deliverWebhook, env, fundedWallet, getLaunch, launchedCoin, networkFee, prepareTrade, prepared, quote,
+  signAndSend, solOf, tokenBalance, trade, trades,
 } from "./client";
 
-const SOL = (n: number) => BigInt(Math.round(n * LAMPORTS_PER_SOL));
-
-async function launchedCoin() {
-  const creator = await fundedWallet();
-  const { prepared, signature } = await launch(creator);
-  await deliverWebhook([signature]);
-  return { creator, mint: prepared.mint, pool: new PublicKey(prepared.pool) };
-}
-
-function quote(mint: string, query: Record<string, string>) {
-  return fetch(`${env().apiUrl}/v1/launches/${mint}/quote?${new URLSearchParams(query)}`);
-}
-
-const coinsOf = (mint: string, owner: Keypair) => tokenBalance(getAssociatedTokenAddressSync(new PublicKey(mint), owner.publicKey));
 async function poolState(pool: PublicKey) {
   const account = await connection().getAccountInfo(pool, "confirmed");
   return launchlabCoder.accounts.decode("PoolState", account!.data) as {
@@ -56,15 +42,13 @@ const diff = (after: Record<string, bigint>, before: Record<string, bigint>) =>
   Object.fromEntries(Object.entries(after).map(([k, v]) => [k, v - before[k]!]));
 const quotedFees = (q: TradeQuote) => ({ raydium: BigInt(q.fees.raydium), platform: BigInt(q.fees.platform), creator: BigInt(q.fees.creator) });
 
-async function trades(mint: string) {
-  return TradeList.parse(await (await fetch(`${env().apiUrl}/v1/launches/${mint}/trades`)).json()).trades;
-}
-
 describe("buying on the curve", () => {
   it("charges exactly the fees shown before signing: 0.25% to Raydium, 0.5% Platform Fee, 0.5% Creator Fee", async () => {
     const { creator, mint, pool } = await launchedCoin();
     const trader = await fundedWallet();
     const shown = TradeQuote.parse(await (await quote(mint, { side: "buy", amount: SOL(0.1).toString() })).json());
+    expect(shown.venue).toBe("curve");
+    expect(shown.feeBps).toEqual({ raydium: 25, platform: 50, creator: 50 });
     expect(shown.fees).toEqual({ raydium: "250000", platform: "500000", creator: "500000" });
 
     const fees = await feesOnChain(pool, creator);
@@ -160,18 +144,18 @@ describe("slippage protection", () => {
 describe("curve progress, trade history and candles", () => {
   it("follow the indexed trades", async () => {
     const { mint, pool } = await launchedCoin();
-    expect((await getLaunch(mint)).launch?.curve).toEqual({ status: "live", raised: "0", price: null });
+    expect((await getLaunch(mint)).launch?.curve).toEqual({ status: "live", raised: "0", price: null, completedAt: null });
 
     const trader = await fundedWallet();
     const buy = await trade(trader, mint, "buy", SOL(0.25));
-    expect(await (await deliverWebhook([buy.signature])).json()).toEqual({ launched: 0, traded: 1, claimed: 0 });
+    expect(await (await deliverWebhook([buy.signature])).json()).toEqual({ launched: 0, traded: 1, claimed: 0, graduated: 0 });
     let curve = (await getLaunch(mint)).launch!.curve;
-    expect(curve).toEqual({ status: "live", raised: (await poolState(pool)).real_quote.toString(), price: buy.quote.priceAfter });
+    expect(curve).toEqual({ status: "live", raised: (await poolState(pool)).real_quote.toString(), price: buy.quote.priceAfter, completedAt: null });
 
     const sell = await trade(trader, mint, "sell", (await coinsOf(mint, trader)) / 4n);
     // The fast path the web app uses after a trade confirms indexes it the same way.
     const fast = await fetch(`${env().apiUrl}/v1/transactions/${sell.signature}`, { method: "POST" });
-    expect(await fast.json()).toEqual({ launched: 0, traded: 1, claimed: 0 });
+    expect(await fast.json()).toEqual({ launched: 0, traded: 1, claimed: 0, graduated: 0 });
     curve = (await getLaunch(mint)).launch!.curve;
     expect(curve.raised).toBe((await poolState(pool)).real_quote.toString());
     expect(curve.price).toBe(sell.quote.priceAfter);
@@ -180,11 +164,11 @@ describe("curve progress, trade history and candles", () => {
     const history = await trades(mint);
     expect(history).toMatchObject([
       {
-        signature: sell.signature, trader: trader.publicKey.toBase58(), side: "sell", baseAmount: sell.quote.amountIn,
+        signature: sell.signature, venue: "curve", trader: trader.publicKey.toBase58(), side: "sell", baseAmount: sell.quote.amountIn,
         quoteAmount: sell.quote.amountOut, fees: sell.quote.fees, price: sell.quote.priceAfter,
       },
       {
-        signature: buy.signature, trader: trader.publicKey.toBase58(), side: "buy", baseAmount: buy.quote.amountOut,
+        signature: buy.signature, venue: "curve", trader: trader.publicKey.toBase58(), side: "buy", baseAmount: buy.quote.amountOut,
         quoteAmount: buy.quote.amountIn, fees: buy.quote.fees, price: buy.quote.priceAfter,
       },
     ]);
@@ -207,11 +191,11 @@ describe("curve progress, trade history and candles", () => {
     const trader = await fundedWallet();
     const buy = await trade(trader, mint, "buy", SOL(0.1));
     const sell = await trade(trader, mint, "sell", (await coinsOf(mint, trader)) / 2n);
-    expect(await (await deliverWebhook([sell.signature, buy.signature])).json()).toEqual({ launched: 0, traded: 2, claimed: 0 });
+    expect(await (await deliverWebhook([sell.signature, buy.signature])).json()).toEqual({ launched: 0, traded: 2, claimed: 0, graduated: 0 });
     const latest = (await getLaunch(mint)).launch!.curve;
     expect(latest.price).toBe(sell.quote.priceAfter);
 
-    expect(await (await deliverWebhook([buy.signature, sell.signature, buy.signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0 });
+    expect(await (await deliverWebhook([buy.signature, sell.signature, buy.signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 0 });
     expect(await trades(mint)).toHaveLength(2);
     expect((await getLaunch(mint)).launch!.curve).toEqual(latest);
   });
@@ -243,7 +227,7 @@ describe("curve progress, trade history and candles", () => {
       program, curve, trader: other.publicKey, side: "buy", amountIn: new BN(SOL(0.01).toString()), minAmountOut: new BN(0),
     });
     const signature = await signAndSend(p, other);
-    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0 });
+    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 0 });
     expect(await trades(mint.publicKey.toBase58())).toEqual([]);
   });
 });
