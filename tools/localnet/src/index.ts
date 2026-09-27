@@ -7,11 +7,9 @@ import { fileURLToPath } from "node:url";
 import {
   Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, sendAndConfirmTransaction, Transaction, type TransactionInstruction,
 } from "@solana/web3.js";
+import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import BN from "bn.js";
-import {
-  createCurveRuleIx, createPlatformConfigIx, launchlabCoder, launchlabPdas, programsFor, standardLaunchConstraints,
-  updateCurveRuleIx, updatePlatformConfigIx,
-} from "@launchpad/chain";
+import { createPlatformConfigIx, launchlabCoder, launchlabPdas, programsFor, updatePlatformConfigIx } from "@launchpad/chain";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const FIXTURES = join(ROOT, "fixtures");
@@ -21,6 +19,26 @@ const KEYS = join(ROOT, ".keys");
 export const SOL_GLOBAL_CONFIG = new PublicKey("7ZR4zD7PYfY2XxoG1Gxcy2EgEeGYrpxrwzPuwdUBssEt");
 /** Devnet CPMM config index 0. */
 export const CPSWAP_CONFIG = new PublicKey("5MxLgy9oPdTC3YgkiePHqr3EoCRD9uLVYRQS2ANAs7wy");
+
+/** The mainnet quote mints cloned into `fixtures/quotes`, one per case the Quote Registry must handle. */
+export const LOCAL_QUOTES = {
+  /** SPL Token, 6 decimals, a freeze authority. */
+  USDC: new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
+  /** Token-2022 tokenized stock, 8 decimals, with the issuer extensions every xStock has (permanent delegate, pausable, transfer hook and more). */
+  NVDAx: new PublicKey("Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh"),
+  /** SPL Token, 9 decimals, Metaplex metadata. */
+  JTO: new PublicKey("jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL"),
+  /** Token-2022 pump.fun memecoin, 6 decimals; left without a price, so it can't be launched against. */
+  BULLWHALE: new PublicKey("88SpBWrpbQ6MCdukVbtDBwRYYZAkv4KU4PYdG86ipump"),
+} as const;
+
+/** USD prices for the API's static price source on the local chain. BULLWHALE is missing on purpose. */
+export const LOCAL_QUOTE_PRICES_USD: Record<string, string> = {
+  So11111111111111111111111111111111111111112: "150",
+  [LOCAL_QUOTES.USDC.toBase58()]: "1",
+  [LOCAL_QUOTES.NVDAx.toBase58()]: "180",
+  [LOCAL_QUOTES.JTO.toBase58()]: "2.5",
+};
 
 export type LocalnetKeys = { admin: Keypair; operations: Keypair };
 
@@ -45,26 +63,56 @@ export function localnetKeys(): LocalnetKeys {
   return { admin: load("admin"), operations: load("operations") };
 }
 
-// GlobalConfig offset of migrate_to_cpswap_wallet: discriminator, epoch, curve_type, index, eight u64 fields, four pubkeys.
-const MIGRATE_TO_CPSWAP_WALLET_OFFSET = 8 + 8 + 1 + 2 + 8 * 8 + 32 * 4;
+// GlobalConfig offsets: discriminator, epoch, curve_type, index and eight u64 fields come before quote_mint,
+// then four pubkeys before migrate_to_cpswap_wallet.
+const QUOTE_MINT_OFFSET = 8 + 8 + 1 + 2 + 8 * 8;
+const MIGRATE_TO_CPSWAP_WALLET_OFFSET = QUOTE_MINT_OFFSET + 32 * 4;
+
+type AccountFixture = { pubkey: string; account: { data: [string, string]; owner: string; rentEpoch: number } };
+const readFixture = (path: string) => JSON.parse(readFileSync(path, "utf8")) as AccountFixture;
 
 /**
- * Only the GlobalConfig's migrate wallet may migrate a graduated pool, and there is no Raydium crank locally,
- * so the local copy of the SOL GlobalConfig names the local admin key as its migrate wallet.
+ * The local chain's GlobalConfigs, written to `dir` as account files keyed by address.
+ * Devnet's SOL GlobalConfig is the template. Raydium's admin creates GlobalConfigs, so for every quote mint in `fixtures/quotes`
+ * the local chain plants a copy of the template at that mint's PDA with only the quote mint changed.
+ * Only a GlobalConfig's migrate wallet may migrate a graduated pool, and there is no Raydium crank locally,
+ * so every copy names the local admin key as its migrate wallet.
  */
-function patchedGlobalConfig(dir: string, migrateWallet: PublicKey) {
-  const fixture = JSON.parse(readFileSync(join(FIXTURES, "accounts", `${SOL_GLOBAL_CONFIG.toBase58()}.json`), "utf8"));
-  const data = Buffer.from(fixture.account.data[0], "base64");
-  const before = launchlabCoder.accounts.decode("GlobalConfig", data) as { migrate_to_cpswap_wallet: PublicKey };
-  const slot = data.subarray(MIGRATE_TO_CPSWAP_WALLET_OFFSET, MIGRATE_TO_CPSWAP_WALLET_OFFSET + 32);
-  if (!slot.equals(before.migrate_to_cpswap_wallet.toBuffer())) throw new Error("GlobalConfig layout changed; update MIGRATE_TO_CPSWAP_WALLET_OFFSET");
-  migrateWallet.toBuffer().copy(data, MIGRATE_TO_CPSWAP_WALLET_OFFSET);
-  fixture.account.data[0] = data.toString("base64");
-  // rentEpoch is u64::MAX in the dump, which JSON.parse turns into a float the validator rejects; 0 means the same (rent-exempt).
-  fixture.account.rentEpoch = 0;
-  const path = join(dir, "global_config_patched.json");
-  writeFileSync(path, JSON.stringify(fixture));
-  return path;
+function globalConfigFixtures(dir: string, migrateWallet: PublicKey): Map<string, string> {
+  const template = readFixture(join(FIXTURES, "accounts", `${SOL_GLOBAL_CONFIG.toBase58()}.json`));
+  const decoded = launchlabCoder.accounts.decode("GlobalConfig", Buffer.from(template.account.data[0], "base64")) as {
+    quote_mint: PublicKey; migrate_to_cpswap_wallet: PublicKey;
+  };
+  const program = programsFor("localnet").launchlab;
+  const out = new Map<string, string>();
+  for (const quoteMint of [decoded.quote_mint, ...localQuoteMints()]) {
+    const data = Buffer.from(template.account.data[0], "base64");
+    patchKey(data, QUOTE_MINT_OFFSET, decoded.quote_mint, quoteMint);
+    patchKey(data, MIGRATE_TO_CPSWAP_WALLET_OFFSET, decoded.migrate_to_cpswap_wallet, migrateWallet);
+    const address = launchlabPdas(program).globalConfig(quoteMint).toBase58();
+    // rentEpoch is u64::MAX in the dump, which JSON.parse turns into a float the validator rejects; 0 means the same (rent-exempt).
+    const fixture = { pubkey: address, account: { ...template.account, data: [data.toString("base64"), "base64"], rentEpoch: 0 } };
+    const path = join(dir, `global_config_${address}.json`);
+    writeFileSync(path, JSON.stringify(fixture));
+    out.set(address, path);
+  }
+  return out;
+}
+
+function patchKey(data: Buffer, offset: number, expected: PublicKey, value: PublicKey) {
+  if (!data.subarray(offset, offset + 32).equals(expected.toBuffer())) throw new Error("GlobalConfig layout changed; update the offsets");
+  value.toBuffer().copy(data, offset);
+}
+
+const TOKEN_PROGRAMS = new Set([TOKEN_PROGRAM_ID.toBase58(), TOKEN_2022_PROGRAM_ID.toBase58()]);
+
+/** The quote mints cloned from mainnet into `fixtures/quotes` (their Metaplex metadata accounts sit beside them). */
+export function localQuoteMints(): PublicKey[] {
+  return readdirSync(join(FIXTURES, "quotes"))
+    .filter((f) => f.endsWith(".json"))
+    .map((f) => readFixture(join(FIXTURES, "quotes", f)))
+    .filter((f) => TOKEN_PROGRAMS.has(f.account.owner))
+    .map((f) => new PublicKey(f.pubkey));
 }
 
 export type Localnet = { rpcUrl: string; connection: Connection; stop: () => Promise<void> };
@@ -140,11 +188,13 @@ export async function startLocalnet(opts: { rpcPort?: number } = {}): Promise<Lo
     "--gossip-port", String(ports.gossip), "--dynamic-port-range", ports.dynamicRange,
   ];
   for (const f of readdirSync(join(FIXTURES, "programs"))) args.push("--bpf-program", f.replace(/\.so$/, ""), join(FIXTURES, "programs", f));
-  for (const f of readdirSync(join(FIXTURES, "accounts"))) {
-    if (!f.endsWith(".json") || f === `${SOL_GLOBAL_CONFIG.toBase58()}.json`) continue;
-    args.push("--account", f.replace(/\.json$/, ""), join(FIXTURES, "accounts", f));
+  for (const folder of ["accounts", "quotes"]) {
+    for (const f of readdirSync(join(FIXTURES, folder))) {
+      if (!f.endsWith(".json") || f === `${SOL_GLOBAL_CONFIG.toBase58()}.json`) continue;
+      args.push("--account", f.replace(/\.json$/, ""), join(FIXTURES, folder, f));
+    }
   }
-  args.push("--account", SOL_GLOBAL_CONFIG.toBase58(), patchedGlobalConfig(dir, admin.publicKey));
+  for (const [address, path] of globalConfigFixtures(dir, admin.publicKey)) args.push("--account", address, path);
 
   const proc: ChildProcess = spawn("solana-test-validator", args, { stdio: ["ignore", "pipe", "pipe"] });
   let stderr = "";
@@ -204,7 +254,8 @@ export async function airdrop(connection: Connection, to: PublicKey, sol: number
 
 /**
  * Creates our PlatformConfig with the ADR 0001 fee rates and the operations wallet in every day-to-day role (ADR 0004),
- * turns on curve-rule enforcement, and pins the launch shape for SOL with the given Graduation Target.
+ * turns on curve-rule enforcement and makes the operations wallet the curve rule manager (ADR 0005).
+ * The curve rules themselves are written by the API's Quote Registry refresh.
  * Idempotent: an existing PlatformConfig is left as it is.
  */
 export async function bootstrapPlatform(connection: Connection, rpcUrl: string, graduationTargetLamports: BN): Promise<LocalnetState> {
@@ -226,10 +277,7 @@ export async function bootstrapPlatform(connection: Connection, rpcUrl: string, 
       }),
       updatePlatformConfigIx(program, admin.publicKey, { PlatformCPCreator: [operations.publicKey] }),
       updatePlatformConfigIx(program, admin.publicKey, { RestrictCurveParam: [new BN(1)] }),
-    ], [admin]);
-    await send(connection, [
-      createCurveRuleIx(program, admin.publicKey, platformConfig, SOL_GLOBAL_CONFIG),
-      updateCurveRuleIx(program, admin.publicKey, platformConfig, SOL_GLOBAL_CONFIG, 0, standardLaunchConstraints(graduationTargetLamports)),
+      updatePlatformConfigIx(program, admin.publicKey, { CurveRuleManager: [operations.publicKey] }),
     ], [admin]);
   }
   return {
