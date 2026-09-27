@@ -1,11 +1,11 @@
 import Link from "next/link";
 import type { LaunchSummary } from "@launchpad/contract";
-import { formatUnits, quoteSymbol, shortAddress, timeAgo } from "@/lib/format";
+import { formatAmount, quoteTicker, shortAddress, timeAgo } from "@/lib/format";
 import { PairMark } from "./PairMark";
 import styles from "./LaunchCard.module.css";
 
 export function LaunchCard({ launch, now }: { launch: LaunchSummary; now: number }) {
-  const quote = quoteSymbol(launch.quoteMint);
+  const quote = quoteTicker(launch.quote);
   return (
     <Link href={`/coin/${launch.mint}`} className={styles.card}>
       <div className={styles.top}>
@@ -33,7 +33,7 @@ export function LaunchCard({ launch, now }: { launch: LaunchSummary; now: number
         </div>
         <div>
           <dt>Graduates at</dt>
-          <dd>{formatUnits(launch.graduationTarget, 9)} {quote}</dd>
+          <dd>{formatAmount(launch.graduationTarget, launch.quote.decimals)} {quote}</dd>
         </div>
       </dl>
     </Link>

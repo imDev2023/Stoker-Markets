@@ -105,3 +105,11 @@
   font-size: 0.875rem;
   color: var(--ink-2);
 }
+
+/* At the narrowest phones the wordmark, cluster badge and this button only fit side by side with tighter padding. */
+@media (max-width: 380px) {
+  .connect,
+  .connected {
+    padding: 0 12px;
+  }
+}
