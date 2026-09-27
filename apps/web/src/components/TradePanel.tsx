@@ -26,8 +26,9 @@ const BUY_PRESETS = ["0.1", "0.5", "1"] as const;
 const SELL_PRESETS = [25, 50, 100] as const;
 const RAYDIUM_FEE_PCT = 0.25;
 const QUOTE_DEBOUNCE_MS = 250;
-// LaunchLab's ExceededSlippage error.
+// LaunchLab's ExceededSlippage error, as a transaction error and as the RPC's preflight log writes it.
 const EXCEEDED_SLIPPAGE = 6004;
+const exceededSlippage = (text: string) => text.includes(`"Custom":${EXCEEDED_SLIPPAGE}`) || text.includes(`0x${EXCEEDED_SLIPPAGE.toString(16)}`);
 
 export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSummary; platform: PlatformInfo; onTraded: () => void }) {
   const { connection } = useConnection();
@@ -110,10 +111,10 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
       });
       if (sim.value.err) throw new Error(simulationError(sim.value.err, sim.value.logs ?? []));
       const before = BigInt(await connection.getBalance(publicKey, "confirmed"));
+      // The simulated balance already has the network fee taken off.
       const after = BigInt(sim.value.accounts?.[0]?.lamports ?? before);
-      const fee = BigInt((await connection.getFeeForMessage(tx.message, "confirmed")).value ?? 0);
       setQuote(prepared.quote);
-      setStep({ kind: "reviewing", review: { prepared, tx, walletLamports: after - before - fee } });
+      setStep({ kind: "reviewing", review: { prepared, tx, walletLamports: after - before } });
     } catch (e) {
       setError(tradeError((e as Error).message));
       setStep({ kind: "editing" });
@@ -133,7 +134,7 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
       );
       if (result.value.err) {
         setError(
-          JSON.stringify(result.value.err).includes(`"Custom":${EXCEEDED_SLIPPAGE}`)
+          exceededSlippage(JSON.stringify(result.value.err))
             ? "The price moved past your slippage before the trade landed, so nothing was traded and only the network fee was charged. Try again, or allow more slippage."
             : "The trade failed on-chain, so nothing was traded and only the network fee was charged. Try again.",
         );
@@ -148,10 +149,13 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
       void refreshBalances();
     } catch (e) {
       const message = (e as Error).message ?? "";
+      // The RPC simulates before sending, so a price that moved while the trader signed fails here, before any fee.
       setError(
         /reject|declin|cancel/i.test(message)
           ? "You declined the transaction in your wallet. Nothing was traded."
-          : "The trade couldn't be sent. Nothing was traded; try again in a moment.",
+          : exceededSlippage(message)
+            ? "The price moved past your slippage before the trade was sent, so nothing was traded or charged. Check the new quote and try again, or allow more slippage."
+            : "The trade couldn't be sent. Nothing was traded; try again in a moment.",
       );
     }
     setStep({ kind: "editing" });
@@ -370,7 +374,7 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
         ) : (
           <div className={styles.connect}>
             <p>Connect a wallet to trade.</p>
-            <WalletButton />
+            <WalletButton variant="inline" />
           </div>
         )}
       </form>
@@ -403,6 +407,6 @@ function simulationError(err: unknown, logs: string[]) {
   if (/insufficient (lamports|funds)|InsufficientFundsForRent|"Custom":1\b/.test(text))
     return "Your wallet doesn't have enough to cover this trade and its network fees. Lower the amount or add SOL.";
   if (/AccountNotFound/.test(text)) return "Your wallet has no SOL yet. Add SOL and try again.";
-  if (text.includes(`"Custom":${EXCEEDED_SLIPPAGE}`)) return "The price has moved past your slippage. Check the new quote and try again.";
+  if (exceededSlippage(text)) return "The price has moved past your slippage. Check the new quote and try again.";
   return "The trade would fail on-chain, so nothing was sent. Try again in a moment.";
 }

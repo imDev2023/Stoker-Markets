@@ -21,7 +21,7 @@ export function TradeHistory({
               <th scope="col" className={styles.num}>{quote}</th>
               <th scope="col" className={`${styles.num} ${styles.wide}`}>Price</th>
               <th scope="col" className={styles.wide}>Trader</th>
-              <th scope="col" className={styles.num}>Time</th>
+              <th scope="col" className={`${styles.num} ${styles.time}`}>Time</th>
             </tr>
           </thead>
           <tbody>

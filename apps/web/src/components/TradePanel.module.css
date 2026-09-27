@@ -44,8 +44,11 @@
   transition: background-color 120ms ease, color 120ms ease;
 }
 
-.sides button:hover:not(:disabled) {
-  color: var(--ink);
+@media (hover: hover) {
+  /* Hover only lifts the side that isn't chosen, so the chosen side keeps its buy or sell colour. */
+  .sides button:not([aria-pressed="true"]):hover:not(:disabled) {
+    color: var(--ink);
+  }
 }
 
 .sides button[aria-pressed="true"] {
@@ -109,8 +112,10 @@
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
-.amount:hover {
-  border-color: var(--ink-3);
+@media (hover: hover) {
+  .amount:hover {
+    border-color: var(--ink-3);
+  }
 }
 
 .amount:focus-within {
@@ -185,10 +190,12 @@
   transition: border-color 120ms ease, color 120ms ease, background-color 120ms ease;
 }
 
-.presets button:hover:not(:disabled),
-.slippage button:hover:not(:disabled) {
-  border-color: var(--ink-3);
-  color: var(--ink);
+@media (hover: hover) {
+  .presets button:hover:not(:disabled),
+  .slippage button:hover:not(:disabled) {
+    border-color: var(--ink-3);
+    color: var(--ink);
+  }
 }
 
 .presets button:disabled {
@@ -354,8 +361,10 @@
   color: var(--on-cobalt);
 }
 
-.primary:hover:not(:disabled) {
-  background: var(--cobalt-strong);
+@media (hover: hover) {
+  .primary:hover:not(:disabled) {
+    background: var(--cobalt-strong);
+  }
 }
 
 .primary:disabled,
@@ -373,8 +382,10 @@
   background: var(--paper);
 }
 
-.secondary:hover:not(:disabled) {
-  border-color: var(--ink-3);
+@media (hover: hover) {
+  .secondary:hover:not(:disabled) {
+    border-color: var(--ink-3);
+  }
 }
 
 .review {
