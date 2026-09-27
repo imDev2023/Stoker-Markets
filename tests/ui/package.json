@@ -1,0 +1,16 @@
+{
+  "name": "@launchpad/tests-ui",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "@launchpad/contract": "workspace:*",
+    "@launchpad/stack": "workspace:*",
+    "@playwright/test": "^1.63.0",
+    "@solana/web3.js": "^1.99.0",
+    "@types/node": "^24.0.0"
+  }
+}
