@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { test as base, expect, type Page } from "@playwright/test";
 import { Connection, Keypair, LAMPORTS_PER_SOL, VersionedTransaction } from "@solana/web3.js";
-import { LaunchList, PreparedLaunch } from "@launchpad/contract";
+import { LaunchList, PreparedLaunch, PreparedTrade, type TradeSide } from "@launchpad/contract";
 import type { StackEnv } from "@launchpad/stack";
 import { installTestWallet, type TestWallet } from "./wallet";
 
@@ -53,6 +53,29 @@ export async function launchViaApi(creator: Keypair, fields: LaunchFields) {
   );
   await fetch(`${apiUrl}/v1/transactions/${signature}`, { method: "POST" });
   return prepared.mint;
+}
+
+/** Trades on a Launch the way any API client would: prepare, sign, send, report. `amount` is raw units of what is paid. */
+export async function tradeViaApi(trader: Keypair, mint: string, side: TradeSide, amount: bigint, slippageBps = 100) {
+  const { apiUrl } = stackEnv();
+  const res = await fetch(`${apiUrl}/v1/trades/prepare`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ mint, trader: trader.publicKey.toBase58(), side, amount: amount.toString(), slippageBps }),
+  });
+  if (!res.ok) throw new Error(`prepare trade failed: ${res.status} ${await res.text()}`);
+  const prepared = PreparedTrade.parse(await res.json());
+  const tx = VersionedTransaction.deserialize(Buffer.from(prepared.transaction, "base64"));
+  tx.sign([trader]);
+  const conn = connection();
+  const signature = await conn.sendTransaction(tx);
+  const result = await conn.confirmTransaction(
+    { signature, blockhash: tx.message.recentBlockhash, lastValidBlockHeight: prepared.lastValidBlockHeight },
+    "confirmed",
+  );
+  if (result.value.err) throw new Error(`trade failed: ${JSON.stringify(result.value.err)}`);
+  await fetch(`${apiUrl}/v1/transactions/${signature}`, { method: "POST" });
+  return prepared.quote;
 }
 
 /** Nothing on the page may be wider than the viewport: a sideways scroll on a phone is a layout bug. */

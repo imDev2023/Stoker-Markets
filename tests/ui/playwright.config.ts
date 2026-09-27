@@ -12,11 +12,11 @@ const chrome = devices["Desktop Chrome"];
 
 /**
  * One stack serves every project, so projects run in an order that keeps what each one sees deterministic:
- * the empty board first, then the behaviour flows (which launch coins), then a fixed board is seeded, then the visuals.
+ * the empty board first, then the behaviour flows (which launch and trade coins), then a fixed board is seeded, then the visuals.
  */
 const projects: Project[] = [
   ...LOOKS.map((l) => ({ name: `empty-${l.name}`, testMatch: "empty.spec.ts", use: { ...chrome, ...l } })),
-  { name: "flows", testMatch: "flows.spec.ts", dependencies: LOOKS.map((l) => `empty-${l.name}`), use: { ...chrome, ...LOOKS[0] } },
+  { name: "flows", testMatch: /(flows|trading)\.spec\.ts/, dependencies: LOOKS.map((l) => `empty-${l.name}`), use: { ...chrome, ...LOOKS[0] } },
   { name: "seed", testMatch: "seed.setup.ts", dependencies: ["flows"] },
   ...LOOKS.map((l) => ({ name: `visual-${l.name}`, testMatch: "visual.spec.ts", dependencies: ["seed"], use: { ...chrome, ...l } })),
 ];
