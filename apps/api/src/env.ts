@@ -27,6 +27,21 @@ export type Config = {
   graduationTargetLamports: BN;
 };
 
+/**
+ * Every coin's metadata URL is built from this address and written on-chain at launch, where nobody can change it
+ * afterwards (LaunchLab holds the metadata update authority). On mainnet it must be https on a domain we keep for
+ * good: a workers.dev, localhost or bare IP address would leave every coin launched through it without its image.
+ */
+function publicApiUrl(raw: string, cluster: Cluster) {
+  const url = new URL(raw);
+  const host = url.hostname;
+  const temporary =
+    url.protocol !== "https:" || host === "localhost" || host.endsWith(".workers.dev") || /^[\d.]+$|^\[/.test(host);
+  if (cluster === "mainnet" && temporary)
+    throw new Error(`PUBLIC_API_URL must be https on our own permanent domain on mainnet, since coins' metadata URLs can never change (got ${raw})`);
+  return raw.replace(/\/$/, "");
+}
+
 /** Parses and checks the Worker's configuration once per request, failing loudly on a missing value. */
 export function config(env: Bindings): Config {
   const key = (name: keyof Bindings) => {
@@ -37,7 +52,7 @@ export function config(env: Bindings): Config {
   return {
     cluster: env.CLUSTER,
     rpcUrl: env.RPC_URL,
-    publicApiUrl: env.PUBLIC_API_URL.replace(/\/$/, ""),
+    publicApiUrl: publicApiUrl(env.PUBLIC_API_URL, env.CLUSTER),
     launchlab: key("LAUNCHLAB_PROGRAM"),
     platformConfig: key("PLATFORM_CONFIG"),
     solGlobalConfig: key("SOL_GLOBAL_CONFIG"),

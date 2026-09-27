@@ -18,9 +18,9 @@ const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 app.use("*", async (c, next) => cors({ origin: c.env.WEB_ORIGIN, allowMethods: ["GET", "POST"] })(c, next));
 
 app.use("/v1/*", async (c, next) => {
+  c.set("cfg", config(c.env));
   const { db, close } = createDb(c.env.HYPERDRIVE.connectionString);
   c.set("db", db);
-  c.set("cfg", config(c.env));
   try {
     await next();
   } finally {
@@ -34,7 +34,11 @@ app.onError((err, c) => {
   return c.json({ error: "internal error" }, 500);
 });
 
-app.get("/health", (c) => c.json({ ok: true }));
+// Healthy only when the configuration is valid, so a misconfigured deploy never looks ready.
+app.get("/health", (c) => {
+  config(c.env);
+  return c.json({ ok: true });
+});
 
 app.get("/v1/platform", (c) => {
   const cfg = c.get("cfg");
