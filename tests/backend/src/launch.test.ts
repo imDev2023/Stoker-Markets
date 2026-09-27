@@ -40,7 +40,7 @@ describe("launching a SOL-paired coin", () => {
     expect((await getLaunch(prepared.mint)).status).toBe(404);
     const delivery = await deliverWebhook([signature]);
     expect(delivery.status).toBe(200);
-    expect(await delivery.json()).toEqual({ launched: 1, traded: 0, claimed: 0 });
+    expect(await delivery.json()).toEqual({ launched: 1, traded: 0, claimed: 0, graduated: 0 });
 
     const board = await listLaunches();
     expect(board[0]).toMatchObject({
@@ -80,8 +80,8 @@ describe("indexing", () => {
   it("writes one Launch however many times the same transaction is delivered", async () => {
     const creator = await fundedWallet();
     const { prepared, signature } = await launch(creator);
-    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 1, traded: 0, claimed: 0 });
-    expect(await (await deliverWebhook([signature, signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0 });
+    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 1, traded: 0, claimed: 0, graduated: 0 });
+    expect(await (await deliverWebhook([signature, signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 0 });
     expect((await listLaunches()).filter((l) => l.mint === prepared.mint)).toHaveLength(1);
   });
 
@@ -89,7 +89,7 @@ describe("indexing", () => {
     const creator = await fundedWallet();
     const { prepared, signature } = await launch(creator);
     const res = await fetch(`${env().apiUrl}/v1/transactions/${signature}`, { method: "POST" });
-    expect(await res.json()).toEqual({ launched: 1, traded: 0, claimed: 0 });
+    expect(await res.json()).toEqual({ launched: 1, traded: 0, claimed: 0, graduated: 0 });
     expect((await getLaunch(prepared.mint)).launch?.createdSignature).toBe(signature);
   });
 
@@ -121,7 +121,7 @@ describe("indexing", () => {
         name: "Elsewhere", symbol: "ELSE", uri: "https://example.invalid/else.json", graduationTargetRaw: new BN(30_000_000_000),
       }),
     ), [other, mint], { commitment: "confirmed" });
-    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0 });
+    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 0 });
     expect((await getLaunch(mint.publicKey.toBase58())).status).toBe(404);
   });
 });

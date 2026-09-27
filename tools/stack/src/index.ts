@@ -1,7 +1,8 @@
 // The whole system as a black box for tests: a throwaway Postgres, a fresh local chain with the real Raydium programs,
 // the API Worker under `wrangler dev`, and optionally the web app under `next dev`.
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { appendFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { createServer as createHttpServer } from "node:http";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -19,6 +20,12 @@ export type StackEnv = {
   rpcUrl: string;
   databaseUrl: string;
   webhookSecret: string;
+  /** Bearer token for the API's operator endpoints. */
+  operatorToken: string;
+  /** Stands in for the operator's chat webhook: the API posts alerts here, and a GET lists every one received. */
+  alertSinkUrl: string;
+  /** How long a sold-out curve waits for migration before the API alerts. */
+  graduationAlertAfterSeconds: number;
   platform: LocalnetState;
 };
 
@@ -27,6 +34,8 @@ export type StackOptions = {
   rpcPort?: number;
   /** Small, so tests can graduate a Launch cheaply; production uses 85 SOL. */
   graduationTargetSol?: number;
+  /** Short, so a test can see a stuck Launch alerted without waiting minutes; production uses 300. */
+  graduationAlertAfterSeconds?: number;
   web?: boolean;
 };
 
@@ -64,11 +73,18 @@ function startPostgres() {
   return { name, url: `postgres://test:test@127.0.0.1:${port}/test` };
 }
 
-function run(cmd: string, args: string[], cwd: string, env: NodeJS.ProcessEnv) {
+/** Runs a stack process, keeping its output; with `STACK_LOG_DIR` set, the output also streams to `<dir>/<name>.log`. */
+function run(name: string, cmd: string, args: string[], cwd: string, env: NodeJS.ProcessEnv) {
   const proc: ChildProcess = spawn(cmd, args, { cwd, env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "pipe"] });
   let log = "";
-  proc.stdout?.on("data", (d) => (log += d));
-  proc.stderr?.on("data", (d) => (log += d));
+  const dir = process.env.STACK_LOG_DIR;
+  const file = dir ? (mkdirSync(dir, { recursive: true }), join(dir, `${name}.log`)) : null;
+  const keep = (d: Buffer) => {
+    log += d;
+    if (file) appendFileSync(file, d);
+  };
+  proc.stdout?.on("data", keep);
+  proc.stderr?.on("data", keep);
   const stop = () =>
     new Promise<void>((resolve) => {
       if (proc.exitCode !== null) return resolve();
@@ -79,6 +95,31 @@ function run(cmd: string, args: string[], cwd: string, env: NodeJS.ProcessEnv) {
 }
 
 export const WEBHOOK_SECRET = "test-webhook-secret";
+export const OPERATOR_TOKEN = "test-operator-token";
+
+/** A stand-in for the operator's chat webhook: keeps every JSON body posted to it and lists them on GET. */
+async function startAlertSink() {
+  const received: unknown[] = [];
+  const server = createHttpServer((req, res) => {
+    if (req.method === "GET") {
+      res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(received));
+      return;
+    }
+    let body = "";
+    req.on("data", (d) => (body += d));
+    req.on("end", () => {
+      try {
+        received.push(JSON.parse(body));
+        res.writeHead(204).end();
+      } catch {
+        res.writeHead(400).end();
+      }
+    });
+  });
+  const port = await freePort();
+  await new Promise<void>((resolve) => server.listen(port, "127.0.0.1", resolve));
+  return { url: `http://127.0.0.1:${port}`, stop: () => new Promise<void>((resolve) => server.close(() => resolve())) };
+}
 
 /**
  * Runs the API Worker under `wrangler dev` with the given vars. Resolves once it answers HTTP at all, so a test can
@@ -88,11 +129,13 @@ export async function startApi(opts: { port: number; vars: Record<string, string
   const { port, vars, databaseUrl } = opts;
   const url = `http://127.0.0.1:${port}`;
   const api = run(
+    `api-${port}`,
     "pnpm",
     [
       "exec", "wrangler", "dev", "--port", String(port), "--ip", "127.0.0.1", "--inspector-port", String(await freePort()),
-      "--test-scheduled",
       "--persist-to", mkdtempSync(join(tmpdir(), "launchpad-api-")),
+      // Exposes /__scheduled, so tests run the Cron Trigger jobs on demand.
+      "--test-scheduled",
       ...Object.entries(vars).flatMap(([k, v]) => ["--var", `${k}:${v}`]),
     ],
     join(REPO, "apps", "api"),
@@ -130,6 +173,10 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       new BN((opts.graduationTargetSol ?? 1) * LAMPORTS_PER_SOL),
     );
 
+    const sink = await startAlertSink();
+    cleanups.push(sink.stop);
+    const graduationAlertAfterSeconds = opts.graduationAlertAfterSeconds ?? 5;
+
     const webPort = opts.web ? await freePort() : null;
     const webUrl = webPort ? `http://127.0.0.1:${webPort}` : null;
     const apiPort = await freePort();
@@ -143,7 +190,10 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       PRICE_SOURCE: "static",
       QUOTE_PRICES_USD: JSON.stringify(LOCAL_QUOTE_PRICES_USD),
       OPERATIONS_KEY: JSON.stringify(Array.from(localnetKeys().operations.secretKey)),
+      GRADUATION_ALERT_AFTER_SECONDS: String(graduationAlertAfterSeconds),
       HELIUS_WEBHOOK_SECRET: WEBHOOK_SECRET,
+      OPERATOR_TOKEN,
+      ALERT_WEBHOOK_URL: sink.url,
     };
     const api = await startApi({ port: apiPort, vars, databaseUrl: pg.url });
     cleanups.push(api.stop);
@@ -154,6 +204,7 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
 
     if (webPort && webUrl) {
       const web = run(
+        `web-${webPort}`,
         "pnpm",
         ["exec", "next", "dev", "--port", String(webPort), "--hostname", "127.0.0.1"],
         join(REPO, "apps", "web"),
@@ -164,7 +215,13 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       await waitFor("web", async () => (await fetch(webUrl)).ok, 180_000, web.log);
     }
 
-    return { env: { apiUrl, webUrl, rpcUrl: chain.rpcUrl, databaseUrl: pg.url, webhookSecret: WEBHOOK_SECRET, platform }, stop };
+    return {
+      env: {
+        apiUrl, webUrl, rpcUrl: chain.rpcUrl, databaseUrl: pg.url, webhookSecret: WEBHOOK_SECRET, operatorToken: OPERATOR_TOKEN,
+        alertSinkUrl: sink.url, graduationAlertAfterSeconds, platform,
+      },
+      stop,
+    };
   } catch (e) {
     await stop();
     throw e;

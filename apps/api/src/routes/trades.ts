@@ -3,7 +3,10 @@ import { HTTPException } from "hono/http-exception";
 import { Connection, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { desc, eq, sql } from "drizzle-orm";
-import { curvePrice, loadCurve, minAmountOut, prepareTrade, quoteTrade } from "@launchpad/chain";
+import {
+  curvePrice, graduationPoolAddress, loadCurve, loadPool, minAmountOut, preparePoolTrade, prepareTrade, quotePoolTrade, quoteTrade,
+  RATE_DENOMINATOR, type UnsignedTransaction,
+} from "@launchpad/chain";
 import {
   CandleInterval, PrepareTradeRequest, TradeQuoteQuery, type CandleList, type CurveProgress, type PreparedTrade, type TradeList,
   type TradeQuote,
@@ -11,14 +14,17 @@ import {
 import { curves, launches, trades, type Db } from "@launchpad/db";
 import type { AppEnv, Config } from "../env";
 
-/** Trading on a Launch's curve: quotes and unsigned trade transactions (ADR 0003), plus the indexed trade history and candles. */
+/**
+ * Trading a Launch's coin: quotes and unsigned trade transactions (ADR 0003), plus the indexed trade history and candles.
+ * The same endpoints serve the curve before Graduation and the Raydium CPMM pool after.
+ */
 export const tradeRoutes = new Hono<AppEnv>();
 
-/** A quote at the curve's current state, for showing what a trade would do before the trader commits. */
+/** A quote at the market's current state, for showing what a trade would do before the trader commits. */
 tradeRoutes.get("/launches/:mint/quote", async (c) => {
   const query = TradeQuoteQuery.safeParse(c.req.query());
   if (!query.success) return c.json({ error: "invalid quote request", details: query.error.issues }, 400);
-  const { quote } = await quoteOnCurve(c.get("db"), c.get("cfg"), c.req.param("mint"), query.data);
+  const { quote } = await quoteMarket(c.get("db"), c.get("cfg"), c.req.param("mint"), query.data);
   return c.json(quote);
 });
 
@@ -26,17 +32,8 @@ tradeRoutes.get("/launches/:mint/quote", async (c) => {
 tradeRoutes.post("/trades/prepare", async (c) => {
   const body = PrepareTradeRequest.safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: "invalid trade request", details: body.error.issues }, 400);
-  const cfg = c.get("cfg");
-  const { connection, curve, quote } = await quoteOnCurve(c.get("db"), cfg, body.data.mint, body.data);
-  const prepared = await prepareTrade(connection, {
-    program: cfg.launchlab,
-    curve,
-    trader: new PublicKey(body.data.trader),
-    side: quote.side,
-    amountIn: new BN(quote.amountIn),
-    minAmountOut: new BN(quote.minAmountOut),
-  });
-  const res: PreparedTrade = { ...prepared, quote };
+  const { quote, prepare } = await quoteMarket(c.get("db"), c.get("cfg"), body.data.mint, body.data);
+  const res: PreparedTrade = { ...(await prepare(new PublicKey(body.data.trader))), quote };
   return c.json(res);
 });
 
@@ -52,6 +49,7 @@ tradeRoutes.get("/launches/:mint/trades", async (c) => {
   const res: TradeList = {
     trades: rows.map((t) => ({
       signature: t.signature,
+      venue: t.venue,
       trader: t.trader,
       side: t.side,
       baseAmount: t.baseAmount,
@@ -101,32 +99,93 @@ tradeRoutes.get("/launches/:mint/candles", async (c) => {
   return c.json(res);
 });
 
-/** Curve progress for a Launch summary; a Launch nobody has traded yet has raised nothing and has no traded price. */
-export function curveProgress(row: typeof curves.$inferSelect | null): CurveProgress {
-  return row ? { status: row.status, raised: row.realQuote, price: row.price } : { status: "live", raised: "0", price: null };
+/**
+ * Curve progress for a Launch summary. A Launch nobody has traded yet has raised nothing and has no traded price; one
+ * Raydium has migrated is graduated whatever the last indexed curve trade said.
+ */
+export function curveProgress(row: typeof curves.$inferSelect | null, graduated: boolean): CurveProgress {
+  const status = graduated ? "graduated" : (row?.status ?? "live");
+  return {
+    status,
+    raised: row?.realQuote ?? "0",
+    price: row?.price ?? null,
+    completedAt: status === "live" ? null : (row?.completedAt?.toISOString() ?? null),
+  };
 }
 
-async function quoteOnCurve(db: Db, cfg: Config, mint: string, r: TradeQuoteQuery) {
+/** Basis points from a rate in the 1e6 denominator LaunchLab and CPMM share. */
+const bps = (rate: BN) => (Number(rate.toString()) * 10_000) / RATE_DENOMINATOR;
+
+type Market = { quote: TradeQuote; prepare: (trader: PublicKey) => Promise<UnsignedTransaction> };
+
+/**
+ * Prices a trade where the coin trades now, read from the chain rather than the index so a lagging webhook never sends
+ * a trade to the wrong place: the curve while it is live, the Raydium CPMM pool once Raydium has migrated it.
+ */
+async function quoteMarket(db: Db, cfg: Config, mint: string, r: TradeQuoteQuery): Promise<Market> {
   const [launch] = await db.select({ pool: launches.pool }).from(launches).where(eq(launches.mint, mint)).limit(1);
   if (!launch) throw new HTTPException(404, { message: "launch not found" });
   const connection = new Connection(cfg.rpcUrl, "confirmed");
   const curve = await loadCurve(connection, new PublicKey(launch.pool));
   if (!curve) throw new Error(`launch ${mint} has no curve account at ${launch.pool}`);
-  if (curve.status !== "live") throw new HTTPException(409, { message: "this coin's curve has sold out, so it no longer trades on the curve" });
   const amount = new BN(r.amount);
+
+  if (curve.status === "graduating")
+    throw new HTTPException(409, {
+      message: "This coin's curve has sold out and Raydium is moving it to its pool. Trading opens there in a few seconds.",
+    });
+
+  if (curve.status === "graduated") {
+    const pool = await loadPool(connection, await graduationPoolAddress(connection, cfg.cpmm, curve));
+    if (!pool) throw new Error(`launch ${mint} is migrated but has no pool`);
+    if (!pool.swapEnabled) throw new HTTPException(409, { message: "Raydium has paused trading in this coin's pool." });
+    if (pool.chainTime < pool.openTime) throw new HTTPException(409, { message: "This coin's pool opens in a moment. Try again in a few seconds." });
+    const t = quotePoolTrade(pool, curve.baseMint, r.side, amount);
+    if (t.amountOut.isZero()) throw new HTTPException(400, { message: "amount is too small to trade" });
+    const quote: TradeQuote = {
+      venue: "pool",
+      side: r.side,
+      amountIn: t.amountIn.toString(),
+      amountOut: t.amountOut.toString(),
+      minAmountOut: minAmountOut(t.amountOut, r.slippageBps).toString(),
+      slippageBps: r.slippageBps,
+      fees: { raydium: t.fees.protocol.toString(), platform: t.fees.platform.toString(), creator: t.fees.creator.toString() },
+      feeBps: { raydium: bps(pool.rates.trade), platform: bps(pool.rates.creator), creator: 0 },
+      priceBefore: t.priceBefore,
+      priceAfter: t.priceAfter,
+      completesCurve: false,
+    };
+    return {
+      quote,
+      prepare: (trader) =>
+        preparePoolTrade(connection, {
+          cpmm: cfg.cpmm, pool, baseMint: curve.baseMint, trader, side: r.side, amountIn: t.amountIn, minAmountOut: new BN(quote.minAmountOut),
+        }),
+    };
+  }
+
   if (r.side === "sell" && amount.gt(curve.reserves.realBase)) throw new HTTPException(400, { message: "amount is more than the curve has sold" });
   const t = quoteTrade(curve.reserves, curve.rates, r.side, amount);
   if (t.amountOut.isZero()) throw new HTTPException(400, { message: "amount is too small to trade" });
   const quote: TradeQuote = {
+    venue: "curve",
     side: r.side,
     amountIn: t.amountIn.toString(),
     amountOut: t.amountOut.toString(),
     minAmountOut: minAmountOut(t.amountOut, r.slippageBps).toString(),
     slippageBps: r.slippageBps,
     fees: { raydium: t.fees.protocol.toString(), platform: t.fees.platform.toString(), creator: t.fees.creator.toString() },
+    feeBps: { raydium: bps(curve.rates.protocol), platform: bps(curve.rates.platform), creator: bps(curve.rates.creator) },
     priceBefore: curvePrice(curve.reserves, curve.baseDecimals, curve.quoteDecimals),
     priceAfter: curvePrice(t.after, curve.baseDecimals, curve.quoteDecimals),
     completesCurve: t.after.realBase.eq(t.after.totalBaseSell),
   };
-  return { connection, curve, quote };
+  return {
+    quote,
+    prepare: (trader) =>
+      prepareTrade(connection, {
+        program: cfg.launchlab, curve, trader, side: r.side, amountIn: t.amountIn, minAmountOut: new BN(quote.minAmountOut),
+      }),
+  };
 }
+

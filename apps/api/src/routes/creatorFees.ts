@@ -6,7 +6,7 @@ import { NothingToClaimError, prepareCreatorFeeClaim, readCreatorFeeVaults, WSOL
 import {
   PrepareCreatorFeeClaimRequest, type CreatorFeeClaimList, type CreatorFees, type PreparedCreatorFeeClaim, type QuoteRef,
 } from "@launchpad/contract";
-import { creatorFeeClaims, curves, launches, launchMetadata, quoteAssets, trades, type Db } from "@launchpad/db";
+import { creatorFeeClaims, curves, graduations, launches, launchMetadata, quoteAssets, trades, type Db } from "@launchpad/db";
 import type { AppEnv } from "../env";
 import { toQuoteRef } from "../quotes/assets";
 
@@ -50,11 +50,14 @@ creatorFeeRoutes.get("/creators/:address/fees", async (c) => {
         quoteMint: launches.quoteMint,
         hasMetadata: sql<boolean>`${launchMetadata.id} is not null`,
         status: curves.status,
-        earned: sql<string>`coalesce((select sum(${trades.creatorFee}) from ${trades} where ${trades.mint} = ${launches.mint}), 0)::text`,
+        graduated: sql<boolean>`${graduations.mint} is not null`,
+        // The Creator Fee ends at Graduation: only curve trades pay it, never trades in the Raydium pool after.
+        earned: sql<string>`coalesce((select sum(${trades.creatorFee}) from ${trades} where ${trades.mint} = ${launches.mint} and ${trades.venue} = 'curve'), 0)::text`,
       })
       .from(launches)
       .leftJoin(launchMetadata, eq(launchMetadata.id, launches.mint))
       .leftJoin(curves, eq(curves.mint, launches.mint))
+      .leftJoin(graduations, eq(graduations.mint, launches.mint))
       .where(eq(launches.creator, address))
       .orderBy(desc(launches.createdSlot)),
     db
@@ -90,8 +93,8 @@ creatorFeeRoutes.get("/creators/:address/fees", async (c) => {
       symbol: l.symbol,
       image: l.hasMetadata ? `${cfg.publicApiUrl}/metadata/${l.mint}/image` : null,
       quote: quote(l.quoteMint),
-      // A Launch nobody has traded yet is live.
-      status: l.status ?? "live",
+      // A Launch nobody has traded yet is live; one Raydium has migrated is graduated whatever its last curve trade said.
+      status: l.graduated ? "graduated" : (l.status ?? "live"),
       earned: l.earned,
     })),
   };
