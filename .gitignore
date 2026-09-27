@@ -25,7 +25,7 @@ __pycache__/
 
 # App workspace
 .wrangler/
-.next/
+.next*/
 .open-next/
 dist/
 test-results/
@@ -33,3 +33,4 @@ playwright-report/
 tools/localnet/.ledger/
 *.tsbuildinfo
 .dev.vars
+next-env.d.ts

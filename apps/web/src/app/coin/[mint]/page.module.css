@@ -1,0 +1,156 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding-top: clamp(28px, 5vw, 56px);
+  padding-bottom: 80px;
+}
+
+.head {
+  display: flex;
+  gap: clamp(16px, 3vw, 28px);
+  align-items: center;
+  min-width: 0;
+}
+
+.image {
+  flex: none;
+  width: clamp(80px, 12vw, 112px);
+  height: clamp(80px, 12vw, 112px);
+  border-radius: 22px;
+  object-fit: cover;
+  background: var(--plate);
+}
+
+.titles {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.pair {
+  margin: 0;
+  display: flex;
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+  font-size: 1.125rem;
+  color: var(--ink-2);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.links a {
+  display: inline-flex;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.links a:hover {
+  border-color: var(--cobalt);
+}
+
+.description {
+  margin: 0;
+  max-width: 44em;
+  font-size: 1.0625rem;
+  color: var(--ink-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.panels {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.facts,
+.addresses {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  margin: 0;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+
+.facts dt,
+.addresses dt {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+}
+
+.facts dd,
+.addresses dd {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 2px 0 0;
+  font-weight: 500;
+}
+
+.addresses a {
+  text-decoration: none;
+  border-bottom: 1px solid var(--line);
+}
+
+.addresses a:hover {
+  color: var(--cobalt);
+  border-color: var(--cobalt);
+}
+
+.verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--verified-bg);
+  color: var(--verified);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.verified::before {
+  content: "✓";
+}
+
+.back {
+  align-self: flex-start;
+  color: var(--ink-2);
+  font-weight: 500;
+}
+
+@media (max-width: 760px) {
+  .panels {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

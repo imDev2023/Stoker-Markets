@@ -9,7 +9,7 @@
     "CLUSTER": "localnet",
     "RPC_URL": "http://127.0.0.1:8899",
     "PUBLIC_API_URL": "http://localhost:8791",
-    "WEB_ORIGIN": "http://localhost:3000",
+    "WEB_ORIGIN": "http://localhost:3100",
     "LAUNCHLAB_PROGRAM": "DRay6fNdQ5J82H7xV6uq2aV3mNrUZ1J4PgSKsWgptcm6",
     "PLATFORM_CONFIG": "",
     "SOL_GLOBAL_CONFIG": "7ZR4zD7PYfY2XxoG1Gxcy2EgEeGYrpxrwzPuwdUBssEt",
