@@ -20,7 +20,7 @@ Research lives under `research/`; the LaunchLab devnet spike under `spike/launch
 - Correction (2026-09-26): asset pairing is no longer StonkFun-only. pump.fun added admin-listed custom quotes (181 mints, xStocks included) on 2026-09-09 and made about 64,000 asset-paired coins in 17 days; Meteora DBC is 0.6% asset-paired. See `research/competitors/README.md`.
 - Our wedge (owner, 2026-09-26) is the combination "open + trustless": any quote asset with a Raydium GlobalConfig (571 on mainnet, 94 of them tokenized stocks) with no gatekeeper, and a Creator Fee the chain pays. StonkFun is open but pays creators off-chain; pump.fun pays on-chain but gatekeeps quotes.
 - Fee model and post-graduation split: `docs/adr/0001-fee-model.md`. Domain vocabulary: `CONTEXT.md`.
-- The devnet spike (`spike/launchlab-devnet/README.md`) confirmed our own PlatformConfig, on-chain creator and platform fee claims, and post-graduation fee collection on a devnet fork; migration can only be signed by Raydium's migrate wallet, and whether its crank migrates a new platform's pools is still unproven on real devnet.
+- The devnet spike (`spike/launchlab-devnet/README.md`) confirmed our own PlatformConfig, on-chain creator and platform fee claims, and post-graduation fee collection on a devnet fork; migration can only be signed by Raydium's migrate wallet, and the real-devnet run (2026-09-27) proved Raydium's crank migrates a brand-new platform's pools within seconds.
 
 ## Traps
 
