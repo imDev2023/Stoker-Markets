@@ -16,7 +16,7 @@ export {
 } from "./claim";
 export { prepareLaunch, type LaunchRequest, type PreparedLaunch } from "./launch";
 export {
-  curvePrice, minAmountOut, quoteTrade,
+  curvePrice, initialCurveReserves, minAmountOut, quoteTrade,
   type CurveReserves, type FeeRates, type Side, type TradeFees, type TradeQuote,
 } from "./curve";
 export { loadCurve, prepareTrade, type Curve, type CurveStatus, type PreparedTrade, type TradeRequest } from "./trade";

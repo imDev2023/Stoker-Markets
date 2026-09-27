@@ -98,3 +98,25 @@ export function curvePrice(c: Pick<CurveReserves, "virtualBase" | "virtualQuote"
 export function minAmountOut(amountOut: BN, slippageBps: number) {
   return amountOut.muln(10_000 - slippageBps).divn(10_000);
 }
+
+/**
+ * A new curve's reserves, as LaunchLab sets them at launch from the curve's parameters (raydium-sdk-V2
+ * `ConstantProductCurve.getInitParam`): nothing sold or raised yet, and virtual reserves that make the curve raise
+ * exactly `fundRaising` by the time `totalBaseSell` coins are sold. `migrateFee` is the GlobalConfig's (0 on every
+ * Raydium config).
+ */
+export function initialCurveReserves(p: { supply: BN; totalBaseSell: BN; fundRaising: BN; lockedAmount?: BN; migrateFee?: BN }): CurveReserves {
+  const left = p.supply.sub(p.totalBaseSell).sub(p.lockedAmount ?? new BN(0));
+  const raise = p.fundRaising.sub(p.migrateFee ?? new BN(0));
+  if (left.lten(0) || raise.lten(0)) throw new Error("curve parameters leave nothing to migrate");
+  const numerator = raise.mul(p.totalBaseSell).mul(p.totalBaseSell).div(left);
+  const denominator = raise.mul(p.totalBaseSell).div(left).sub(p.fundRaising);
+  if (denominator.lten(0)) throw new Error("curve parameters give no valid curve");
+  return {
+    virtualBase: numerator.div(denominator),
+    virtualQuote: p.fundRaising.mul(p.fundRaising).div(denominator),
+    realBase: new BN(0),
+    realQuote: new BN(0),
+    totalBaseSell: p.totalBaseSell,
+  };
+}

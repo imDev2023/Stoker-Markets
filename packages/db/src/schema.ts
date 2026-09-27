@@ -21,8 +21,27 @@ export const launches = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
     indexedAt: timestamp("indexed_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("launches_created_slot_idx").on(t.createdSlot), index("launches_creator_idx").on(t.creator)],
+  (t) => [
+    index("launches_created_slot_idx").on(t.createdSlot),
+    index("launches_creator_idx").on(t.creator),
+    index("launches_quote_mint_idx").on(t.quoteMint),
+  ],
 );
+
+/**
+ * Each Launch's latest price wherever it trades, for the board's market caps: the curve's starting price when the Launch
+ * is indexed, then the price after each newer trade, on the curve or in its pool after Graduation.
+ */
+export const launchMarkets = pgTable("launch_markets", {
+  mint: text("mint").primaryKey(),
+  /** Price of one whole coin in whole Quote Asset units. */
+  price: doublePrecision("price").notNull(),
+  /** Slot of the launch or trade the price is from; an earlier one never replaces it. */
+  priceSlot: bigint("price_slot", { mode: "number" }).notNull(),
+  /** Null until the first trade. */
+  lastTradeAt: timestamp("last_trade_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 /** Launch metadata we host (name, description, links, image), keyed by the id in the metadata URI. */
 export const launchMetadata = pgTable("launch_metadata", {
@@ -69,7 +88,12 @@ export const trades = pgTable(
     blockTime: timestamp("block_time", { withTimezone: true }).notNull(),
     indexedAt: timestamp("indexed_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.signature, t.eventIndex] }), index("trades_mint_slot_idx").on(t.mint, t.slot)],
+  (t) => [
+    primaryKey({ columns: [t.signature, t.eventIndex] }),
+    index("trades_mint_slot_idx").on(t.mint, t.slot),
+    // The board's trending sort sums the last day's trades.
+    index("trades_block_time_idx").on(t.blockTime),
+  ],
 );
 
 /**
@@ -125,6 +149,8 @@ export const quoteAssets = pgTable("quote_assets", {
   symbol: text("symbol"),
   name: text("name"),
   logo: text("logo"),
+  /** What kind of asset it is, for filtering the board: from its mint address or its issuer's authorities. */
+  category: text("category", { enum: ["sol", "stablecoin", "tokenized_stock", "community"] }).notNull().default("community"),
   /** Null when no source gives a reliable price. */
   priceUsd: numeric("price_usd"),
   priceSol: numeric("price_sol"),

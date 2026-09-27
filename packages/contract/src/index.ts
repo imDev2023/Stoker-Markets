@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LaunchMarket } from "./board";
 import { GraduationTarget, QuoteRef } from "./quotes";
 import { CurveProgress, Graduation } from "./trades";
 
@@ -7,6 +8,7 @@ import { CurveProgress, Graduation } from "./trades";
 export * from "./quotes";
 export * from "./trades";
 export * from "./creatorFees";
+export * from "./board";
 
 const base58 = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "must be a base58 address");
 const optionalUrl = z.union([z.url({ protocol: /^https?$/ }).max(200), z.literal("")]).optional().transform((v) => v || undefined);
@@ -56,12 +58,17 @@ export const LaunchSummary = z.object({
   curve: CurveProgress,
   /** Set once Raydium has moved the Launch into its CPMM pool, where it trades from then on. */
   graduation: Graduation.nullable(),
+  market: LaunchMarket,
   createdSignature: z.string(),
   createdAt: z.iso.datetime(),
 });
 export type LaunchSummary = z.infer<typeof LaunchSummary>;
 
-export const LaunchList = z.object({ launches: z.array(LaunchSummary) });
+export const LaunchList = z.object({
+  launches: z.array(LaunchSummary),
+  /** The `offset` of the next page; null on the last page. */
+  nextOffset: z.number().int().nullable(),
+});
 export type LaunchList = z.infer<typeof LaunchList>;
 
 export const ApiError = z.object({ error: z.string(), details: z.unknown().optional() });
