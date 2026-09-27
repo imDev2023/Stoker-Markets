@@ -6,6 +6,7 @@ import { CurveProgress } from "./trades";
 
 export * from "./quotes";
 export * from "./trades";
+export * from "./creatorFees";
 
 const base58 = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "must be a base58 address");
 const optionalUrl = z.union([z.url({ protocol: /^https?$/ }).max(200), z.literal("")]).optional().transform((v) => v || undefined);
@@ -68,6 +69,8 @@ export type ApiError = z.infer<typeof ApiError>;
 export const PlatformInfo = z.object({
   cluster: z.enum(["localnet", "devnet", "mainnet"]),
   rpcUrl: z.string(),
+  /** Raydium's LaunchLab program on this cluster, for anyone building a transaction without our API. */
+  launchlabProgram: base58,
   platformConfig: base58,
   /** Every Launch's Graduation Target is worth this much SOL, in lamports, at the moment it launches. */
   graduationTargetLamports: z.string(),
