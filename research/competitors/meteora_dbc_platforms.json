@@ -1,0 +1,3504 @@
+{
+ "snapshot": "2026-09-26",
+ "note": "asset_paired_pools = pools whose quote is neither SOL nor a stablecoin. Labels are only set where a public source ties the address to a platform; PartnerMetadata names are self-declared on-chain.",
+ "asset_paired_pools_total": 10430,
+ "fee_claimers_with_asset_paired_pools": 1786,
+ "top_fee_claimers_by_pools": [
+  {
+   "fee_claimer": "5wkyL2FLEcyUUgc3UeGntHTAfWfzDrVuxMnaMm7792Gk",
+   "label": "Moonshot",
+   "label_source": "DefiLlama dimension-adapters fees/moonshot-money.ts",
+   "pools": 175058,
+   "configs": 6,
+   "curve_complete": 92,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "USDC",
+     175058
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "CnwRFKYbqupZztkKeVVZKRuAUnWDzAZJ4efgYiSvvFhn",
+   "label": "",
+   "label_source": "",
+   "pools": 63903,
+   "configs": 8,
+   "curve_complete": 63899,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     63903
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "CWcERiVd7xkUrcJK5QBdcKC5GG8JMATMLNHtCEUguwPz",
+   "label": "Jupiter Studio",
+   "label_source": "DefiLlama dimension-adapters fees/jup-studio/index.ts",
+   "pools": 45410,
+   "configs": 45243,
+   "curve_complete": 1056,
+   "distinct_quotes": 3,
+   "asset_paired_pools": 197,
+   "top_quotes": [
+    [
+     "USDC",
+     38701
+    ],
+    [
+     "SOL",
+     6512
+    ],
+    [
+     "JUP",
+     197
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "9supzj2Nbnjut3r9UFfWE2RiuAenQMoYaNtZXmmtm5oC",
+   "label": "",
+   "label_source": "",
+   "pools": 31354,
+   "configs": 648,
+   "curve_complete": 578,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     31354
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "Dd2VQkx4zMp2uR1snZP2m9c8dbfzwmib4GZtTYqz5XET",
+   "label": "",
+   "label_source": "",
+   "pools": 23582,
+   "configs": 16,
+   "curve_complete": 23567,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     23582
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "4EkpEHarHkakfxSgfVhJDTrBQWnoYwYCCUW3PV4TompU",
+   "label": "",
+   "label_source": "",
+   "pools": 22351,
+   "configs": 9,
+   "curve_complete": 22335,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     22351
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "9ttedh2e5DDLrfsmwxvrNkWscmXqwVnqL4iUuXJMYMGM",
+   "label": "",
+   "label_source": "",
+   "pools": 15960,
+   "configs": 216,
+   "curve_complete": 4621,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     15960
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "8TPACXaKotSZ7WXktfmKDRhgoypyGXNzo1ctr2YBzxLc",
+   "label": "",
+   "label_source": "",
+   "pools": 15642,
+   "configs": 518,
+   "curve_complete": 15601,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     15642
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "82VbBzGtb8v5wFx1TM6iaMmLyRSLy8WeqA123orjHGzL",
+   "label": "",
+   "label_source": "",
+   "pools": 15032,
+   "configs": 15028,
+   "curve_complete": 248,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     15032
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "A9z3ngVK4aSRdCR8i6F2wQh9EbH7CPojyvZuBRxNot8o",
+   "label": "Trends",
+   "label_source": "DefiLlama dimension-adapters fees/trends.ts lists its configs",
+   "pools": 14859,
+   "configs": 5,
+   "curve_complete": 65,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     14859
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "BKPxAdgwPHXE3ZPZt5XsAovDgUaUufHgZnSAZ3eRWQNW",
+   "label": "Anoncoin",
+   "label_source": "self-declared on-chain DBC PartnerMetadata",
+   "pools": 13889,
+   "configs": 11,
+   "curve_complete": 159,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     13889
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "4tgN1sJgAQF1kzqcdA7NU31NPVCvadgpQ3eJAdrEQrc5",
+   "label": "",
+   "label_source": "",
+   "pools": 13724,
+   "configs": 200,
+   "curve_complete": 4511,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     13724
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "Fbz8Y9Yg6TkAgA7beWj8eqog3qF6XTrm8xSBuL7FphUW",
+   "label": "",
+   "label_source": "",
+   "pools": 12617,
+   "configs": 1,
+   "curve_complete": 187,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     12617
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "7XrX7jF4zzkKQDaDsbuC3pj83JDzRY3RPZk3yWvU5s82",
+   "label": "",
+   "label_source": "",
+   "pools": 10438,
+   "configs": 884,
+   "curve_complete": 10430,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     10438
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "VVKt5N8J5JS2B64zzA6ap1bWsVqVr8Q3VpdYNEtQs2T",
+   "label": "",
+   "label_source": "",
+   "pools": 9749,
+   "configs": 4,
+   "curve_complete": 9748,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     9749
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "8421gmbpgmK7ngjmhgfaDSSJLaJFrk6j8vhfPcWiVYQe",
+   "label": "",
+   "label_source": "",
+   "pools": 9206,
+   "configs": 9,
+   "curve_complete": 0,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     9206
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "J1XxMw9ePUTAtsHLiaRbg9UMSXJTSy1CNjUFizdh86f3",
+   "label": "",
+   "label_source": "",
+   "pools": 8802,
+   "configs": 1,
+   "curve_complete": 8802,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     8802
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "7Dku1MQngUkEjsPk178KhdK5kXRWqxDXsEN9Zvqrhmkn",
+   "label": "",
+   "label_source": "",
+   "pools": 8280,
+   "configs": 11,
+   "curve_complete": 8273,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     8280
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "4QFQX8GPSsxtsiJXLApQPv2KAA9kBmFpBF3HqRR5Ae4s",
+   "label": "",
+   "label_source": "",
+   "pools": 8114,
+   "configs": 13,
+   "curve_complete": 8114,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     8114
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "BFBLa1V41yDNKuSQH2XfNH9W2KH8W8KFjwM9LG8ScBU6",
+   "label": "",
+   "label_source": "",
+   "pools": 7972,
+   "configs": 11,
+   "curve_complete": 7967,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     7972
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "4Cj49oNeaf71yoBrpXMJmCaxH3ynu12ZTA1aBFMkQeux",
+   "label": "",
+   "label_source": "",
+   "pools": 7361,
+   "configs": 3110,
+   "curve_complete": 7314,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     7361
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "3aEC5ZG7VZuEKgkeZayomnozJnwzKxEDFpNyECfCYTNW",
+   "label": "",
+   "label_source": "",
+   "pools": 7059,
+   "configs": 5,
+   "curve_complete": 7055,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     7059
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "MmY8o2LXwFYRFERUuTR5veTLjeWfrsbEr3mmrhyMvt9",
+   "label": "",
+   "label_source": "",
+   "pools": 6996,
+   "configs": 14,
+   "curve_complete": 281,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     6996
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "ECmYUuUMZHcRxB2Rk3AAcLVrC9qvZXyoX2pHxpjnH51P",
+   "label": "",
+   "label_source": "",
+   "pools": 6882,
+   "configs": 1,
+   "curve_complete": 6882,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     6882
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "FJMgrtQCgpnVtieBzTWwLZgKcHGYzw3CJWL8PrYYVvpG",
+   "label": "",
+   "label_source": "",
+   "pools": 6843,
+   "configs": 1,
+   "curve_complete": 6842,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     6843
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "277a5qD2U5zQM7miEExhnHi2uj5Vzbjk1yoAG9NNBxCa",
+   "label": "",
+   "label_source": "",
+   "pools": 6620,
+   "configs": 8,
+   "curve_complete": 6619,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     6620
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "7W7jQUgDxczLax1YdmECoG8rw3XAFBxsCrnAU7zjwRUt",
+   "label": "",
+   "label_source": "",
+   "pools": 6364,
+   "configs": 11,
+   "curve_complete": 6364,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     6364
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "7SLVZJZbFv5eJm2uSEpTJV6pbgLU6spmpaoeXBjdw9cb",
+   "label": "",
+   "label_source": "",
+   "pools": 5892,
+   "configs": 1,
+   "curve_complete": 5892,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     5892
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "2ZjcuuveK6PXCh4hKXiKt9s3imWTYWHL8GfR32osvJAy",
+   "label": "",
+   "label_source": "",
+   "pools": 5825,
+   "configs": 4,
+   "curve_complete": 5825,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     5825
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "2zAzSXkrxT2rQcCFUCVU1eiE8zc8qpdAgfCgBxseg61D",
+   "label": "",
+   "label_source": "",
+   "pools": 5508,
+   "configs": 7,
+   "curve_complete": 261,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     5508
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "Aefrfa3ffaznptazDaDnAPK624UwvkujhJTWBCcCSofv",
+   "label": "SOAR",
+   "label_source": "self-declared on-chain DBC PartnerMetadata",
+   "pools": 5476,
+   "configs": 6,
+   "curve_complete": 20,
+   "distinct_quotes": 2,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "USDC",
+     5389
+    ],
+    [
+     "USD1",
+     87
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "G8y4gZ8dSTgWQUtRwm5L3iedpryzsnJcGVQNUYwt6GVT",
+   "label": "",
+   "label_source": "",
+   "pools": 5397,
+   "configs": 6,
+   "curve_complete": 5397,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     5397
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "7wacff5J8gbbYHNY4Vtq4JLe7VdReomguvUdNRy7KJJt",
+   "label": "",
+   "label_source": "",
+   "pools": 5375,
+   "configs": 2,
+   "curve_complete": 0,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     5375
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "6CvLjVW8puhNUJG3un5GSCV9uEBh1yVWb7vB6Hro7nYY",
+   "label": "",
+   "label_source": "",
+   "pools": 5305,
+   "configs": 435,
+   "curve_complete": 5267,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     5305
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "fCZJvPufxQaVzqrnNWvdNPeqVTJZAaSjM1mkvhpVTHu",
+   "label": "",
+   "label_source": "",
+   "pools": 5007,
+   "configs": 1,
+   "curve_complete": 0,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     5007
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "6kGEB1eQnhDvHztPnV1323qWYsa2pQvNAAp8zd2PKNHh",
+   "label": "",
+   "label_source": "",
+   "pools": 4910,
+   "configs": 12,
+   "curve_complete": 4910,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     4910
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "5jYaYv7HoiFVrY9bAcruj6dH8fCBseky4sBmnTFGSaeW",
+   "label": "",
+   "label_source": "",
+   "pools": 4794,
+   "configs": 4063,
+   "curve_complete": 4781,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     4794
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "DLpDpnDmDXD7kn9qjmBtuNujoqjzVTN32riJxFUEzXaQ",
+   "label": "",
+   "label_source": "",
+   "pools": 4737,
+   "configs": 3,
+   "curve_complete": 143,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     4737
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "FeM9TjTqJm8FGBxAsC44P828Cc7Lmz7rcNmMWjUSpHKB",
+   "label": "",
+   "label_source": "",
+   "pools": 4734,
+   "configs": 1,
+   "curve_complete": 4734,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     4734
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "7Z1X7kuBnAqMthkUQb7mRs8cvdKpde6QXUjHgAp27CeJ",
+   "label": "",
+   "label_source": "",
+   "pools": 4489,
+   "configs": 10,
+   "curve_complete": 4489,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     4489
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "7BTefsKHxqfpvLkPV6wG1qhBc7ruWG7xrSc8j9yT58Rs",
+   "label": "",
+   "label_source": "",
+   "pools": 4475,
+   "configs": 4,
+   "curve_complete": 4475,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     4475
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "8N8WNXMD4sHmxMWv5brX8X5oARZoZWebEUJ31Krjd3ZT",
+   "label": "",
+   "label_source": "",
+   "pools": 4444,
+   "configs": 3,
+   "curve_complete": 4444,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     4444
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "GUH2TiEJ6Fs7EWh6UreYXFd6BuineZCzQ58zcuYFHbR",
+   "label": "",
+   "label_source": "",
+   "pools": 4357,
+   "configs": 15,
+   "curve_complete": 4357,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     4357
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "ot5c4M7yjPHXKJmNHufoE5CVc6Lq5mZ4h63H4Q7bz4z",
+   "label": "",
+   "label_source": "",
+   "pools": 4248,
+   "configs": 1,
+   "curve_complete": 4248,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     4248
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "14CoFqQ7CzfctutA7dLTAok9BJyp1RDYQpRWseUjCooF",
+   "label": "",
+   "label_source": "",
+   "pools": 4247,
+   "configs": 4245,
+   "curve_complete": 5,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     4247
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "BaefG2ULy32dHZbBu9uZxVaaZ8JuBEooEXVQfeAEcyyd",
+   "label": "",
+   "label_source": "",
+   "pools": 4236,
+   "configs": 3,
+   "curve_complete": 4236,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     4236
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "ENyc6mcY8QPs4PHxip9r9mFdnGxJLb16hsPz6QvFD8yK",
+   "label": "",
+   "label_source": "",
+   "pools": 4191,
+   "configs": 5,
+   "curve_complete": 4191,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     4191
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "CH2CjoB2jQWBFLqvhKVSrpE3udeMNPgwYXrQ2RYbdaPu",
+   "label": "",
+   "label_source": "",
+   "pools": 3970,
+   "configs": 1,
+   "curve_complete": 3969,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     3970
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "7ZSZiEo7uY34V729tiQVVAigoh1k8RhU8yxNmmYxmFUg",
+   "label": "",
+   "label_source": "",
+   "pools": 3914,
+   "configs": 98,
+   "curve_complete": 3895,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     3914
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "79rgq31WnA7E2yj4ZPAAk5qQi7ucYvgfqwA8BGW3CHPD",
+   "label": "",
+   "label_source": "",
+   "pools": 3903,
+   "configs": 4,
+   "curve_complete": 279,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 0,
+   "top_quotes": [
+    [
+     "SOL",
+     3903
+    ]
+   ]
+  }
+ ],
+ "top_fee_claimers_by_asset_paired_pools": [
+  {
+   "fee_claimer": "GZjYfGyUNQfDChcQ66Gc3ZMcQqPEisyRYe1nPyQhP9bp",
+   "label": "EmberCurve",
+   "label_source": "github.com/elyousfired/ember-metrics README (EmberCurve platform wallet)",
+   "pools": 3242,
+   "configs": 3069,
+   "curve_complete": 104,
+   "distinct_quotes": 132,
+   "asset_paired_pools": 3090,
+   "top_quotes": [
+    [
+     "EMBER",
+     1607
+    ],
+    [
+     "MET",
+     615
+    ],
+    [
+     "NVDAx",
+     132
+    ],
+    [
+     "SOL",
+     123
+    ],
+    [
+     "ZEC",
+     115
+    ],
+    [
+     "JUP",
+     51
+    ],
+    [
+     "MU",
+     43
+    ],
+    [
+     "SPYx",
+     43
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "9RaoVypDNRDgy7tLLVPrJRzuR219P5ZxZ46F2TmzJpYc",
+   "label": "bingan",
+   "label_source": "self-declared on-chain DBC PartnerMetadata",
+   "pools": 1578,
+   "configs": 4,
+   "curve_complete": 110,
+   "distinct_quotes": 4,
+   "asset_paired_pools": 1124,
+   "top_quotes": [
+    [
+     "ANTFUN",
+     1122
+    ],
+    [
+     "SOL",
+     454
+    ],
+    [
+     "GLDx",
+     1
+    ],
+    [
+     "NVDAx",
+     1
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "E6UcK3dSFc2yaFtEb35pc1WsBVcrPhEbnB87YoNDXhqy",
+   "label": "",
+   "label_source": "",
+   "pools": 269,
+   "configs": 211,
+   "curve_complete": 84,
+   "distinct_quotes": 13,
+   "asset_paired_pools": 255,
+   "top_quotes": [
+    [
+     "GOLD",
+     113
+    ],
+    [
+     "GOLD",
+     43
+    ],
+    [
+     "GOLD",
+     37
+    ],
+    [
+     "GOLD",
+     30
+    ],
+    [
+     "GOLD",
+     16
+    ],
+    [
+     "SOL",
+     14
+    ],
+    [
+     "FAKE",
+     8
+    ],
+    [
+     "GOLD",
+     2
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "HW4S7HSjrfMS7BzePVJQR7jsN1E7n3EST4Sud92dUPGT",
+   "label": "",
+   "label_source": "",
+   "pools": 276,
+   "configs": 56,
+   "curve_complete": 9,
+   "distinct_quotes": 26,
+   "asset_paired_pools": 249,
+   "top_quotes": [
+    [
+     "GO",
+     217
+    ],
+    [
+     "SOL",
+     27
+    ],
+    [
+     "LAYOFF",
+     5
+    ],
+    [
+     "XMR",
+     2
+    ],
+    [
+     "e/acc",
+     2
+    ],
+    [
+     "ZEC",
+     2
+    ],
+    [
+     "COLLECT",
+     2
+    ],
+    [
+     "LMAO!",
+     1
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "E8QjCz3aX31Qk6ieEYzfVsfqmT3dbTaTEABwUUgZVGWL",
+   "label": "",
+   "label_source": "",
+   "pools": 558,
+   "configs": 558,
+   "curve_complete": 7,
+   "distinct_quotes": 3,
+   "asset_paired_pools": 236,
+   "top_quotes": [
+    [
+     "JUP",
+     236
+    ],
+    [
+     "USDC",
+     233
+    ],
+    [
+     "SOL",
+     89
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "CWcERiVd7xkUrcJK5QBdcKC5GG8JMATMLNHtCEUguwPz",
+   "label": "Jupiter Studio",
+   "label_source": "DefiLlama dimension-adapters fees/jup-studio/index.ts",
+   "pools": 45410,
+   "configs": 45243,
+   "curve_complete": 1056,
+   "distinct_quotes": 3,
+   "asset_paired_pools": 197,
+   "top_quotes": [
+    [
+     "USDC",
+     38701
+    ],
+    [
+     "SOL",
+     6512
+    ],
+    [
+     "JUP",
+     197
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "6pyrvvkYqMYWmaugTFsy4kFVAdZhsNjSkwXtTvSCn1WH",
+   "label": "",
+   "label_source": "",
+   "pools": 182,
+   "configs": 182,
+   "curve_complete": 0,
+   "distinct_quotes": 87,
+   "asset_paired_pools": 182,
+   "top_quotes": [
+    [
+     "RAYCC",
+     96
+    ],
+    [
+     "RVLT",
+     1
+    ],
+    [
+     "RVLT",
+     1
+    ],
+    [
+     "good",
+     1
+    ],
+    [
+     "hideit",
+     1
+    ],
+    [
+     "dontshow",
+     1
+    ],
+    [
+     "RVLT",
+     1
+    ],
+    [
+     "HIDEIT",
+     1
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "2A1LBoRaSCXnNCoa9xg3tzuf5wjLrsHvFsDTDMR4xQN7",
+   "label": "",
+   "label_source": "",
+   "pools": 176,
+   "configs": 5,
+   "curve_complete": 13,
+   "distinct_quotes": 2,
+   "asset_paired_pools": 161,
+   "top_quotes": [
+    [
+     "RACER",
+     161
+    ],
+    [
+     "SOL",
+     15
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "2B1nGS9LXVmvWt42RuSYLvXYqVdFh8GHtxUL6DHRHd9J",
+   "label": "",
+   "label_source": "",
+   "pools": 179,
+   "configs": 84,
+   "curve_complete": 13,
+   "distinct_quotes": 43,
+   "asset_paired_pools": 161,
+   "top_quotes": [
+    [
+     "X7",
+     32
+    ],
+    [
+     "SPCXx",
+     29
+    ],
+    [
+     "SOL",
+     17
+    ],
+    [
+     "NVDAx",
+     10
+    ],
+    [
+     "AAPLx",
+     6
+    ],
+    [
+     "COINx",
+     6
+    ],
+    [
+     "GLDx",
+     6
+    ],
+    [
+     "xSOL",
+     5
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "ENH4GPyiq2dgF4R34fLdisqKzqfrGgfEk1EXcRYvPdyn",
+   "label": "",
+   "label_source": "",
+   "pools": 136,
+   "configs": 2,
+   "curve_complete": 29,
+   "distinct_quotes": 2,
+   "asset_paired_pools": 136,
+   "top_quotes": [
+    [
+     "CAPX",
+     135
+    ],
+    [
+     "SABER",
+     1
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "Fgi5M4W2VzoHWbvcv6RWJRVcJu91frZ18ttGJzMJZu1z",
+   "label": "PURPS",
+   "label_source": "self-declared on-chain DBC PartnerMetadata",
+   "pools": 212,
+   "configs": 99,
+   "curve_complete": 11,
+   "distinct_quotes": 42,
+   "asset_paired_pools": 136,
+   "top_quotes": [
+    [
+     "SOL",
+     66
+    ],
+    [
+     "MET",
+     38
+    ],
+    [
+     "PURPS",
+     38
+    ],
+    [
+     "ZEC",
+     8
+    ],
+    [
+     "USDC",
+     8
+    ],
+    [
+     "NVDAx",
+     7
+    ],
+    [
+     "DOGE",
+     3
+    ],
+    [
+     "WBTC",
+     3
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "38A38w6Y4ZTnBY2vB9DcaPfzpWPRfs9tJYqami9tohwx",
+   "label": "",
+   "label_source": "",
+   "pools": 131,
+   "configs": 21,
+   "curve_complete": 5,
+   "distinct_quotes": 21,
+   "asset_paired_pools": 131,
+   "top_quotes": [
+    [
+     "META",
+     27
+    ],
+    [
+     "CARS",
+     17
+    ],
+    [
+     "AVICI",
+     13
+    ],
+    [
+     "LFOWN",
+     11
+    ],
+    [
+     "SOLO",
+     10
+    ],
+    [
+     "UMBRA",
+     7
+    ],
+    [
+     "NECTAR",
+     7
+    ],
+    [
+     "CRED",
+     7
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "4wYGg1KxUroz6Aitgmca64c5wqZW5q1cULCTRJ8dxhyL",
+   "label": "",
+   "label_source": "",
+   "pools": 127,
+   "configs": 127,
+   "curve_complete": 3,
+   "distinct_quotes": 42,
+   "asset_paired_pools": 127,
+   "top_quotes": [
+    [
+     "MET",
+     25
+    ],
+    [
+     "OTC",
+     24
+    ],
+    [
+     "AAPLx",
+     9
+    ],
+    [
+     "NVDAx",
+     5
+    ],
+    [
+     "WBTC",
+     5
+    ],
+    [
+     "GMEx",
+     4
+    ],
+    [
+     "DJT",
+     4
+    ],
+    [
+     "GLDx",
+     4
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "89VB5UmvopuCFmp5Mf8YPX28fGvvqn79afCgouQuPyhY",
+   "label": "stacc",
+   "label_source": "self-declared on-chain DBC PartnerMetadata",
+   "pools": 124,
+   "configs": 26,
+   "curve_complete": 11,
+   "distinct_quotes": 10,
+   "asset_paired_pools": 114,
+   "top_quotes": [
+    [
+     "PROOFV3",
+     106
+    ],
+    [
+     "SOL",
+     9
+    ],
+    [
+     "r-fstacc",
+     2
+    ],
+    [
+     "TCB",
+     1
+    ],
+    [
+     "GORE",
+     1
+    ],
+    [
+     "RAYCC",
+     1
+    ],
+    [
+     "zBTC",
+     1
+    ],
+    [
+     "TIME MACHINE",
+     1
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "AamUJY5hvSPCcpw2e6mzCuMsxrdQKVnN8iFeYKSZNFcf",
+   "label": "",
+   "label_source": "",
+   "pools": 113,
+   "configs": 113,
+   "curve_complete": 9,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 113,
+   "top_quotes": [
+    [
+     "VIRTUAL",
+     113
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "CuRAzi9uTgkfiXPR8ewbrsMXMVsctmggACi679QoJehx",
+   "label": "",
+   "label_source": "",
+   "pools": 95,
+   "configs": 20,
+   "curve_complete": 6,
+   "distinct_quotes": 11,
+   "asset_paired_pools": 93,
+   "top_quotes": [
+    [
+     "SPYx",
+     58
+    ],
+    [
+     "GLDx",
+     15
+    ],
+    [
+     "NVDAx",
+     8
+    ],
+    [
+     "AAPLx",
+     4
+    ],
+    [
+     "SPCXx",
+     3
+    ],
+    [
+     "USDC",
+     2
+    ],
+    [
+     "COINx",
+     1
+    ],
+    [
+     "MSTRx",
+     1
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "7vj1xUWoLKdaF2mfqTn4SmJU9zTiWYinxW8HXewrCmBu",
+   "label": "",
+   "label_source": "",
+   "pools": 97,
+   "configs": 6,
+   "curve_complete": 13,
+   "distinct_quotes": 3,
+   "asset_paired_pools": 88,
+   "top_quotes": [
+    [
+     "EITHER",
+     88
+    ],
+    [
+     "SOL",
+     8
+    ],
+    [
+     "USDC",
+     1
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "53gs3cYd8ubhdu3w4dtEze1rYcfd17kKjT3DswC1JPaj",
+   "label": "",
+   "label_source": "",
+   "pools": 85,
+   "configs": 1,
+   "curve_complete": 25,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 85,
+   "top_quotes": [
+    [
+     "PUMP2",
+     85
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "8kWiEZFeuaPCanbJkwL4PvWDmx4zsLnRoXjUPBnvrLmX",
+   "label": "",
+   "label_source": "",
+   "pools": 82,
+   "configs": 18,
+   "curve_complete": 4,
+   "distinct_quotes": 2,
+   "asset_paired_pools": 81,
+   "top_quotes": [
+    [
+     "AUDIO",
+     81
+    ],
+    [
+     "USDC",
+     1
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "8udVeqHjE5dyvznNL2uHzW81Vi2Sh1wj5dPTN9Vv2Yka",
+   "label": "",
+   "label_source": "",
+   "pools": 71,
+   "configs": 8,
+   "curve_complete": 0,
+   "distinct_quotes": 8,
+   "asset_paired_pools": 71,
+   "top_quotes": [
+    [
+     "2rXiRP",
+     52
+    ],
+    [
+     "2gXnC1",
+     7
+    ],
+    [
+     "CoXdXk",
+     4
+    ],
+    [
+     "3FaYWA",
+     3
+    ],
+    [
+     "9wgM4k",
+     2
+    ],
+    [
+     "YC65be",
+     1
+    ],
+    [
+     "BbtfZg",
+     1
+    ],
+    [
+     "772KpP",
+     1
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "5u6kuYvK2joWuDyzCfEZWefPjKkD13KgpojdZE2D8ixa",
+   "label": "",
+   "label_source": "",
+   "pools": 67,
+   "configs": 15,
+   "curve_complete": 0,
+   "distinct_quotes": 15,
+   "asset_paired_pools": 67,
+   "top_quotes": [
+    [
+     "SPYx",
+     11
+    ],
+    [
+     "METAx",
+     9
+    ],
+    [
+     "NVDAx",
+     9
+    ],
+    [
+     "TSLAx",
+     8
+    ],
+    [
+     "GOOGLx",
+     6
+    ],
+    [
+     "MSTRx",
+     6
+    ],
+    [
+     "SPCXx",
+     3
+    ],
+    [
+     "MCDx",
+     3
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "5PcjBJJC5LA6r5L42J2ifYNEPvEw5xakuSz4cSkEsG95",
+   "label": "",
+   "label_source": "",
+   "pools": 66,
+   "configs": 29,
+   "curve_complete": 53,
+   "distinct_quotes": 3,
+   "asset_paired_pools": 65,
+   "top_quotes": [
+    [
+     "VAST",
+     63
+    ],
+    [
+     "CAPY",
+     2
+    ],
+    [
+     "SOL",
+     1
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "BrFsJh3HoDTapRXcDERcQV9m89QrDWP7v4919rocSXpx",
+   "label": "Audius",
+   "label_source": "self-declared on-chain DBC PartnerMetadata",
+   "pools": 62,
+   "configs": 32,
+   "curve_complete": 3,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 62,
+   "top_quotes": [
+    [
+     "AUDIO",
+     62
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "79fUnhBpYDuMjmMfNfCz2JjwVWhDQwUJvYyfMannU4Eh",
+   "label": "",
+   "label_source": "",
+   "pools": 70,
+   "configs": 70,
+   "curve_complete": 10,
+   "distinct_quotes": 2,
+   "asset_paired_pools": 57,
+   "top_quotes": [
+    [
+     "5GYM6f",
+     57
+    ],
+    [
+     "USDC",
+     13
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "xY9iGahT1H3o7uJUvDb1mgmBeKwWD7mB6o4NBUSd6fZ",
+   "label": "",
+   "label_source": "",
+   "pools": 51,
+   "configs": 1,
+   "curve_complete": 1,
+   "distinct_quotes": 1,
+   "asset_paired_pools": 51,
+   "top_quotes": [
+    [
+     "SUUB",
+     51
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "2T2g5WKpFY6obBVcybaDLEn8xdkZxa8bLvjNy2kr9yDZ",
+   "label": "Mogy\u2019s Mogverse ",
+   "label_source": "self-declared on-chain DBC PartnerMetadata",
+   "pools": 47,
+   "configs": 7,
+   "curve_complete": 0,
+   "distinct_quotes": 2,
+   "asset_paired_pools": 47,
+   "top_quotes": [
+    [
+     "Mogy",
+     41
+    ],
+    [
+     "Cult",
+     6
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "7FfLiKfrrd4scocMNZmb3N2ce7yEqhhUF7NVueHNy8aF",
+   "label": "",
+   "label_source": "",
+   "pools": 47,
+   "configs": 14,
+   "curve_complete": 5,
+   "distinct_quotes": 8,
+   "asset_paired_pools": 46,
+   "top_quotes": [
+    [
+     "xSOL",
+     19
+    ],
+    [
+     "xHYPE",
+     14
+    ],
+    [
+     "xBTC",
+     8
+    ],
+    [
+     "STKTEST",
+     2
+    ],
+    [
+     "STKTEST",
+     1
+    ],
+    [
+     "STKTEST",
+     1
+    ],
+    [
+     "P2XNVDA",
+     1
+    ],
+    [
+     "SOL",
+     1
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "DgUPQKheM3SHj6jL83HqY7qqrjLAfeevWNBzZzaeACM5",
+   "label": "",
+   "label_source": "",
+   "pools": 42,
+   "configs": 42,
+   "curve_complete": 11,
+   "distinct_quotes": 5,
+   "asset_paired_pools": 42,
+   "top_quotes": [
+    [
+     "MET",
+     18
+    ],
+    [
+     "OJ",
+     12
+    ],
+    [
+     "GLD",
+     9
+    ],
+    [
+     "BURGER",
+     2
+    ],
+    [
+     "DAYTONA",
+     1
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "BpoxzghaN9PkLGcT2Mf4fZS5eadWqHWL74SsVkWmDArM",
+   "label": "",
+   "label_source": "",
+   "pools": 40,
+   "configs": 40,
+   "curve_complete": 2,
+   "distinct_quotes": 16,
+   "asset_paired_pools": 39,
+   "top_quotes": [
+    [
+     "TESTCOM",
+     8
+    ],
+    [
+     "XAU",
+     5
+    ],
+    [
+     "DC",
+     5
+    ],
+    [
+     "CT",
+     4
+    ],
+    [
+     "XAG",
+     3
+    ],
+    [
+     "LBR",
+     2
+    ],
+    [
+     "BZ",
+     2
+    ],
+    [
+     "OJ",
+     2
+    ]
+   ]
+  },
+  {
+   "fee_claimer": "WzMaL78srutrF6CsxEkWuhMaDF5HZA6jNRaEPengqpb",
+   "label": "",
+   "label_source": "",
+   "pools": 65,
+   "configs": 44,
+   "curve_complete": 7,
+   "distinct_quotes": 11,
+   "asset_paired_pools": 36,
+   "top_quotes": [
+    [
+     "SOL",
+     29
+    ],
+    [
+     "leaks",
+     13
+    ],
+    [
+     "Staccana",
+     7
+    ],
+    [
+     "LEAK",
+     6
+    ],
+    [
+     "OMEGADYO",
+     3
+    ],
+    [
+     "STACCOVE",
+     2
+    ],
+    [
+     "TOKEN",
+     1
+    ],
+    [
+     "LINCENTI",
+     1
+    ]
+   ]
+  }
+ ],
+ "top_configs_by_pools": [
+  {
+   "config": "FbKf76ucsQssF7XZBuzScdJfugtsSKwZFYztKsMEhWZM",
+   "pools": 175044,
+   "curve_complete": 91,
+   "quote_mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+   "quote_symbol": "USDC",
+   "fee_claimer": "5wkyL2FLEcyUUgc3UeGntHTAfWfzDrVuxMnaMm7792Gk",
+   "leftover_receiver": "5wkyL2FLEcyUUgc3UeGntHTAfWfzDrVuxMnaMm7792Gk",
+   "sample_base_mints": [
+    "GgiGHEebMhqChVXND86dKdvK4FUJhipnMQ7P8CMSmoon",
+    "7eeRL8iGko7QoWD5TgFy3pd1adUi8mr81UFbcQE9moon",
+    "6mqB5kaTPWUQZR1Cy2sLJuyMGTEGiMELb8GWiYBgmoon"
+   ],
+   "quote_class": "stablecoin",
+   "label": "Moonshot",
+   "label_source": "DefiLlama dimension-adapters fees/moonshot-money.ts"
+  },
+  {
+   "config": "38RRrtvAbAYnmCDjym31nvw5MYQGi3LQJQ6Gp6RbT7DU",
+   "pools": 59803,
+   "curve_complete": 59802,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "CnwRFKYbqupZztkKeVVZKRuAUnWDzAZJ4efgYiSvvFhn",
+   "leftover_receiver": "CnwRFKYbqupZztkKeVVZKRuAUnWDzAZJ4efgYiSvvFhn",
+   "sample_base_mints": [
+    "4ucX3P4hBgqjvKDxJ59KoYNjJncfjTcNv3jqK2avpump",
+    "JYALXbCAQ4mzwUwqfyGc9CvWjvx1P5NnWyNUqNgpump",
+    "8pNHw89bkgenT8uPnEjf4sAEKCxgFH8jEW3sRZASpump"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "2CY1F7f3wPM6xhjfSo4M81N9sSBkVhARf6mJnPiBSFuB",
+   "pools": 21045,
+   "curve_complete": 21043,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "4EkpEHarHkakfxSgfVhJDTrBQWnoYwYCCUW3PV4TompU",
+   "leftover_receiver": "4EkpEHarHkakfxSgfVhJDTrBQWnoYwYCCUW3PV4TompU",
+   "sample_base_mints": [
+    "GQ2D26FJAEWQCLNiytq5d5E5nZr5j7onxTrGMk5Zpump",
+    "BntDniT6DraR8X8dePxY4FHQbeqxRcKpaRkZfvLN4444",
+    "AJ6NGZLPXb8JaD2ujqganHzoE2cSGvm2QWWzpuPcpump"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "7SXEnhGRXVkR5LEE4o6xXYwcX6QJbFemMS3mbmMRHSDn",
+   "pools": 20220,
+   "curve_complete": 125,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "9supzj2Nbnjut3r9UFfWE2RiuAenQMoYaNtZXmmtm5oC",
+   "leftover_receiver": "9supzj2Nbnjut3r9UFfWE2RiuAenQMoYaNtZXmmtm5oC",
+   "sample_base_mints": [
+    "EeDxuA7u8zE2yhwMnJ5RsHTvzbJAK6k2Aked9LP7pBLV",
+    "6vjnL7bLqDszMLcqQmxiP7meGMp9FXzkRVoyr44apBLV",
+    "3BwQzsE5byrmiVAgsGfhHQQDaUbJe5c5oGGrmvn1yBLV"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "BkoMF8PzYwoVQTKcQ6uNeQrHytw1jJN6ig4JzjcKS3iF",
+   "pools": 12617,
+   "curve_complete": 187,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "Fbz8Y9Yg6TkAgA7beWj8eqog3qF6XTrm8xSBuL7FphUW",
+   "leftover_receiver": "Fbz8Y9Yg6TkAgA7beWj8eqog3qF6XTrm8xSBuL7FphUW",
+   "sample_base_mints": [
+    "3SfdPZS9gabvBUdV2NEvR56mLmS3LAAUgLtH9GdJdaos",
+    "B28HABwTahsNHv1zdpbQuEEsAEN5DwM4hDBze1SPdaos",
+    "CC86AnAokTFgeq44mNnsB5AGRxXFRenRvfAuskyHdaos"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "EiP739P1dZRyqHMuqbKatyhiBr7cC1ge4iT82MCF1zcn",
+   "pools": 9122,
+   "curve_complete": 9113,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "Dd2VQkx4zMp2uR1snZP2m9c8dbfzwmib4GZtTYqz5XET",
+   "leftover_receiver": "Dd2VQkx4zMp2uR1snZP2m9c8dbfzwmib4GZtTYqz5XET",
+   "sample_base_mints": [
+    "4ZzCvtXX25hjGD6VjBj9ftX8tKiyYTSb1csp5fcbMgYs",
+    "BQy45B6cdmrJpQRa8eYPZjD73L3ccp5mJGVAZvfETsD8",
+    "BZ5QkQ1qSCiHSVFGLJE9cFt5TWL2SrBS3c8guy2N16kv"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "J1XxMw9ePUTAtsHLiaRbg9UMSXJTSy1CNjUFizdh86f3",
+   "pools": 8802,
+   "curve_complete": 8802,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "J1XxMw9ePUTAtsHLiaRbg9UMSXJTSy1CNjUFizdh86f3",
+   "leftover_receiver": "J1XxMw9ePUTAtsHLiaRbg9UMSXJTSy1CNjUFizdh86f3",
+   "sample_base_mints": [
+    "53mWbzRHonv5ZHUT2aT7gMsrjLcibDEriaJZAwRMp8Wx",
+    "EUNKehTwtyxLjUSWuvoTDXSfsNWLkGULfqYkBiTgbyBY",
+    "7vYvWVRLYHdJ5JMPEw9JuAeF4C3QNuUsbVkeK4s6paqM"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "GybkUNYVNk1FZMt9myAfvpSVgoKBgaueMTvszwBN4qYx",
+   "pools": 7285,
+   "curve_complete": 112,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "BKPxAdgwPHXE3ZPZt5XsAovDgUaUufHgZnSAZ3eRWQNW",
+   "leftover_receiver": "BKPxAdgwPHXE3ZPZt5XsAovDgUaUufHgZnSAZ3eRWQNW",
+   "sample_base_mints": [
+    "3nuGsiLLpBLqobFnMMvjJEtMUp4qEVsSq3sfBnnPdoge",
+    "ibzcFwZpdVCbdehCptEx4KeKos78KnNrxwKJ2YVdoge",
+    "D4zw62gXA2D819Ny4teksqcv4k8ZjvrQyjuKFMDQdoge"
+   ],
+   "quote_class": "SOL",
+   "label": "Anoncoin",
+   "label_source": "self-declared on-chain DBC PartnerMetadata"
+  },
+  {
+   "config": "7UNpFBfTdWrcfS7aBQzEaPgZCfPJe8BDgHzwmWUZaMaF",
+   "pools": 7138,
+   "curve_complete": 30,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "A9z3ngVK4aSRdCR8i6F2wQh9EbH7CPojyvZuBRxNot8o",
+   "leftover_receiver": "A9z3ngVK4aSRdCR8i6F2wQh9EbH7CPojyvZuBRxNot8o",
+   "sample_base_mints": [
+    "AhxEdFpAQ9CdTekJAGWpqUfGp95k6HnUbo9b6qr4TRND",
+    "GHgHfokgjZjqNGbcndtXfkzRBv8mY5sZnELdFks6Rcti",
+    "FuHDeEtk36bUg2kuhwT2F4evkVZey7G4dDWFRSr1H2zs"
+   ],
+   "quote_class": "SOL",
+   "label": "Trends",
+   "label_source": "DefiLlama dimension-adapters fees/trends.ts lists its configs"
+  },
+  {
+   "config": "48yNN4EC1YKsioWCmqQsZdJ8TZVaXetwncE3En5BpZ84",
+   "pools": 7051,
+   "curve_complete": 7051,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "4QFQX8GPSsxtsiJXLApQPv2KAA9kBmFpBF3HqRR5Ae4s",
+   "leftover_receiver": "4QFQX8GPSsxtsiJXLApQPv2KAA9kBmFpBF3HqRR5Ae4s",
+   "sample_base_mints": [
+    "HqWYhSuTVUAFJkBKVBjCUgbDJy6KJhYcpktMmZQyGixG",
+    "CAfQTFcAc1BGqVt3KnfM5EeezWcw7fMoKbTeKQmf5GKA",
+    "Ev5XPL1AoaXkZH6ARXpGpFwfjsh3g9iZveyRynShRXt6"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "5feHgYsmLhWevjDSmLSkgAhRWxW68QdK8jHrCHTgPror",
+   "pools": 6886,
+   "curve_complete": 6879,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "7Dku1MQngUkEjsPk178KhdK5kXRWqxDXsEN9Zvqrhmkn",
+   "leftover_receiver": "7Dku1MQngUkEjsPk178KhdK5kXRWqxDXsEN9Zvqrhmkn",
+   "sample_base_mints": [
+    "GV6AFFaC8uAVVu5jwGPjA4RiCJMbckukzyuonb2Ly4DL",
+    "56Y4b5S5GrecjCTDAbgYwYpNupfDMdQUC5PBF1kw7qKf",
+    "6zvLWkwj8Fkwo1gXd7hga2r9WSN4TDJkVuhtzo2nFJm"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "56y5uPg4Yi5aQeqaRdpdLqyfsLiy3gLb8k7F1U8z6b71",
+   "pools": 6882,
+   "curve_complete": 6882,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "ECmYUuUMZHcRxB2Rk3AAcLVrC9qvZXyoX2pHxpjnH51P",
+   "leftover_receiver": "ECmYUuUMZHcRxB2Rk3AAcLVrC9qvZXyoX2pHxpjnH51P",
+   "sample_base_mints": [
+    "CPc2YYE21kdSpsEDKAQ4VVPCu5iRGKJaQxzsi27uxLfh",
+    "CoTHVpckvLYZA23uvn3KkM8ZaurrBCH3LyRxTDDFRyFY",
+    "E7B7GQXQtbtDup6V75Mocsz1SFoEB76QJzsAurr65E6F"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "39CJy9ztfFtK27jj6Qcnv22VtzwhLBhHcbRHK84QYUoN",
+   "pools": 6848,
+   "curve_complete": 6847,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "VVKt5N8J5JS2B64zzA6ap1bWsVqVr8Q3VpdYNEtQs2T",
+   "leftover_receiver": "VVKt5N8J5JS2B64zzA6ap1bWsVqVr8Q3VpdYNEtQs2T",
+   "sample_base_mints": [
+    "H2tfrU6aXFSFyKsAy62fnRu6M85AXiTmQF1hDjXbpump",
+    "8ik57V2Mw44maaTZ67ahYeCgvHpVcxEApmLUTpJopump",
+    "DrFtNtAXkLFRBb75wroBhFiqkfiW4TDUXfzsgm7Epump"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "EYxFK3YnrmgQ6UrQvSbJYNVFGPYMotjjd8g6gH3B89mH",
+   "pools": 6843,
+   "curve_complete": 6842,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "FJMgrtQCgpnVtieBzTWwLZgKcHGYzw3CJWL8PrYYVvpG",
+   "leftover_receiver": "FJMgrtQCgpnVtieBzTWwLZgKcHGYzw3CJWL8PrYYVvpG",
+   "sample_base_mints": [
+    "6yrCPw9EVMEbku1hpydD5xWftnNzTbYjLxPnFKVpUw8A",
+    "36v2ww42Ttjg2kVrrd22JXow5XmfC1A35TJCzWYTL3Di",
+    "9VHxex1MCNed3FFHANz9Ao6jb5krrTbX48sFc35SgN3F"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "7UMR4yEaVYsQGbQGvxNUypFmPn15GkzVmwUEpUFJUPPX",
+   "pools": 6053,
+   "curve_complete": 19,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "A9z3ngVK4aSRdCR8i6F2wQh9EbH7CPojyvZuBRxNot8o",
+   "leftover_receiver": "A9z3ngVK4aSRdCR8i6F2wQh9EbH7CPojyvZuBRxNot8o",
+   "sample_base_mints": [
+    "DQ2T9RaAP7Z7JYxmT9p8FSYBam3PZWzenViDvLm9mwPS",
+    "Cz1CbX4vUNhfvUeX9rTQeji3uyKgBJ1Na5JyPShgx6qM",
+    "8RvBPgDUhs7ubAHbRrGNqdamqmdWejfmsQhJ3KKd2yMA"
+   ],
+   "quote_class": "SOL",
+   "label": "Trends",
+   "label_source": "DefiLlama dimension-adapters fees/trends.ts lists its configs"
+  },
+  {
+   "config": "Fx87hHhHtfp47KPwQTzsNdfGrUmKv3ihtxHA3rxbPPrd",
+   "pools": 6028,
+   "curve_complete": 6027,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "277a5qD2U5zQM7miEExhnHi2uj5Vzbjk1yoAG9NNBxCa",
+   "leftover_receiver": "277a5qD2U5zQM7miEExhnHi2uj5Vzbjk1yoAG9NNBxCa",
+   "sample_base_mints": [
+    "45LaJcPUWmVzFxWqfKZscH3JDfAQGd9fvkwGAfUKGqKV",
+    "5JrNFDe6vwry5znnzyHpaWZ1xkfmiBqTUZD9K3JJMjwJ",
+    "6QxWsWjRprinho4jWbagffyySBfPUENnPvv99J4rmqjX"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "7SLVZJZbFv5eJm2uSEpTJV6pbgLU6spmpaoeXBjdw9cb",
+   "pools": 5892,
+   "curve_complete": 5892,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "7SLVZJZbFv5eJm2uSEpTJV6pbgLU6spmpaoeXBjdw9cb",
+   "leftover_receiver": "7SLVZJZbFv5eJm2uSEpTJV6pbgLU6spmpaoeXBjdw9cb",
+   "sample_base_mints": [
+    "JCrV78n2m76U2jRhJfgffhsVaETy81RzQqJZ2zuycXQB",
+    "2nLfvsfofhR4uqt6gG5N5pnSndyeXZesGRVP4HPWkB9c",
+    "Fnx44tX6zzajyuTgwENpvbbctkav2eEp44UnGbpEgeZc"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "Cgo4wCbGoVAwrJDU3jqK5oAQJpeCBGgqMaq67jYCPb9N",
+   "pools": 5775,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "MmY8o2LXwFYRFERUuTR5veTLjeWfrsbEr3mmrhyMvt9",
+   "leftover_receiver": "MmY8o2LXwFYRFERUuTR5veTLjeWfrsbEr3mmrhyMvt9",
+   "sample_base_mints": [
+    "EfjwdGar8owVxXHVqk1tPptBbtNNSgPn4MgBJ3Q9Sf91",
+    "ENgiTAKH1xH4CYbm4vbztPC8LQSvm1GLUykYxpgTzbca",
+    "B7BysJi6HBeJd941b3ZCLQwUwyBKWYXkTAvSWU5dkZbe"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "Cyi7UupC2xrtFQFRti3G9oKKRDu2QvbLopjehBmgNWJr",
+   "pools": 5745,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "9ttedh2e5DDLrfsmwxvrNkWscmXqwVnqL4iUuXJMYMGM",
+   "leftover_receiver": "9ttedh2e5DDLrfsmwxvrNkWscmXqwVnqL4iUuXJMYMGM",
+   "sample_base_mints": [
+    "9QyaVVGfMBjSaRbs7B1MHGV2Fk4paTsbiwCdY6LmpceC",
+    "7nYxsRMUvVVVG4Uoi2uk9fxhUZBMxzaCsAGWYzxu6EWb",
+    "DNPuQ5PJxw4NAvW2ykbd9d4rCMmMRPqGiTdf3m9xossE"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "4g2doCXa7PeeGNz5WwXqVuKDdpHksG8ExT2YnyqU9WUK",
+   "pools": 5680,
+   "curve_complete": 5680,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "7W7jQUgDxczLax1YdmECoG8rw3XAFBxsCrnAU7zjwRUt",
+   "leftover_receiver": "7W7jQUgDxczLax1YdmECoG8rw3XAFBxsCrnAU7zjwRUt",
+   "sample_base_mints": [
+    "2JD33b1oTtMsdy4ujgUcBFfdZ6rZF6J3D4t6m19DDWuq",
+    "7Q2HsUanttwSzVBvgC327DYFqnHaukuLnN4JFi8Qtq8y",
+    "5qUYs9W3W6LATMQZP7TEtQKhPK4kDbrBREqmLt8JW4sy"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "34DiwhXNbW5rTmbLLTt8DKiBJMeExCQRMK7RWQDbHvkM",
+   "pools": 5605,
+   "curve_complete": 5605,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "Dd2VQkx4zMp2uR1snZP2m9c8dbfzwmib4GZtTYqz5XET",
+   "leftover_receiver": "Dd2VQkx4zMp2uR1snZP2m9c8dbfzwmib4GZtTYqz5XET",
+   "sample_base_mints": [
+    "Gseed6PeX4R2K5NEYg4PGHLGJmTVYGcVgu7b15Pe5XxL",
+    "bWjNZhCcXQFy7wme8fM6rBScdem2EYNf2QMxcLHnt8M",
+    "FadWjNyvFwVw1VkdmGChbipGav31qR3YbBoeJ76vUweX"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "6eitC6tMva7jS4BpmnnRLPQ83ZGDV5RBx5pKfVEqvJGh",
+   "pools": 5434,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "8421gmbpgmK7ngjmhgfaDSSJLaJFrk6j8vhfPcWiVYQe",
+   "leftover_receiver": "8421gmbpgmK7ngjmhgfaDSSJLaJFrk6j8vhfPcWiVYQe",
+   "sample_base_mints": [
+    "2BMW6M8S6cXXG3gWD4gPJw5jUs9DDnJy7AQfdDbkSGc9",
+    "3qEm6p8CZFioJk9F21bZNKxjC3vRh5KMe5Nw14zA7awP",
+    "FTYoRz7CRKm2XHY9YxhgpicS6FUy3AUGqDHqi4urGrfM"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "5PaXEgkQW2HRUTC9BpHLmBTWWtmzbL9as55ECV6AtRDd",
+   "pools": 5370,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "7wacff5J8gbbYHNY4Vtq4JLe7VdReomguvUdNRy7KJJt",
+   "leftover_receiver": "7wacff5J8gbbYHNY4Vtq4JLe7VdReomguvUdNRy7KJJt",
+   "sample_base_mints": [
+    "9VB1UgKnmgH65WA9voQvkEF8n2fspT3yg44Vbadh3UCx",
+    "G78JvyfBgPArmT3HB5KWPk7xhtES1bVtA3SHZrVM25xw",
+    "HeRh7yvcnrQ9sY1HqG9xR6T79SPGKU5XcSz7hxDXJZ5b"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "FSYLeWnYMRVUjC7RAFEKoAu5tzQrUuLT7gicTSLjTzwZ",
+   "pools": 5290,
+   "curve_complete": 5290,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "Dd2VQkx4zMp2uR1snZP2m9c8dbfzwmib4GZtTYqz5XET",
+   "leftover_receiver": "Dd2VQkx4zMp2uR1snZP2m9c8dbfzwmib4GZtTYqz5XET",
+   "sample_base_mints": [
+    "4A4pXuQgvNP9pGUU9vTrqTmmFiRCuoykZ5XRMn3gi2q2",
+    "BPDZ6PV7DNW417dD7wBsz5PvEBC6HLpjR4ZqvRQeEvgk",
+    "HyCsarumXhFqh2bG69PyuxPwsCKkPJP8PMzHbxSchR7T"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "7pycaX6ApTPKTSQco5cZ5fDZHnY7ohT1pxofdjYWSTJf",
+   "pools": 5254,
+   "curve_complete": 5254,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "G8y4gZ8dSTgWQUtRwm5L3iedpryzsnJcGVQNUYwt6GVT",
+   "leftover_receiver": "G8y4gZ8dSTgWQUtRwm5L3iedpryzsnJcGVQNUYwt6GVT",
+   "sample_base_mints": [
+    "7e95Sn518JgcvoTV6wjhX7ChWoZJv2uGe6o9CMLzTH8Z",
+    "AGAN1R62N4Np663HTFXrUJKKBnDLTcnTL5tjKZwdwQ6",
+    "7fkV4L7kNBFEhkayXSBA7LrPHcSJCDMMSzSMvsV5stop"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "3EXd8U5vAHxXwCDmuqKua6NkrqnJjP83jKwJ9tffEAm1",
+   "pools": 5225,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "2zAzSXkrxT2rQcCFUCVU1eiE8zc8qpdAgfCgBxseg61D",
+   "leftover_receiver": "2zAzSXkrxT2rQcCFUCVU1eiE8zc8qpdAgfCgBxseg61D",
+   "sample_base_mints": [
+    "FEsPuzhQ4N4dFLDxedH2qitDh4gUxQr2fA3yCRxVbrsx",
+    "EmvuVnrvyLytPRxqwNHqxezo2f3aGRGmyVrUTCCZNuHK",
+    "GRKirSnUgHDuneb8rCYWiYVE4rEyFoX4iibEQNoFB5Se"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "3jN4uHy9J3QkJ1we7u6odLmmSkhhCfreLRQ5v8N2M24E",
+   "pools": 5007,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "fCZJvPufxQaVzqrnNWvdNPeqVTJZAaSjM1mkvhpVTHu",
+   "leftover_receiver": "fCZJvPufxQaVzqrnNWvdNPeqVTJZAaSjM1mkvhpVTHu",
+   "sample_base_mints": [
+    "Ek4aSLaEaWhfXhmBxh5DqkUSHGrzUoMw48GkLiJqU3pS",
+    "GjASrdCFmJAgWHPyMtWhYYNK5b6aD9WrgEwDax6FqTR6",
+    "ABi4VgZnZMa5wgro7EsHbcuYDup18ZCYkhyXxZ3gKrMr"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "2pTDFyBbzWHJdSzo5FbK4rcRFV9NYTR3Yq7RkThvmKCN",
+   "pools": 4734,
+   "curve_complete": 4734,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "FeM9TjTqJm8FGBxAsC44P828Cc7Lmz7rcNmMWjUSpHKB",
+   "leftover_receiver": "FeM9TjTqJm8FGBxAsC44P828Cc7Lmz7rcNmMWjUSpHKB",
+   "sample_base_mints": [
+    "8Vxy2Zk5jwpPNRUGbbpFj9QKpb91MU7MJsDakWyeBAch",
+    "9cWCN15CggZYTTReJCYA1kpsF2WCpsxUXErKwYrNM714",
+    "6jy6McGU6PAyAg7QoyGuNGktSpim4DWeyeWu9cyRJes6"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "C72AVsqZdH5qwhpdzvq9ccwLSxS9HPHYRY1CcpTELJQG",
+   "pools": 4540,
+   "curve_complete": 4536,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "3aEC5ZG7VZuEKgkeZayomnozJnwzKxEDFpNyECfCYTNW",
+   "leftover_receiver": "3aEC5ZG7VZuEKgkeZayomnozJnwzKxEDFpNyECfCYTNW",
+   "sample_base_mints": [
+    "Am2fX3nGuyRU2Lv7wXij9QLHBCmx9aGVieXz9jZDpump",
+    "GL8KqZ9RMTq4kxwjqxvHU1ve7Hfo8LwQqBbYYXaPpump",
+    "7pDgjmdFcJNctjpvVhbaXqbbsmt5YMn8Bu3sFBsApump"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "xim8JnRnSq2zHSn9rNGJm23cB1gvx1zP6V3f8SFnFHH",
+   "pools": 4538,
+   "curve_complete": 4534,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "BFBLa1V41yDNKuSQH2XfNH9W2KH8W8KFjwM9LG8ScBU6",
+   "leftover_receiver": "BFBLa1V41yDNKuSQH2XfNH9W2KH8W8KFjwM9LG8ScBU6",
+   "sample_base_mints": [
+    "Bq9BhF4jevJ5Nx97B1Hw24Yj7navwwj3PiN4SCjGmoon",
+    "H1tViAZnvVtDrSFZRzTQnSWAdu1tGERc9zDfEvSepump",
+    "5a5o7vBKQkgN7bMmnyWvosBiFs4caqUsMAWjnMCvpump"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "8YqT8B4kCMUihNXyxFYLnfaxoZxSTeYfbksztrvHLmT3",
+   "pools": 4422,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "4tgN1sJgAQF1kzqcdA7NU31NPVCvadgpQ3eJAdrEQrc5",
+   "leftover_receiver": "4tgN1sJgAQF1kzqcdA7NU31NPVCvadgpQ3eJAdrEQrc5",
+   "sample_base_mints": [
+    "H7BFjjoTQVBkLVL86M4yPA3NCmwuHr5MWQdiPJkiKThq",
+    "8h8vEgZf88sHDQJY1ven7YZ7AuVvfPRdjGawjfSp6eZp",
+    "9yVrpVWmmwgW5QEZgh9Ngvc7zDzipZpLkNAYo6dE3kpk"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "6M4szJtR7hEBQHTK7hkNjLskUxArKFojGjj8v9sGUmvx",
+   "pools": 4360,
+   "curve_complete": 4360,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "7Z1X7kuBnAqMthkUQb7mRs8cvdKpde6QXUjHgAp27CeJ",
+   "leftover_receiver": "7Z1X7kuBnAqMthkUQb7mRs8cvdKpde6QXUjHgAp27CeJ",
+   "sample_base_mints": [
+    "8Yf6k3ak6RLaumfet4uCEoso1LWNabwqBffeuiPSFk22",
+    "2YnsKXw3Lyw7gkdYRbGaGwZet8ozGc3281qMjxvxP4H4",
+    "DCLh66xoR5vWied684kJSberuQgs76mk7QCHokGqFbVi"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "5qk9jioU9ttb1Z1WfiHv4NNdpoMmUUY48NehZ2UVC2d7",
+   "pools": 4248,
+   "curve_complete": 4248,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "ot5c4M7yjPHXKJmNHufoE5CVc6Lq5mZ4h63H4Q7bz4z",
+   "leftover_receiver": "ot5c4M7yjPHXKJmNHufoE5CVc6Lq5mZ4h63H4Q7bz4z",
+   "sample_base_mints": [
+    "H7rkQPM3Ue3f1mt8VVmwYAcBkf7aDnQbsQR9gUE7XUgo",
+    "Fi4pE2sbQTCE6r7XCACn5NEQPiyqXwvPYcVDt2bXhLsS",
+    "3TkciZ7Y1iLMbjDWqaNzN1t5bFbEYhw1myCe63BNuMip"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "EZmnjPixJw8JHS71LrztKXfqbCzA5HnQFbYSraZzNYpk",
+   "pools": 3970,
+   "curve_complete": 3969,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "CH2CjoB2jQWBFLqvhKVSrpE3udeMNPgwYXrQ2RYbdaPu",
+   "leftover_receiver": "CH2CjoB2jQWBFLqvhKVSrpE3udeMNPgwYXrQ2RYbdaPu",
+   "sample_base_mints": [
+    "Ea3M4SkeBxHH7fhw2uZZZWcioyWuKx7Am5JNc43LLexL",
+    "6Rr4YronFAxCKC8aZW4ri7eZyYsuZnUfgfDv8T7TAMNE",
+    "AKc7fXy2Anv1StVY5Rj7TG2Kj5Df7LxEfrEDqDJ4GAiS"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "4KWSxqetJuG836ZN41MrzEueeyXK7yidJb7AKWBRC2qT",
+   "pools": 3924,
+   "curve_complete": 3924,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "CnwRFKYbqupZztkKeVVZKRuAUnWDzAZJ4efgYiSvvFhn",
+   "leftover_receiver": "CnwRFKYbqupZztkKeVVZKRuAUnWDzAZJ4efgYiSvvFhn",
+   "sample_base_mints": [
+    "AvMLHt9bJW1qPHTUPFKzCjWxJS2hi8QmLYKvLNT7BAGS",
+    "5JSjyiHnMUUFYc7btQyhtUsQZuJ3VhqZksBGzsgwpump",
+    "7EnE1BafJFS6vFNUQDTaJ81kmNPiwQ6PGeEwf2Tppump"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "4uFraBJMdQVPmJJn3LXX3LT4wLSwncnZ9RfseHq61fAs",
+   "pools": 3853,
+   "curve_complete": 143,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "9supzj2Nbnjut3r9UFfWE2RiuAenQMoYaNtZXmmtm5oC",
+   "leftover_receiver": "9supzj2Nbnjut3r9UFfWE2RiuAenQMoYaNtZXmmtm5oC",
+   "sample_base_mints": [
+    "2Fz3i69aq3wuS8SHHtRHCM89FYjkvumVKZX5Vtv2xBLV",
+    "4oi7cvGXhmcLyQwnmdtsFGz1A4cdm7ufd5GSwZdJzBLV",
+    "ARQVNbKwBfpNLvYeWN8HvafmzK9zQFkp5Z4hYtuRfBLV"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "36VxV18iT8rDdh2ioZ6ssqEDLEfjnzRw6LMhv1kqnmse",
+   "pools": 3804,
+   "curve_complete": 3795,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "8TPACXaKotSZ7WXktfmKDRhgoypyGXNzo1ctr2YBzxLc",
+   "leftover_receiver": "8TPACXaKotSZ7WXktfmKDRhgoypyGXNzo1ctr2YBzxLc",
+   "sample_base_mints": [
+    "788kTgjs3prz5Xp9ffqQYebL5Tm2Cg9uHihbbKLm2MMv",
+    "Erx9D37E3DpGHTTuZnugAD4tzwJVt845nqXR1NRwyTGf",
+    "GfdQcQcUcPhmtSXj9HvhxS1e5Np3MF5XouA3HvKMDKAp"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "BPas3hqheozAEtwyTTFKprg58JcVfUSduwyLc5BmMyq5",
+   "pools": 3790,
+   "curve_complete": 3784,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "8TPACXaKotSZ7WXktfmKDRhgoypyGXNzo1ctr2YBzxLc",
+   "leftover_receiver": "8TPACXaKotSZ7WXktfmKDRhgoypyGXNzo1ctr2YBzxLc",
+   "sample_base_mints": [
+    "6NjEVAS9xtESbKnwWHTi6ojT1gqVAkmQMAKD9NbwhZi5",
+    "ufUuGDqdqmv3B6mqjHS8CPrAkvNga2U7LrVG4QpiwDG",
+    "BSMCYzZ9zYaGjKP2djct1cfL9y9jyJS37nPGwyEJ7h4"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "GEi2PKrdDMGG2vmwcYLTrHfwnHszc8eLfPP2Q9j9JmLu",
+   "pools": 3778,
+   "curve_complete": 3770,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "8TPACXaKotSZ7WXktfmKDRhgoypyGXNzo1ctr2YBzxLc",
+   "leftover_receiver": "8TPACXaKotSZ7WXktfmKDRhgoypyGXNzo1ctr2YBzxLc",
+   "sample_base_mints": [
+    "CTkwtfcZcxGBjV4Dgo6h75jz5V3g7ALd9hH8Ba4BQksy",
+    "272wh5Gvjy7UdaXEUfVUZ8nFk4Cfgy8sqDe92MgD5Wa8",
+    "Gv8aJgzEE3HSByqJHgc9YBLckyrEbyDXWciiH8nff4mF"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "CKupGn17nQ3Qjv35UKuGa9cHqDrnGxGEQsjT9xH5RRZK",
+   "pools": 3768,
+   "curve_complete": 163,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "9supzj2Nbnjut3r9UFfWE2RiuAenQMoYaNtZXmmtm5oC",
+   "leftover_receiver": "9supzj2Nbnjut3r9UFfWE2RiuAenQMoYaNtZXmmtm5oC",
+   "sample_base_mints": [
+    "AWSBSF5ZbcrxDPAArspodsjU1LNFfwQLN1YpcTo9fBLV",
+    "HX8p8RpWNeAFz3FboU6WYfKNABLUGvLWegdH39Db8GpQ",
+    "3LmhLy9HnCVVVByAoWW6Pyvqz88tpWtv5tKRBBohgBLV"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "7cGDjCR749ecTCBWKG8KGAJSaoxY4qnpQmHgabjGnkM6",
+   "pools": 3702,
+   "curve_complete": 3694,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "8TPACXaKotSZ7WXktfmKDRhgoypyGXNzo1ctr2YBzxLc",
+   "leftover_receiver": "8TPACXaKotSZ7WXktfmKDRhgoypyGXNzo1ctr2YBzxLc",
+   "sample_base_mints": [
+    "5u9TRJxYCrrSV646SXgnRwY7hXxuxTZrb6ikpRAn4tkC",
+    "G73PAk9CU4si3soa49AY1pL4SCKoEzyXzW6sRuPnopuk",
+    "9Sb9sA2YCJGPMezfhKH7nXewToUc72GnR87U55Vtu3AU"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "FGjhZNK7GC6NQyLAE8JS22piSEZorTy8wiAehWyW4V4K",
+   "pools": 3621,
+   "curve_complete": 20,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "BKPxAdgwPHXE3ZPZt5XsAovDgUaUufHgZnSAZ3eRWQNW",
+   "leftover_receiver": "BKPxAdgwPHXE3ZPZt5XsAovDgUaUufHgZnSAZ3eRWQNW",
+   "sample_base_mints": [
+    "HmDrZtiNsEZdScBeAHxqDdDVWKM5VX41KCA7bgktdoge",
+    "BCYS2Wv6eSisxM6xqzVpy74NSnPA1XKyDk6TX7fBdoge",
+    "9Qd7rvRjrNgHJFfciszxLq6mxU4M5owitPUmBHvydoge"
+   ],
+   "quote_class": "SOL",
+   "label": "Anoncoin",
+   "label_source": "self-declared on-chain DBC PartnerMetadata"
+  },
+  {
+   "config": "VPvAbHSUkPDA4cRJANMPuDBMt15c5a7FstqZfVcQt8e",
+   "pools": 3600,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "4qYWTtRgrWiFCPT1V1FdA9e9XTbb9WgDEZfBjwGGVGfv",
+   "leftover_receiver": "4qYWTtRgrWiFCPT1V1FdA9e9XTbb9WgDEZfBjwGGVGfv",
+   "sample_base_mints": [
+    "DeiHNWi17Z8Paa3PFChDasgJ41gQRpmTYF5ckAtsRpZW",
+    "4Wau6ZZcPran4XV6pWgCoVcWuzeacefdjnuEKRkfEH1E",
+    "5zCc9RrYAELNzEk6av5qwg4S4UeghrKpp6PD3EwCAPFf"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "Dd9UFJwKrvXx9UPZy5SMgzggWewpCiSkAF9ALkxvvmHn",
+   "pools": 3588,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "DLpDpnDmDXD7kn9qjmBtuNujoqjzVTN32riJxFUEzXaQ",
+   "leftover_receiver": "DLpDpnDmDXD7kn9qjmBtuNujoqjzVTN32riJxFUEzXaQ",
+   "sample_base_mints": [
+    "8G8fzQ5yafG4B74UBTv72k38FsxatwgavFWFm6dFHUjK",
+    "AoMkWmkmwZWnwRCxMPWqDhs4CFeuCjWMVEaEmPynyVsA",
+    "91e1YYGMYzpdKKkREroqQeJ67TY1yNmSViVtQvBuZj5p"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "3r7sTraHgrokmwD63eidxx5oTFzBqGjx8MFfuj5C62Ms",
+   "pools": 3583,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "79rgq31WnA7E2yj4ZPAAk5qQi7ucYvgfqwA8BGW3CHPD",
+   "leftover_receiver": "79rgq31WnA7E2yj4ZPAAk5qQi7ucYvgfqwA8BGW3CHPD",
+   "sample_base_mints": [
+    "HddWwWvT1ybfgsizAdbhxvqyBaqcP181V7ifL9RuSK46",
+    "FxHpar25oF4ou77QNURT2NHPPauV7P6fiaX5BHEgT9uN",
+    "8JfRDm4YLfJBJxkxqv64M7gU4J77X5TBXBtwbK7neb9s"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "E7SiEBA6MULc8P8yeQ3z8zQ9gGaLbYPugHamqKWbNkzQ",
+   "pools": 3461,
+   "curve_complete": 3454,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "8W2zmvMcsD2PVgT7N6fzL8ove4B5f4v6DYzDPWKME4St",
+   "leftover_receiver": "8W2zmvMcsD2PVgT7N6fzL8ove4B5f4v6DYzDPWKME4St",
+   "sample_base_mints": [
+    "HVR2Kwt6UdBvqN4gURDZv5vRXHDp1vn9JcBrv4df2QzU",
+    "FLCtzFdWGRnyQ8gDviv1mGzSc1wPuMonVxPv4gAW9g8m",
+    "ARa3ePevdXfu5vEzFUoveRWo375JAQfezxkkXv8WDnc3"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "3oHcS1EjFRrCrPm4F45x1eEsT8cvR9YBAMmSAFnn8Eim",
+   "pools": 3428,
+   "curve_complete": 3428,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "6MoK6FbrhuMF6gKzQctXxmzyGw6fcmfjFb9cH2JWHcbc",
+   "leftover_receiver": "6MoK6FbrhuMF6gKzQctXxmzyGw6fcmfjFb9cH2JWHcbc",
+   "sample_base_mints": [
+    "4SiqspnYnVF1wbkUvJE9nbgaQEdWekFcMk5mAnTWBWYN",
+    "CVM4xsusrQP1NnC52yodnKdBxDra184u6rjtjmnvk8Z9",
+    "A5bAC83ZdW6iuGdM689sZzEoGCza3M1MnEEwHTmWhTgK"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "6N72Ym6Lxpw9rr5eV1paYQuycndv8QckFZvm1GqYbd7g",
+   "pools": 3217,
+   "curve_complete": 3217,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "Dvt679vMzEcLeACMw55tzFdnZChrb2WyVeZzR6YTyvUc",
+   "leftover_receiver": "Dvt679vMzEcLeACMw55tzFdnZChrb2WyVeZzR6YTyvUc",
+   "sample_base_mints": [
+    "8AKUAhoHhN4UMU4Eg7X7rQjysebUPy7ubYQrKifTtsFg",
+    "6s8hqKcUu6Vw1quBFPYfRrEuRWxNkiUqMmyQK817xLeS",
+    "5hktqhCxXThsNdiWh61hNCgUEXgLF4NrpYe1b1bGZMat"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "D66ntaGcJ8GtZbpB78KpRBbdpagLv2xMRd1sRMx5b3MW",
+   "pools": 3168,
+   "curve_complete": 3168,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "8N8WNXMD4sHmxMWv5brX8X5oARZoZWebEUJ31Krjd3ZT",
+   "leftover_receiver": "8N8WNXMD4sHmxMWv5brX8X5oARZoZWebEUJ31Krjd3ZT",
+   "sample_base_mints": [
+    "92VdSGozofiriNioU1vpqtjjrVFTpYZRb6PcKsJVpump",
+    "CRdnDHBuPKkdSiQCEEiTC8qgFUvqtexjfa4MGCpYpump",
+    "Dsr9kdF2Zm8HEe2YFKpMprv4BzekcKeRH1W9dmx8pump"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "VDfSxkhGTTFY5PjpCm3PtnVtMStCyDZPF3CXQtVrbhz",
+   "pools": 3092,
+   "curve_complete": 3092,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "7BTefsKHxqfpvLkPV6wG1qhBc7ruWG7xrSc8j9yT58Rs",
+   "leftover_receiver": "7BTefsKHxqfpvLkPV6wG1qhBc7ruWG7xrSc8j9yT58Rs",
+   "sample_base_mints": [
+    "73MCDT4oU8wuz6fEN5xhhmfc6M3xPCgiJwR9d7wApump",
+    "7PQUMdUnuyo6gNezfBALqdraygYcaAPESXAKxrm4pump",
+    "3mDTM5HZkdqtLEmKQgX3WFgUEsyGjAa78ttxKbahbonk"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "H3WTyJKY1MRGVrH7syRcMhg7h8Lqo4aj8fwAemBdZouR",
+   "pools": 2998,
+   "curve_complete": 2998,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "2wuDQVWZ9upbPS2CvAVUfqtpoUMY49T97jgPgP8WRPTe",
+   "leftover_receiver": "2wuDQVWZ9upbPS2CvAVUfqtpoUMY49T97jgPgP8WRPTe",
+   "sample_base_mints": [
+    "14nMPgvQAh2kYQHFjmqAHwwDyBXngPzy1VxeNRVtk2rc",
+    "BkJCZT8HmsxSM8gnVPQ3X8f3WJhbSXtga3Sort4fbSyu",
+    "DhSW9k6AruU2e8gHm7Nm6jzukyDDRVug4NGVx7LdmS7L"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "5achBX1kDsNBaMbgSF6bG5FUm2iELy8UZzFQkZCUgVoL",
+   "pools": 2898,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "6ioBFvSt5shhjpFTrjjt8mubTuM8oqVxJ8TLnALcr6Nf",
+   "leftover_receiver": "6ioBFvSt5shhjpFTrjjt8mubTuM8oqVxJ8TLnALcr6Nf",
+   "sample_base_mints": [
+    "Epzmn7HjcDWv9ReJcUvLcZPHdTPnXdPQzBvTJ4A9SE3t",
+    "9Ed4fFVs9hqtYRq8MzHqb9paVcsJH72WexRmDYLTu6so",
+    "BfYer6jdezdepuy5cpSNjsJZvVoVWNnG24H58cgxpWUi"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "DLa32CJBWDp3YveqD3A8jexkUUzeTZPjEquf3Ur6BwEU",
+   "pools": 2897,
+   "curve_complete": 2897,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "7bBBrP4bYvx7mRMtCiTqrhCwwVjTCzJ2arPbf8LzzcnE",
+   "leftover_receiver": "7bBBrP4bYvx7mRMtCiTqrhCwwVjTCzJ2arPbf8LzzcnE",
+   "sample_base_mints": [
+    "2Ay1ismZ8FAREkuEynXUXvmEaNbNAp7PpJMzj3dcwASC",
+    "9hwm15hmZApKQ9NiJcqz9axhEDMTa8DyJrcERjDPtq9m",
+    "FRTNbXYJRsL8BCoz242xDs29cKGa7tSR5QZBVABcrwSN"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "G6faDiZJsk3pFFHRzffhpdrFsUD72SWxVDyGLtuP8irP",
+   "pools": 2892,
+   "curve_complete": 2892,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "6kGEB1eQnhDvHztPnV1323qWYsa2pQvNAAp8zd2PKNHh",
+   "leftover_receiver": "6kGEB1eQnhDvHztPnV1323qWYsa2pQvNAAp8zd2PKNHh",
+   "sample_base_mints": [
+    "7Nr8yJ2XmLvotwziutz4p3CaTdjvWfMXea2BhefUpump",
+    "Db8VK17sbNfq2CPGoaGeqfxvZFPjXH2eNWEboXLApump",
+    "75TaNyNYHx3G1kxgZnZFnFjTuh91ZqTyrf9HsYZTpump"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "8k3tsw2aUyh8gsx9A65ZmxE2FEJFVFeAv57QkDi24jrp",
+   "pools": 2875,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "9ttedh2e5DDLrfsmwxvrNkWscmXqwVnqL4iUuXJMYMGM",
+   "leftover_receiver": "9ttedh2e5DDLrfsmwxvrNkWscmXqwVnqL4iUuXJMYMGM",
+   "sample_base_mints": [
+    "4RAYfmRzxJBRuKJT795Sf9eUZ2wtFj68NLYuZ4zVmzDL",
+    "6cQSntGWqPCvGMB3n8fFmMQSS5YJuHMuLCQxGaUcAcX8",
+    "FYLssP5NTV1gLnfTim7wd7SsdmAgcjpiGmKLUdtbVJDJ"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "aZSv5G9wqiomszDxrZcwgZgX8tG5yavZsa9MWtNXpMj",
+   "pools": 2864,
+   "curve_complete": 2864,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "2ZjcuuveK6PXCh4hKXiKt9s3imWTYWHL8GfR32osvJAy",
+   "leftover_receiver": "2ZjcuuveK6PXCh4hKXiKt9s3imWTYWHL8GfR32osvJAy",
+   "sample_base_mints": [
+    "C6bz1yLYRVQKJK2qkgZQeKS85yz6KpBLhJuB1ADvpump",
+    "B8P6KLRKH1Evhy1eq62UsN484NYpLfqPRNrMehBgpump",
+    "DEK3XpD1Uith7172eDxNJMmSAcgKCBYeUp8Q9CUVpump"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "B1q9vw9seY22RByzek4TMh22tQ3DuiNWL2j9DEoNKWXc",
+   "pools": 2841,
+   "curve_complete": 2841,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "BaefG2ULy32dHZbBu9uZxVaaZ8JuBEooEXVQfeAEcyyd",
+   "leftover_receiver": "BaefG2ULy32dHZbBu9uZxVaaZ8JuBEooEXVQfeAEcyyd",
+   "sample_base_mints": [
+    "FgnFFb58XxwYf4s6VQn1MLpjmx2jjBoaNkCEwXWFbonk",
+    "DVadgJBz5XWhpyWr5HRgUoEwFhktZmCFdaFfo6vJpump",
+    "FuyDN2oW2pugyN9hETeTTRo9NyigLrTyHSBkiwskpump"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "7y6FAt7azwfUqxvCowv2Vso6EzUxwYQNtC7vHNnd68gV",
+   "pools": 2763,
+   "curve_complete": 2763,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "GD4PMEfctnHrnm8gTsJv9k8Y3jA9W8yM9hjiDsuT3Zyd",
+   "leftover_receiver": "GD4PMEfctnHrnm8gTsJv9k8Y3jA9W8yM9hjiDsuT3Zyd",
+   "sample_base_mints": [
+    "8VysJ7hqANoWJn7e4dSPw7wViLiRDHnUkvFv1EhaFRfY",
+    "97oMvyuZ1rqf2pjCbTEzHLyZYZPvddUqU1t1A9FYikcV",
+    "71ozCE3x7gpCVnv4EoURGjonpiChuFv5YJ6QUVbvkV78"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "6CHBnMZ3qERYeesb79WTq8RqNr5v9UyWjT3FD1iCiVur",
+   "pools": 2750,
+   "curve_complete": 2750,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "9vJUGFqXmyNkYWGDwM62PNct3TZAEdBYRyuiKayd6iQr",
+   "leftover_receiver": "9vJUGFqXmyNkYWGDwM62PNct3TZAEdBYRyuiKayd6iQr",
+   "sample_base_mints": [
+    "6KqkgCSgv5ysVeWxf2vvwfdMtw8q42hK9Nrsn3Md3U3A",
+    "AFUwiQhAmq2h817gfATgvwRnyFmgUCDXxogW5eHegyRH",
+    "9tiudL4UApTF5LQu293MgzbRSZYpmHUmHy2FYuxLbXNA"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "6m7XSKNZtiMz3yXfAk8QK5dejQb4aMHjc4bQrqi8h4VD",
+   "pools": 2722,
+   "curve_complete": 2721,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "CtNKS1hARwNwArgAGDjoF8xPHjapGj2qaHfY8LW2bfzn",
+   "leftover_receiver": "CtNKS1hARwNwArgAGDjoF8xPHjapGj2qaHfY8LW2bfzn",
+   "sample_base_mints": [
+    "2FrgvQqGnctqdNuC7msUgd5SLze1nx9tdDQLSezMSEa9",
+    "5TWQrcYkMKXmyqBms4g8Ev9P41zSeZuDLZZEwuQ1VWnT",
+    "6GDezKr2vKmFTMKuRYpcMcJ3dzvu1xZneZkVPugtBbGm"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "HP7aLysa9snKZfvLSRkr3xLkZQLWvJDJxX5KYMEmQbBy",
+   "pools": 2718,
+   "curve_complete": 2718,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "HP7aLysa9snKZfvLSRkr3xLkZQLWvJDJxX5KYMEmQbBy",
+   "leftover_receiver": "HP7aLysa9snKZfvLSRkr3xLkZQLWvJDJxX5KYMEmQbBy",
+   "sample_base_mints": [
+    "3zFLobFrVhQQb29T417LNjFLA28Fimf4PtDCrupY89bF",
+    "FfvC7DDnhd9wkEkXaWFLs9uCpzBF9dBjpzLCDpjbSFQs",
+    "RdJAjNbmYqjgygXhtnRSt1XnwzE2vMk5BtHTQWirS3r"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "9q4yEJsVqUQ4SQp24o8moARNrBFFCm1vZDKLo3KPkqTe",
+   "pools": 2651,
+   "curve_complete": 2648,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "CtH6UcKwomgpuFJvzArV5HPvB2uacuQQjDWuyaaNpVr2",
+   "leftover_receiver": "CtH6UcKwomgpuFJvzArV5HPvB2uacuQQjDWuyaaNpVr2",
+   "sample_base_mints": [
+    "2WNdCCpzCzetxxHUyWDL97UueYoTyUa3uhzrJ2GT27ck",
+    "AMmoUhCoXYQuAUaMLNQcWcS7gTfFN3w424p4UZD8m8TV",
+    "EX94KSDttzwq3Tt4S2fK7TDFsHMdSKdKbK94HrheoBNw"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "69DvY1Qu5pniy9Dc663WhvBPskiAsj6DHLUCvC3HT9z3",
+   "pools": 2582,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "36dj35Pc6ftCVs593NCGqXCKsbL6nka4ARcH81rbWZfc",
+   "leftover_receiver": "36dj35Pc6ftCVs593NCGqXCKsbL6nka4ARcH81rbWZfc",
+   "sample_base_mints": [
+    "HFSeZpRD1vawB4xtCW4cfxfvS5se9B5J2JS3cW4MKkqy",
+    "CBiKpbwVBXCuRCYeAmuCTbGArQsZ7Ue9FMrkPHstmxBs",
+    "Bp3tb4fus5Wv8nVHodsVbFCZWz3CBgWL1En1eVs8JLVa"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "CJoqP9DL53Jq1uoF3gRtF9GKmXVvb3n5gUiR3jBdfHxj",
+   "pools": 2567,
+   "curve_complete": 2566,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "6uyztKzUy3Uzgb3mw7egcbuuvNVBGod6qLMs73ZDbtae",
+   "leftover_receiver": "6uyztKzUy3Uzgb3mw7egcbuuvNVBGod6qLMs73ZDbtae",
+   "sample_base_mints": [
+    "8MoFdrgBQEa5qRdfjUrFBiniZ9H4o1dZSGfqc6ohSavU",
+    "DPzK599b2vm9tq3s4GeQbpKd9EykZ4USEr22NKpMWrkX",
+    "DZa35beqkc6hQghzBag5Pp3fvaAgobFRSnUysRNxsrmH"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "Hz2RLW9MC84VG1hdYuYfjT9AWfrHcA7wzqJ4vsHQ6Eok",
+   "pools": 2494,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "3fG7zeJvotFHe34hPU2qL1D3EWNp5jkSp4D8kqsVWgmY",
+   "leftover_receiver": "3fG7zeJvotFHe34hPU2qL1D3EWNp5jkSp4D8kqsVWgmY",
+   "sample_base_mints": [
+    "FeqE16xWhatVi7dmasryi6xMke6L5z3u8F2P5toGZnkV",
+    "HWStcVCyDHzVkvqf1krCKY4vLbUkB8hsWsFe4vbdxQ2H",
+    "Bz5wzryvrqzPgrQWrUT2tXbY78M3tzEE8nsEwJuDH2kR"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "8euYi15Xyf35vyZW397aan6jHKnurEaL7KQknredo3JA",
+   "pools": 2466,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "4tgN1sJgAQF1kzqcdA7NU31NPVCvadgpQ3eJAdrEQrc5",
+   "leftover_receiver": "4tgN1sJgAQF1kzqcdA7NU31NPVCvadgpQ3eJAdrEQrc5",
+   "sample_base_mints": [
+    "98ZZP6Pn38xSqyCSVBvRvqjhhaKEY4k27d3s6kcEijtW",
+    "54uN2ipWwajgCWAQ3AWnxSiX7mEzFgErDiMcXZggdDjX",
+    "GtnBevY3qbJWnYZtE63Y5hiziFvSD8aRQcajDzYBDKfd"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "BYAjQtDgFNfdnQvErggnfEsobrreDoU8XmbgDKDRrLx",
+   "pools": 2408,
+   "curve_complete": 2408,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "BYAjQtDgFNfdnQvErggnfEsobrreDoU8XmbgDKDRrLx",
+   "leftover_receiver": "BYAjQtDgFNfdnQvErggnfEsobrreDoU8XmbgDKDRrLx",
+   "sample_base_mints": [
+    "A36URECpJiRjEirtxN4MysezxWwekrKUN1axRzgrSxjT",
+    "2G5hTsqvgbLSmdgrcZYDBbk6Rgy55WHYiZxyFiRd8Frs",
+    "5aXgX4bauzKaYzPvNJ48HMBBws12QwU4DMHiU75xkxKj"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "5U7MfbZkTLVxSjzMxRDZVaY2iJTLHTrSYHWSQEDNvAcx",
+   "pools": 2395,
+   "curve_complete": 2394,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "FFqhWGJCUiWta7Ek9me2wgMnm9FCDUhPpkP6CexME9VG",
+   "leftover_receiver": "FFqhWGJCUiWta7Ek9me2wgMnm9FCDUhPpkP6CexME9VG",
+   "sample_base_mints": [
+    "GfKVns2eSzgsb89HyPbUQxagyiujQkvRVNVvGoPJhLJS",
+    "AtDSKWPPMoTk9H1BKbA5UbT3SCjopJMLgdrcd6cbY9J",
+    "9BSY4LjqZxzoxKncA3b6wtA87pbuiPUM7vHnkRXvrUWr"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "FEzdj2wE4mP4zWAQUXaDxf6PSsjbSjwHhpQ1j2nTc4As",
+   "pools": 2381,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "5WWG4L56c8TGa6Rge3s4dKwwVToXCVrfYevFpXVB4VcF",
+   "leftover_receiver": "5WWG4L56c8TGa6Rge3s4dKwwVToXCVrfYevFpXVB4VcF",
+   "sample_base_mints": [
+    "7XwDUSvJHtLBEFEcYa6dAarnFGRHEKvECk4NAfGcBegv",
+    "Ebg9r9pDopkmQdoZHmPbhg3RhLGvwJmgsu1YmaeHRSVt",
+    "62aVj3wN8XdLutWdTyUP6TkfLGUHmfh4Hi8rk2qGh1Hr"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "E8bvdvz4xZEybXq11o51hxZLJ1HXwzbF4FxYgnSCZeei",
+   "pools": 2379,
+   "curve_complete": 2379,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "ENyc6mcY8QPs4PHxip9r9mFdnGxJLb16hsPz6QvFD8yK",
+   "leftover_receiver": "ENyc6mcY8QPs4PHxip9r9mFdnGxJLb16hsPz6QvFD8yK",
+   "sample_base_mints": [
+    "7o4VTVXzWUYS8mJT5LqCG4o7VUhSXZtzjgoqjw9ppump",
+    "Hou3svsM1ziwsjte6HKMUusrfoFgXzxSgFCjVJ8gpump",
+    "4aaRUZonJ96kxKAYy14q3HMvAFSq7u39Lao1iDaSpump"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "9UAdcKjrXVQ6sh1t9dZKf8CJzqUGeMBs3N7w5G8FcX7W",
+   "pools": 2351,
+   "curve_complete": 2351,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "3pFYGSypzNZWWkVeaccihJpE8A165eTiSCbM4n2zyRxi",
+   "leftover_receiver": "3pFYGSypzNZWWkVeaccihJpE8A165eTiSCbM4n2zyRxi",
+   "sample_base_mints": [
+    "CY8HLRXKt5aRgG68krcvDb4aNcjbTSZWQQj7dxwrud4j",
+    "AhMAieH3Gmqxx5ozo8SCQA6Z2jiTQTLLQykFHuJCtxxK",
+    "Azy9S4dcw8ZqeGYnGdsFPVey5d8xjTHoTLJ3VnEvbVo8"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "6g9scaaTdjjkWRKsCTXeskHHBbkW1CU6WUiw546uf1GZ",
+   "pools": 2292,
+   "curve_complete": 2292,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "HyhosNdZU56dCn5TekzyW82p1mtngXAfgVAomBq1FfJa",
+   "leftover_receiver": "HyhosNdZU56dCn5TekzyW82p1mtngXAfgVAomBq1FfJa",
+   "sample_base_mints": [
+    "DgctQPg4QZQcg5pjcmvqvTPNj6bF9ExV43ihqXGvczmo",
+    "J4zmp88SFLUKvoEMJXRi8wj96m5qozwZKrdmKLLGErU4",
+    "Fd1HnJtmDwCTUr6Qv4SjAV7DcEZrf84QmwjUhS9d8iJU"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "F4vzjq27LTd9xnhWChAbyKHYhSqNbMsM78CBuTzE4M4J",
+   "pools": 2065,
+   "curve_complete": 3,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "3Wiy757LZGnWAMepuSQw2nk43tmbC3cD5iv3YxC419ik",
+   "leftover_receiver": "3Wiy757LZGnWAMepuSQw2nk43tmbC3cD5iv3YxC419ik",
+   "sample_base_mints": [
+    "DeKhCwPfeAPTxoxcoyWSTxFru7vBNR4J7XsnJcmncoin",
+    "3PBtq8R6npK7bKJdCu569FZUQz6WYPPLWTxtehddcoin",
+    "HYcrvfnSd28h41TcEWsjkLgL2zfLgzrh94yvVmdycoin"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "DF8kx1xaVbBxX2BxWvpW2nxiGeVJYEBspCPy1wr7CBpv",
+   "pools": 2064,
+   "curve_complete": 2064,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "DF8kx1xaVbBxX2BxWvpW2nxiGeVJYEBspCPy1wr7CBpv",
+   "leftover_receiver": "DF8kx1xaVbBxX2BxWvpW2nxiGeVJYEBspCPy1wr7CBpv",
+   "sample_base_mints": [
+    "75oxQVG8i5cW88Tncw5ouHUCoYwnUcpuXhkGE2htGoYW",
+    "DsQDjbmhsBDJk3ffb6Y9ERgQpaVMoLHvToYmG8iDobRE",
+    "64Shru1Qi9pikUGK9JE7wYAaXNQYNhM8UDVMbiJiPCc2"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "Bov7gMQ88BQbtFMTxQ5e8grtrwG4ryQGAV9Mih2j9SxK",
+   "pools": 2060,
+   "curve_complete": 5,
+   "quote_mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+   "quote_symbol": "USDC",
+   "fee_claimer": "Aefrfa3ffaznptazDaDnAPK624UwvkujhJTWBCcCSofv",
+   "leftover_receiver": "Aefrfa3ffaznptazDaDnAPK624UwvkujhJTWBCcCSofv",
+   "sample_base_mints": [
+    "DoAnzKw3CoX6stqrsRpLnzxLmDSPMfHT64sVEMj3soar",
+    "2h1BJJ1EnYAWJjZwq5Cy5tnJjWWZyffVeGA5ciZqsoar",
+    "BJZgcJDzAxbYYNsv9haUfP5Wwa2VtwCf9zvvqbNqsoar"
+   ],
+   "quote_class": "stablecoin",
+   "label": "SOAR",
+   "label_source": "self-declared on-chain DBC PartnerMetadata"
+  },
+  {
+   "config": "89rQ2hSvfJdPLDwXAWDncvMdv7be7VjRVJbKBdSzUdPe",
+   "pools": 2057,
+   "curve_complete": 2057,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "89rQ2hSvfJdPLDwXAWDncvMdv7be7VjRVJbKBdSzUdPe",
+   "leftover_receiver": "89rQ2hSvfJdPLDwXAWDncvMdv7be7VjRVJbKBdSzUdPe",
+   "sample_base_mints": [
+    "9dpgoqSQKcYB2DZZ6PqnYTKGPPMrmGB6DDUvpJbKxCih",
+    "6QmeiGSndpLe4NzFetaQifvrzwRaN1yaNMhPVSmBFzSq",
+    "6anxKm3F2AAe9Ug73GEQMjhfGLL95Fiqi8YkQcenwCtu"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "A1MVUy56BvFjnP28LaLBrwcnPyzne1mZmDDtxniMYDVQ",
+   "pools": 2020,
+   "curve_complete": 2020,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "jhbtKWqMunoEDmoLv5vRXxMSjDvYuMBhCg2q9nUyLF9",
+   "leftover_receiver": "jhbtKWqMunoEDmoLv5vRXxMSjDvYuMBhCg2q9nUyLF9",
+   "sample_base_mints": [
+    "4PrTrG6JwVVi3hswxRoGzM28q4pkQxZao5H2wEuaKDcM",
+    "HnsgeWUwaSb4HofbRptKwZribBRPyxUfJczwGpcs3L5E",
+    "6ZuQ3R7TAXpxvHXhkhqw1WcUz6YMgLuTeDWex5Zc428M"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "CaDBnXEGdbJ9bKBN8U4AbbvJ7BMY6KMrBTXDyShaonjd",
+   "pools": 2015,
+   "curve_complete": 2014,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "J7yBcg2AmJ1Cm9kssQqG5sX6mZ9HiJ298Ak9YHeFXX4g",
+   "leftover_receiver": "J7yBcg2AmJ1Cm9kssQqG5sX6mZ9HiJ298Ak9YHeFXX4g",
+   "sample_base_mints": [
+    "GouP81Q3QUEEEWboivwmMhDgsmvBDeTjBLFv6UmJSsuV",
+    "Fjs6HyFqUXKJ9geYYTUpYkRFGtJ8sh6gmQyabhWPBdYB",
+    "HC1GhrsaHFsND5mKhKepgnRebz7xQxBEpYFRxAj3Mh9G"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "qiLaBSjXDBVDkSZbodwRmRjvA7eiGEcALoZfkn95E5R",
+   "pools": 2014,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "5BPorQjhdfDDgb3BKJhAg4kaMokg7tNRHuQZui1KJ8Dx",
+   "leftover_receiver": "5BPorQjhdfDDgb3BKJhAg4kaMokg7tNRHuQZui1KJ8Dx",
+   "sample_base_mints": [
+    "9tKFK19ArvjZwAGH9eSm3KhBw9VmiwrBVPKZCiYBNFMp",
+    "9rPNAPP2KUcPopGUpYoUpWwDNUzjgtfbPa2hK7MeJ1Nd",
+    "4caewsBudRAmepuyGLLbzxLUZZ76Y6tTDiuY3kokNdhZ"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "8MEtrexHRv8on2wECEsTsBwK42X1sdeVnzdavY54VgQK",
+   "pools": 1975,
+   "curve_complete": 15,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "BKPxAdgwPHXE3ZPZt5XsAovDgUaUufHgZnSAZ3eRWQNW",
+   "leftover_receiver": "BKPxAdgwPHXE3ZPZt5XsAovDgUaUufHgZnSAZ3eRWQNW",
+   "sample_base_mints": [
+    "CexpuSKYrTGVChkCZCmQwhU9Er7PdSA1yaRpdur4doge",
+    "Ezpqqvt2WRecESQKm4vTeFo2uoeNcRffCnsZYdRydoge",
+    "3DJsG14xxGXw58fVXpvhk66WDaqcEgDRecsA7aQjdoge"
+   ],
+   "quote_class": "SOL",
+   "label": "Anoncoin",
+   "label_source": "self-declared on-chain DBC PartnerMetadata"
+  },
+  {
+   "config": "HkEVDSPJqdfzbzR1TuWV28vzwfhcL31K8wCRmmLKUsLp",
+   "pools": 1965,
+   "curve_complete": 1965,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "CFQzqAignvt3sE9gjzMk3KaxZGdDC2ZQruBEydBsxQ3W",
+   "leftover_receiver": "CFQzqAignvt3sE9gjzMk3KaxZGdDC2ZQruBEydBsxQ3W",
+   "sample_base_mints": [
+    "FWjVAwHg6jbsnK2wxcLmjz1xH6nWWMcsotsYRxY5f7G7",
+    "VLwwccFjkpGcrcnNbcXxXHVM7x728MrruiMbUtGBhRW",
+    "4mGXxNLtSWpcoicijM417ZWCotvjMKACBEgUgKwqDM7u"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "eK9skwdj1HAo4PM2d72d7nEUNQkTQyzoxXBfS8trFeB",
+   "pools": 1958,
+   "curve_complete": 1958,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "eK9skwdj1HAo4PM2d72d7nEUNQkTQyzoxXBfS8trFeB",
+   "leftover_receiver": "eK9skwdj1HAo4PM2d72d7nEUNQkTQyzoxXBfS8trFeB",
+   "sample_base_mints": [
+    "DteZWs1YX4hh5DPgi14mU1Edz5RQkKJunerkXQAGBn8S",
+    "63Hv3H2BqHP6tNbMNorR7E4WGSai7C6JR6Cb2HcTmyMa",
+    "13sNCqXtMRCkKNsM9msvfaXrahTRomBXRn9GCFfLh5d4"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "8Ac9m53wi5hhrDw4n4CTBSU8uyAf92XaprqKALnXkUkp",
+   "pools": 1958,
+   "curve_complete": 1958,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "FxNLACMwGK3AAprfWsDnASJpFDCKNDtbbUukNbAC7xjN",
+   "leftover_receiver": "FxNLACMwGK3AAprfWsDnASJpFDCKNDtbbUukNbAC7xjN",
+   "sample_base_mints": [
+    "2xF1GavKt3dmzF7bcQ6dcMYxMmvYibQcxmxPtynK2pqV",
+    "DCsdffmUcJ1WWpXmsu8eXdXufbFNPLL11GbHL64B83Sp",
+    "C3TTRcPk2T3QqMZJZLiCgARGXBB6kcwVPgiGMkEbhCfn"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "EjbYWP1255uFTqYZ1enZPKZcH7s4ZRSRP6nRbRJTo1rh",
+   "pools": 1904,
+   "curve_complete": 1883,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "Bt2ua1QgzFDRkvX2g4pUBbSbRxZgkQeNj8SK1HL7PfN9",
+   "leftover_receiver": "Bt2ua1QgzFDRkvX2g4pUBbSbRxZgkQeNj8SK1HL7PfN9",
+   "sample_base_mints": [
+    "BTbiCHZExGmarzLALobNDoiU967NmJdBjtFVD9K6oDGj",
+    "3Me7r83vPJdYK2uPCBSAXNkDZTSUN7PCfDsis911Quam",
+    "CPRNuSv3xCxbs4wKXozeF2urFfGqZqXjqkrmQLwe72t9"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "7Lmsa1yystLusEoYRCuY7yqUWYkfiuUQMMkCeSxHoBUT",
+   "pools": 1847,
+   "curve_complete": 1844,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "DkWCckyUz41pjX1dBXyYJtirNP1CPRBXgvubL1bo1ADR",
+   "leftover_receiver": "DkWCckyUz41pjX1dBXyYJtirNP1CPRBXgvubL1bo1ADR",
+   "sample_base_mints": [
+    "3GbuBCAgtynPipWgKnRwJ5VH1438Dh6qyjvdyFi861Nu",
+    "7gF2y53E83pBTUH5vQHrHrZFKGaFWrnWe8xfgFm9b2z5",
+    "8ySGrM14NmfmutvArvDRQk4Eoj6am5SVN9SE6FH2F5Ww"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "Av8tQuNWqVxpuK5YeoADbQ9nYnGtLTkfJQRf57nA6W2A",
+   "pools": 1847,
+   "curve_complete": 1847,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "6kGEB1eQnhDvHztPnV1323qWYsa2pQvNAAp8zd2PKNHh",
+   "leftover_receiver": "6kGEB1eQnhDvHztPnV1323qWYsa2pQvNAAp8zd2PKNHh",
+   "sample_base_mints": [
+    "Dio4nrfg77GgoL1WCUtKqEvrEZ57h3nTRLmuJKUs4444",
+    "DQQV1fqpo8wQ7BfQGEe7FCmqLynV7fKj54ZP4EuXpump",
+    "MkMk8VUA39cG9nu28wjMZ6URGjG5eg7xYe8fc69pump"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "AAq5uNz7Q87jMVxMsK6t1LxxYEdQmxVKAywTPdQz12ec",
+   "pools": 1822,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "FayzB6T9iqEf4oJxj8T7jQRrdpzEDSiZThZ5gPJcBnGN",
+   "leftover_receiver": "FayzB6T9iqEf4oJxj8T7jQRrdpzEDSiZThZ5gPJcBnGN",
+   "sample_base_mints": [
+    "9kRtiH8hkUwd8vT4tfi1e7jbYPwobe9Naa5kVERoSag5",
+    "GWQKByMrNrAJtjrpA9HdCFkEvEqWMXwueNNGnWtxS9sN",
+    "qtGetfgTyMXjNsjmQaM2B2gGQWx71qHNN6vHm7xpxKS"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "C5wu3wAMAiHwnGNuMHx8t9XKt67u1t3bRfiW5EXaS9UF",
+   "pools": 1783,
+   "curve_complete": 1783,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "Dd2VQkx4zMp2uR1snZP2m9c8dbfzwmib4GZtTYqz5XET",
+   "leftover_receiver": "Dd2VQkx4zMp2uR1snZP2m9c8dbfzwmib4GZtTYqz5XET",
+   "sample_base_mints": [
+    "A7dMowcPAPnLtBTXzpA1T7WbPwZJZshwSvDvsJTmc4op",
+    "EW3t1FTaSjP4Cmi9ydJkU6jy32EXAyU2BWyYNLmoRkTy",
+    "BVnUZ5yqiNY3huQBuKShtLKGLquUVPUhSZ8FnhjUqSb"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "di8pdSdAPBYrXWWbBgH22qM2Y1svpWnpGjU25P14whf",
+   "pools": 1729,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "FXogHdYYcoqaURyHToRQZTwwfUToTu97Af5oc5D3Vbec",
+   "leftover_receiver": "FXogHdYYcoqaURyHToRQZTwwfUToTu97Af5oc5D3Vbec",
+   "sample_base_mints": [
+    "ESdStnRsTjfcJQtafUR9UaT5mFfHQyKC8KSDEEXeg3aX",
+    "6jE3beS1hVSR7RAX9yALJx3BtRRtN1J9drCB5HNVG5PV",
+    "QUjJJofUdjR6ZBBdMZWb2poK595kkVZJqJEsz4xqpnT"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "9mcocNNG14roHvyTiGsRBBaG4ZWjzzeEhpRuxuYa9YPj",
+   "pools": 1710,
+   "curve_complete": 3,
+   "quote_mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+   "quote_symbol": "USDC",
+   "fee_claimer": "Aefrfa3ffaznptazDaDnAPK624UwvkujhJTWBCcCSofv",
+   "leftover_receiver": "Aefrfa3ffaznptazDaDnAPK624UwvkujhJTWBCcCSofv",
+   "sample_base_mints": [
+    "F4UefJncFWdr7ZXgie9Lg5vXn3NVmkZWnGtPSrS7soar",
+    "Ay9jJ8c5f2iPy2bCopgKzfFvtFQmaLD3BNazbckosoar",
+    "dZaUtkyfvEqL29xR7JRwP4mx3C9zu7ANzBWLsyWsoar"
+   ],
+   "quote_class": "stablecoin",
+   "label": "SOAR",
+   "label_source": "self-declared on-chain DBC PartnerMetadata"
+  },
+  {
+   "config": "2Bu7LCqp7ukjMcN92Z33etgQjrJqDknpWXjUYEUNDMmK",
+   "pools": 1707,
+   "curve_complete": 1707,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "8jwYUPqDgV5bf6uej5MaaeiE8ntcqaBiacLtYocv4je3",
+   "leftover_receiver": "8jwYUPqDgV5bf6uej5MaaeiE8ntcqaBiacLtYocv4je3",
+   "sample_base_mints": [
+    "5PajfVK1Xnjf2uvyJd2SjfXt2BETD1sMZ4UikzYihEMu",
+    "H8p7U25ky1ijdEguxHcSfEA4EpgtFt5WYrvfk4guYUnY",
+    "Ecv3v3ny3w25cwQJVgru5P8MXNbn7DEZDKbmfV185M7Q"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "91E8xZtK3rnApV9kmbn8s4uz6xfMSzTJZHJixvn9Xhgq",
+   "pools": 1681,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "3SoqF3nZxCZEanNJaZ8kx5LpQ67cjzgaXyunkvaWATkB",
+   "leftover_receiver": "3SoqF3nZxCZEanNJaZ8kx5LpQ67cjzgaXyunkvaWATkB",
+   "sample_base_mints": [
+    "F4V6mhzfLyVRsuK4atiZBduaJcMVz81S2cUpr1QhaZn9",
+    "4rUcjHmVmgmiobtbkBzsJNjJm7qCVJNx6aAhHU494jwu",
+    "EdC3MbY4mKvn2zHaf7ZLrH2Td7THxppDTkKbqbT2FcKc"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "5CrGDzWHKSpsLLbg7J2pizEtiSwLZibKLVfoi7E4tLaL",
+   "pools": 1673,
+   "curve_complete": 28,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "3QoiGW6NVozsWaAx1BARCUosjn2bQMcD2gu1h8MjFBAJ",
+   "leftover_receiver": "3QoiGW6NVozsWaAx1BARCUosjn2bQMcD2gu1h8MjFBAJ",
+   "sample_base_mints": [
+    "qrk6oRy6dkupbJAgEiRjmCmGWSzPX9NYyR1rEqEPfun",
+    "XW7wHdiJcmEYqcigBc5fEYCPA7psT5kvaEx5wWXYfun",
+    "UHpvYSNJ61ruWN6jKQ54JnySVba1yMFLLideEp2mfun"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "JcNvUgDA8yn3r2GibLqKm67ksZjYaLX3JPD6Zak7Ney",
+   "pools": 1650,
+   "curve_complete": 1650,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "GbmbFwYix22HFnbkvLsh6upshoV7rZ792jxwWVQ8vXcS",
+   "leftover_receiver": "GbmbFwYix22HFnbkvLsh6upshoV7rZ792jxwWVQ8vXcS",
+   "sample_base_mints": [
+    "979gLTPVp3ewHMLpJwGqdidwmM1Jp751Sw9KMDxdv4Zo",
+    "3y9SrYk4Zug7xpxjdw2M9Bx1k5QRg82htmu32SZoR5VD",
+    "5NWeWBovtqZnWrSWUhaQSmBqL1PhbbBwe5T3m9pLhngg"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "7UQpAg2GfvwnBhuNAF5g9ujjDmkq7rPnF7Xogs4xE9AA",
+   "pools": 1640,
+   "curve_complete": 15,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "A9z3ngVK4aSRdCR8i6F2wQh9EbH7CPojyvZuBRxNot8o",
+   "leftover_receiver": "A9z3ngVK4aSRdCR8i6F2wQh9EbH7CPojyvZuBRxNot8o",
+   "sample_base_mints": [
+    "DcaCmrYSv8ZxYusKpRamQTRBWb1QRezC25tpSsbsTRND",
+    "14DpAGyAiqeEAP8aYhTQC1r7ub1cKzezSS61fLsHTRND",
+    "GDJx4dp1eEaxhMcixyziBDgoEgzwWhEoLCMBgM43TRND"
+   ],
+   "quote_class": "SOL",
+   "label": "Trends",
+   "label_source": "DefiLlama dimension-adapters fees/trends.ts lists its configs"
+  },
+  {
+   "config": "9PowdP7ts2wfYegdUphfzqRnn7bxeRwrqcTEcQCRfq1H",
+   "pools": 1627,
+   "curve_complete": 1627,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "GEHHafXwT3DCKZ5EGWAuTotZBd6BdGfwhdscvKdrkGY5",
+   "leftover_receiver": "GEHHafXwT3DCKZ5EGWAuTotZBd6BdGfwhdscvKdrkGY5",
+   "sample_base_mints": [
+    "FTFPk8RgUQJSyKrg8s6nFcTeACvGoAohLTJAvyvLhqZ9",
+    "EiNqSKTHjorKFUsVssQXD8mhgLPGyNTy1p6fyufQfP55",
+    "A8GN2adskGh9iAXakFmazMkkphiqg9Rt2kQThxY6dQqT"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "8rVnPniUxJnP5EeYbnEHiRGtZ8QjYmoPzP76b7UfLqo6",
+   "pools": 1606,
+   "curve_complete": 1606,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "657PPy9QKupt3yfvot2Y1pnTvUyAXXAWLZHZVcp2N2fz",
+   "leftover_receiver": "657PPy9QKupt3yfvot2Y1pnTvUyAXXAWLZHZVcp2N2fz",
+   "sample_base_mints": [
+    "GyCz9vvBmvVQcAfap53VgowqDypwCcVL4D4jhm5U2cmo",
+    "FpNRPSpUjg2ZTQgQNsoWgzgwenhhVQNq28HSo1PBnkUj",
+    "7XouePDqNAUZXZeQVv8LLiPpaS5EVJyjiJumLsL7BjzJ"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "3Dr15KpCw4dBusfHJSfLVpwnw9FDLJCf4FDs3o48roJX",
+   "pools": 1605,
+   "curve_complete": 1605,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "3LioekPwm9odMLt1ypJ7JZ2LgJjcaykBES8iF5JiLfJC",
+   "leftover_receiver": "3LioekPwm9odMLt1ypJ7JZ2LgJjcaykBES8iF5JiLfJC",
+   "sample_base_mints": [
+    "2Uop1gFrjwJbGYTLH5hr8q5R18JNHMpJxwF8VWqGdQze",
+    "4UbqvgkBJV7nesJHDkg5BAWbUHbhFCCpSv5Z5FXAyQ4R",
+    "9vmp5UYk9HyniL2e3eRXQjzCCKbB4QqUnP4hKkRyMdQs"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "CXccaqfce95tJFSsJtevgLiXQpEaxG16m7TckWpdowFm",
+   "pools": 1569,
+   "curve_complete": 1566,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "4f8A7vjMZT6EXNdg2VgtUjXoq6tBJyTYYS5MSnYU5AtQ",
+   "leftover_receiver": "4f8A7vjMZT6EXNdg2VgtUjXoq6tBJyTYYS5MSnYU5AtQ",
+   "sample_base_mints": [
+    "5PoEte4ZcjrUQbocyr9gSRRoJMCtTgxDwAUgUHXtXEFX",
+    "HZfhPmdq7fVNzLsaUmzaCyafnWpscmsyK7pEAVZ5iHEp",
+    "AnqHvk9TY3hqr1L9ShE2Q7qsz4kVZGteHhiW1WJQ1zD6"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  },
+  {
+   "config": "BZ84DRpWdiHzNgx3wt5tjZExogRHi3e4JwuwGFcJN5av",
+   "pools": 1566,
+   "curve_complete": 0,
+   "quote_mint": "So11111111111111111111111111111111111111112",
+   "quote_symbol": "SOL",
+   "fee_claimer": "9ttedh2e5DDLrfsmwxvrNkWscmXqwVnqL4iUuXJMYMGM",
+   "leftover_receiver": "9ttedh2e5DDLrfsmwxvrNkWscmXqwVnqL4iUuXJMYMGM",
+   "sample_base_mints": [
+    "7KcQxzezb2nFAixiSZ5vz8kEhrz8EJUjnfAFBFYMW74c",
+    "HW4vzcypadxfbaDa8VXWuZJpfbF8LG8bM7UhUoscYBXM",
+    "FbdBM43KimdQpSWM2xHP3V15QaZ5F14FdegnTaoqZ5nF"
+   ],
+   "quote_class": "SOL",
+   "label": "",
+   "label_source": ""
+  }
+ ]
+}

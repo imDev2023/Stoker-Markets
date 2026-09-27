@@ -15,7 +15,11 @@ All accounts are zero-copy (bytemuck, repr C), so offsets are fixed:
   TokenBadge: token_mint @8
 
 Usage: HELIUS_API_KEY=... python3 meteora_dbc_scan.py
-Writes meteora_dbc_configs.json and meteora_dbc_quote_mix.json next to this file.
+Writes next to this file:
+  meteora_dbc_quote_mix.json  summary and pools per quote mint
+  meteora_dbc_platforms.json  per-fee-claimer rollup and top 100 configs (small, committed)
+  meteora_dbc_configs.json    every config with pools (about 250 MB, git-ignored)
+Pass --summarize-only to rebuild meteora_dbc_platforms.json from the two dumps without rescanning.
 """
 import base64, collections, json, os, re, sys, time, urllib.request
 from pathlib import Path
@@ -48,6 +52,19 @@ STABLES = {
     "HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr": "EURC",
 }
 STABLE_SYMBOL = re.compile(r"^(USD|US\$|EUR)|USD$", re.I)
+# Platform labels, each tied to a public source (fee claimer or config -> (name, source)).
+FEE_CLAIMER_LABELS = {
+    "5wkyL2FLEcyUUgc3UeGntHTAfWfzDrVuxMnaMm7792Gk": ("Moonshot", "DefiLlama dimension-adapters fees/moonshot-money.ts"),
+    "CWcERiVd7xkUrcJK5QBdcKC5GG8JMATMLNHtCEUguwPz": ("Jupiter Studio", "DefiLlama dimension-adapters fees/jup-studio/index.ts"),
+    "A9z3ngVK4aSRdCR8i6F2wQh9EbH7CPojyvZuBRxNot8o": ("Trends", "DefiLlama dimension-adapters fees/trends.ts lists its configs"),
+    "GZjYfGyUNQfDChcQ66Gc3ZMcQqPEisyRYe1nPyQhP9bp": ("EmberCurve", "github.com/elyousfired/ember-metrics README (EmberCurve platform wallet)"),
+}
+CONFIG_LABELS = {
+    "7qxdCzkwzMBZBZ9koqvC7ZSWTAavnxSxQfvnGBphb3s": ("user.fun", "DefiLlama dimension-adapters fees/user-fun.ts"),
+    "Ag218y7qLGf3gmLRzPZMaLu3ghnGUZstpjeiUi6GGPz9": ("ZNS launchpad", "DefiLlama dimension-adapters fees/zns-launchpad"),
+    "DEKVtkTtGf14fiVY2pa1WykHJpm4XzTA745SfGrSH7mv": ("ZNS launchpad", "DefiLlama dimension-adapters fees/zns-launchpad"),
+    "9qYwiLdfvKtCEQA5M1YgTYSXjZdLQ5XobE7vW3E1tePb": ("ZNS launchpad", "DefiLlama dimension-adapters fees/zns-launchpad"),
+}
 OUT = Path(__file__).resolve().parent
 ALPH = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
@@ -118,13 +135,15 @@ def assets(mints):
     return meta
 
 
-def classify(mint, symbol):
+def classify(mint, symbol, badge):
     if mint == WSOL:
         return "SOL"
     if mint in STABLES or STABLE_SYMBOL.search(symbol or ""):
         return "stablecoin"
     if mint.startswith("Xs") and symbol.endswith("x"):
         return "tokenized stock (xStocks)"
+    if badge:  # Token-2022 mints need a Meteora TokenBadge to be a quote; here they are Backpack and Ondo stock tokens
+        return "tokenized stock (other issuers)"
     return "other token"
 
 
@@ -171,7 +190,7 @@ def main():
         m = meta.get(q, {})
         sym = STABLES.get(q) or ("SOL" if q == WSOL else m.get("symbol", ""))
         quote_rows.append({"quote_mint": q, "symbol": sym, "name": m.get("name", ""),
-                           "class": classify(q, sym), "token_program": m.get("token_program", ""),
+                           "class": classify(q, sym, q in badges), "token_program": m.get("token_program", ""),
                            "token_badge": q in badges, "pools": n, "share": round(n / total, 6),
                            "configs": len(q_configs[q]), "curve_complete": q_complete[q],
                            "migrated": q_migrated[q]})
@@ -193,32 +212,69 @@ def main():
                             "partner_metadata_name": p.get("name", ""), "partner_metadata_website": p.get("website", ""),
                             "sample_base_mints": samples[c]})
 
-    # Per-fee-claimer rollup: one platform usually runs many configs under one fee claimer.
-    fc = collections.defaultdict(lambda: {"pools": 0, "configs": 0, "quotes": collections.Counter()})
-    for r in config_rows:
-        f = fc[r["fee_claimer"]]; f["pools"] += r["pools"]; f["configs"] += 1; f["quotes"][r["quote_mint"]] += r["pools"]
-    sym = {r["quote_mint"]: r["symbol"] or r["quote_mint"][:6] for r in quote_rows}
-    cls = {r["quote_mint"]: r["class"] for r in quote_rows}
-    claimers = []
-    for k, f in sorted(fc.items(), key=lambda kv: -kv[1]["pools"])[:40]:
-        non = sum(v for q, v in f["quotes"].items() if cls.get(q) not in ("SOL", "stablecoin"))
-        claimers.append({"fee_claimer": k, "partner_metadata_name": partners.get(k, {}).get("name", ""),
-                         "partner_metadata_website": partners.get(k, {}).get("website", ""),
-                         "pools": f["pools"], "configs": f["configs"], "distinct_quotes": len(f["quotes"]),
-                         "non_sol_non_stable_pools": non,
-                         "top_quotes": [(sym.get(q, q), v) for q, v in f["quotes"].most_common(5)]})
-
     summary = {"snapshot": time.strftime("%Y-%m-%d"), "program": PROGRAM, "total_pools": total,
                "configs_with_pools": len(pools), "configs_total": len(configs), "partner_metadata_accounts": len(partners),
                "token_badges": len(badges), "distinct_quote_mints": len(by_quote),
                "pools_by_class": dict(by_class), "curve_complete_by_class": dict(class_complete),
                "share_by_class": {k: round(v / total, 6) for k, v in by_class.items()},
                "curve_complete_total": sum(complete.values()), "migrated_total": sum(migrated.values())}
-    (OUT / "meteora_dbc_quote_mix.json").write_text(json.dumps(
-        {"summary": summary, "quote_mints": quote_rows, "top_fee_claimers": claimers}, indent=1))
+    (OUT / "meteora_dbc_quote_mix.json").write_text(json.dumps({"summary": summary, "quote_mints": quote_rows}, indent=1))
     (OUT / "meteora_dbc_configs.json").write_text(json.dumps(config_rows, indent=1))
     print(json.dumps(summary, indent=1))
+    summarize()
+
+
+def summarize():
+    """Roll the full config dump up per fee claimer and keep a small, committable top-configs file."""
+    rows = json.loads((OUT / "meteora_dbc_configs.json").read_text())
+    mix = json.loads((OUT / "meteora_dbc_quote_mix.json").read_text())
+    sym = {r["quote_mint"]: r["symbol"] or r["quote_mint"][:6] for r in mix["quote_mints"]}
+    cls = {r["quote_mint"]: r["class"] for r in mix["quote_mints"]}
+    asset = lambda q: cls.get(q) not in ("SOL", "stablecoin")  # noqa: E731
+
+    def label(r):
+        if r["config"] in CONFIG_LABELS:
+            return CONFIG_LABELS[r["config"]]
+        if r["fee_claimer"] in FEE_CLAIMER_LABELS:
+            return FEE_CLAIMER_LABELS[r["fee_claimer"]]
+        if r["partner_metadata_name"]:
+            return r["partner_metadata_name"], "self-declared on-chain DBC PartnerMetadata"
+        return "", ""
+
+    fc = collections.defaultdict(lambda: {"pools": 0, "configs": 0, "curve_complete": 0, "quotes": collections.Counter(),
+                                          "label": ("", "")})
+    for r in rows:
+        f = fc[r["fee_claimer"]]
+        f["pools"] += r["pools"]; f["configs"] += 1; f["curve_complete"] += r["curve_complete"]
+        f["quotes"][r["quote_mint"]] += r["pools"]
+        if not f["label"][0]:
+            f["label"] = label(r)
+
+    def claimer_row(k, f):
+        return {"fee_claimer": k, "label": f["label"][0], "label_source": f["label"][1], "pools": f["pools"],
+                "configs": f["configs"], "curve_complete": f["curve_complete"], "distinct_quotes": len(f["quotes"]),
+                "asset_paired_pools": sum(v for q, v in f["quotes"].items() if asset(q)),
+                "top_quotes": [[sym.get(q, q), v] for q, v in f["quotes"].most_common(8)]}
+
+    by_pools = sorted(fc.items(), key=lambda kv: -kv[1]["pools"])[:50]
+    by_asset = sorted(fc.items(), key=lambda kv: -claimer_row(*kv)["asset_paired_pools"])[:30]
+    top_configs = []
+    for r in rows[:100]:
+        name, src = label(r)
+        top_configs.append({**{k: r[k] for k in ("config", "pools", "curve_complete", "quote_mint", "quote_symbol",
+                                                  "fee_claimer", "leftover_receiver", "sample_base_mints")},
+                            "quote_class": cls.get(r["quote_mint"], ""), "label": name, "label_source": src})
+    out = {"snapshot": mix["summary"]["snapshot"],
+           "note": "asset_paired_pools = pools whose quote is neither SOL nor a stablecoin. Labels are only set where a "
+                   "public source ties the address to a platform; PartnerMetadata names are self-declared on-chain.",
+           "asset_paired_pools_total": sum(r["pools"] for r in rows if asset(r["quote_mint"])),
+           "fee_claimers_with_asset_paired_pools": sum(1 for f in fc.values() if any(asset(q) for q in f["quotes"])),
+           "top_fee_claimers_by_pools": [claimer_row(k, f) for k, f in by_pools],
+           "top_fee_claimers_by_asset_paired_pools": [claimer_row(k, f) for k, f in by_asset],
+           "top_configs_by_pools": top_configs}
+    (OUT / "meteora_dbc_platforms.json").write_text(json.dumps(out, indent=1))
+    print("asset-paired pools", out["asset_paired_pools_total"], "claimers", out["fee_claimers_with_asset_paired_pools"])
 
 
 if __name__ == "__main__":
-    main()
+    summarize() if "--summarize-only" in sys.argv else main()

@@ -75,3 +75,6 @@ Part of platform revenue buys back and burns the platform token $STONK.
 - `telegram.md`: channel facts, both messages, the bot's view, and limits on reading the group.
 - `telegram.json`: the same data in structured form.
 - `links.md`: every link found, with context, plus third-party links found during discovery.
+- `telegram-group-insights.md`: findings from the owner's export of the private group (175,060 messages), by theme, paraphrased and cited by message id.
+- `telegram_insights.py`: streams the gitignored export in `telegram-group/`, writes aggregates to `telegram-group-stats.json`, and prints redacted samples with `--sample <theme>`.
+- `telegram-group-stats.json`: aggregate counts only (volume per day, themes, questions, quote assets, moderation); no ids, names, addresses or message text.

@@ -1,0 +1,219 @@
+{
+  "platformConfig": "GuEwao9TZQDDCR8r6a1VTVDdmztLBPVUWhXf8TPNxgwS",
+  "cpswapConfig": "5MxLgy9oPdTC3YgkiePHqr3EoCRD9uLVYRQS2ANAs7wy",
+  "platformParams": {
+    "migrate_nft_info": {
+      "platform_scale": "1000000",
+      "creator_scale": "0",
+      "burn_scale": "0"
+    },
+    "fee_rate": "10000",
+    "name": "PAND432 Spike",
+    "web": "https://example.invalid/pand-432",
+    "img": "https://example.invalid/pand-432.png",
+    "creator_fee_rate": "5000",
+    "platform_vesting_scale": "0"
+  },
+  "platformConfigDecoded": {
+    "epoch": "0",
+    "platform_fee_wallet": "CS3BmN59bWPzV5bVfGPFRnnTjUr1mLBoHPkqGsNPDqvH",
+    "platform_nft_wallet": "CS3BmN59bWPzV5bVfGPFRnnTjUr1mLBoHPkqGsNPDqvH",
+    "platform_scale": "1000000",
+    "creator_scale": "0",
+    "burn_scale": "0",
+    "fee_rate": "10000",
+    "name": "PAND432 Spike",
+    "web": "https://example.invalid/pand-432",
+    "img": "https://example.invalid/pand-432.png",
+    "cpswap_config": "5MxLgy9oPdTC3YgkiePHqr3EoCRD9uLVYRQS2ANAs7wy",
+    "creator_fee_rate": "5000",
+    "transfer_fee_extension_auth": "CS3BmN59bWPzV5bVfGPFRnnTjUr1mLBoHPkqGsNPDqvH",
+    "platform_vesting_wallet": "CS3BmN59bWPzV5bVfGPFRnnTjUr1mLBoHPkqGsNPDqvH",
+    "platform_vesting_scale": "0",
+    "platform_cp_creator": "11111111111111111111111111111111",
+    "restrict_global_config": 0,
+    "restrict_curve_param": 0,
+    "curve_rule_manager": "11111111111111111111111111111111"
+  },
+  "poolA": {
+    "pool": "J5UxPr3CKcXqzDbFF5MeqZb8GTLaAphRG6zcGDFc3Mpw",
+    "baseMint": "9uVkX3WdpBNtfDyEo6MM2PmLdy8gQjxfFiv4D35QrMe4",
+    "fundRaising": "200000000",
+    "initSig": "5ZUHTx5B2CWVLsWaoFWgKZpEwxzmb5FedgVm3RN5SRCWhkqP8NeLeKRY8UEtdjEsHHVMC2gixYFA2xPkbJApJGo7"
+  },
+  "q3TradesDone": true,
+  "q3Balances": {
+    "before": {
+      "label": "after trades, before claims",
+      "pool_status": 0,
+      "real_quote": "31842093",
+      "pool_platform_fee_field": "0",
+      "pool_protocol_fee_field": "168208",
+      "platform_fee_vault": "0.000672829",
+      "creator_fee_vault": "0.000336414",
+      "creator_wsol": "0.000000000",
+      "feewallet_wsol": "0.000000000"
+    },
+    "after": {
+      "label": "after claims",
+      "pool_status": 0,
+      "real_quote": "31842093",
+      "pool_platform_fee_field": "0",
+      "pool_protocol_fee_field": "168208",
+      "platform_fee_vault": "0.000000000",
+      "creator_fee_vault": "0.000000000",
+      "creator_wsol": "0.000336414",
+      "feewallet_wsol": "0.000672829"
+    }
+  },
+  "poolT22": {
+    "pool": "ACdTH3fMyVKZv5XGY6rtc7AJrNCEprHRbNU8dWQWBmrb",
+    "baseMint": "CcpLLYWcYYmAZAVzEs5VbVZNbXUKL3iX3LGBcDLH1h2t",
+    "initSig": "4yt3zK8f3uP3RL8dEiauF42Ptcp8tvkAwm2Xv67SKxmQr9PETnF1Bz11wQgUPgPBG1pKqx1TfeNNpJaTjmrggoQj",
+    "extensions": [
+      {
+        "extension": "metadataPointer",
+        "state": {
+          "authority": null,
+          "metadataAddress": "CcpLLYWcYYmAZAVzEs5VbVZNbXUKL3iX3LGBcDLH1h2t"
+        }
+      },
+      {
+        "extension": "transferFeeConfig",
+        "state": {
+          "newerTransferFee": {
+            "epoch": 0,
+            "maximumFee": 1000000000000000,
+            "transferFeeBasisPoints": 100
+          },
+          "olderTransferFee": {
+            "epoch": 0,
+            "maximumFee": 1000000000000000,
+            "transferFeeBasisPoints": 100
+          },
+          "transferFeeConfigAuthority": "5xqNaZXX5eUi4p5HU4oz9i5QnwRNT2y6oN7yyn4qENeq",
+          "withdrawWithheldAuthority": "CS3BmN59bWPzV5bVfGPFRnnTjUr1mLBoHPkqGsNPDqvH",
+          "withheldAmount": 0
+        }
+      },
+      {
+        "extension": "tokenMetadata",
+        "state": {
+          "additionalMetadata": [],
+          "mint": "CcpLLYWcYYmAZAVzEs5VbVZNbXUKL3iX3LGBcDLH1h2t",
+          "name": "Spike T22",
+          "symbol": "SPKT",
+          "updateAuthority": "5xqNaZXX5eUi4p5HU4oz9i5QnwRNT2y6oN7yyn4qENeq",
+          "uri": "https://example.invalid/spkt.json"
+        }
+      }
+    ],
+    "curveAmountOut": "5940825604881",
+    "traderReceived": "5881417348832",
+    "buySig": "3BXrsARhD6ncCcw4U3w3jPKXED7y8hA6hsqfftWHv4KuEAh8T9G2cDVZrSwXwJaGk2odsQqECjy7j8D5Vx3hZZJj",
+    "sellSig": "2UoMv4c3wKiZRh1TtL1NhwLfn2u7qPT3chSDRe5Ayoo9t8s5Kbvs1LusVezwVtQvEqgH7zujAibRN6bM1hQ8Pvne"
+  },
+  "migration": {
+    "sig": "4gBSQaWLDJhusPeodjpENVgwkCEncija2N9rAwXJDsspJRUSLVyyom5xAtgvNRijsPgUKNjL665KwVCGRGJnYvt5",
+    "signer": "6QHxB5uiQaHbPGjvoMmUC6Uo3vTvnPU4DXXHuy2qKrvr",
+    "feeNftMint": "2GBGxG77uMG4tEufQdxvYrMZzctTf5bFRr6pgC5f147J",
+    "cpPool": "3qtQrMzWrtbGA14CU4WjtitPj1HeKKn4FyCg7XtBDXFz"
+  },
+  "q4": {
+    "cpPool": "3qtQrMzWrtbGA14CU4WjtitPj1HeKKn4FyCg7XtBDXFz",
+    "accrued": {
+      "creatorFeesMintA": "426590",
+      "creatorFeesMintB": "0",
+      "quoteIs": "A"
+    },
+    "creatorBefore": {
+      "wsol": "336414",
+      "base": "0"
+    },
+    "creatorAfter": {
+      "wsol": "763004",
+      "base": "0"
+    },
+    "feeWalletBefore": {
+      "wsol": "672829",
+      "base": "0"
+    },
+    "feeWalletAfter": {
+      "wsol": "754519",
+      "base": "283649964278"
+    },
+    "lockedBefore": {
+      "lockedLpAmount": "203420747155",
+      "claimedLpAmount": "0",
+      "unclaimedLpAmount": "0",
+      "poolId": "3qtQrMzWrtbGA14CU4WjtitPj1HeKKn4FyCg7XtBDXFz",
+      "feeNftMint": "2GBGxG77uMG4tEufQdxvYrMZzctTf5bFRr6pgC5f147J",
+      "lockedOwner": "5xqNaZXX5eUi4p5HU4oz9i5QnwRNT2y6oN7yyn4qENeq"
+    },
+    "lockedAfter": {
+      "lockedLpAmount": "203268639147",
+      "claimedLpAmount": "152108008",
+      "unclaimedLpAmount": "0",
+      "poolId": "3qtQrMzWrtbGA14CU4WjtitPj1HeKKn4FyCg7XtBDXFz",
+      "feeNftMint": "2GBGxG77uMG4tEufQdxvYrMZzctTf5bFRr6pgC5f147J",
+      "lockedOwner": "5xqNaZXX5eUi4p5HU4oz9i5QnwRNT2y6oN7yyn4qENeq"
+    }
+  },
+  "minFundRaising": {
+    "zero": null,
+    "ladder": [
+      {
+        "target_lamports": 1,
+        "mint": "8xLNmjMKTgCuBbSgbdxBZpiJSX5fA2Kdpg2nBar38jRQ",
+        "launch": "QFvs8MHMKsF7ECPc32hrjwW6ayXrtWUASL3Adq5ivkU1KzekdgzqfosKHUzonhBDKQyZvNNaYko9wSDuzwsLi1i",
+        "buy": null,
+        "status": 0,
+        "real_quote": "0"
+      },
+      {
+        "target_lamports": 1000,
+        "mint": "h9in7PEw3fCjJjAyqvNf4K4K5iVSmaCafzVXiBzn3vh",
+        "launch": "4W24BFCg27DrrQ54Zq8p1MBr9QhWzcNzesSuaEtVraBANCY9XBVJD9KpGLmRket3CcmM7cHqvyfy5kZ4t2RhWe1K",
+        "buy": "4uBncwGpbDyckykdWfHbG23DmHzQZdTuV2fHap3oDznKMFswukg4HtvP8ku7RVtWtuuJommcSJVXEnVCRJsFDqJv",
+        "status": 1,
+        "real_quote": "997",
+        "migrate": "34jn4LGjJqptsCdsWFXqRGwLFiXjcYaeMYeeuqXRXyVG6bzmGrbdRNTiQjV9vyhgZH71LRGbpvAtBkxNULBEqDLw",
+        "status_after": 2
+      }
+    ]
+  },
+  "q4b": {
+    "sig": "58i74ucfQtdk5ZaTZMHVfE2iB8pVvcMTu56j6VL28pnnCjh1u8qeMKQk1kozhhxo1upZ5CzWUJrCaoxYBDYgq1yG",
+    "before": {
+      "accruedA": "50000",
+      "creatorWsol": "763004"
+    },
+    "after": {
+      "accruedA": "0",
+      "creatorWsol": "813004"
+    }
+  },
+  "q3c": {
+    "sig": null,
+    "fees": null,
+    "before": {
+      "pool_platform_fee_field": "0",
+      "pool_protocol_fee_field": "37071",
+      "platform_fee_vault": "1859825",
+      "creator_fee_vault": "929912"
+    },
+    "after": {
+      "pool_platform_fee_field": "0",
+      "pool_protocol_fee_field": "37071",
+      "platform_fee_vault": "1859825",
+      "creator_fee_vault": "929912"
+    },
+    "poolClaim": null,
+    "afterPoolClaim": {
+      "pool_platform_fee_field": "0",
+      "pool_protocol_fee_field": "37071",
+      "platform_fee_vault": "1859825",
+      "creator_fee_vault": "929912"
+    }
+  }
+}
