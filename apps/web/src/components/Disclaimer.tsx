@@ -13,8 +13,10 @@ export function hasAcceptedDisclaimer() {
   }
 }
 
-/** Shown before a first launch: the owner's decision is a disclaimer, not a technical block. */
-export function Disclaimer({ open, onAccept, onCancel }: { open: boolean; onAccept: () => void; onCancel: () => void }) {
+/** Shown before a first launch or trade: the owner's decision is a disclaimer, not a technical block. */
+export function Disclaimer({
+  open, onAccept, onCancel, action = "launch",
+}: { open: boolean; onAccept: () => void; onCancel: () => void; action?: "launch" | "trade" }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [agreed, setAgreed] = useState(false);
 
@@ -27,7 +29,7 @@ export function Disclaimer({ open, onAccept, onCancel }: { open: boolean; onAcce
 
   return (
     <dialog ref={dialog} className={styles.dialog} onCancel={(e) => { e.preventDefault(); onCancel(); }} aria-labelledby="disclaimer-title">
-      <h2 id="disclaimer-title" className={styles.title}>Before you launch</h2>
+      <h2 id="disclaimer-title" className={styles.title}>Before you {action}</h2>
       <p>
         This launchpad is not for people in the United States, the United Kingdom, Canada, or any country under
         sanctions, and it is not offered to anyone where launching or trading these coins is not allowed.
