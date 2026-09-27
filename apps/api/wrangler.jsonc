@@ -12,9 +12,13 @@
     "WEB_ORIGIN": "http://localhost:3100",
     "LAUNCHLAB_PROGRAM": "DRay6fNdQ5J82H7xV6uq2aV3mNrUZ1J4PgSKsWgptcm6",
     "PLATFORM_CONFIG": "",
-    "SOL_GLOBAL_CONFIG": "7ZR4zD7PYfY2XxoG1Gxcy2EgEeGYrpxrwzPuwdUBssEt",
-    "GRADUATION_TARGET_LAMPORTS": "85000000000"
+    "GRADUATION_TARGET_LAMPORTS": "85000000000",
+    // The local chain's quote fixtures, priced as in tools/localnet LOCAL_QUOTE_PRICES_USD; mainnet uses "jupiter".
+    "PRICE_SOURCE": "static",
+    "QUOTE_PRICES_USD": "{\"So11111111111111111111111111111111111111112\":\"150\",\"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v\":\"1\",\"Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh\":\"180\",\"jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL\":\"2.5\"}"
   },
+  // The Quote Registry refresh (ADR 0005). Locally, `wrangler dev --test-scheduled` runs it on GET /__scheduled.
+  "triggers": { "crons": ["*/5 * * * *"] },
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
