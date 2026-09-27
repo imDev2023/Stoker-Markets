@@ -115,6 +115,62 @@ export type InitializeParams = {
   graduationTargetRaw: BN;
 };
 
+export type TradeParams = {
+  program: PublicKey;
+  trader: PublicKey;
+  pool: PublicKey;
+  globalConfig: PublicKey;
+  platformConfig: PublicKey;
+  creator: PublicKey;
+  baseMint: PublicKey;
+  quoteMint: PublicKey;
+  baseTokenProgram: PublicKey;
+  quoteTokenProgram: PublicKey;
+  traderBaseAccount: PublicKey;
+  traderQuoteAccount: PublicKey;
+  /** Quote Asset for a buy, coins for a sell. */
+  amountIn: BN;
+  /** The trade fails on-chain if it would pay out less than this. */
+  minAmountOut: BN;
+};
+
+/**
+ * `buy_exact_in` or `sell_exact_in`. The Platform Fee and Creator Fee vaults go in the remaining accounts; without them the
+ * program fails with NotEnoughRemainingAccounts (6018), so the Creator Fee could never accrue anywhere but a vault.
+ */
+export function tradeExactInIx(side: "buy" | "sell", p: TradeParams) {
+  const pdas = launchlabPdas(p.program);
+  const data = launchlabCoder.instruction.encode(side === "buy" ? "buy_exact_in" : "sell_exact_in", {
+    amount_in: p.amountIn,
+    minimum_amount_out: p.minAmountOut,
+    share_fee_rate: new BN(0),
+  });
+  return new TransactionInstruction({
+    programId: p.program,
+    data,
+    keys: [
+      meta(p.trader, true, true),
+      meta(pdas.authority),
+      meta(p.globalConfig),
+      meta(p.platformConfig),
+      meta(p.pool, false, true),
+      meta(p.traderBaseAccount, false, true),
+      meta(p.traderQuoteAccount, false, true),
+      meta(pdas.vault(p.pool, p.baseMint), false, true),
+      meta(pdas.vault(p.pool, p.quoteMint), false, true),
+      meta(p.baseMint),
+      meta(p.quoteMint),
+      meta(p.baseTokenProgram),
+      meta(p.quoteTokenProgram),
+      meta(pdas.eventAuthority),
+      meta(p.program),
+      meta(SystemProgram.programId),
+      meta(pdas.platformFeeVault(p.platformConfig, p.quoteMint), false, true),
+      meta(pdas.creatorFeeVault(p.creator, p.quoteMint), false, true),
+    ],
+  });
+}
+
 /** A standard (SPL) Launch; our curve rule for the Quote Asset is passed as the remaining account the program checks. */
 export function initializeV2Ix(p: InitializeParams) {
   const pdas = launchlabPdas(p.program);

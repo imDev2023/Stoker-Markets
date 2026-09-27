@@ -40,8 +40,8 @@ export async function prepare(form: LaunchForm) {
   return fetch(`${env().apiUrl}/v1/launches/prepare`, { method: "POST", body });
 }
 
-/** The wallet side: add the Creator's signature to the prepared transaction and send it. */
-export async function signAndSend(prepared: PreparedLaunch, signer: Keypair) {
+/** The wallet side: add the signer's signature to a transaction the API prepared and send it. */
+export async function signAndSend(prepared: { transaction: string; lastValidBlockHeight: number }, signer: Keypair) {
   const tx = VersionedTransaction.deserialize(Buffer.from(prepared.transaction, "base64"));
   tx.sign([signer]);
   const conn = connection();

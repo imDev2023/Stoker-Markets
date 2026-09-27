@@ -1,6 +1,9 @@
 import { z } from "zod";
+import { CurveProgress } from "./trades";
 
 /** The public API contract, shared by the API (which validates with it) and every client, including our web app. */
+
+export * from "./trades";
 
 const base58 = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "must be a base58 address");
 const optionalUrl = z.union([z.url({ protocol: /^https?$/ }).max(200), z.literal("")]).optional().transform((v) => v || undefined);
@@ -43,6 +46,7 @@ export const LaunchSummary = z.object({
   links: z.object({ website: z.string().nullable(), x: z.string().nullable(), telegram: z.string().nullable() }),
   /** Raw units of the Quote Asset, as a decimal string. */
   graduationTarget: z.string(),
+  curve: CurveProgress,
   createdSignature: z.string(),
   createdAt: z.iso.datetime(),
 });
