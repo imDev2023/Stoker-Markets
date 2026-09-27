@@ -26,8 +26,11 @@
   transition: border-color 120ms ease;
 }
 
-.trigger:hover:not(:disabled) {
-  border-color: var(--ink-3);
+/* Only with a real pointer, so a tap doesn't leave a hover behind; an open picker keeps its focus ring under the pointer. */
+@media (hover: hover) {
+  .trigger:hover:not(:disabled):not([aria-expanded="true"]) {
+    border-color: var(--ink-3);
+  }
 }
 
 .trigger:focus-visible,
