@@ -59,6 +59,11 @@
   text-align: right;
 }
 
+/* Wider than any "59m ago", so the columns hold still as the times tick over. */
+.table .time {
+  width: 5.5em;
+}
+
 .table a {
   color: var(--ink-2);
   text-decoration: none;

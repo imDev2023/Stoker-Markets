@@ -90,6 +90,8 @@ export function PriceChart({
   const candles = data.candles;
   useEffect(() => {
     byTime.current = new Map(candles.map((k) => [k.time, k]));
+    // TradingView's attribution logo stays with the drawn chart, not floating in an empty one.
+    chart.current?.applyOptions({ layout: { attributionLogo: candles.length > 0 } });
     series.current?.setData(candles.map((k) => ({ time: k.time as UTCTimestamp, open: k.open, high: k.high, low: k.low, close: k.close })));
     // A new interval opens on its latest candles; live updates of the same interval leave a trader's scroll and zoom alone.
     if (drawnInterval.current !== data.interval) {

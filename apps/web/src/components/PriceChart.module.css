@@ -85,8 +85,10 @@
   transition: background-color 120ms ease, color 120ms ease;
 }
 
-.intervals button:hover {
-  color: var(--ink);
+@media (hover: hover) {
+  .intervals button:hover {
+    color: var(--ink);
+  }
 }
 
 .intervals button[aria-pressed="true"] {
@@ -156,5 +158,11 @@
     flex: 1;
     min-width: 0;
     padding: 0;
+  }
+  /* Four prices don't fit one phone line; two rows of two keep them in step instead of wrapping one off. */
+  .ohlc {
+    display: grid;
+    grid-template-columns: repeat(2, max-content);
+    column-gap: 24px;
   }
 }
