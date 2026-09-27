@@ -3,8 +3,10 @@
 import { test as setup } from "@playwright/test";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
-  claimViaApi, coinBalance, fundedKeypair, fundQuote, graduate, launchViaApi, SEED_CREATOR, SEED_HOLDER, tradeViaApi, type LaunchFields,
+  claimViaApi, coinBalance, fund, fundedKeypair, fundQuote, graduate, launchViaApi, payAirdropViaApi, SEED_CREATOR, SEED_HOLDER, tradeViaApi,
+  type LaunchFields,
 } from "./fixtures";
+import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING } from "./seedData";
 
 export const SEEDED: LaunchFields[] = [
   { name: "Harbor Lights", symbol: "HRBR", description: "A coin for the night shift at the port." },
@@ -34,6 +36,12 @@ const TRADES = [
 ] as const;
 
 setup("seed the board", async () => {
+  // Two coins launched with a First Buy and an Airdrop, one still to send and one paid, by a Creator of their own so the
+  // seed Creator's page stays as it is. They go first, so the rest of the board and its latest coin are unchanged.
+  await fund(AIRDROP_CREATOR.publicKey, 20);
+  await launchViaApi(AIRDROP_CREATOR, AIRDROP_SENDING);
+  await payAirdropViaApi(AIRDROP_CREATOR, await launchViaApi(AIRDROP_CREATOR, AIRDROP_PAID));
+
   // One fixed Creator, so the visual tests can open the Creator Fee page as that Creator.
   const creator = await fundedKeypair(20, SEED_CREATOR);
   const mints = new Map<string, string>();
