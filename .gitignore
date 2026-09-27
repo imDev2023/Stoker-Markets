@@ -34,3 +34,6 @@ tools/localnet/.ledger/
 *.tsbuildinfo
 .dev.vars
 next-env.d.ts
+
+# Agent worktrees
+.claude/worktrees/
