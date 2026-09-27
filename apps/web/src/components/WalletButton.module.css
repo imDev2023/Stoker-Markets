@@ -2,6 +2,27 @@
   position: relative;
 }
 
+/* The menu opens under the button's right edge, so an inline button keeps to the right of its row even when it wraps. */
+.inline {
+  margin-left: auto;
+}
+
+@media (max-width: 560px) {
+  .inline {
+    width: 100%;
+  }
+  .inline .connect,
+  .inline .connected {
+    width: 100%;
+    height: 48px;
+    justify-content: center;
+  }
+  .inline .menu {
+    left: 0;
+    min-width: 0;
+  }
+}
+
 .connect,
 .connected {
   display: inline-flex;

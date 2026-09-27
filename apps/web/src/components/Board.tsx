@@ -9,9 +9,10 @@ import styles from "./Board.module.css";
 
 const REFRESH_MS = 4_000;
 
-export function Board({ initial }: { initial: LaunchSummary[] }) {
+/** `renderedAt` is the server's clock at render, so "launched Xs ago" hydrates to the same text the server sent. */
+export function Board({ initial, renderedAt }: { initial: LaunchSummary[]; renderedAt: number }) {
   const [launches, setLaunches] = useState(initial);
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(renderedAt);
 
   useEffect(() => {
     let stopped = false;
@@ -24,6 +25,7 @@ export function Board({ initial }: { initial: LaunchSummary[] }) {
       }
       if (!stopped) setNow(Date.now());
     };
+    setNow(Date.now());
     const id = setInterval(tick, REFRESH_MS);
     return () => {
       stopped = true;

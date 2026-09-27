@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --port 3100",
     "build": "next build",
-    "typecheck": "tsc -p . --noEmit",
+    "typecheck": "next typegen && tsc -p . --noEmit",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },

@@ -6,7 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { shortAddress } from "@/lib/format";
 import styles from "./WalletButton.module.css";
 
-export function WalletButton() {
+/** `inline` sits inside page content: it fills the width on phones, like the page's other main actions. */
+export function WalletButton({ variant = "header" }: { variant?: "header" | "inline" }) {
   const { wallets, wallet, publicKey, connecting, select, connect, disconnect } = useWallet();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
@@ -34,9 +35,11 @@ export function WalletButton() {
     }
   }, [pending, wallet, publicKey, connect]);
 
+  const wrap = `${styles.wrap} ${styles[variant]}`;
+
   if (publicKey) {
     return (
-      <div className={styles.wrap} ref={menu}>
+      <div className={wrap} ref={menu}>
         <button type="button" className={styles.connected} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
           {wallet?.adapter.icon && <img src={wallet.adapter.icon} alt="" width={18} height={18} />}
           <span className="mono">{shortAddress(publicKey.toBase58())}</span>
@@ -53,7 +56,7 @@ export function WalletButton() {
   }
 
   return (
-    <div className={styles.wrap} ref={menu}>
+    <div className={wrap} ref={menu}>
       <button type="button" className={styles.connect} onClick={() => setOpen((o) => !o)} aria-expanded={open} disabled={connecting}>
         {connecting ? "Connecting…" : "Connect wallet"}
       </button>
