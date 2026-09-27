@@ -12,6 +12,8 @@ export type Bindings = {
   LAUNCHLAB_PROGRAM: string;
   CPMM_PROGRAM: string;
   PLATFORM_CONFIG: string;
+  /** The Platform Lookup Table, owned by the operations wallet; launches with a first buy only fit a transaction with it. */
+  PLATFORM_LOOKUP_TABLE: string;
   GRADUATION_TARGET_LAMPORTS: string;
   /** "jupiter" on mainnet; "static" reads QUOTE_PRICES_USD. */
   PRICE_SOURCE: "jupiter" | "static";
@@ -29,6 +31,11 @@ export type Bindings = {
   ALERT_WEBHOOK_URL?: string;
   /** Bearer token for the operator endpoints; they refuse every request without it. */
   OPERATOR_TOKEN?: string;
+  /**
+   * Derives each launch's mint key from a nonce stored with its draft, so a retry signs for the same coin address and
+   * can never create a second coin. A secret: anyone holding it could sign for the address of a coin not launched yet.
+   */
+  MINT_KEY_SECRET: string;
   HYPERDRIVE: Hyperdrive;
   METADATA_BUCKET: R2Bucket;
 };
@@ -43,10 +50,14 @@ export type Config = {
   launchlab: PublicKey;
   cpmm: PublicKey;
   platformConfig: PublicKey;
+  lookupTable: PublicKey;
   graduationTargetLamports: BN;
   graduationAlertAfterSeconds: number;
   alertWebhookUrl: string | null;
+  mintKeySecret: string;
 };
+
+const MINT_KEY_SECRET_MIN_LENGTH = 32;
 
 /**
  * Every coin's metadata URL is built from this address and written on-chain at launch, where nobody can change it
@@ -63,6 +74,12 @@ function publicApiUrl(raw: string, cluster: Cluster) {
   return raw.replace(/\/$/, "");
 }
 
+function mintKeySecret(raw: string | undefined) {
+  if (typeof raw !== "string" || raw.length < MINT_KEY_SECRET_MIN_LENGTH)
+    throw new Error(`MINT_KEY_SECRET must be a secret of at least ${MINT_KEY_SECRET_MIN_LENGTH} characters`);
+  return raw;
+}
+
 /** Parses and checks the Worker's configuration once per request, failing loudly on a missing value. */
 export function config(env: Bindings): Config {
   const key = (name: keyof Bindings) => {
@@ -77,9 +94,11 @@ export function config(env: Bindings): Config {
     launchlab: key("LAUNCHLAB_PROGRAM"),
     cpmm: key("CPMM_PROGRAM"),
     platformConfig: key("PLATFORM_CONFIG"),
+    lookupTable: key("PLATFORM_LOOKUP_TABLE"),
     graduationTargetLamports: new BN(env.GRADUATION_TARGET_LAMPORTS),
     graduationAlertAfterSeconds: seconds(env.GRADUATION_ALERT_AFTER_SECONDS, "GRADUATION_ALERT_AFTER_SECONDS"),
     alertWebhookUrl: env.ALERT_WEBHOOK_URL ? new URL(env.ALERT_WEBHOOK_URL).toString() : null,
+    mintKeySecret: mintKeySecret(env.MINT_KEY_SECRET),
   };
 }
 

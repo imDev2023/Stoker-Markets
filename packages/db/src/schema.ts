@@ -196,3 +196,50 @@ export const operatorAlerts = pgTable(
   },
   (t) => [primaryKey({ columns: [t.kind, t.subject] })],
 );
+
+/**
+ * What a Creator asked for when a launch was prepared, kept so a retry rebuilds the same launch for the same coin
+ * address and so can never create a second coin. One row per prepared coin, whether or not it ever launched.
+ */
+export const launchDrafts = pgTable(
+  "launch_drafts",
+  {
+    mint: text("mint").primaryKey(),
+    creator: text("creator").notNull(),
+    /** With the API's MINT_KEY_SECRET this derives the mint key, so the key itself is never stored. */
+    mintKeyNonce: text("mint_key_nonce").notNull(),
+    quoteMint: text("quote_mint").notNull(),
+    globalConfig: text("global_config").notNull(),
+    /** Raw units of the Quote Asset, fixed from its price when the launch was first prepared; a retry keeps it. */
+    graduationTarget: numeric("graduation_target", { precision: 40, scale: 0 }).notNull(),
+    /** The SOL, in lamports, that Graduation Target was worth then. */
+    graduationTargetLamports: numeric("graduation_target_lamports", { precision: 40, scale: 0 }).notNull(),
+    /** Quote Asset the Creator spends on the first buy, raw units; null without one. */
+    firstBuy: numeric("first_buy", { precision: 40, scale: 0 }),
+    /** Newest transaction of the Creator's coin account already scanned for airdrop payments. */
+    airdropScannedUntil: text("airdrop_scanned_until"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("launch_drafts_creator_idx").on(t.creator)],
+);
+
+/** One row per wallet an airdrop pays: what it gets, and whether it has been paid. */
+export const airdropRecipients = pgTable(
+  "airdrop_recipients",
+  {
+    mint: text("mint").notNull(),
+    wallet: text("wallet").notNull(),
+    /** Order in the Creator's list. */
+    position: integer("position").notNull(),
+    /** Coins, raw units. */
+    amount: numeric("amount", { precision: 40, scale: 0 }).notNull(),
+    /**
+     * The last block height at which a transaction already handed out to pay this wallet can still land. No new one is
+     * handed out until the chain has passed it, so a wallet is never paid twice.
+     */
+    sendableUntil: bigint("sendable_until", { mode: "number" }),
+    paidSignature: text("paid_signature"),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+  },
+  (t) => [primaryKey({ columns: [t.mint, t.wallet] })],
+);

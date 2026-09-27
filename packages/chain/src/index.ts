@@ -14,12 +14,19 @@ export {
   prepareCreatorFeeClaim, readCreatorFeeVaults, NothingToClaimError,
   type CreatorFeeClaimRequest, type CreatorFeeVault, type PreparedCreatorFeeClaim,
 } from "./claim";
-export { prepareLaunch, type LaunchRequest, type PreparedLaunch } from "./launch";
+export {
+  firstBuyTakesCurve, prepareLaunch, quoteFirstBuy,
+  type FirstBuyQuote, type LaunchPairing, type LaunchRequest, type PreparedLaunch,
+} from "./launch";
+export {
+  decodeTokenTransfers, planAirdrop, prepareAirdrop,
+  type AirdropRecipient, type AirdropRequest, type PreparedAirdrop, type TokenTransfer,
+} from "./airdrop";
+export { loadLookupTable, platformLookupAddresses, type LookupQuote } from "./lookup";
 export {
   curvePrice, initialCurveReserves, minAmountOut, quoteTrade,
   type CurveReserves, type FeeRates, type Side, type TradeFees, type TradeQuote,
 } from "./curve";
-export { loadCurve, prepareTrade, type Curve, type CurveStatus, type PreparedTrade, type TradeRequest } from "./trade";
 export {
   graduationPoolAddress, loadPool, poolPrice, poolSides, poolSwap, preparePoolTrade, quotePoolTrade,
   type Pool, type PoolFeeRates, type PoolSwap, type PoolToken, type PoolTradeQuote, type PoolTradeRequest,
@@ -31,3 +38,7 @@ export {
   type RawTransaction, type ChainEvent, type LaunchCreated, type TradeExecuted, type CreatorFeeClaimed, type Graduated,
   type PoolSwapExecuted,
 } from "./decode";
+export {
+  loadCurve, loadFeeRates, prepareTrade, tradeInstructions,
+  type Curve, type CurveAccounts, type CurveStatus, type PreparedTrade, type TradeRequest,
+} from "./trade";

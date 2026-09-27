@@ -31,6 +31,14 @@ A fact shown next to a Quote Asset that a Creator or trader should know before u
 Labels inform rather than block.
 _Avoid_: Warning, verification status, badge
 
+**First Buy**:
+The Creator's own buy of their coin, made inside the launch transaction right after the curve is created, so no other trade can come before it.
+_Avoid_: Dev buy, initial buy, snipe
+
+**Airdrop**:
+Part of a Creator's First Buy given to a list of wallets right after launch, paid from the Creator's wallet in as many transactions as the list needs.
+_Avoid_: Holder Reward (paid from Reward Tax), distribution
+
 **Asset Pairing**:
 Letting a Creator choose any supported Quote Asset instead of only SOL.
 _Avoid_: Pair with anything, multi-quote

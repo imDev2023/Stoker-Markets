@@ -1,6 +1,7 @@
 // The whole system as a black box for tests: a throwaway Postgres, a fresh local chain with the real Raydium programs,
 // the API Worker under `wrangler dev`, and optionally the web app under `next dev`.
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { appendFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { createServer as createHttpServer } from "node:http";
 import { createServer } from "node:net";
@@ -186,6 +187,7 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       PUBLIC_API_URL: apiUrl,
       WEB_ORIGIN: webUrl ?? "http://127.0.0.1",
       PLATFORM_CONFIG: platform.platformConfig,
+      PLATFORM_LOOKUP_TABLE: platform.lookupTable,
       GRADUATION_TARGET_LAMPORTS: platform.graduationTargetLamports,
       PRICE_SOURCE: "static",
       QUOTE_PRICES_USD: JSON.stringify(LOCAL_QUOTE_PRICES_USD),
@@ -194,6 +196,7 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       HELIUS_WEBHOOK_SECRET: WEBHOOK_SECRET,
       OPERATOR_TOKEN,
       ALERT_WEBHOOK_URL: sink.url,
+      MINT_KEY_SECRET: randomBytes(32).toString("hex"),
     };
     const api = await startApi({ port: apiPort, vars, databaseUrl: pg.url });
     cleanups.push(api.stop);
