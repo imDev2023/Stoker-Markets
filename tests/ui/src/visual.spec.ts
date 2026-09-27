@@ -42,9 +42,42 @@ async function mintOf(name: string) {
 
 test("board", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "New coins" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Coins", exact: true })).toBeVisible();
   await expect(page.locator("ul li img").first()).toHaveJSProperty("complete", true);
   await snap(page, "board.png");
+});
+
+test("board sorted by market cap, stablecoin pairs only", async ({ page }) => {
+  await page.goto("/?sort=market_cap&category=stablecoin");
+  await expect(page.getByRole("button", { name: "Market cap", pressed: true })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Coins" }).getByRole("listitem").first()).toContainText("USDC");
+  await expect(page.locator("ul li img").first()).toHaveJSProperty("complete", true);
+  await snap(page, "board-filtered.png");
+});
+
+test("board Quote Asset filter, open", async ({ page }) => {
+  await page.goto("/?sort=trending");
+  const trigger = page.getByRole("button", { name: /^Quote Asset: / });
+  await trigger.click();
+  const list = page.getByRole("listbox", { name: "Quote Assets" });
+  await expect(list.getByRole("option").first()).toHaveText("All Quote Assets");
+  await page.waitForLoadState("networkidle");
+  await page.evaluate(() => document.fonts.ready);
+  await expectNoHorizontalOverflow(page);
+  await expectNoTruncatedText(page);
+  // Masks paint over everything, the open list included, so only the button and its list are captured, with nothing to mask.
+  // The button is brought up below the sticky header so the whole list is in view.
+  await trigger.evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 96));
+  const button = (await trigger.boundingBox())!;
+  const popover = (await list.locator("..").boundingBox())!;
+  // Padded so the focus ring and the list's shadow show whole, and clamped to the viewport.
+  const pad = 12;
+  const viewport = page.viewportSize()!;
+  const left = Math.max(0, Math.min(button.x, popover.x) - pad);
+  const right = Math.min(viewport.width, Math.max(button.x + button.width, popover.x + popover.width) + pad);
+  const top = button.y - pad;
+  const clip = { x: left, y: top, width: right - left, height: popover.y + popover.height + pad * 2 - top };
+  await expect(page).toHaveScreenshot("board-quote-filter.png", { clip });
 });
 
 test("coin page", async ({ page }) => {

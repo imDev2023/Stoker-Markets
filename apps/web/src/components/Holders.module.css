@@ -1,0 +1,108 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.note {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 0.875rem;
+}
+
+.creator {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--fog);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.sold {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1.5em minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.875rem;
+}
+
+.row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.rank {
+  color: var(--ink-3);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.who a {
+  color: var(--ink-2);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line);
+}
+
+@media (hover: hover) {
+  .who a:hover {
+    color: var(--cobalt);
+    border-color: var(--cobalt);
+  }
+}
+
+.program {
+  font-weight: 600;
+}
+
+.badge {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--plate);
+  color: var(--cobalt-strong);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.share {
+  text-align: right;
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 16px;
+  }
+}

@@ -43,7 +43,7 @@ async function coinsHeld(owner: PublicKey, mint: string) {
 test("a trader buys, then sells half, and sees both in the history and the chart", async ({ page, wallet }) => {
   const mint = await freshCoin("BUYS");
   await openConnected(page, mint);
-  await expect(page.getByText("No trades yet", { exact: true })).toBeVisible();
+  await expect(page.getByText("No trades yet. Be the first to buy.", { exact: true })).toBeVisible();
 
   // Buy: a preset fills the amount, the quote shows every fee, and the disclaimer comes before the first review.
   await panel(page).getByRole("button", { name: "0.1 SOL" }).click();
@@ -74,7 +74,7 @@ test("a trader buys, then sells half, and sees both in the history and the chart
   const history = page.getByRole("region", { name: "Trades", exact: true });
   await expect(history.getByRole("row")).toHaveCount(2);
   await expect(history.getByRole("row").nth(1)).toContainText("Buy");
-  await expect(page.getByText("No trades yet", { exact: true })).toBeHidden();
+  await expect(page.getByText("No trades yet. Be the first to buy.", { exact: true })).toBeHidden();
   await expect(page.getByText("Market cap")).toBeVisible();
 
   // Sell half: the percentage presets come from the balance the wallet holds.
