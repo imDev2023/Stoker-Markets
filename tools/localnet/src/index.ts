@@ -15,7 +15,8 @@ import {
 import BN from "bn.js";
 import bs58 from "bs58";
 import {
-  createPlatformConfigIx, launchlabCoder, launchlabPdas, prepareMigration, programsFor, sharedMigrationAccounts, updatePlatformConfigIx,
+  createPlatformConfigIx, launchlabCoder, launchlabPdas, platformLookupAddresses, prepareMigration, programsFor, sharedMigrationAccounts,
+  updatePlatformConfigIx, WSOL_MINT,
 } from "@launchpad/chain";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -61,6 +62,8 @@ export type LocalnetState = {
   launchlab: string;
   platformConfig: string;
   solGlobalConfig: string;
+  /** The Platform Lookup Table, which keeps a launch with a first buy within one transaction. */
+  lookupTable: string;
   admin: string;
   operationsWallet: string;
   graduationTargetLamports: string;
@@ -336,11 +339,15 @@ export async function bootstrapPlatform(connection: Connection, rpcUrl: string, 
     ], [admin]);
     await createMigrationLookupTable(connection, platformConfig);
   }
+  // SOL first: a SOL launch with a First Buy only fits a transaction with SOL's accounts in the table.
+  const quotes = [WSOL_MINT, ...localQuoteMints()].map((quoteMint) => ({ quoteMint, globalConfig: launchlabPdas(program).globalConfig(quoteMint) }));
+  const lookupTable = await ensureLookupTable(connection, operations, platformLookupAddresses(program, platformConfig, quotes));
   return {
     rpcUrl,
     launchlab: program.toBase58(),
     platformConfig: platformConfig.toBase58(),
     solGlobalConfig: SOL_GLOBAL_CONFIG.toBase58(),
+    lookupTable: lookupTable.toBase58(),
     admin: admin.publicKey.toBase58(),
     operationsWallet: operations.publicKey.toBase58(),
     graduationTargetLamports: graduationTargetLamports.toString(),
@@ -455,4 +462,42 @@ export function startCrank(connection: Connection, platformConfig: PublicKey, op
     stopped = true;
     clearTimeout(timer);
   };
+}
+
+const LOOKUP_EXTEND_BATCH = 20;
+
+/**
+ * The Platform Lookup Table, owned by the operations wallet (ADR 0004), holding at least `addresses`: the one this
+ * wallet already owns, extended with anything missing, or a new one. Launch transactions use it; it is ours, unlike the
+ * migrate wallet's table above, which stands in for Raydium's crank. Returns once every address is usable, which the
+ * validator allows once the last extension is rooted.
+ */
+export async function ensureLookupTable(connection: Connection, authority: Keypair, addresses: PublicKey[]): Promise<PublicKey> {
+  const owned = await connection.getProgramAccounts(AddressLookupTableProgram.programId, {
+    commitment: "confirmed",
+    filters: [{ memcmp: { offset: LOOKUP_TABLE_AUTHORITY_OFFSET, bytes: authority.publicKey.toBase58() } }],
+  });
+  let table = owned[0]?.pubkey;
+  if (!table) {
+    const [create, address] = AddressLookupTableProgram.createLookupTable({
+      authority: authority.publicKey,
+      payer: authority.publicKey,
+      recentSlot: await connection.getSlot("finalized"),
+    });
+    await send(connection, [create], [authority]);
+    table = address;
+  }
+  const current = (await connection.getAddressLookupTable(table, { commitment: "confirmed" })).value;
+  const have = new Set(current?.state.addresses.map((a) => a.toBase58()));
+  const missing = addresses.filter((a) => !have.has(a.toBase58()));
+  for (let i = 0; i < missing.length; i += LOOKUP_EXTEND_BATCH) {
+    await send(connection, [
+      AddressLookupTableProgram.extendLookupTable({
+        authority: authority.publicKey, payer: authority.publicKey, lookupTable: table, addresses: missing.slice(i, i + LOOKUP_EXTEND_BATCH),
+      }),
+    ], [authority]);
+  }
+  const extended = (await connection.getAddressLookupTable(table, { commitment: "confirmed" })).value!;
+  while ((await connection.getSlot("finalized")) <= Number(extended.state.lastExtendedSlot)) await new Promise((r) => setTimeout(r, 250));
+  return table;
 }

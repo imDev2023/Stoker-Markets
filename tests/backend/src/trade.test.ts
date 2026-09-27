@@ -148,14 +148,14 @@ describe("curve progress, trade history and candles", () => {
 
     const trader = await fundedWallet();
     const buy = await trade(trader, mint, "buy", SOL(0.25));
-    expect(await (await deliverWebhook([buy.signature])).json()).toEqual({ launched: 0, traded: 1, claimed: 0, graduated: 0 });
+    expect(await (await deliverWebhook([buy.signature])).json()).toEqual({ launched: 0, traded: 1, claimed: 0, graduated: 0, airdropped: 0 });
     let curve = (await getLaunch(mint)).launch!.curve;
     expect(curve).toEqual({ status: "live", raised: (await poolState(pool)).real_quote.toString(), price: buy.quote.priceAfter, completedAt: null });
 
     const sell = await trade(trader, mint, "sell", (await coinsOf(mint, trader)) / 4n);
     // The fast path the web app uses after a trade confirms indexes it the same way.
     const fast = await fetch(`${env().apiUrl}/v1/transactions/${sell.signature}`, { method: "POST" });
-    expect(await fast.json()).toEqual({ launched: 0, traded: 1, claimed: 0, graduated: 0 });
+    expect(await fast.json()).toEqual({ launched: 0, traded: 1, claimed: 0, graduated: 0, airdropped: 0 });
     curve = (await getLaunch(mint)).launch!.curve;
     expect(curve.raised).toBe((await poolState(pool)).real_quote.toString());
     expect(curve.price).toBe(sell.quote.priceAfter);
@@ -191,11 +191,11 @@ describe("curve progress, trade history and candles", () => {
     const trader = await fundedWallet();
     const buy = await trade(trader, mint, "buy", SOL(0.1));
     const sell = await trade(trader, mint, "sell", (await coinsOf(mint, trader)) / 2n);
-    expect(await (await deliverWebhook([sell.signature, buy.signature])).json()).toEqual({ launched: 0, traded: 2, claimed: 0, graduated: 0 });
+    expect(await (await deliverWebhook([sell.signature, buy.signature])).json()).toEqual({ launched: 0, traded: 2, claimed: 0, graduated: 0, airdropped: 0 });
     const latest = (await getLaunch(mint)).launch!.curve;
     expect(latest.price).toBe(sell.quote.priceAfter);
 
-    expect(await (await deliverWebhook([buy.signature, sell.signature, buy.signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 0 });
+    expect(await (await deliverWebhook([buy.signature, sell.signature, buy.signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 0, airdropped: 0 });
     expect(await trades(mint)).toHaveLength(2);
     expect((await getLaunch(mint)).launch!.curve).toEqual(latest);
   });
@@ -227,7 +227,7 @@ describe("curve progress, trade history and candles", () => {
       program, curve, trader: other.publicKey, side: "buy", amountIn: new BN(SOL(0.01).toString()), minAmountOut: new BN(0),
     });
     const signature = await signAndSend(p, other);
-    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 0 });
+    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 0, airdropped: 0 });
     expect(await trades(mint.publicKey.toBase58())).toEqual([]);
   });
 });
