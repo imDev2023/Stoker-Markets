@@ -55,3 +55,32 @@
 .note {
   color: var(--ink-3);
 }
+
+.note a {
+  color: var(--ink-2);
+}
+
+.note a:hover {
+  color: var(--cobalt);
+}
+
+.fillDone {
+  background: var(--verified);
+}
+
+.graduated {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--verified-bg);
+  color: var(--verified);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.graduated::before {
+  content: "✓";
+}

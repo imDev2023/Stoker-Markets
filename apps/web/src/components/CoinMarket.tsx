@@ -12,7 +12,10 @@ import styles from "./CoinMarket.module.css";
 
 const REFRESH_MS = 4_000;
 
-/** The live part of a coin page: curve progress, chart, trades and the trade panel, refreshed from the indexed trades. */
+/**
+ * The live part of a coin page: curve progress, chart, trades and the trade panel, refreshed from the indexed trades.
+ * After Graduation the same page trades in the coin's Raydium pool.
+ */
 export function CoinMarket({
   initial, platform, initialTrades, initialCandles, renderedAt,
 }: {
@@ -30,6 +33,8 @@ export function CoinMarket({
   const [candles, setCandles] = useState(initialCandles);
   const [now, setNow] = useState(renderedAt);
   const quote = quoteTicker(launch.quote);
+  // After Graduation the price is the pool's, once it has traded there.
+  const price = launch.graduation?.price ?? launch.curve.price;
 
   // Candles for an interval the trader has since switched away from are dropped.
   const loadCandles = useCallback(async (i: CandleInterval) => {
@@ -63,15 +68,15 @@ export function CoinMarket({
     <div className={styles.market}>
       <div className={styles.main}>
         <div className={styles.chart}>
-          <PriceChart data={candles} interval={candleInterval} onIntervalChange={changeInterval} price={launch.curve.price} quote={quote} />
+          <PriceChart data={candles} interval={candleInterval} onIntervalChange={changeInterval} price={price} quote={quote} />
         </div>
         <div className={styles.history}>
-          <TradeHistory trades={trades} symbol={launch.symbol} quote={launch.quote} platform={platform} now={now} />
+          <TradeHistory trades={trades} symbol={launch.symbol} quote={launch.quote} platform={platform} now={now} graduation={launch.graduation} />
         </div>
       </div>
       <div className={styles.side}>
         <div className={styles.progress}>
-          <CurveProgress launch={launch} />
+          <CurveProgress launch={launch} platform={platform} />
         </div>
         <div className={styles.trade}>
           <TradePanel launch={launch} platform={platform} onTraded={() => void refresh()} />

@@ -110,7 +110,7 @@ test("a buy that takes the rest of the curve costs only what is left and closes 
   await review(page).getByRole("button", { name: "Sign and buy" }).click();
 
   await expect(panel(page).getByRole("status")).toContainText(/^Bought [\d,]+ SOLD\./);
-  await expect(panel(page).getByText(/The curve sold out, so this coin no longer trades here/)).toBeVisible();
+  await expect(panel(page).getByText(/Trading pauses while Raydium moves the coin to its pool/)).toBeVisible();
   await expect(panel(page).getByRole("button", { name: /^Review/ })).toHaveCount(0);
   await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "100");
   expect(wallet.requests).toHaveLength(1);

@@ -1,7 +1,9 @@
 // Every screen at desktop and phone width, light and dark, against committed baselines. Values that change from run to
 // run (addresses, times, costs) are masked; everything else must match to the pixel.
 import type { Page } from "@playwright/test";
-import { COIN_PNG, expect, expectNoHorizontalOverflow, expectNoTruncatedText, listLaunches, SEED_CREATOR, test } from "./fixtures";
+import {
+  COIN_PNG, expect, expectNoHorizontalOverflow, expectNoTruncatedText, giveCoins, listLaunches, SEED_CREATOR, SEED_HOLDER, test,
+} from "./fixtures";
 import { installTestWallet, TEST_WALLET_NAME } from "./wallet";
 
 // The chart's time axis and candle spacing follow the clock, so its canvases are masked like any other time.
@@ -94,9 +96,9 @@ test("trade panel, buy and sell, quote and review", async ({ page, wallet }) => 
   await expect(panel).toHaveScreenshot("trade-sell-over-balance.png", { mask: tradedDynamic(page) });
 });
 
-test("trade panel after the curve sold out", async ({ page }) => {
+test("trade panel after the curve sold out, while Raydium moves the coin to its pool", async ({ page }) => {
   await page.goto(`/coin/${await mintOf("Signal Fire")}`);
-  await expect(page.getByText(/The curve sold out, so this coin no longer trades here/)).toBeVisible();
+  await expect(page.getByText(/Trading pauses while Raydium moves the coin to its pool/)).toBeVisible();
   await snap(page, "coin-sold-out.png", tradedDynamic);
 });
 
@@ -106,6 +108,32 @@ test("coin page paired with USDC, after a buy", async ({ page }) => {
   await expect(page.getByRole("region", { name: "Trades", exact: true }).getByRole("row")).toHaveCount(2);
   await expect(page.getByText("Market cap")).toBeVisible();
   await snap(page, "coin-usdc.png", tradedDynamic);
+});
+
+test("coin page after graduation", async ({ page }) => {
+  await page.goto(`/coin/${await mintOf("Cap and Gown")}`);
+  await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
+  await expect(page.getByText("Graduated to its Raydium pool")).toBeVisible();
+  await expect(page.getByText("Market cap")).toBeVisible();
+  await snap(page, "coin-graduated.png", tradedDynamic);
+});
+
+test("trade panel after graduation, with the pool's fees", async ({ page, wallet }) => {
+  const mint = await mintOf("Cap and Gown");
+  // Coins to sell, handed over rather than bought, so the pool and its history look the same in every project.
+  await giveCoins(SEED_HOLDER, wallet.keypair.publicKey, mint, 1_000_000n * 1_000_000n);
+  await page.goto(`/coin/${mint}`);
+  const panel = page.getByRole("region", { name: /^Trade( |$)/ });
+  await panel.getByRole("button", { name: "Connect wallet" }).click();
+  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await panel.getByRole("button", { name: "0.5 SOL" }).click();
+  await expect(panel.getByText("Raydium pool fee")).toBeVisible();
+  await expect(panel).toHaveScreenshot("trade-pool-buy-quote.png", { mask: tradedDynamic(page) });
+
+  await panel.getByRole("group", { name: "Buy or sell" }).getByRole("button", { name: "Sell" }).click();
+  await panel.getByRole("button", { name: "50%", exact: true }).click();
+  await expect(panel.getByText("Raydium pool fee")).toBeVisible();
+  await expect(panel).toHaveScreenshot("trade-pool-sell-quote.png", { mask: tradedDynamic(page) });
 });
 
 test("coin not found", async ({ page }) => {
