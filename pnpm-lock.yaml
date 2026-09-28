@@ -143,6 +143,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@launchpad/contract':
+        specifier: workspace:*
+        version: link:../contract
       drizzle-orm:
         specifier: ^0.45.3
         version: 0.45.3(@cloudflare/workers-types@5.20260927.1)(postgres@3.4.9)

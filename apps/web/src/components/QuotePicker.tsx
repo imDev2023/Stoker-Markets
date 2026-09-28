@@ -3,6 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { QuoteAsset } from "@launchpad/contract";
 import { formatAmount, quoteTicker } from "@/lib/format";
+import { QuoteLabelChips } from "./QuoteLabels";
 import { QuoteLogo } from "./QuoteLogo";
 import styles from "./QuotePicker.module.css";
 
@@ -160,6 +161,7 @@ export function QuotePicker({ quotes, value, onChange }: { quotes: QuoteAsset[];
                     {distinctName(q) && <span className={styles.name}>{distinctName(q)}</span>}
                   </span>
                   {q.launchable ? null : <span className={styles.reason}>{q.reason}</span>}
+                  <QuoteLabelChips labels={q.labels} />
                 </span>
                 {q.launchable && <span className={`mono ${styles.target}`}>{graduationAmount(q)}</span>}
               </li>

@@ -150,6 +150,28 @@
   font-weight: 600;
 }
 
+.quoteLabels {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+
+.quoteLabelsTitle {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.quoteLabelsNote {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--ink-3);
+}
+
 .back {
   align-self: flex-start;
   color: var(--ink-2);

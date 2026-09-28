@@ -2,14 +2,21 @@
   "name": "@launchpad/db",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts", "./migrate": "./src/migrate.ts" },
+  "exports": {
+    ".": "./src/index.ts",
+    "./migrate": "./src/migrate.ts"
+  },
   "scripts": {
     "typecheck": "tsc -p .",
     "generate": "drizzle-kit generate"
   },
   "dependencies": {
+    "@launchpad/contract": "workspace:*",
     "drizzle-orm": "^0.45.3",
     "postgres": "^3.4.9"
   },
-  "devDependencies": { "@types/node": "^24.0.0", "drizzle-kit": "^0.31.11" }
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "drizzle-kit": "^0.31.11"
+  }
 }

@@ -12,7 +12,7 @@ import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import BN from "bn.js";
 import postgres from "postgres";
 import { runMigrations } from "@launchpad/db/migrate";
-import { bootstrapPlatform, LOCAL_QUOTE_PRICES_USD, localnetKeys, startLocalnet, type LocalnetState } from "@launchpad/localnet";
+import { bootstrapPlatform, LOCAL_QUOTE_PRICES_USD, LOCAL_QUOTE_TOKEN_LIST, localnetKeys, startLocalnet, type LocalnetState } from "@launchpad/localnet";
 import { createSolRoutes, type SolRoutes } from "@launchpad/localnet/routes";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -245,6 +245,7 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       GRADUATION_TARGET_LAMPORTS: platform.graduationTargetLamports,
       PRICE_SOURCE: "static",
       QUOTE_PRICES_USD: JSON.stringify(LOCAL_QUOTE_PRICES_USD),
+      QUOTE_TOKEN_LIST: JSON.stringify(LOCAL_QUOTE_TOKEN_LIST),
       OPERATIONS_KEY: JSON.stringify(Array.from(localnetKeys().operations.secretKey)),
       GRADUATION_ALERT_AFTER_SECONDS: String(graduationAlertAfterSeconds),
       HELIUS_WEBHOOK_SECRET: WEBHOOK_SECRET,

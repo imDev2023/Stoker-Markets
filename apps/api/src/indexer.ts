@@ -1,13 +1,14 @@
 import { Connection, type PublicKey } from "@solana/web3.js";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import {
-  curvePrice, decodeTransaction, initialCurveReserves, poolPrice, RATE_DENOMINATOR, type CreatorFeeClaimed, type Graduated, type LaunchCreated,
-  type PlatformConfigUpdated, type PoolSwapExecuted, type RawTransaction, type TradeExecuted,
+  curvePrice, decodeTransaction, initialCurveReserves, poolPrice, RATE_DENOMINATOR, writableAccounts, type CreatorFeeClaimed, type Graduated,
+  type LaunchCreated, type PlatformConfigUpdated, type PoolSwapExecuted, type RawTransaction, type TradeExecuted,
 } from "@launchpad/chain";
 import { creatorFeeClaims, curves, feeAnnouncements, graduations, launches, operatorAlerts, type Db } from "@launchpad/db";
 import { indexAirdropPayments } from "./airdrop";
 import type { Config } from "./env";
 import { insertTrade, openMarket } from "./market";
+import { relabelQuoteMints } from "./quotes/labels";
 import { recordPlatformFees } from "./routes/operator";
 
 export type IndexResult = { launched: number; traded: number; claimed: number; graduated: number; airdropped: number };
@@ -27,19 +28,25 @@ export class IndexBatchError extends Error {
  * Idempotent: the same transaction delivered twice (webhook retries, the client fast path, backfills) writes one row.
  * One transaction that can't be indexed never stops the others: the batch goes on, and `IndexBatchError` names what
  * failed at the end, so a retry of the batch only has those to bring back.
+ * A transaction that may have written a Quote Asset's mint (an issuer changing an authority, a fee or a pause) has that
+ * mint re-read for its Quote Risk Labels (#11) before the batch answers, so labels follow the issuer within seconds
+ * when the webhook watches the quote mints.
  */
 export async function indexTransactions(db: Db, cfg: Config, txs: RawTransaction[]): Promise<IndexResult> {
   const result: IndexResult = { launched: 0, traded: 0, claimed: 0, graduated: 0, airdropped: 0 };
   const failed: { signature: string; error: string }[] = [];
+  const written = new Set<string>();
   for (const tx of txs) {
     try {
       await indexTransaction(db, cfg, tx, result);
+      if (!tx.meta?.err) for (const key of writableAccounts(tx)) written.add(key);
     } catch (e) {
       const signature = tx?.transaction?.signatures?.[0] ?? "unknown";
       console.error(`indexing ${signature} failed`, e);
       failed.push({ signature, error: (e as Error).message });
     }
   }
+  if (written.size) await relabelQuoteMints(db, new Connection(cfg.rpcUrl, "confirmed"), [...written]);
   if (failed.length) throw new IndexBatchError(result, failed);
   return result;
 }
