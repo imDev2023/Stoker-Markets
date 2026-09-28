@@ -41,6 +41,110 @@
   50% { opacity: 0.35; }
 }
 
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-bottom: 20px;
+}
+
+.sorts {
+  display: inline-grid;
+  grid-template-columns: repeat(4, auto);
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+}
+
+.sorts button {
+  height: 36px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.sorts button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.categories button {
+  height: 32px;
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease, background-color 120ms ease;
+}
+
+.categories button[aria-pressed="true"] {
+  border-color: var(--cobalt);
+  background: var(--plate);
+  color: var(--cobalt-strong);
+}
+
+/* Hover only where there is a real pointer, and never on the chosen option, so a tap leaves nothing behind. */
+@media (hover: hover) {
+  .sorts button:not([aria-pressed="true"]):hover {
+    color: var(--ink);
+  }
+  .categories button:not([aria-pressed="true"]):hover {
+    border-color: var(--ink-3);
+    color: var(--ink);
+  }
+}
+
+.grid[aria-busy="true"],
+.empty[aria-busy="true"] {
+  opacity: 0.55;
+  transition: opacity 120ms ease 150ms;
+}
+
+.reset {
+  height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .reset:hover {
+    border-color: var(--ink-3);
+  }
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -90,6 +194,28 @@
 
 .cta:hover {
   background: var(--cobalt-strong);
+}
+
+/* One column of controls: each takes the full width, and the four sorts sit two by two. */
+@media (max-width: 640px) {
+  .toolbar,
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .sorts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-radius: 22px;
+  }
+  /* Tighter chips keep all five categories on one line across a phone. */
+  .categories {
+    justify-content: space-between;
+    gap: 4px;
+  }
+  .categories button {
+    padding: 0 10px;
+  }
 }
 
 @media (max-width: 480px) {

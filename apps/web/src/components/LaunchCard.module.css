@@ -58,14 +58,64 @@
   overflow: hidden;
 }
 
-.facts {
-  display: grid;
-  /* The Graduation Target gets the widest column: its Quote Asset's ticker can be up to ten characters. */
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.8fr) minmax(0, 1.3fr);
-  gap: 8px;
-  margin: auto 0 0;
+.bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: auto;
   padding-top: 14px;
   border-top: 1px solid var(--line);
+}
+
+.facts {
+  display: grid;
+  /* Market figures fall back to the Quote Asset's own ticker (up to ten characters) when it has no price. */
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.15fr) minmax(0, 0.8fr);
+  gap: 8px;
+  margin: 0;
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.track {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--plate);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: 999px;
+  background: var(--cobalt);
+}
+
+.graduated .fill {
+  background: var(--verified);
+}
+
+.progressText {
+  flex: none;
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.graduated .progressText {
+  color: var(--verified);
+  font-weight: 600;
+}
+
+.graduated .progressText::before {
+  content: "✓ ";
 }
 
 .facts dt {
@@ -80,16 +130,4 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.facts .graduating {
-  color: var(--cobalt-strong);
-}
-
-.facts .graduated {
-  color: var(--verified);
-}
-
-.facts .graduated::before {
-  content: "✓ ";
 }

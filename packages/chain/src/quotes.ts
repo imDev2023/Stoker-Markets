@@ -1,5 +1,5 @@
 import { PublicKey, type Connection } from "@solana/web3.js";
-import { ExtensionType, getExtensionData, NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, unpackMint } from "@solana/spl-token";
+import { ExtensionType, getExtensionData, getPermanentDelegate, NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, unpackMint } from "@solana/spl-token";
 import { unpack as unpackTokenMetadata } from "@solana/spl-token-metadata";
 import type BN from "bn.js";
 import { launchlabCoder } from "./coder";
@@ -32,6 +32,9 @@ export type QuoteMintInfo = {
   /** From the Token-2022 metadata extension or the Metaplex metadata account; null when the mint has neither. */
   name: string | null;
   symbol: string | null;
+  /** Who can freeze token accounts of this mint, and who can move tokens out of any of them (Token-2022); issuers of real-world assets hold these. */
+  freezeAuthority: PublicKey | null;
+  permanentDelegate: PublicKey | null;
 };
 
 const MULTIPLE_ACCOUNTS_MAX = 100;
@@ -60,6 +63,8 @@ export async function readQuoteMints(connection: Connection, mints: PublicKey[])
       decimals: mint.decimals,
       name: named?.name || null,
       symbol: named?.symbol || null,
+      freezeAuthority: mint.freezeAuthority,
+      permanentDelegate: getPermanentDelegate(mint)?.delegate ?? null,
     });
   });
   return out;

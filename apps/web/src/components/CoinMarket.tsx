@@ -1,28 +1,33 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { CandleInterval, CandleList, LaunchSummary, PlatformInfo, Trade } from "@launchpad/contract";
-import { getCandles, getLaunch, listTrades } from "@/lib/api";
+import type { CandleInterval, CandleList, HolderList, LaunchSummary, PlatformInfo, Trade } from "@launchpad/contract";
+import { getCandles, getHolders, getLaunch, listTrades } from "@/lib/api";
 import { quoteTicker } from "@/lib/format";
 import { CurveProgress } from "./CurveProgress";
+import { Holders } from "./Holders";
 import { PriceChart } from "./PriceChart";
 import { TradeHistory } from "./TradeHistory";
 import { TradePanel } from "./TradePanel";
 import styles from "./CoinMarket.module.css";
 
 const REFRESH_MS = 4_000;
+/** Holders are read from the chain on every request, so they refresh less often, and right after the visitor trades. */
+const HOLDERS_REFRESH_MS = 12_000;
 
 /**
- * The live part of a coin page: curve progress, chart, trades and the trade panel, refreshed from the indexed trades.
- * After Graduation the same page trades in the coin's Raydium pool.
+ * The live part of a coin page: curve progress, chart, trades, the trade panel and top holders, kept up to date from the
+ * indexed trades and the chain. After Graduation the same page trades in the coin's Raydium pool.
  */
 export function CoinMarket({
-  initial, platform, initialTrades, initialCandles, renderedAt,
+  initial, platform, initialTrades, initialCandles, initialHolders, renderedAt,
 }: {
   initial: LaunchSummary;
   platform: PlatformInfo;
   initialTrades: Trade[];
   initialCandles: CandleList;
+  /** Null when the chain couldn't be read at render; the card retries. */
+  initialHolders: HolderList | null;
   /** The server's clock at render, so relative trade times hydrate to the same text. */
   renderedAt: number;
 }) {
@@ -31,10 +36,11 @@ export function CoinMarket({
   const [candleInterval, setCandleInterval] = useState(initialCandles.interval);
   const shownInterval = useRef(initialCandles.interval);
   const [candles, setCandles] = useState(initialCandles);
+  const [holders, setHolders] = useState(initialHolders);
   const [now, setNow] = useState(renderedAt);
   const quote = quoteTicker(launch.quote);
-  // After Graduation the price is the pool's, once it has traded there.
-  const price = launch.graduation?.price ?? launch.curve.price;
+  // The latest trade's price on the curve or, after Graduation, in the pool; before any trade, the curve's starting price.
+  const price = launch.market.price;
 
   // Candles for an interval the trader has since switched away from are dropped.
   const loadCandles = useCallback(async (i: CandleInterval) => {
@@ -53,10 +59,23 @@ export function CoinMarket({
     setNow(Date.now());
   }, [launch.mint, loadCandles]);
 
+  const refreshHolders = useCallback(async () => {
+    try {
+      setHolders(await getHolders(launch.mint));
+    } catch {
+      // keep showing the last good holders; the next tick retries
+    }
+  }, [launch.mint]);
+
   useEffect(() => {
     const id = setInterval(refresh, REFRESH_MS);
     return () => clearInterval(id);
   }, [refresh]);
+
+  useEffect(() => {
+    const id = setInterval(refreshHolders, HOLDERS_REFRESH_MS);
+    return () => clearInterval(id);
+  }, [refreshHolders]);
 
   function changeInterval(next: CandleInterval) {
     shownInterval.current = next;
@@ -79,7 +98,10 @@ export function CoinMarket({
           <CurveProgress launch={launch} platform={platform} />
         </div>
         <div className={styles.trade}>
-          <TradePanel launch={launch} platform={platform} onTraded={() => void refresh()} />
+          <TradePanel launch={launch} platform={platform} onTraded={() => void Promise.all([refresh(), refreshHolders()])} />
+        </div>
+        <div className={styles.holders}>
+          <Holders holders={holders} platform={platform} />
         </div>
       </div>
     </div>

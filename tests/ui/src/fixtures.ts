@@ -185,9 +185,10 @@ export async function expectNoHorizontalOverflow(page: Page) {
 }
 
 /**
- * Text the page cuts short with an ellipsis: every name and ticker the contract allows must show in full. Checked on the
- * settled page: a web font swapping in makes PairMark refit on the next frame, so a check in between would see its
- * ticker cut for one frame.
+ * Text the page cuts short with an ellipsis: every name and ticker the contract allows must show in full.
+ * Polled until the page settles, because a coin pair is fitted to its box by script: until the page hydrates (on a cold
+ * `next dev` load that can come after the network is idle), and for a frame after each web font swaps in, the widest
+ * tickers can still show cut. A pair that stays cut fails once the expect timeout runs out.
  */
 export async function expectNoTruncatedText(page: Page) {
   const cut = () =>
@@ -197,7 +198,7 @@ export async function expectNoTruncatedText(page: Page) {
         .filter((el) => getComputedStyle(el).textOverflow === "ellipsis" && el.scrollWidth > el.clientWidth + 1)
         .map((el) => `${el.textContent} (${el.scrollWidth}px in ${el.clientWidth}px)`),
     );
-  await expect.poll(cut, { message: "text cut off with an ellipsis", timeout: 2_000 }).toEqual([]);
+  await expect.poll(cut, { message: "text cut off with an ellipsis" }).toEqual([]);
 }
 
 export const test = base.extend<{

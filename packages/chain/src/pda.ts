@@ -32,6 +32,7 @@ export function sortMints(a: PublicKey, b: PublicKey): [PublicKey, PublicKey] {
 /** Raydium CPMM program-derived addresses. */
 export function cpmmPdas(program: PublicKey) {
   return {
+    /** Owns every CPMM pool's vaults, so it holds a graduated Launch's coins in its pool. */
     authority: find([seed("vault_and_lp_mint_auth_seed")], program),
     pool: (ammConfig: PublicKey, mintA: PublicKey, mintB: PublicKey) => {
       const [token0, token1] = sortMints(mintA, mintB);
@@ -53,4 +54,4 @@ export function lockPdas(program: PublicKey) {
   };
 }
 
-export const metadataPda =(mint: PublicKey) => find([seed("metadata"), METADATA_PROGRAM.toBuffer(), mint.toBuffer()], METADATA_PROGRAM);
+export const metadataPda = (mint: PublicKey) => find([seed("metadata"), METADATA_PROGRAM.toBuffer(), mint.toBuffer()], METADATA_PROGRAM);
