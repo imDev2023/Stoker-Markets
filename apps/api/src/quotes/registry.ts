@@ -9,6 +9,7 @@ import { divide, formatDecimal, graduationTargetRaw, type Decimal, type QuoteMar
 import { quoteCategory } from "./categories";
 import { listLabels, mintLabels, sortLabels, tickerOf } from "./labels";
 import { bandOf, ruleUpdate } from "./rules";
+import { watchAddresses } from "../helius";
 import { refreshPlatformFees } from "../routes/operator";
 
 export type RefreshDeps = { db: Db; cfg: Config; market: QuoteMarket; operations: Keypair };
@@ -115,7 +116,10 @@ export async function refreshQuoteRegistry({ db, cfg, market, operations }: Refr
       },
     });
   }
-  return { quoteAssets: rows.length, priced: rows.filter((r) => r.priceSol).length, ruleWrites: Math.min(writes.length, MAX_RULE_WRITES) };
+  // Every quote mint joins the Helius webhook, where one is configured, so Quote Risk Labels follow an issuer's change
+  // within seconds rather than at the next refresh (runbook, section 7).
+  const heliusWatch = await watchAddresses(cfg, rows.map((r) => r.mint));
+  return { quoteAssets: rows.length, priced: rows.filter((r) => r.priceSol).length, ruleWrites: Math.min(writes.length, MAX_RULE_WRITES), heliusWatch };
 }
 
 const TX_MAX_BYTES = 1232;
