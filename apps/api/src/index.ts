@@ -35,7 +35,7 @@ import { tradeRoutes } from "./routes/trades";
 
 const app = new Hono<AppEnv>();
 
-app.use("*", async (c, next) => cors({ origin: c.env.WEB_ORIGIN, allowMethods: ["GET", "POST"] })(c, next));
+app.use("*", async (c, next) => cors({ origin: c.env.WEB_ORIGIN, allowMethods: ["GET", "POST", "DELETE"] })(c, next));
 
 app.use("/v1/*", async (c, next) => {
   c.set("cfg", config(c.env));
@@ -197,6 +197,12 @@ async function manualJob(c: Context<AppEnv>, job: JobName, work: () => Promise<u
   }
   return c.json(run);
 }
+
+/** The Quote Registry refresh (ADR 0005): a deploy runs it until every GlobalConfig has a curve rule. */
+app.post("/v1/operator/jobs/quote-registry", (c) => {
+  const cfg = c.get("cfg");
+  return manualJob(c, "quote-registry", () => refreshQuoteRegistry({ db: c.get("db"), cfg, market: quoteMarket(c.env), operations: operationsKey(c.env) }));
+});
 
 /** The Burn and Flywheel. */
 app.post("/v1/operator/jobs/burn", (c) => {
