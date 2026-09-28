@@ -2,7 +2,7 @@
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
 import type { Page } from "@playwright/test";
 import { expect, fundedKeypair, launchViaApi, stackEnv, test, tradeViaApi } from "./fixtures";
-import { TEST_WALLET_NAME } from "./wallet";
+import { connectTestWallet } from "./wallet";
 
 const panel = (page: Page) => page.getByRole("region", { name: /^Trade( |$)/ });
 const review = (page: Page) => page.getByRole("region", { name: "Review your trade" });
@@ -14,8 +14,7 @@ async function freshCoin(symbol: string) {
 
 async function openConnected(page: Page, mint: string) {
   await page.goto(`/coin/${mint}`);
-  await panel(page).getByRole("button", { name: "Connect wallet" }).click();
-  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await connectTestWallet(page, panel(page).getByRole("button", { name: "Connect wallet" }));
   await expect(panel(page).getByRole("button", { name: /^Review (buy|sell)$/ })).toBeVisible();
 }
 

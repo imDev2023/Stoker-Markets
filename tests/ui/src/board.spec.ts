@@ -3,7 +3,7 @@ import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import type { Page } from "@playwright/test";
 import { LaunchList } from "@launchpad/contract";
 import { QUOTES, expect, fundQuote, fundedKeypair, launchViaApi, stackEnv, test, tradeViaApi } from "./fixtures";
-import { TEST_WALLET_NAME } from "./wallet";
+import { connectTestWallet } from "./wallet";
 
 const cards = (page: Page) => page.getByRole("list", { name: "Coins" }).getByRole("link");
 const sorts = (page: Page) => page.getByRole("group", { name: "Sort coins" });
@@ -117,8 +117,7 @@ test("the coin page shows top holders that match the chain, and whether the Crea
   await expect(holders.getByRole("listitem").filter({ hasText: "Creator" })).toContainText(percentOf(creatorHeld));
 
   // The trader buys through the page; the card picks up the new holder right after.
-  await page.getByRole("region", { name: /^Trade( |$)/ }).getByRole("button", { name: "Connect wallet" }).click();
-  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await connectTestWallet(page, page.getByRole("region", { name: /^Trade( |$)/ }).getByRole("button", { name: "Connect wallet" }));
   const panel = page.getByRole("region", { name: /^Trade( |$)/ });
   await panel.getByRole("button", { name: "0.1 SOL" }).click();
   await expect(panel.getByText("You get about")).toBeVisible();

@@ -90,7 +90,7 @@ export async function prepareAirdrop(mint: string) {
 }
 
 export async function getQuote(mint: string, q: TradeQuoteQuery, signal?: AbortSignal) {
-  const query = new URLSearchParams({ side: q.side, amount: q.amount, slippageBps: String(q.slippageBps) });
+  const query = new URLSearchParams({ side: q.side, amount: q.amount, slippageBps: String(q.slippageBps), payWith: q.payWith });
   return read(await fetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/quote?${query}`, { cache: "no-store", signal }), TradeQuote);
 }
 

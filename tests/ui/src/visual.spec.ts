@@ -7,7 +7,7 @@ import {
   test,
 } from "./fixtures";
 import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING } from "./seedData";
-import { installTestWallet, TEST_WALLET_NAME } from "./wallet";
+import { connectTestWallet, installTestWallet, openWalletMenu, TEST_WALLET_NAME } from "./wallet";
 
 // The chart's time axis and candle spacing follow the clock, so its canvases are masked like any other time. Only what is
 // visible: content of a closed <details> still has a box, and masking it would paint over whatever is on screen there.
@@ -24,6 +24,12 @@ const tradedDynamic = (page: Page) => [
   page.locator("a.mono"),
   page.locator("dl").filter({ hasText: "Launch transaction" }).locator(".mono"),
 ];
+
+/**
+ * A panel taller than the phone's viewport is captured while the page is scrolled, where the sticky site header would
+ * sit over its top, wallet address and all; for such a shot the header scrolls away with the page.
+ */
+const unstickHeader = (page: Page) => page.addStyleTag({ content: "body > header { position: static !important; }" });
 
 async function snap(page: Page, name: string, mask = dynamic) {
   // Check the settled page: hydrated, images in and web fonts swapped.
@@ -118,8 +124,7 @@ test("coin page with trades", async ({ page }) => {
 test("trade panel, buy and sell, quote and review", async ({ page, wallet }) => {
   await page.goto(`/coin/${await mintOf("Harbor Lights")}`);
   const panel = page.getByRole("region", { name: /^Trade( |$)/ });
-  await panel.getByRole("button", { name: "Connect wallet" }).click();
-  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await connectTestWallet(page, panel.getByRole("button", { name: "Connect wallet" }));
   await panel.getByRole("button", { name: "0.5 SOL" }).click();
   await expect(panel.getByText("You get about")).toBeVisible();
   await expect(panel).toHaveScreenshot("trade-buy-quote.png", { mask: tradedDynamic(page) });
@@ -158,6 +163,38 @@ test("coin page paired with USDC, after a buy", async ({ page }) => {
   await snap(page, "coin-usdc.png", tradedDynamic);
 });
 
+test("trade panel paying with SOL on a USDC-paired coin, quote and review", async ({ page, wallet }) => {
+  await page.goto(`/coin/${await mintOf("Dollar Paired")}`);
+  await unstickHeader(page);
+  const panel = page.getByRole("region", { name: /^Trade( |$)/ });
+  await connectTestWallet(page, panel.getByRole("button", { name: "Connect wallet" }));
+  // The test wallet holds no USDC, so the panel pays with SOL.
+  await expect(panel.getByRole("group", { name: "Pay with" }).getByRole("button", { name: "SOL" })).toHaveAttribute("aria-pressed", "true");
+  await panel.getByRole("button", { name: "0.5 SOL" }).click();
+  await expect(panel.getByText("You pay about")).toBeVisible();
+  await expect(panel).toHaveScreenshot("trade-sol-quote.png", { mask: tradedDynamic(page) });
+
+  await panel.getByRole("button", { name: "Review buy" }).click();
+  const dialog = page.getByRole("dialog", { name: "Before you trade" });
+  await dialog.getByRole("checkbox").check();
+  await dialog.getByRole("button", { name: "Continue" }).click();
+  await expect(panel.getByRole("region", { name: "Review your trade" })).toBeVisible();
+  await expect(panel).toHaveScreenshot("trade-sol-review.png", { mask: tradedDynamic(page) });
+  expect(wallet.requests).toHaveLength(0);
+});
+
+test("trade panel paying with SOL where there is no SOL route", async ({ page, wallet, expectedHttpErrors }) => {
+  expectedHttpErrors.push(/\/v1\/launches\/[^/]+\/quote\?/);
+  await page.goto(`/coin/${await mintOf("Chipmaker Pair")}`);
+  await unstickHeader(page);
+  const panel = page.getByRole("region", { name: /^Trade( |$)/ });
+  await connectTestWallet(page, panel.getByRole("button", { name: "Connect wallet" }));
+  await panel.getByRole("button", { name: "0.1 SOL" }).click();
+  await expect(panel.getByText("There's no SOL route to NVDAx right now. Pay in NVDAx instead.")).toBeVisible();
+  await expect(panel).toHaveScreenshot("trade-sol-no-route.png", { mask: tradedDynamic(page) });
+  expect(wallet.requests).toHaveLength(0);
+});
+
 test("coin page after graduation", async ({ page }) => {
   await page.goto(`/coin/${await mintOf("Cap and Gown")}`);
   await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
@@ -172,8 +209,7 @@ test("trade panel after graduation, with the pool's fees", async ({ page, wallet
   await giveCoins(SEED_HOLDER, wallet.keypair.publicKey, mint, 1_000_000n * 1_000_000n);
   await page.goto(`/coin/${mint}`);
   const panel = page.getByRole("region", { name: /^Trade( |$)/ });
-  await panel.getByRole("button", { name: "Connect wallet" }).click();
-  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await connectTestWallet(page, panel.getByRole("button", { name: "Connect wallet" }));
   await panel.getByRole("button", { name: "0.5 SOL" }).click();
   await expect(panel.getByText("Raydium pool fee")).toBeVisible();
   await expect(panel).toHaveScreenshot("trade-pool-buy-quote.png", { mask: tradedDynamic(page) });
@@ -198,8 +234,7 @@ test("launch form, step by step", async ({ page, wallet }) => {
   await expect(page.getByRole("heading", { name: "Launch a coin" })).toBeVisible();
   await snap(page, "launch-disconnected.png");
 
-  await page.getByRole("main").getByRole("button", { name: "Connect wallet" }).click();
-  await expect(page.getByRole("menuitem", { name: TEST_WALLET_NAME })).toBeVisible();
+  await openWalletMenu(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
   await snap(page, "launch-wallet-menu.png");
   await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
   await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
@@ -230,8 +265,7 @@ test("launch form, step by step", async ({ page, wallet }) => {
 
 test("launch review against a tokenized stock", async ({ page, wallet }) => {
   await page.goto("/launch");
-  await page.getByRole("main").getByRole("button", { name: "Connect wallet" }).click();
-  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
   await page.locator('input[type="file"]').setInputFiles({ name: "coin.png", mimeType: "image/png", buffer: COIN_PNG });
   await page.getByLabel("Name").fill("Chipmaker Pair");
   await page.getByLabel("Ticker").fill("CHPX");
@@ -253,8 +287,7 @@ const OPTION_WALLETS = [1, 2, 3].map((n) => fixedKeypair(`options wallet ${n}`).
 
 async function launchFormWithOptions(page: Page, airdrop: string) {
   await page.goto("/launch");
-  await page.getByRole("main").getByRole("button", { name: "Connect wallet" }).click();
-  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
   await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
   await page.locator('input[type="file"]').setInputFiles({ name: "coin.png", mimeType: "image/png", buffer: COIN_PNG });
   await page.getByLabel("Name").fill("Party Favors");
@@ -302,8 +335,7 @@ test("launch the network refused", async ({ page, wallet }) => {
 test("coin page with an airdrop to send, seen by its creator", async ({ page }) => {
   await installTestWallet(page, AIRDROP_CREATOR);
   await page.goto(`/coin/${await mintOf(AIRDROP_SENDING.name)}`);
-  await page.getByRole("banner").getByRole("button", { name: "Connect wallet" }).click();
-  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await connectTestWallet(page, page.getByRole("banner").getByRole("button", { name: "Connect wallet" }));
   await expect(page.getByRole("region", { name: "Airdrop" }).getByRole("button", { name: "Send airdrop" })).toBeVisible();
   await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
   await snap(page, "coin-airdrop.png");
@@ -321,8 +353,7 @@ test("coin page with a paid airdrop", async ({ page }) => {
 
 test("header wallet menu when connected", async ({ page, wallet }) => {
   await page.goto("/launch");
-  await page.getByRole("main").getByRole("button", { name: "Connect wallet" }).click();
-  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
   await page.goto("/");
   const account = page.getByRole("banner").getByRole("button", { name: wallet.keypair.publicKey.toBase58().slice(0, 4), exact: false });
   await account.click();
@@ -336,8 +367,7 @@ test("Creator Fee page, as its Creator", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Your Creator Fee" })).toBeVisible();
   await snap(page, "creator-connect.png");
 
-  await page.getByRole("main").getByRole("button", { name: "Connect wallet" }).click();
-  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
   await page.waitForURL(`**/creator/${SEED_CREATOR.publicKey.toBase58()}`);
   await expect(page.getByRole("button", { name: "Claim SOL" })).toBeVisible();
   await expect(page.locator("main img").first()).toHaveJSProperty("complete", true);
