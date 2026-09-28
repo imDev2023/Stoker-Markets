@@ -286,6 +286,12 @@
   vertical-align: top;
 }
 
+/* Wide enough for any day, so the columns never shift with the date. */
+.day time {
+  display: inline-block;
+  min-width: 6.5em;
+}
+
 /* A day's rows share one rule above them; the rows within a day run together. */
 .table tbody tr.dayStart > * {
   border-top: 1px solid var(--line);
