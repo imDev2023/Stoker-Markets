@@ -21,6 +21,19 @@ function origin(e: LedgerEntry) {
   return "From every curve";
 }
 
+const WSOL_MINT = "So11111111111111111111111111111111111111112";
+
+/**
+ * Newest transaction first, as the Ledger lists them; within one transaction, SOL first and then by ticker. A pool pays
+ * out its two tokens in the order of their mint addresses, which says nothing to a reader.
+ */
+function inReadingOrder(entries: LedgerEntry[]) {
+  const position = new Map<string, number>();
+  entries.forEach((e) => position.set(e.signature, position.get(e.signature) ?? position.size));
+  const rank = (e: LedgerEntry) => (e.asset.mint === WSOL_MINT ? "" : quoteTicker(e.asset));
+  return [...entries].sort((a, b) => position.get(a.signature)! - position.get(b.signature)! || rank(a).localeCompare(rank(b), "en"));
+}
+
 /** The Ledger, newest first, a page at a time: every movement of platform revenue with its transaction. */
 export function LedgerList({ initial, platform }: { initial: LedgerPage; platform: PlatformInfo }) {
   const [entries, setEntries] = useState(initial.entries);
@@ -46,7 +59,7 @@ export function LedgerList({ initial, platform }: { initial: LedgerPage; platfor
     <section className={styles.card} aria-labelledby="ledger-title">
       <h2 id="ledger-title" className={styles.title}>Ledger</h2>
       <ol className={styles.entries}>
-        {entries.map((e) => (
+        {inReadingOrder(entries).map((e) => (
           <li key={`${e.signature}.${e.index}`} className={e.kind === "sweep" ? styles.out : undefined}>
             <span className={styles.kind}>{KIND[e.kind]}</span>
             <span className={styles.amount}>

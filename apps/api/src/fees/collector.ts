@@ -207,7 +207,7 @@ async function sweep(
     .from(ledgerEntries)
     .where(and(inArray(ledgerEntries.kind, ["platform_fee", "pool_fee", "fee_key", "sweep"]), ne(ledgerEntries.assetMint, WSOL)))
     .groupBy(ledgerEntries.assetMint)
-    .orderBy(ledgerEntries.assetMint);
+    .orderBy(sql`min(${ledgerEntries.slot})`, ledgerEntries.assetMint);
   const owed = new Map(unswept.filter((r) => BigInt(r.amount) > 0n).map((r) => [r.mint, BigInt(r.amount)]));
   const held = await readTokenHoldings(connection, ops, [...owed.keys()].map((m) => new PublicKey(m)));
   const tokens = held
