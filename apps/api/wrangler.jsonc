@@ -12,6 +12,14 @@
     "WEB_ORIGIN": "http://localhost:3100",
     "LAUNCHLAB_PROGRAM": "DRay6fNdQ5J82H7xV6uq2aV3mNrUZ1J4PgSKsWgptcm6",
     "CPMM_PROGRAM": "DRaycpLY18LhpbydsBWbVJtxpNv9oXPgjRSfpF2bWpYb",
+    "LOCK_PROGRAM": "DRay25Usp3YJAi7beckgpGUC7mGJ2cR1AVPxhYfwVCUX",
+    // The Fee Collector (ADR 0004): revenue is swept to TREASURY_WALLET (a cold wallet or multisig vault; required on
+    // mainnet) whenever the operations wallet holds more than 5 SOL, down to 1 SOL kept for fees. Fees worth under
+    // 0.001 SOL wait for the next run.
+    "TREASURY_WALLET": "",
+    "SWEEP_THRESHOLD_LAMPORTS": "5000000000",
+    "SWEEP_FLOAT_LAMPORTS": "1000000000",
+    "COLLECT_MIN_LAMPORTS": "1000000",
     "PLATFORM_CONFIG": "",
     "GRADUATION_TARGET_LAMPORTS": "85000000000",
     // Raydium's crank migrates a sold-out curve within seconds; five minutes without it means something is wrong.
@@ -20,9 +28,10 @@
     "PRICE_SOURCE": "static",
     "QUOTE_PRICES_USD": "{\"So11111111111111111111111111111111111111112\":\"150\",\"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v\":\"1\",\"Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh\":\"180\",\"jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL\":\"2.5\"}"
   },
-  // Scheduled jobs: the graduation watch every minute, the Quote Registry refresh (ADR 0005) every five. Locally,
-  // `wrangler dev --test-scheduled` runs them on GET /__scheduled?cron=<the cron>, and on a bare GET both.
-  "triggers": { "crons": ["* * * * *", "*/5 * * * *"] },
+  // Scheduled jobs: the graduation watch every minute, the Quote Registry refresh (ADR 0005) every five, the Fee
+  // Collector hourly. Locally, `wrangler dev --test-scheduled` runs them on GET /__scheduled?cron=<the cron>, and on a
+  // bare GET all three.
+  "triggers": { "crons": ["* * * * *", "*/5 * * * *", "15 * * * *"] },
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",

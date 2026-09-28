@@ -4,6 +4,7 @@ import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { inject } from "vitest";
 import { LaunchList, LaunchSummary, PreparedLaunch, PreparedTrade, QuoteAssetList, TradeList, type TradeSide } from "@launchpad/contract";
 import { WSOL_MINT, type RawTransaction } from "@launchpad/chain";
+import { QUOTE_REGISTRY_CRON } from "@launchpad/stack";
 
 export const env = () => inject("harness");
 export const connection = () => new Connection(env().rpcUrl, "confirmed");
@@ -108,7 +109,7 @@ export async function getLaunch(mint: string) {
 
 /** Runs the Worker's scheduled handler as its Cron Trigger would: the Quote Registry refresh. */
 export async function refreshQuoteRegistry() {
-  const res = await fetch(`${env().apiUrl}/__scheduled`);
+  const res = await fetch(`${env().apiUrl}/__scheduled?cron=${encodeURIComponent(QUOTE_REGISTRY_CRON)}`);
   if (!res.ok) throw new Error(`refresh failed: ${res.status} ${await res.text()}`);
 }
 

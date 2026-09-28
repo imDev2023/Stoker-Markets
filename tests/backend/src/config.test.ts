@@ -1,15 +1,16 @@
-// The API refuses configurations that would put a broken metadata URL on-chain for good.
+// The API refuses mainnet configurations that would put a broken metadata URL on-chain for good, or leave revenue in the
+// hot wallet.
 import { afterAll, describe, expect, it } from "vitest";
 import { freePort, startApi, WEBHOOK_SECRET } from "@launchpad/stack";
 import { env } from "./client";
 
-describe("mainnet metadata address", () => {
+describe("mainnet configuration", () => {
   const stops: (() => Promise<void>)[] = [];
   afterAll(async () => {
     for (const stop of stops) await stop();
   });
 
-  async function apiOnMainnet(publicApiUrl: string) {
+  async function apiOnMainnet(publicApiUrl: string, extra: Record<string, string> = { TREASURY_WALLET: env().treasury }) {
     const h = env();
     const api = await startApi({
       port: await freePort(),
@@ -24,6 +25,7 @@ describe("mainnet metadata address", () => {
         GRADUATION_TARGET_LAMPORTS: h.platform.graduationTargetLamports,
         HELIUS_WEBHOOK_SECRET: WEBHOOK_SECRET,
         MINT_KEY_SECRET: "a-test-secret-that-is-at-least-32-characters",
+        ...extra,
       },
     });
     stops.push(api.stop);
@@ -42,5 +44,10 @@ describe("mainnet metadata address", () => {
     const url = await apiOnMainnet("https://api.example.com");
     expect((await fetch(`${url}/health`)).status).toBe(200);
     expect(((await (await fetch(`${url}/v1/platform`)).json()) as { cluster: string }).cluster).toBe("mainnet");
+  });
+
+  it("is refused without a treasury, since revenue would pile up in the hot operations wallet (ADR 0004)", async () => {
+    const url = await apiOnMainnet("https://api.example.com", {});
+    expect((await fetch(`${url}/health`)).status).toBe(500);
   });
 });
