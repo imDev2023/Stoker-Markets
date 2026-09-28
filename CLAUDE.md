@@ -16,7 +16,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 - `packages/chain` - LaunchLab and CPMM PDAs, instruction builders from the IDLs (Anchor coder), launch, curve and pool trades, migration, decoder. Server-only.
 - `packages/db` - Drizzle schema and migrations (`pnpm --filter @launchpad/db generate`).
 - `packages/contract` - zod API contract shared by the API and every client.
-- `apps/api` - Hono Worker: prepare endpoints, Helius webhook indexer, read API, metadata hosting, and a Cron Trigger (`scheduled`) that watches Graduations and raises operator alerts.
+- `apps/api` - Hono Worker: prepare endpoints, Helius webhook indexer, read API, metadata hosting, and a Cron Trigger (`scheduled`) that watches Graduations and raises operator alerts, and runs the Fee Collector (`src/fees`): it claims revenue into the operations wallet, sweeps it to the treasury and writes the Ledger. Every job run is recorded in `job_runs` (`GET /v1/operator/jobs`).
 - `apps/web` - Next.js 16 on OpenNext; a pure client of the API. Read `apps/web/AGENTS.md` (Next 16 breaking changes).
 - `tools/localnet` - `solana-test-validator` with the Raydium devnet programs from committed fixtures, plus platform bootstrap and `migrateCurve`, which plays Raydium's crank with a local stand-in migrate wallet.
 - `tools/stack` - starts Postgres, local chain, API (and optionally web) for tests, plus an alert sink standing in for the operator's chat webhook. `STACK_LOG_DIR` streams each process's output to files.
@@ -26,7 +26,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 ## Run and test
 
 - Dev: `docker compose up -d` (Postgres on 5442), `pnpm localnet` (chain on 8899, writes `tools/localnet/.ledger/state.json`; migrates sold-out curves within seconds like Raydium's crank, `CRANK=off` to leave them graduating), `apps/api`: `pnpm exec wrangler dev --port 8791 --test-scheduled --var PLATFORM_CONFIG:<from state.json> --var PLATFORM_LOOKUP_TABLE:<lookupTable from state.json>` with `MINT_KEY_SECRET` (32+ random characters) in `apps/api/.dev.vars`, `apps/web`: `pnpm dev` (3100). Migrate the dev DB with `runMigrations` from `@launchpad/db/migrate`.
-- Scheduled jobs: `wrangler dev --test-scheduled` runs them on `GET /__scheduled?cron=<cron>`: `*+*+*+*+*` is the graduation watch, `*/5+*+*+*+*` the Quote Registry refresh, and a bare `GET /__scheduled` runs both.
+- Scheduled jobs: `wrangler dev --test-scheduled` runs them on `GET /__scheduled?cron=<cron>`: `*+*+*+*+*` is the graduation watch, `*/5+*+*+*+*` the Quote Registry refresh, `15+*+*+*+*` the Fee Collector, and a bare `GET /__scheduled` runs all three. The Fee Collector sweeps only with `TREASURY_WALLET` set (required on mainnet).
 - Tests: `pnpm test:backend` and `pnpm test:ui`, each on its own throwaway stack; the chain takes a free block of ports, so checkouts and agents can run suites side by side (`TEST_RPC_PORT` pins it). `pnpm lint`, `pnpm typecheck`; CI runs both.
 - UI baselines live in `tests/ui/screenshots/<platform>/`; after an intended UI change, run `pnpm test:ui --update-snapshots=changed` (`all` rewrites matching baselines with byte-different PNGs) and look at every changed image before committing.
 - Port 8787 and 3000 belong to other projects on this machine; ours are 3100, 8791, 8899, 5442.
@@ -58,6 +58,8 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 - `migrate_to_cpswap` wants the CPMM `support_mint` PDAs in the pool's token order (sorted mint bytes), not quote then base; WSOL sorts first for all but about 1 in 40 mints, so the wrong order fails only now and then with 2502 `RequireKeysEqViolated`.
 - A v0 transaction through an address lookup table is dropped until the table's last extension is rooted (about 32 slots, 15 s locally); create tables ahead of use. The migration needs one (1,471 bytes as legacy); the local migrate wallet's table is made at bootstrap.
 - A migrated CPMM pool opens one second after migration by the chain's clock, which lags the wall clock on the local validator; check `Pool.chainTime` against `openTime`, never `Date.now()`.
+- The deployed CPMM's `collect_creator_fee` wants one account more than Raydium's published IDL: the `creator_fee_share` PDA (creator, CPMM config) last, even when it doesn't exist, or it fails with 3005 `AccountNotEnoughKeys`. Raydium's LP-lock program only has a legacy IDL; `packages/chain/idl/lock.json` is it converted to the current Anchor format.
+- `ledger_entries` is append-only in Postgres itself (a trigger rejects UPDATE, DELETE and TRUNCATE): fix a wrong entry with a new one, never an edit.
 - CPMM's ExceededSlippage is 6005 (LaunchLab's is 6004), and CPMM emits `SwapEvent` to the log (`Program data:`), not through a self-invocation like LaunchLab's `TradeEvent`.
 - `Keypair.publicKey` returns a new `PublicKey` on every access: compare keys with `.equals`, never `===`.
 - Drizzle `sql` templates with a `Date` parameter fail under our `postgres` client settings; pass `toISOString()` and cast `::timestamptz`.

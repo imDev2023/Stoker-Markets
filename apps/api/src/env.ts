@@ -36,6 +36,18 @@ export type Bindings = {
    * can never create a second coin. A secret: anyone holding it could sign for the address of a coin not launched yet.
    */
   MINT_KEY_SECRET: string;
+  LOCK_PROGRAM: string;
+  /**
+   * The cold store the Fee Collector sweeps revenue to (ADR 0004): a hardware wallet or a multisig vault, never a key the
+   * Worker holds. Required on mainnet; without it elsewhere, revenue stays in the operations wallet.
+   */
+  TREASURY_WALLET?: string;
+  /** The operations wallet's SOL is swept to the treasury once it holds more than this many lamports... */
+  SWEEP_THRESHOLD_LAMPORTS: string;
+  /** ...down to this many, kept for network fees and rent. */
+  SWEEP_FLOAT_LAMPORTS: string;
+  /** A fee worth less than this many lamports is left to grow rather than collected at a loss to network fees. */
+  COLLECT_MIN_LAMPORTS: string;
   HYPERDRIVE: Hyperdrive;
   METADATA_BUCKET: R2Bucket;
 };
@@ -55,6 +67,11 @@ export type Config = {
   graduationAlertAfterSeconds: number;
   alertWebhookUrl: string | null;
   mintKeySecret: string;
+  lock: PublicKey;
+  treasury: PublicKey | null;
+  sweepThresholdLamports: bigint;
+  sweepFloatLamports: bigint;
+  collectMinLamports: bigint;
 };
 
 const MINT_KEY_SECRET_MIN_LENGTH = 32;
@@ -87,6 +104,11 @@ export function config(env: Bindings): Config {
     if (typeof v !== "string" || v === "") throw new Error(`missing configuration: ${name}`);
     return new PublicKey(v);
   };
+  const treasury = env.TREASURY_WALLET ? new PublicKey(env.TREASURY_WALLET) : null;
+  if (env.CLUSTER === "mainnet" && !treasury) throw new Error("TREASURY_WALLET must be set on mainnet, or revenue piles up in the hot wallet (ADR 0004)");
+  const sweepThresholdLamports = lamports(env.SWEEP_THRESHOLD_LAMPORTS, "SWEEP_THRESHOLD_LAMPORTS");
+  const sweepFloatLamports = lamports(env.SWEEP_FLOAT_LAMPORTS, "SWEEP_FLOAT_LAMPORTS");
+  if (sweepFloatLamports >= sweepThresholdLamports) throw new Error("SWEEP_FLOAT_LAMPORTS must be below SWEEP_THRESHOLD_LAMPORTS");
   return {
     cluster: env.CLUSTER,
     rpcUrl: env.RPC_URL,
@@ -99,7 +121,17 @@ export function config(env: Bindings): Config {
     graduationAlertAfterSeconds: seconds(env.GRADUATION_ALERT_AFTER_SECONDS, "GRADUATION_ALERT_AFTER_SECONDS"),
     alertWebhookUrl: env.ALERT_WEBHOOK_URL ? new URL(env.ALERT_WEBHOOK_URL).toString() : null,
     mintKeySecret: mintKeySecret(env.MINT_KEY_SECRET),
+    lock: key("LOCK_PROGRAM"),
+    treasury,
+    sweepThresholdLamports,
+    sweepFloatLamports,
+    collectMinLamports: lamports(env.COLLECT_MIN_LAMPORTS, "COLLECT_MIN_LAMPORTS"),
   };
+}
+
+function lamports(raw: string, name: string) {
+  if (!/^\d+$/.test(raw ?? "")) throw new Error(`${name} must be a whole number of lamports (got ${raw})`);
+  return BigInt(raw);
 }
 
 export function quoteMarket(env: Bindings): QuoteMarket {
