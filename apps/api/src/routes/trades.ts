@@ -283,7 +283,8 @@ async function routedMarket(
         quoteAmount,
         minAmountOut: minCoins,
         swap: plan.swap,
-        lookupTables: routes.lookupTables,
+        // Our own shared accounts are in the Platform Lookup Table; the swap brings any tables its route needs.
+        lookupTables: [cfg.lookupTable],
       }).catch((e: unknown) => {
         if (e instanceof TransactionTooLargeError)
           throw new HTTPException(422, { message: `This SOL route doesn't fit in one transaction. Pay in ${symbol} instead.` });

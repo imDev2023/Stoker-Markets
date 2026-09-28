@@ -111,7 +111,7 @@ export type RoutedBuyRequest = {
   /** The least number of coins the trade may give. */
   minAmountOut: BN;
   swap: SolSwapBuilder;
-  /** Lookup tables for the trade's shared accounts; the swap brings its own. */
+  /** Lookup tables for the trade's shared accounts (the Platform Lookup Table); the swap brings its own. */
   lookupTables: PublicKey[];
 };
 

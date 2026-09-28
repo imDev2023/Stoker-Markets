@@ -1,5 +1,5 @@
 import {
-  AddressLookupTableProgram, ComputeBudgetProgram, SYSVAR_RENT_PUBKEY, SystemProgram, TransactionInstruction, type AccountMeta, type Connection,
+  ComputeBudgetProgram, SYSVAR_RENT_PUBKEY, SystemProgram, TransactionInstruction, type AccountMeta, type Connection,
   type Keypair, type PublicKey,
 } from "@solana/web3.js";
 import {
@@ -8,9 +8,9 @@ import {
 } from "@solana/spl-token";
 import BN from "bn.js";
 import {
-  cpmmCoder, cpmmPdas, launchlabPdas, loadPool, programsFor, sortMints, swapBaseInputIx, temporaryTokenAccount, WSOL_MINT,
+  cpmmCoder, cpmmPdas, loadPool, programsFor, sortMints, swapBaseInputIx, temporaryTokenAccount, WSOL_MINT,
 } from "@launchpad/chain";
-import { CPSWAP_CONFIG, LOCAL_QUOTES, airdrop, localnetKeys, mintLocalQuote, send } from "./index";
+import { CPSWAP_CONFIG, LOCAL_QUOTES, airdrop, ensureLookupTable, localnetKeys, mintLocalQuote, send } from "./index";
 
 /**
  * The local chain's stand-in for the market a buy paid with SOL routes through. On mainnet the API asks Jupiter; the
@@ -27,8 +27,6 @@ export const LOCAL_SOL_ROUTES = [
 export type SolRoutes = {
   /** The CPMM pool each Quote Asset is bought through, by quote mint. */
   pools: Record<string, string>;
-  /** An address lookup table of the pools' accounts and the LaunchLab accounts every routed buy shares. */
-  lookupTable: string;
 };
 
 const meta = (pubkey: PublicKey, isSigner = false, isWritable = false): AccountMeta => ({ pubkey, isSigner, isWritable });
@@ -120,51 +118,20 @@ export async function swapThroughSolRoute(connection: Connection, trader: Keypai
   ], [trader]);
 }
 
-// Address lookup table layout: type (u32), deactivation slot, last extended slot, start index (u8), then the authority
-// as an option (u8 tag and 32 bytes).
-const LOOKUP_TABLE_AUTHORITY_OFFSET = 4 + 8 + 8 + 1 + 1;
-
 /**
- * Seeds the SOL route pools and their lookup table. Resolves once the pools trade and the table exists; `ready`
- * resolves once the table is usable, which takes about 15 s on the local validator (see CLAUDE.md's Traps), so a caller
- * can start other work in between.
+ * Seeds the SOL route pools and adds their accounts to the Platform Lookup Table, which already holds the LaunchLab
+ * accounts a routed buy names. Resolves once the pools trade; `ready` resolves once the table's new entries are usable,
+ * about 15 s later on the local validator (see CLAUDE.md's Traps), so a caller can start other work in between.
  */
-export async function createSolRoutes(connection: Connection, platformConfig: PublicKey): Promise<SolRoutes & { ready: Promise<void> }> {
-  const { liquidity } = localnetKeys();
-  const programs = programsFor("localnet");
+export async function createSolRoutes(connection: Connection): Promise<SolRoutes & { ready: Promise<unknown> }> {
+  const { liquidity, operations } = localnetKeys();
+  const { cpmm } = programsFor("localnet");
   const created = await createPools(connection, liquidity);
-
-  const ll = launchlabPdas(programs.launchlab);
   const addresses = [
-    WSOL_MINT, TOKEN_PROGRAM_ID, CPSWAP_CONFIG, cpmmPdas(programs.cpmm).authority,
-    ll.authority, ll.eventAuthority, platformConfig,
-    ...created.flatMap((c) => [
-      c.route.quote, c.pool, ...c.vaults, c.observation, ll.globalConfig(c.route.quote), ll.platformFeeVault(platformConfig, c.route.quote),
-    ]),
+    cpmm, CPSWAP_CONFIG, cpmmPdas(cpmm).authority, ...created.flatMap((c) => [c.pool, ...c.vaults, c.observation]),
   ];
-  const [existing] = await connection.getProgramAccounts(AddressLookupTableProgram.programId, {
-    commitment: "confirmed",
-    filters: [{ memcmp: { offset: LOOKUP_TABLE_AUTHORITY_OFFSET, bytes: liquidity.publicKey.toBase58() } }],
-  });
-  let table = existing?.pubkey;
-  if (!table) {
-    const [create, address] = AddressLookupTableProgram.createLookupTable({
-      authority: liquidity.publicKey, payer: liquidity.publicKey, recentSlot: await connection.getSlot("finalized"),
-    });
-    table = address;
-    await send(connection, [
-      create,
-      AddressLookupTableProgram.extendLookupTable({ lookupTable: address, authority: liquidity.publicKey, payer: liquidity.publicKey, addresses }),
-    ], [liquidity]);
-  }
-  const lookupTable = table;
-  const ready = (async () => {
-    const state = (await connection.getAddressLookupTable(lookupTable, { commitment: "confirmed" })).value!;
-    while ((await connection.getSlot("finalized")) <= Number(state.state.lastExtendedSlot)) await new Promise((r) => setTimeout(r, 250));
-  })();
   return {
     pools: Object.fromEntries(created.map((c) => [c.route.quote.toBase58(), c.pool.toBase58()])),
-    lookupTable: lookupTable.toBase58(),
-    ready,
+    ready: ensureLookupTable(connection, operations, addresses),
   };
 }

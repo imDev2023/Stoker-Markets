@@ -28,8 +28,6 @@ export type SolRoutePlan = {
 
 export interface SolRoutes {
   source: SolRouteSource;
-  /** Lookup tables every routed buy compiles with, beyond what the swap brings. */
-  lookupTables: PublicKey[];
   /** The Quote Asset `lamports` of SOL buys right now; null when there is no route to it. */
   exactIn(quoteMint: PublicKey, lamports: BN): Promise<BN | null>;
   /** How to buy exactly `quoteOut` of the Quote Asset with at most `routeSlippageBps` over its price; null without a route. */
@@ -42,7 +40,7 @@ const bps = (rate: BN) => (Number(rate.toString()) * 10_000) / RATE_DENOMINATOR;
  * Raydium CPMM pools of SOL against Quote Assets, one per Quote Asset, named in configuration. The route's math is the
  * program's own (`swap_base_output`), so the quote is exact. Reads each pool once per request.
  */
-export function cpmmSolRoutes(connection: Connection, cpmm: PublicKey, pools: Map<string, PublicKey>, lookupTables: PublicKey[]): SolRoutes {
+export function cpmmSolRoutes(connection: Connection, cpmm: PublicKey, pools: Map<string, PublicKey>): SolRoutes {
   const loaded = new Map<string, ReturnType<typeof loadPool>>();
   const pool = async (quoteMint: PublicKey) => {
     const address = pools.get(quoteMint.toBase58());
@@ -56,7 +54,6 @@ export function cpmmSolRoutes(connection: Connection, cpmm: PublicKey, pools: Ma
   };
   return {
     source: "raydium-cpmm",
-    lookupTables,
     async exactIn(quoteMint, lamports) {
       const p = await pool(quoteMint);
       return p ? poolSwap(p, WSOL_MINT, lamports).amountOut : null;
@@ -111,7 +108,7 @@ const JUPITER_COMPUTE_UNITS = 400_000;
  * none to NVDAx, so a Launch paired with an xStock can't be paid with SOL through it. Unproven on a real cluster: the
  * local chain has no Jupiter, so its tests exercise `cpmmSolRoutes`.
  */
-export function jupiterSolRoutes(apiKey: string | undefined, lookupTables: PublicKey[]): SolRoutes {
+export function jupiterSolRoutes(apiKey: string | undefined): SolRoutes {
   const host = apiKey ? "https://api.jup.ag" : "https://lite-api.jup.ag";
   const headers: Record<string, string> = { "content-type": "application/json", ...(apiKey ? { "x-api-key": apiKey } : {}) };
   const quote = async (quoteMint: PublicKey, amount: BN, swapMode: "ExactIn" | "ExactOut", slippageBps: number) => {
@@ -133,7 +130,6 @@ export function jupiterSolRoutes(apiKey: string | undefined, lookupTables: Publi
     });
   return {
     source: "jupiter",
-    lookupTables,
     async exactIn(quoteMint, lamports) {
       const q = await quote(quoteMint, lamports, "ExactIn", 0);
       return q ? new BN(q.outAmount) : null;
