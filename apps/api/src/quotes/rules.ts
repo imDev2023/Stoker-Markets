@@ -5,7 +5,12 @@
  */
 
 import BN from "bn.js";
-import { closedLaunchConstraints, graduationBandOf, sameConstraints, standardLaunchConstraints, type RuleConstraint } from "@launchpad/chain";
+import {
+  closedLaunchConstraints, graduationBandOf, rewardLaunchConstraints, sameConstraints, standardLaunchConstraints, type RuleConstraint,
+} from "@launchpad/chain";
+
+/** The two kinds of Launch a curve rule admits, each as its own group: a standard coin, and a Reward Launch's taxed coin. */
+export type LaunchKind = "standard" | "reward";
 
 export type Band = { min: bigint; max: bigint };
 
@@ -36,22 +41,23 @@ export function bandOf(constraints: RuleConstraint[] | null): Band | null {
   return band ? { min: BigInt(band.min.toString()), max: BigInt(band.max.toString()) } : null;
 }
 
-const launchConstraints = (b: Band) => standardLaunchConstraints({ min: new BN(b.min.toString()), max: new BN(b.max.toString()) });
+const launchConstraints = (b: Band, kind: LaunchKind) =>
+  (kind === "reward" ? rewardLaunchConstraints : standardLaunchConstraints)({ min: new BN(b.min.toString()), max: new BN(b.max.toString()) });
 
 /**
- * The constraints a Quote Asset's rule should have now, or null when the rule on-chain can stay as it is.
- * `current` is the rule's group today (null when there is no rule account, which LaunchLab treats as no restriction at all),
+ * The constraints a Quote Asset's rule group should have now, or null when the group on-chain can stay as it is.
+ * `current` is the group today (null when there is no rule account, which LaunchLab treats as no restriction at all),
  * `target` the Graduation Target at the latest price (null without a reliable price), `exact` true for SOL.
  */
-export function ruleUpdate(current: RuleConstraint[] | null, target: bigint | null, exact: boolean): RuleConstraint[] | null {
+export function ruleUpdate(current: RuleConstraint[] | null, target: bigint | null, exact: boolean, kind: LaunchKind = "standard"): RuleConstraint[] | null {
   if (target === null || !targetFits(target)) {
     const closed = closedLaunchConstraints();
     return current && sameConstraints(current, closed) ? null : closed;
   }
   const band = bandOf(current);
-  const keep = band && sameConstraints(current!, launchConstraints(band)) &&
+  const keep = band && sameConstraints(current!, launchConstraints(band, kind)) &&
     (exact ? band.min === target && band.max === target : !needsRecentre(band, target));
-  return keep ? null : launchConstraints(bandAround(target, exact));
+  return keep ? null : launchConstraints(bandAround(target, exact), kind);
 }
 
 /** Whether the curve can hold a Graduation Target: large enough to be precise, small enough to fit a u64 with its band. */

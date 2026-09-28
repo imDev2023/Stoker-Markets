@@ -1,6 +1,6 @@
 import {
   ComputeBudgetProgram, PublicKey, SystemProgram, TransactionInstruction, TransactionMessage, VersionedTransaction, type AccountMeta,
-  type Connection, type Keypair,
+  type AddressLookupTableAccount, type Connection, type Keypair,
 } from "@solana/web3.js";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, createAssociatedTokenAccountIdempotentInstruction,
@@ -298,9 +298,11 @@ function unwrapSol(owner: PublicKey, mints: PublicKey[]) {
 }
 
 /** A transaction signed by one key, ready to send, and its signature, known before it is sent. */
-export async function signedTransaction(connection: Connection, signer: Keypair, instructions: TransactionInstruction[]) {
+export async function signedTransaction(
+  connection: Connection, signer: Keypair, instructions: TransactionInstruction[], lookupTables: AddressLookupTableAccount[] = [],
+) {
   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-  const message = new TransactionMessage({ payerKey: signer.publicKey, recentBlockhash: blockhash, instructions }).compileToV0Message();
+  const message = new TransactionMessage({ payerKey: signer.publicKey, recentBlockhash: blockhash, instructions }).compileToV0Message(lookupTables);
   const tx = new VersionedTransaction(message);
   tx.sign([signer]);
   return { serialized: tx.serialize(), signature: bs58.encode(tx.signatures[0]!), lastValidBlockHeight };

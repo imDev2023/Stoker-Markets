@@ -24,8 +24,24 @@ export const AirdropRecipients = z
   .refine((list) => new Set(list.map((r) => r.wallet)).size === list.length, "each wallet may appear only once");
 export type AirdropRecipients = z.infer<typeof AirdropRecipients>;
 
+/** The Reward Tax rates a Reward Launch may choose, in basis points: 1%, 3% or 5%. */
+export const REWARD_TAX_RATES = [100, 300, 500] as const;
+export const RewardTaxBps = z.union([z.literal(100), z.literal(300), z.literal(500)]);
+export type RewardTaxBps = z.infer<typeof RewardTaxBps>;
+
+/** A form field carrying a Reward Tax in basis points, or nothing for a standard Launch. */
+const rewardTaxField = z
+  .union([z.enum(["100", "300", "500"]), z.literal("")])
+  .optional()
+  .transform((v) => (v ? (Number(v) as RewardTaxBps) : undefined));
+
 /** Launch-form fields for the launch modes; multipart carries the airdrop list as JSON text. */
 export const LaunchModeFields = z.object({
+  /**
+   * Makes the coin a Reward Launch: a Token-2022 coin whose every transfer withholds this Reward Tax (basis points) for
+   * its holders. Empty for a standard Launch.
+   */
+  rewardTax: rewardTaxField,
   /** Quote Asset the Creator spends on a first buy inside the launch transaction, raw units. */
   firstBuy: z.union([positiveRaw, z.literal("")]).optional().transform((v) => v || undefined),
   /** JSON array of `{ wallet, amount }`, paid from the first buy's coins once the coin has launched. */
@@ -44,8 +60,22 @@ export const LaunchModeFields = z.object({
     .pipe(AirdropRecipients.optional()),
 });
 
+/**
+ * A Reward Launch's Reward Tax: the rate its coin withholds on every transfer for its holders. LaunchLab's own authority
+ * holds the coin's fee-config authority until Graduation, so nobody can change the rate; at Graduation it passes to the
+ * platform, which gives it up for good in `locked`.
+ */
+export const RewardTax = z.object({
+  bps: z.number().int(),
+  /** The transaction in which the platform gave the tax authority up after Graduation; null until then. */
+  locked: z.object({ signature: z.string(), at: z.iso.datetime() }).nullable(),
+});
+export type RewardTax = z.infer<typeof RewardTax>;
+
 /** What a launch with these modes will do, fixed when it is prepared. */
 export const LaunchModesSummary = z.object({
+  /** The Reward Tax the coin carries, or null for a standard coin. */
+  rewardTax: z.object({ bps: z.number().int() }).nullable(),
   /** The first buy, exact: it is the curve's first trade and lands in the launch transaction. Null without one. */
   firstBuy: TradeQuote.nullable(),
   /** The airdrop, paid from the first buy's coins in separate transactions once the coin has launched. */
@@ -68,6 +98,8 @@ export const FirstBuyQuoteQuery = z.object({
   quoteMint: base58,
   /** Quote Asset a first buy would spend, raw units. */
   firstBuy: positiveRaw,
+  /** The Reward Tax of the coin, which the first buy's coins lose on the way to the Creator; empty for a standard coin. */
+  rewardTax: rewardTaxField,
 });
 export type FirstBuyQuoteQuery = z.infer<typeof FirstBuyQuoteQuery>;
 

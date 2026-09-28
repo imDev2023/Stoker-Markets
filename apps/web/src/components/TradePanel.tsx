@@ -1,12 +1,13 @@
 "use client";
 
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { PublicKey, VersionedTransaction } from "@solana/web3.js";
+import { PublicKey, SendTransactionError, VersionedTransaction } from "@solana/web3.js";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type {
   LaunchSummary, PayWith, PlatformInfo, PreparedTrade, SolRoute, TradeQuote, TradeSide, TradeStep, TradeVenue,
 } from "@launchpad/contract";
 import { getQuote, listTrades, prepareTrade, reportTransaction } from "@/lib/api";
+import { landedError as landedErrorOf } from "@/lib/transactions";
 import { COIN_DECIMALS, explorerUrl, formatUnits, isSol, parseUnits, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
 import { Price } from "./Price";
@@ -20,8 +21,11 @@ type Step =
   | { kind: "reviewing"; review: Review }
   | { kind: "signing"; review: Review }
   | { kind: "confirming"; review: Review };
-/** A confirmed trade; `coins` is the indexed fill, null if the Indexer hasn't seen it yet. */
-type Done = { side: TradeSide; coins: string | null; signature: string };
+/**
+ * A sent trade; `coins` is the indexed fill, null if the Indexer hasn't seen it yet. `unconfirmed` when it was sent but
+ * its confirmation could not be followed, so it may well have landed.
+ */
+type Done = { side: TradeSide; coins: string | null; signature: string; unconfirmed?: boolean };
 
 const SLIPPAGE_BPS = [50, 100, 200, 500] as const;
 /** Buy presets, in SOL or their worth in any other Quote Asset. */
@@ -29,7 +33,15 @@ const BUY_PRESETS_SOL = [0.1, 0.5, 1] as const;
 const SELL_PRESETS = [25, 50, 100] as const;
 const QUOTE_DEBOUNCE_MS = 250;
 
-export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSummary; platform: PlatformInfo; onTraded: () => void }) {
+export function TradePanel({
+  launch, platform, referrer = null, onTraded,
+}: {
+  launch: LaunchSummary;
+  platform: PlatformInfo;
+  /** The wallet that sent the trader here, which earns the referral share fee on curve trades where the Quote Asset allows one. */
+  referrer?: string | null;
+  onTraded: () => void;
+}) {
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
   const [side, setSide] = useState<TradeSide>("buy");
@@ -69,6 +81,9 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
     side === "buy" && quote && amount !== null ? BigInt(quote.route ? quote.route.maxSolIn : quote.amountIn) : amount;
   const overBalance = cost !== null && held !== null && cost > held;
 
+  // A trader never refers themselves; the referral is dropped for the referrer's own wallet.
+  const referral = referrer && referrer !== publicKey?.toBase58() ? referrer : null;
+
   const refreshBalances = useCallback(async () => {
     if (!publicKey) return setBalances(null);
     try {
@@ -89,11 +104,21 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
 
   useEffect(() => void refreshBalances(), [refreshBalances]);
 
-  // A wallet that holds none of the Quote Asset but has SOL pays with SOL, unless the trader has chosen otherwise.
+  // A wallet that holds none of the Quote Asset but has SOL pays with SOL, unless the trader has chosen otherwise or has
+  // already typed an amount in the other unit.
   useEffect(() => {
     if (!canPayWithSol || !balances || payWithChosen.current) return;
-    setPayWith(balances.quote === 0n && balances.sol > 0n ? "sol" : "quote");
+    const next = balances.quote === 0n && balances.sol > 0n ? "sol" : "quote";
+    setPayWith((current) => (current === next || amountText !== "" ? current : next));
+    // amountText is read, not followed: the pick happens when balances arrive, never while typing.
   }, [canPayWithSol, balances]);
+
+  // A review is one wallet's transaction against one venue. When the wallet changes or goes away, or the coin moves to
+  // its pool, whatever was under review is stale (it would fail on-chain or be signed by the wrong wallet), so it is dropped.
+  const owner = publicKey?.toBase58() ?? null;
+  useEffect(() => {
+    setStep((s) => (s.kind === "reviewing" ? { kind: "editing" } : s));
+  }, [owner, venue]);
 
   // A live quote while the trader types, so the fees and what they get are visible before anything is signed. It is
   // fetched again when the coin graduates, since it then trades in its pool at another price and other fees.
@@ -104,7 +129,9 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
     const abort = new AbortController();
     const timer = setTimeout(async () => {
       try {
-        setQuote(await getQuote(launch.mint, { side, amount: amount.toString(), slippageBps, payWith: paysSol ? "sol" : "quote" }, abort.signal));
+        setQuote(
+          await getQuote(launch.mint, { side, amount: amount.toString(), slippageBps, payWith: paysSol ? "sol" : "quote", referrer: referral ?? undefined }, abort.signal),
+        );
       } catch (e) {
         if (!abort.signal.aborted) setQuoteError(tradeError((e as Error).message));
       }
@@ -113,7 +140,7 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
       abort.abort();
       clearTimeout(timer);
     };
-  }, [launch.mint, side, amount, slippageBps, paysSol, venue]);
+  }, [launch.mint, side, amount, slippageBps, paysSol, venue, referral]);
 
   function edit(next: () => void) {
     setError(null);
@@ -127,6 +154,7 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
     try {
       const prepared = await prepareTrade({
         mint: launch.mint, trader: publicKey.toBase58(), side, amount: amount.toString(), slippageBps, payWith: paysSol ? "sol" : "quote",
+        referrer: referral ?? undefined,
       });
       const tx = VersionedTransaction.deserialize(Uint8Array.from(atob(prepared.transaction), (c) => c.charCodeAt(0)));
       // Simulate before asking for a signature, so the review shows what the wallet will actually pay or receive.
@@ -152,10 +180,30 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
   async function signAndSend(r: Review) {
     if (!signTransaction) return setError("This wallet can't sign transactions. Try another wallet.");
     setStep({ kind: "signing", review: r });
+    let signed: VersionedTransaction;
     try {
-      const signed = await signTransaction(r.tx);
-      const signature = await connection.sendRawTransaction(signed.serialize());
-      setStep({ kind: "confirming", review: r });
+      signed = await signTransaction(r.tx);
+    } catch (e) {
+      const message = (e as Error).message ?? "";
+      setError(/reject|declin|cancel/i.test(message) ? "You declined the transaction in your wallet. Nothing was traded." : message);
+      return setStep({ kind: "editing" });
+    }
+    let signature: string;
+    try {
+      signature = await connection.sendRawTransaction(signed.serialize());
+    } catch (e) {
+      // The RPC simulates before sending, so a price that moved while the trader signed fails here, before any fee.
+      // Only the node refusing it says the trade never went out; anything else may have reached the chain.
+      setError(
+        e instanceof SendTransactionError
+          ? unsentError(`${e.message} ${(e.logs ?? []).join(" ")}`, r.prepared, quoteSymbol)
+          : "We couldn't tell whether the trade was sent. Check your wallet's recent activity before trying again.",
+      );
+      void refreshBalances();
+      return setStep({ kind: "editing" });
+    }
+    setStep({ kind: "confirming", review: r });
+    try {
       const result = await connection.confirmTransaction(
         { signature, blockhash: signed.message.recentBlockhash, lastValidBlockHeight: r.prepared.lastValidBlockHeight },
         "confirmed",
@@ -170,16 +218,23 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
         setAmountText("");
         onTraded();
       }
-      void refreshBalances();
     } catch (e) {
-      const message = (e as Error).message ?? "";
-      // The RPC simulates before sending, so a price that moved while the trader signed fails here, before any fee.
-      setError(
-        /reject|declin|cancel/i.test(message)
-          ? "You declined the transaction in your wallet. Nothing was traded."
-          : unsentError(message, r.prepared, quoteSymbol),
-      );
+      const landed = landedErrorOf(e);
+      if (landed) {
+        // It had already landed and failed when the confirmation looked: nothing moved but the network fee.
+        setError(landedError(landed, r.prepared, quoteSymbol));
+      } else {
+        // Sent, but its confirmation could not be followed: it may well have landed, so it is never called untraded.
+        setDone({ side: r.prepared.quote.side, coins: null, signature, unconfirmed: true });
+        setError(
+          e instanceof Error && e.name === "TransactionExpiredBlockheightExceededError"
+            ? "The trade wasn't seen to land before it expired. Check the transaction before trading again."
+            : "The trade was sent, but we lost track of it before it confirmed. Check the transaction before trading again.",
+        );
+        onTraded();
+      }
     }
+    void refreshBalances();
     setStep({ kind: "editing" });
   }
 
@@ -193,9 +248,15 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
 
   const confirmation = done && (
     <p className={styles.done} role="status">
-      {done.side === "buy" ? "Bought" : "Sold"}{" "}
-      {done.coins && <><span className="mono">{formatUnits(done.coins, COIN_DECIMALS, 0)}</span>{" "}</>}
-      {launch.symbol}.{" "}
+      {done.unconfirmed ? (
+        <>Sent a {done.side} of {launch.symbol}, not yet confirmed. </>
+      ) : (
+        <>
+          {done.side === "buy" ? "Bought" : "Sold"}{" "}
+          {done.coins && <><span className="mono">{formatUnits(done.coins, COIN_DECIMALS, 0)}</span>{" "}</>}
+          {launch.symbol}.{" "}
+        </>
+      )}
       <a href={explorerUrl("tx", done.signature, platform)} target="_blank" rel="noreferrer">View transaction</a>
     </p>
   );
@@ -221,9 +282,20 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
   // swap's own fee in front of a buy paid with SOL.
   const poolFeeInCoins = shown?.venue === "pool" && shown.side === "sell";
   const quoteFees = shown
-    ? BigInt(shown.fees.platform) + BigInt(shown.fees.creator) + (poolFeeInCoins ? 0n : BigInt(shown.fees.raydium))
+    ? BigInt(shown.fees.platform) + BigInt(shown.fees.creator) + (poolFeeInCoins ? 0n : BigInt(shown.fees.raydium)) + BigInt(shown.referral?.fee ?? "0")
     : 0n;
   type Fee = { label: string; pct: number | null; raw: string; unit: "quote" | "coin" | "sol" };
+  // What the issuers withhold on the way: the Quote Asset's transfer fee, and the coin's Reward Tax on a Reward Launch.
+  const transferFees: Fee[] = !shown
+    ? []
+    : [
+        ...(shown.transferFees.quote !== "0"
+          ? [{ label: `${quoteSymbol} transfer fee`, pct: shown.transferFeeBps.quote / 100, raw: shown.transferFees.quote, unit: "quote" as const }]
+          : []),
+        ...(shown.transferFees.base !== "0"
+          ? [{ label: `${launch.symbol} reward tax`, pct: shown.transferFeeBps.base / 100, raw: shown.transferFees.base, unit: "coin" as const }]
+          : []),
+      ];
   const fees: Fee[] = !shown
     ? []
     : [
@@ -238,6 +310,7 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
               { label: "Platform fee", pct: shown.feeBps.platform / 100, raw: shown.fees.platform, unit: "quote" as const },
               { label: "Creator fee", pct: shown.feeBps.creator / 100, raw: shown.fees.creator, unit: "quote" as const },
             ]),
+        ...(shown.referral?.applies ? [{ label: "Referral fee", pct: shown.referral.bps / 100, raw: shown.referral.fee, unit: "quote" as const }] : []),
       ];
   const amountOf = (raw: string, unit: Fee["unit"]) =>
     unit === "coin" ? (
@@ -421,7 +494,7 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
                   )}
                 </dd>
               </div>
-              {fees.map((f) => (
+              {[...fees, ...transferFees].map((f) => (
                 <div key={f.label} className={styles.fee}>
                   <dt>
                     {f.label}
@@ -565,8 +638,11 @@ function roundLamports(lamports: bigint, how: "nearest" | "up") {
 function buyPresets(launch: LaunchSummary, platform: PlatformInfo) {
   if (isSol(launch.quote)) return BUY_PRESETS_SOL.map(String);
   const perSol = (Number(launch.graduationTarget) / 10 ** launch.quote.decimals) / (Number(platform.graduationTargetLamports) / 10 ** SOL_DECIMALS);
+  // Two significant digits, but never more decimals than the Quote Asset has, or the preset would be unparseable.
   return BUY_PRESETS_SOL.map((s) =>
-    (s * perSol).toLocaleString("en-US", { maximumSignificantDigits: 2, maximumFractionDigits: launch.quote.decimals, useGrouping: false }),
+    (s * perSol).toLocaleString("en-US", {
+      maximumSignificantDigits: 2, maximumFractionDigits: launch.quote.decimals, roundingPriority: "lessPrecision", useGrouping: false,
+    }),
   );
 }
 

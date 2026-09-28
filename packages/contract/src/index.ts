@@ -2,7 +2,7 @@ import { z } from "zod";
 import { LaunchMarket } from "./board";
 import { GraduationTarget, QuoteRef } from "./quotes";
 import { CurveProgress, Graduation, SolRouteSource } from "./trades";
-import { LaunchModeFields, LaunchModesSummary } from "./launchModes";
+import { LaunchModeFields, LaunchModesSummary, RewardTax } from "./launchModes";
 
 /** The public API contract, shared by the API (which validates with it) and every client, including our web app. */
 
@@ -12,6 +12,10 @@ export * from "./creatorFees";
 export * from "./board";
 export * from "./launchModes";
 export * from "./revenue";
+export * from "./rewards";
+export * from "./burns";
+export * from "./apiKeys";
+export * from "./operator";
 
 const base58 = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "must be a base58 address");
 const optionalUrl = z.union([z.url({ protocol: /^https?$/ }).max(200), z.literal("")]).optional().transform((v) => v || undefined);
@@ -61,6 +65,8 @@ export const LaunchSummary = z.object({
   curve: CurveProgress,
   /** Set once Raydium has moved the Launch into its CPMM pool, where it trades from then on. */
   graduation: Graduation.nullable(),
+  /** A Reward Launch's Reward Tax; null for a standard coin. */
+  rewardTax: RewardTax.nullable(),
   market: LaunchMarket,
   createdSignature: z.string(),
   createdAt: z.iso.datetime(),
@@ -88,6 +94,8 @@ export const PlatformInfo = z.object({
   graduationTargetLamports: z.string(),
   platformFeeBps: z.number(),
   creatorFeeBps: z.number(),
+  /** What a referred curve trade pays its referrer, in basis points, where the Quote Asset allows a share fee. */
+  referralShareBps: z.number().int(),
   /** Where buys paid with SOL on a Launch paired with anything else get their Quote Asset; null when this deployment has no route. */
   solRoute: SolRouteSource.nullable(),
 });
@@ -95,8 +103,8 @@ export type PlatformInfo = z.infer<typeof PlatformInfo>;
 
 /** Something the operator must act on, such as a Launch whose curve sold out but that Raydium has not migrated. */
 export const OperatorAlert = z.object({
-  kind: z.enum(["graduation_stuck"]),
-  /** What the alert is about: a Launch's mint for `graduation_stuck`. */
+  kind: z.enum(["graduation_stuck", "reward_tax_unlocked", "job_failed", "reward_round_stalled"]),
+  /** What the alert is about: a Launch's mint, a job's name for `job_failed`, a round's id for `reward_round_stalled`. */
   subject: z.string(),
   message: z.string(),
   raisedAt: z.iso.datetime(),

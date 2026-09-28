@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { LAUNCH_IMAGE_MAX_BYTES, type PlatformInfo, type PreparedLaunch, type QuoteAsset } from "@launchpad/contract";
 import { ApiRequestError, prepareLaunch, reportTransaction, retryLaunch } from "@/lib/api";
+import { landedError } from "@/lib/transactions";
 import { COIN_DECIMALS, formatAmount, formatUnits, isSol, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
 import { LaunchOptions, supplyShare, useLaunchOptions } from "./LaunchOptions";
@@ -56,6 +57,12 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
   const options = useLaunchOptions(quote && { mint: quote.mint, symbol: quoteTicker(quote), decimals: quote.decimals }, publicKey?.toBase58() ?? null);
   const busy = step.kind !== "editing";
 
+  // A review is one wallet's transaction; another wallet, or none, means it must be prepared again.
+  const owner = publicKey?.toBase58() ?? null;
+  useEffect(() => {
+    setStep((s) => (s.kind === "reviewing" ? { kind: "editing" } : s));
+  }, [owner]);
+
   function pickImage(file: File | undefined) {
     setError(null);
     if (!file) return setImage(null);
@@ -65,13 +72,14 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
 
   /** Simulates a prepared launch before any signature is asked for, so the review shows what the wallet really pays. */
   async function toReview(prepared: PreparedLaunch, quote: QuoteAsset): Promise<Review> {
+    if (!publicKey) throw new Error("Connect a wallet to review the launch.");
     const tx = VersionedTransaction.deserialize(Uint8Array.from(atob(prepared.transaction), (c) => c.charCodeAt(0)));
     const sim = await connection.simulateTransaction(tx, {
       sigVerify: false,
-      accounts: { addresses: [publicKey!.toBase58()], encoding: "base64" },
+      accounts: { addresses: [publicKey.toBase58()], encoding: "base64" },
     });
-    if (sim.value.err) throw new Error(simulationError(sim.value.err, sim.value.logs ?? []));
-    const before = await connection.getBalance(publicKey!, "confirmed");
+    if (sim.value.err) throw new Error(simulationError(sim.value.err, sim.value.logs ?? [], prepared.firstBuy && !isSol(quote) ? quoteTicker(quote) : null));
+    const before = await connection.getBalance(publicKey, "confirmed");
     // The simulated balance already has the network fee taken off.
     const after = sim.value.accounts?.[0]?.lamports ?? before;
     return { prepared, quote, tx, costLamports: before - after };
@@ -335,6 +343,12 @@ function ReviewText({ review, symbol }: { review: Review; symbol: string }) {
           and account rent.
         </p>
       )}
+      {prepared.rewardTax && (
+        <p>
+          A Reward Launch: every transfer of {symbol} withholds <strong>{prepared.rewardTax.bps / 100}%</strong> for its holders,
+          the first buy&apos;s coins included. Nobody can change the rate, now or later.
+        </p>
+      )}
       {prepared.airdrop && (
         <p>
           Then send the airdrop from your coin&apos;s page: {prepared.airdrop.recipients}{" "}
@@ -365,9 +379,14 @@ function GraduationTerms({ quote }: { quote: QuoteAsset }) {
   );
 }
 
-/** Turns a failed simulation into something the Creator can act on. */
-function simulationError(err: unknown, logs: string[]) {
+/**
+ * Turns a failed simulation into something the Creator can act on. `payingQuote` is the Quote Asset's ticker when the
+ * launch's first buy spends a Quote Asset other than SOL from the wallet, whose shortfall reads like SOL's otherwise.
+ */
+function simulationError(err: unknown, logs: string[], payingQuote: string | null) {
   const text = `${JSON.stringify(err)} ${logs.join(" ")}`;
+  if (payingQuote && /insufficient funds|"Custom":1\b/.test(text) && !/insufficient lamports|InsufficientFundsForRent/.test(text))
+    return `Your wallet doesn't have enough ${payingQuote} for your first buy. Add ${payingQuote} or buy less.`;
   if (/insufficient (lamports|funds)|InsufficientFundsForRent|0x1\b|"Custom":1\b/.test(text))
     return "Your wallet doesn't have enough SOL to pay for the launch. Add SOL and try again.";
   if (/AccountNotFound/.test(text)) return "Your wallet has no SOL yet. Add SOL and try again.";
@@ -396,6 +415,8 @@ class LaunchFailed extends Error {}
  */
 function launchFailure(e: unknown): { message: string; uncertain: boolean } {
   if (e instanceof LaunchFailed) return { message: e.message, uncertain: false };
+  const landed = landedError(e);
+  if (landed) return { message: onChainError(JSON.parse(landed)), uncertain: false };
   if (e instanceof TransactionExpiredBlockheightExceededError)
     return { message: "The launch transaction expired before it landed, so nothing was created. Try again.", uncertain: false };
   if (e instanceof SendTransactionError && e.logs) {

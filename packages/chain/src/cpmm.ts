@@ -6,6 +6,7 @@ import { cpmmCoder, launchlabCoder } from "./coder";
 import type { Side, TradeFees } from "./curve";
 import { cpmmPdas } from "./pda";
 import { RATE_DENOMINATOR } from "./shape";
+import { grossForNet, transferFeeOf, withheldFee, type TransferFee } from "./transferFee";
 import { steppedTransaction, tradeAccounts, type PreparedTrade } from "./wallet";
 
 /**
@@ -22,6 +23,8 @@ export type PoolToken = {
   decimals: number;
   /** What the pool trades with: the vault balance less the protocol, fund and creator fees it holds for collection. */
   reserve: BN;
+  /** The mint's Token-2022 transfer fee, withheld on the way into and out of the pool; null without one. */
+  transferFee: TransferFee | null;
 };
 
 /** CPMM fee rates in its 1e6 denominator. `protocol` and `fund` are shares of the trade fee, not of the trade. */
@@ -71,14 +74,16 @@ export async function loadPool(connection: Connection, address: PublicKey): Prom
   const account = await connection.getAccountInfo(address, "confirmed");
   if (!account) return null;
   const s = cpmmCoder.accounts.decode("PoolState", account.data) as PoolStateData;
-  const [config, vault0, vault1, clock] = await connection.getMultipleAccountsInfo(
-    [s.amm_config, s.token_0_vault, s.token_1_vault, SYSVAR_CLOCK_PUBKEY],
-    "confirmed",
-  );
+  const [[config, vault0, vault1, clock, mint0, mint1], { epoch }] = await Promise.all([
+    connection.getMultipleAccountsInfo([s.amm_config, s.token_0_vault, s.token_1_vault, SYSVAR_CLOCK_PUBKEY, s.token_0_mint, s.token_1_mint], "confirmed"),
+    connection.getEpochInfo("confirmed"),
+  ]);
   if (!config || !vault0 || !vault1 || !clock) throw new Error(`pool ${address.toBase58()} points at a missing config or vault`);
   const c = cpmmCoder.accounts.decode("AmmConfig", config.data) as AmmConfigData;
-  const token = (mint: PublicKey, vault: PublicKey, program: PublicKey, decimals: number, balance: BN, ...held: BN[]): PoolToken => ({
-    mint, vault, program, decimals, reserve: held.reduce((left, fee) => left.sub(fee), balance),
+  const token = (
+    mint: PublicKey, mintInfo: typeof mint0, vault: PublicKey, program: PublicKey, decimals: number, balance: BN, ...held: BN[]
+  ): PoolToken => ({
+    mint, vault, program, decimals, reserve: held.reduce((left, fee) => left.sub(fee), balance), transferFee: transferFeeOf(mint, mintInfo ?? null, epoch),
   });
   return {
     address,
@@ -86,9 +91,9 @@ export async function loadPool(connection: Connection, address: PublicKey): Prom
     observation: s.observation_key,
     creator: s.pool_creator,
     tokens: [
-      token(s.token_0_mint, s.token_0_vault, s.token_0_program, s.mint_0_decimals, tokenAmount(vault0.data),
+      token(s.token_0_mint, mint0, s.token_0_vault, s.token_0_program, s.mint_0_decimals, tokenAmount(vault0.data),
         s.protocol_fees_token_0, s.fund_fees_token_0, s.creator_fees_token_0),
-      token(s.token_1_mint, s.token_1_vault, s.token_1_program, s.mint_1_decimals, tokenAmount(vault1.data),
+      token(s.token_1_mint, mint1, s.token_1_vault, s.token_1_program, s.mint_1_decimals, tokenAmount(vault1.data),
         s.protocol_fees_token_1, s.fund_fees_token_1, s.creator_fees_token_1),
     ],
     rates: {
@@ -150,9 +155,12 @@ const ceilDiv = (a: BN, b: BN) => a.add(b).subn(1).div(b);
 
 /** One swap's arithmetic, exactly as raydium-cp-swap's `CurveCalculator::swap_base_input` does it. */
 export type PoolSwap = {
+  /** What leaves the trader's account, any transfer fee of the input mint included. */
   amountIn: BN;
-  /** What the trader receives, after the creator fee when it comes out of the output. */
+  /** What reaches the trader's account, after the creator fee when it comes out of the output and after any transfer fee. */
   amountOut: BN;
+  /** The transfer fees the two mints' issuers withhold on the way in and out; zero without one. */
+  transferFees: { input: BN; output: BN };
   /** Raydium's trade fee, in the input token. */
   tradeFee: BN;
   /** The pool creator's fee, in the input token when `creatorFeeOnInput`, otherwise in the output token. */
@@ -167,29 +175,38 @@ export function isCreatorFeeOnInput(creatorFeeOn: number, inputIsToken0: boolean
   return creatorFeeOn === 0 || (creatorFeeOn === 1 && inputIsToken0) || (creatorFeeOn === 2 && !inputIsToken0);
 }
 
+/**
+ * `swap_base_input`: the pool prices what arrives after the input mint's transfer fee, and the trader receives the
+ * output less the output mint's transfer fee; cp-swap checks `minimum_amount_out` against that received amount.
+ */
 export function poolSwap(pool: Pool, inputMint: PublicKey, amountIn: BN): PoolSwap {
   const inputIsToken0 = pool.tokens[0].mint.equals(inputMint);
   const [input, output] = inputIsToken0 ? pool.tokens : [pool.tokens[1], pool.tokens[0]];
   const { trade, creator } = pool.rates;
   const onInput = isCreatorFeeOnInput(pool.creatorFeeOn, inputIsToken0);
+  const inputTransferFee = withheldFee(amountIn, input.transferFee);
+  const arrived = amountIn.sub(inputTransferFee);
   let tradeFee: BN;
   let creatorFee = new BN(0);
   let net: BN;
   if (onInput) {
     const both = trade.add(creator);
-    const total = ceilDiv(amountIn.mul(both), DENOMINATOR);
+    const total = ceilDiv(arrived.mul(both), DENOMINATOR);
     creatorFee = both.isZero() ? new BN(0) : total.mul(creator).div(both);
     tradeFee = total.sub(creatorFee);
-    net = amountIn.sub(total);
+    net = arrived.sub(total);
   } else {
-    tradeFee = ceilDiv(amountIn.mul(trade), DENOMINATOR);
-    net = amountIn.sub(tradeFee);
+    tradeFee = ceilDiv(arrived.mul(trade), DENOMINATOR);
+    net = arrived.sub(tradeFee);
   }
   const swapped = net.mul(output.reserve).div(input.reserve.add(net));
   if (!onInput) creatorFee = ceilDiv(swapped.mul(creator), DENOMINATOR);
+  const paidOut = onInput ? swapped : swapped.sub(creatorFee);
+  const outputTransferFee = withheldFee(paidOut, output.transferFee);
   return {
     amountIn,
-    amountOut: onInput ? swapped : swapped.sub(creatorFee),
+    amountOut: paidOut.sub(outputTransferFee),
+    transferFees: { input: inputTransferFee, output: outputTransferFee },
     tradeFee,
     creatorFee,
     creatorFeeOnInput: onInput,
@@ -202,34 +219,39 @@ export function poolSwap(pool: Pool, inputMint: PublicKey, amountIn: BN): PoolSw
 const preFeeAmount = (post: BN, rate: BN) => (rate.isZero() ? post : ceilDiv(post.mul(DENOMINATOR), DENOMINATOR.sub(rate)));
 
 /**
- * Buying exactly `amountOut` of the other token, exactly as raydium-cp-swap's `CurveCalculator::swap_base_output` does
- * it (mints without a Token-2022 transfer fee). `amountIn` is what the pool takes, fees included. Null when the pool
- * holds too little of the output token.
+ * Receiving exactly `amountOut` of the other token, exactly as raydium-cp-swap's `CurveCalculator::swap_base_output`
+ * does it: the pool pays out enough that `amountOut` arrives after the output mint's transfer fee, and takes enough
+ * that what it needs arrives after the input mint's. `amountIn` is what leaves the trader, every fee included. Null
+ * when the pool holds too little of the output token.
  */
 export function poolSwapExactOut(pool: Pool, inputMint: PublicKey, amountOut: BN): PoolSwap | null {
   const inputIsToken0 = pool.tokens[0].mint.equals(inputMint);
   const [input, output] = inputIsToken0 ? pool.tokens : [pool.tokens[1], pool.tokens[0]];
   const { trade, creator } = pool.rates;
   const onInput = isCreatorFeeOnInput(pool.creatorFeeOn, inputIsToken0);
-  const swapped = onInput ? amountOut : preFeeAmount(amountOut, creator);
+  const paidOut = grossForNet(amountOut, output.transferFee);
+  const outputTransferFee = paidOut.sub(amountOut);
+  const swapped = onInput ? paidOut : preFeeAmount(paidOut, creator);
   if (swapped.gte(output.reserve)) return null;
   const net = ceilDiv(input.reserve.mul(swapped), output.reserve.sub(swapped));
-  let creatorFee = swapped.sub(amountOut);
-  let amountIn: BN;
+  let creatorFee = swapped.sub(paidOut);
+  let arrived: BN;
   let tradeFee: BN;
   if (onInput) {
     const both = trade.add(creator);
-    amountIn = preFeeAmount(net, both);
-    const total = amountIn.sub(net);
+    arrived = preFeeAmount(net, both);
+    const total = arrived.sub(net);
     creatorFee = both.isZero() ? new BN(0) : total.mul(creator).div(both);
     tradeFee = total.sub(creatorFee);
   } else {
-    amountIn = preFeeAmount(net, trade);
-    tradeFee = amountIn.sub(net);
+    arrived = preFeeAmount(net, trade);
+    tradeFee = arrived.sub(net);
   }
+  const amountIn = grossForNet(arrived, input.transferFee);
   return {
     amountIn,
     amountOut,
+    transferFees: { input: amountIn.sub(arrived), output: outputTransferFee },
     tradeFee,
     creatorFee,
     creatorFeeOnInput: onInput,
@@ -246,12 +268,15 @@ export function poolPrice(baseReserve: BN, quoteReserve: BN, baseDecimals: numbe
 export type PoolTradeQuote = {
   side: Side;
   amountIn: BN;
+  /** What reaches the trader, every fee taken; cp-swap checks the slippage limit against this. */
   amountOut: BN;
   /**
    * In the Quote Asset, except that on a sell the pool takes Raydium's trade fee from the coins going in.
    * `platform` is the pool creator fee: our platform is every graduated pool's creator (ADR 0001).
    */
   fees: TradeFees;
+  /** Withheld by the issuers of the Quote Asset and of the coin, whichever way each is moving. */
+  transferFees: { quote: BN; base: BN };
   priceBefore: number;
   priceAfter: number;
 };
@@ -273,7 +298,8 @@ export function quotePoolTrade(pool: Pool, baseMint: PublicKey, side: Side, amou
     side,
     amountIn: s.amountIn,
     amountOut: s.amountOut,
-    fees: { protocol: s.tradeFee, platform: s.creatorFee, creator: new BN(0) },
+    fees: { protocol: s.tradeFee, platform: s.creatorFee, creator: new BN(0), share: new BN(0) },
+    transferFees: side === "buy" ? { quote: s.transferFees.input, base: s.transferFees.output } : { quote: s.transferFees.output, base: s.transferFees.input },
     priceBefore: price(s.before),
     priceAfter: price(s.after),
   };

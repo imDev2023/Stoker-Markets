@@ -3,14 +3,14 @@
 import { createHmac } from "node:crypto";
 import { HTTPException } from "hono/http-exception";
 import { Keypair, PublicKey, type Connection } from "@solana/web3.js";
-import { ACCOUNT_SIZE, getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { ACCOUNT_SIZE, ExtensionType, getAccountLen, getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import BN from "bn.js";
 import { eq, asc } from "drizzle-orm";
 import {
-  curvePrice, firstBuyTakesCurve, LAUNCH_SHAPE, loadLookupTable, RATE_DENOMINATOR, planAirdrop, prepareLaunch, quoteFirstBuy, WSOL_MINT,
-  type FirstBuyQuote, type LaunchPairing,
+  curvePrice, firstBuyTakesCurve, LAUNCH_SHAPE, loadLookupTable, RATE_DENOMINATOR, planAirdrop, prepareLaunch, quoteFirstBuy, readTransferFees,
+  rewardTaxFee, WSOL_MINT, type FirstBuyQuote, type LaunchPairing,
 } from "@launchpad/chain";
-import type { AirdropRecipients, GraduationTarget, LaunchModesSummary, PreparedLaunch, TradeQuote } from "@launchpad/contract";
+import type { AirdropRecipients, GraduationTarget, LaunchModesSummary, PreparedLaunch, RewardTaxBps, TradeQuote } from "@launchpad/contract";
 import { airdropRecipients, launchDrafts, launchMetadata, type Db } from "@launchpad/db";
 import type { Config } from "./env";
 import { launchQuoteAsBuilt, priceLaunch, type LaunchQuote } from "./quotes/assets";
@@ -57,7 +57,7 @@ export function mintKeypair(secret: string, nonce: string) {
 }
 
 /** A first buy quote in the contract's terms: amounts as decimal strings, prices in whole units. */
-export function firstBuyToContract(q: FirstBuyQuote, quoteDecimals: number): TradeQuote {
+export function firstBuyToContract(q: FirstBuyQuote, quoteDecimals: number, quoteTransferFeeBps = 0, rewardTaxBps = 0): TradeQuote {
   const t = q.quote;
   const bps = (rate: BN) => (Number(rate.toString()) * 10_000) / RATE_DENOMINATOR;
   return {
@@ -70,21 +70,34 @@ export function firstBuyToContract(q: FirstBuyQuote, quoteDecimals: number): Tra
     slippageBps: 0,
     fees: { raydium: t.fees.protocol.toString(), platform: t.fees.platform.toString(), creator: t.fees.creator.toString() },
     feeBps: { raydium: bps(q.rates.protocol), platform: bps(q.rates.platform), creator: bps(q.rates.creator) },
+    transferFees: { quote: t.transferFees.quote.toString(), base: t.transferFees.base.toString() },
+    transferFeeBps: { quote: quoteTransferFeeBps, base: rewardTaxBps },
     priceBefore: curvePrice(q.start, LAUNCH_SHAPE.decimals, quoteDecimals),
     priceAfter: curvePrice(t.after, LAUNCH_SHAPE.decimals, quoteDecimals),
     completesCurve: firstBuyTakesCurve(t),
     // A first buy is paid in the Quote Asset: a SOL swap would not fit the launch transaction beside it.
     route: null,
+    // Nobody refers a Creator's own first buy.
+    referral: null,
   };
 }
 
+/**
+ * A first buy quote with the transfer fees it allows for: the Quote Asset's, if it carries one, paid on the way in, and
+ * the coin's Reward Tax on a Reward Launch, withheld from the coins on the way out.
+ */
+export type LaunchFirstBuy = FirstBuyQuote & { quoteTransferFeeBps: number; rewardTaxBps: number };
+
 /** Quotes a first buy, refusing one that would sell out the curve inside its own launch. */
-export async function quoteLaunchFirstBuy(connection: Connection, cfg: Config, quote: QuoteAsset, amount: BN) {
-  const q = await quoteFirstBuy(connection, { ...quote, platformConfig: cfg.platformConfig }, amount);
+export async function quoteLaunchFirstBuy(
+  connection: Connection, cfg: Config, quote: QuoteAsset, amount: BN, rewardTaxBps: RewardTaxBps | null = null,
+): Promise<LaunchFirstBuy> {
+  const transferFee = (await readTransferFees(connection, [quote.quoteMint])).get(quote.quoteMint.toBase58()) ?? null;
+  const q = await quoteFirstBuy(connection, { ...quote, platformConfig: cfg.platformConfig }, amount, { quote: transferFee, base: rewardTaxFee(rewardTaxBps) });
   if (q.quote.amountOut.isZero()) throw new LaunchModeError("The first buy is too small to get any coins. Enter a larger amount.");
   if (firstBuyTakesCurve(q.quote))
     throw new LaunchModeError("A first buy can't take every coin on the curve. Enter a smaller amount.");
-  return q;
+  return { ...q, quoteTransferFeeBps: transferFee?.bps ?? 0, rewardTaxBps: rewardTaxBps ?? 0 };
 }
 
 /** A launch-mode request that can't be built, with the reason in words a Creator can act on. */
@@ -111,10 +124,13 @@ async function checkQuoteBalance(connection: Connection, quote: QuoteAsset, crea
  */
 export async function resolveLaunchModes(
   connection: Connection, cfg: Config, quote: QuoteAsset, creator: PublicKey, firstBuy: BN | null, airdrop: AirdropRecipients,
-): Promise<{ firstBuy: FirstBuyQuote | null; summary: LaunchModesSummary }> {
-  const bought = firstBuy ? await quoteLaunchFirstBuy(connection, cfg, quote, firstBuy) : null;
+  rewardTaxBps: RewardTaxBps | null = null,
+): Promise<{ firstBuy: LaunchFirstBuy | null; summary: LaunchModesSummary }> {
+  const rewardTax = rewardTaxBps ? { bps: rewardTaxBps } : null;
+  const bought = firstBuy ? await quoteLaunchFirstBuy(connection, cfg, quote, firstBuy, rewardTaxBps) : null;
+  const toContract = (b: LaunchFirstBuy) => firstBuyToContract(b, quote.decimals, b.quoteTransferFeeBps, b.rewardTaxBps);
   if (bought) await checkQuoteBalance(connection, quote, creator, bought.quote.amountIn);
-  if (airdrop.length === 0) return { firstBuy: bought, summary: { firstBuy: bought && firstBuyToContract(bought, quote.decimals), airdrop: null } };
+  if (airdrop.length === 0) return { firstBuy: bought, summary: { rewardTax, firstBuy: bought && toContract(bought), airdrop: null } };
   if (!bought) throw new LaunchModeError("An airdrop is paid from your first buy. Add a first buy.");
   const recipients = airdrop.map((r) => ({ wallet: new PublicKey(r.wallet), amount: new BN(r.amount) }));
   for (const r of recipients) {
@@ -124,17 +140,21 @@ export async function resolveLaunchModes(
   const amount = recipients.reduce((sum, r) => sum.add(r.amount), new BN(0));
   if (amount.gt(bought.quote.amountOut))
     throw new LaunchModeError("The airdrop gives away more coins than your first buy gets. Buy more or airdrop less.");
-  // The coin is new, so every wallet needs a new coin account; the Creator pays its rent.
+  // The coin is new, so every wallet needs a new coin account; the Creator pays its rent. A Reward Launch's coin accounts
+  // are Token-2022 ones with the transfer-fee extension, so a little larger.
+  const tokenProgram = rewardTaxBps ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
   const transactions = planAirdrop({
-    creator, mint: Keypair.generate().publicKey, decimals: LAUNCH_SHAPE.decimals, tokenProgram: TOKEN_PROGRAM_ID, recipients,
+    creator, mint: Keypair.generate().publicKey, decimals: LAUNCH_SHAPE.decimals, tokenProgram, recipients,
     lookupTable: await loadLookupTable(connection, cfg.lookupTable),
   }).length;
-  const rent = await connection.getMinimumBalanceForRentExemption(ACCOUNT_SIZE, "confirmed");
+  const accountSize = rewardTaxBps ? getAccountLen([ExtensionType.TransferFeeAmount]) : ACCOUNT_SIZE;
+  const rent = await connection.getMinimumBalanceForRentExemption(accountSize, "confirmed");
   const costLamports = BigInt(rent) * BigInt(recipients.length) + BigInt(LAMPORTS_PER_SIGNATURE * transactions);
   return {
     firstBuy: bought,
     summary: {
-      firstBuy: firstBuyToContract(bought, quote.decimals),
+      rewardTax,
+      firstBuy: toContract(bought),
       airdrop: { recipients: recipients.length, amount: amount.toString(), transactions, costLamports: costLamports.toString() },
     },
   };
@@ -142,7 +162,8 @@ export async function resolveLaunchModes(
 
 /** Keeps what the Creator asked for, so a retry rebuilds the same launch. */
 export async function saveDraft(
-  db: Db, d: { mint: PublicKey; creator: PublicKey; nonce: string; quote: QuoteAsset; firstBuy: BN | null; airdrop: AirdropRecipients },
+  db: Db,
+  d: { mint: PublicKey; creator: PublicKey; nonce: string; quote: QuoteAsset; firstBuy: BN | null; airdrop: AirdropRecipients; rewardTaxBps: RewardTaxBps | null },
 ) {
   await db.transaction(async (tx) => {
     await tx.insert(launchDrafts).values({
@@ -154,6 +175,7 @@ export async function saveDraft(
       graduationTarget: d.quote.graduationTarget.raw,
       graduationTargetLamports: d.quote.graduationTarget.lamports,
       firstBuy: d.firstBuy?.toString() ?? null,
+      rewardTaxBps: d.rewardTaxBps,
     });
     if (d.airdrop.length > 0)
       await tx.insert(airdropRecipients).values(
@@ -197,6 +219,7 @@ export async function buildLaunch(
       uri: metadataUri,
       firstBuy: firstBuy?.quote ?? null,
       lookupTable: await loadLookupTable(connection, cfg.lookupTable),
+      rewardTaxBps: draft.rewardTaxBps,
     },
     mintKeypair(cfg.mintKeySecret, draft.mintKeyNonce),
   );
@@ -224,6 +247,7 @@ export async function resolveDraftModes(db: Db, connection: Connection, cfg: Con
     new PublicKey(draft.creator),
     draft.firstBuy ? new BN(draft.firstBuy) : null,
     recipients.map((r) => ({ wallet: r.wallet, amount: r.amount })),
+    (draft.rewardTaxBps as RewardTaxBps | null) ?? null,
   );
   return { quote, ...modes };
 }

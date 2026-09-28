@@ -1,17 +1,20 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { createSocket } from "node:dgram";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { createServer } from "node:net";
+import { connect, createServer, type Server } from "node:net";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   AddressLookupTableProgram, ComputeBudgetProgram, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, sendAndConfirmTransaction,
-  Transaction, TransactionMessage, VersionedTransaction, type TransactionInstruction,
+  SystemProgram, Transaction, TransactionMessage, VersionedTransaction, type TransactionInstruction,
 } from "@solana/web3.js";
 import {
-  createAssociatedTokenAccountIdempotentInstruction, createMintToInstruction, getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
+  createAssociatedTokenAccountIdempotentInstruction, createInitializeMetadataPointerInstruction, createInitializeMint2Instruction,
+  createInitializeTransferFeeConfigInstruction, createMintToInstruction, ExtensionType, getAssociatedTokenAddressSync, getMintLen, LENGTH_SIZE,
+  TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, TYPE_SIZE,
 } from "@solana/spl-token";
+import { createInitializeInstruction as createInitializeMetadataInstruction, pack as packTokenMetadata } from "@solana/spl-token-metadata";
+import { createHash } from "node:crypto";
 import BN from "bn.js";
 import bs58 from "bs58";
 import {
@@ -30,7 +33,16 @@ const SOL_QUOTE_MINT = new PublicKey("So1111111111111111111111111111111111111111
 /** Devnet CPMM config index 0. */
 export const CPSWAP_CONFIG = new PublicKey("5MxLgy9oPdTC3YgkiePHqr3EoCRD9uLVYRQS2ANAs7wy");
 
-/** The mainnet quote mints cloned into `fixtures/quotes`, one per case the Quote Registry must handle. */
+/**
+ * A Token-2022 quote mint with a 1% transfer fee, made on the local chain at bootstrap (there is no fixture: the chain
+ * creates it), standing in for the mainnet Quote Assets whose issuers withhold a fee on every transfer (33 of 573; the
+ * PreStocks at 3%, reward-style tokens). Its address is derived from a fixed seed, so it is the same on every chain.
+ */
+export const TAXED_QUOTE_KEYPAIR = Keypair.fromSeed(createHash("sha256").update("launchpad localnet taxed quote mint v1").digest());
+export const TAXED_QUOTE_FEE_BPS = 100;
+export const TAXED_QUOTE_DECIMALS = 6;
+
+/** The mainnet quote mints cloned into `fixtures/quotes`, one per case the Quote Registry must handle, plus the taxed one made here. */
 export const LOCAL_QUOTES = {
   /** SPL Token, 6 decimals, a freeze authority. */
   USDC: new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
@@ -40,6 +52,8 @@ export const LOCAL_QUOTES = {
   JTO: new PublicKey("jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL"),
   /** Token-2022 pump.fun memecoin, 6 decimals; left without a price, so it can't be launched against. */
   BULLWHALE: new PublicKey("88SpBWrpbQ6MCdukVbtDBwRYYZAkv4KU4PYdG86ipump"),
+  /** Token-2022, 6 decimals, a 1% transfer fee withheld by its issuer (the local admin key), priced at 1 USD. */
+  TAXQ: TAXED_QUOTE_KEYPAIR.publicKey,
 } as const;
 
 /** USD prices for the API's static price source on the local chain. BULLWHALE is missing on purpose. */
@@ -48,6 +62,7 @@ export const LOCAL_QUOTE_PRICES_USD: Record<string, string> = {
   [LOCAL_QUOTES.USDC.toBase58()]: "1",
   [LOCAL_QUOTES.NVDAx.toBase58()]: "180",
   [LOCAL_QUOTES.JTO.toBase58()]: "2.5",
+  [LOCAL_QUOTES.TAXQ.toBase58()]: "1",
 };
 
 
@@ -85,6 +100,8 @@ export function localnetKeys(): LocalnetKeys {
 // then four pubkeys before migrate_to_cpswap_wallet.
 const QUOTE_MINT_OFFSET = 8 + 8 + 1 + 2 + 8 * 8;
 const MIGRATE_TO_CPSWAP_WALLET_OFFSET = QUOTE_MINT_OFFSET + 32 * 4;
+// ...and max_share_fee_rate is the third u64, after migrate_fee and trade_fee_rate.
+const MAX_SHARE_FEE_RATE_OFFSET = 8 + 8 + 1 + 2 + 8 * 2;
 
 type AccountFixture = { pubkey: string; account: { data: [string, string]; owner: string; rentEpoch: number } };
 const readFixture = (path: string) => JSON.parse(readFileSync(path, "utf8")) as AccountFixture;
@@ -107,6 +124,12 @@ function globalConfigFixtures(dir: string, migrateWallet: PublicKey): Map<string
     const data = Buffer.from(template.account.data[0], "base64");
     patchKey(data, QUOTE_MINT_OFFSET, decoded.quote_mint, quoteMint);
     patchKey(data, MIGRATE_TO_CPSWAP_WALLET_OFFSET, decoded.migrate_to_cpswap_wallet, migrateWallet);
+    // SOL's config allows a 1% share (referral) fee; most mainnet configs, every stock's among them, allow none. JTO
+    // stands in for those, so tests see both.
+    if (quoteMint.equals(LOCAL_QUOTES.JTO)) {
+      if (data.readBigUInt64LE(MAX_SHARE_FEE_RATE_OFFSET) !== 10_000n) throw new Error("GlobalConfig layout changed; update the offsets");
+      data.writeBigUInt64LE(0n, MAX_SHARE_FEE_RATE_OFFSET);
+    }
     const address = launchlabPdas(program).globalConfig(quoteMint).toBase58();
     // rentEpoch is u64::MAX in the dump, which JSON.parse turns into a float the validator rejects; 0 means the same (rent-exempt).
     const fixture = { pubkey: address, account: { ...template.account, data: [data.toString("base64"), "base64"], rentEpoch: 0 } };
@@ -144,13 +167,48 @@ function quoteMintFixtures(dir: string, authority: PublicKey): Map<string, strin
   return out;
 }
 
-/** The quote mints cloned from mainnet into `fixtures/quotes` (their Metaplex metadata accounts sit beside them). */
+/**
+ * Every quote mint on the local chain: the ones cloned from mainnet into `fixtures/quotes` (their Metaplex metadata
+ * accounts sit beside them) and the taxed one the chain makes itself.
+ */
 export function localQuoteMints(): PublicKey[] {
-  return readdirSync(join(FIXTURES, "quotes"))
-    .filter((f) => f.endsWith(".json"))
-    .map((f) => readFixture(join(FIXTURES, "quotes", f)))
-    .filter((f) => TOKEN_PROGRAMS.has(f.account.owner))
-    .map((f) => new PublicKey(f.pubkey));
+  return [
+    ...readdirSync(join(FIXTURES, "quotes"))
+      .filter((f) => f.endsWith(".json"))
+      .map((f) => readFixture(join(FIXTURES, "quotes", f)))
+      .filter((f) => TOKEN_PROGRAMS.has(f.account.owner))
+      .map((f) => new PublicKey(f.pubkey)),
+    LOCAL_QUOTES.TAXQ,
+  ];
+}
+
+/**
+ * Makes the taxed quote mint if the chain doesn't have it yet: a Token-2022 mint whose issuer (the admin key) takes a 1%
+ * fee on every transfer, with its name in the mint's own metadata, the admin as mint authority so `mintLocalQuote` works.
+ */
+async function ensureTaxedQuote(connection: Connection) {
+  const { admin } = localnetKeys();
+  const mint = TAXED_QUOTE_KEYPAIR;
+  if (await connection.getAccountInfo(mint.publicKey, "confirmed")) return;
+  const metadata = { mint: mint.publicKey, name: "Taxed Quote", symbol: "TAXQ", uri: "", additionalMetadata: [] as [string, string][] };
+  const mintLen = getMintLen([ExtensionType.TransferFeeConfig, ExtensionType.MetadataPointer]);
+  const metadataLen = TYPE_SIZE + LENGTH_SIZE + packTokenMetadata(metadata).length;
+  const lamports = await connection.getMinimumBalanceForRentExemption(mintLen + metadataLen, "confirmed");
+  await sendAndConfirmTransaction(
+    connection,
+    new Transaction().add(
+      SystemProgram.createAccount({ fromPubkey: admin.publicKey, newAccountPubkey: mint.publicKey, space: mintLen, lamports, programId: TOKEN_2022_PROGRAM_ID }),
+      createInitializeTransferFeeConfigInstruction(mint.publicKey, admin.publicKey, admin.publicKey, TAXED_QUOTE_FEE_BPS, BigInt("1000000000000000"), TOKEN_2022_PROGRAM_ID),
+      createInitializeMetadataPointerInstruction(mint.publicKey, admin.publicKey, mint.publicKey, TOKEN_2022_PROGRAM_ID),
+      createInitializeMint2Instruction(mint.publicKey, TAXED_QUOTE_DECIMALS, admin.publicKey, null, TOKEN_2022_PROGRAM_ID),
+      createInitializeMetadataInstruction({
+        programId: TOKEN_2022_PROGRAM_ID, metadata: mint.publicKey, updateAuthority: admin.publicKey, mint: mint.publicKey, mintAuthority: admin.publicKey,
+        name: metadata.name, symbol: metadata.symbol, uri: metadata.uri,
+      }),
+    ),
+    [admin, mint],
+    { commitment: "confirmed" },
+  );
 }
 
 export type Localnet = { rpcUrl: string; connection: Connection; stop: () => Promise<void> };
@@ -206,11 +264,112 @@ async function rpcIdentity(rpcUrl: string) {
   return ((await res.json()) as { result: { identity: string } }).result.identity;
 }
 
+/** Which runtime plays the local chain: `solana-test-validator` when installed, else Surfpool embedded in this process. */
+export type LocalnetRuntime = "solana-test-validator" | "surfpool";
+
+function hasTestValidator() {
+  return (process.env.PATH ?? "").split(":").some((dir) => dir && existsSync(join(dir, "solana-test-validator")));
+}
+
+/** `LOCALNET_RUNTIME` picks the runtime; without it, the validator when it is on PATH, otherwise Surfpool. */
+export function localnetRuntime(): LocalnetRuntime {
+  const chosen = process.env.LOCALNET_RUNTIME;
+  if (chosen === "surfpool" || chosen === "solana-test-validator") return chosen;
+  if (chosen) throw new Error(`LOCALNET_RUNTIME must be "solana-test-validator" or "surfpool", not "${chosen}"`);
+  return hasTestValidator() ? "solana-test-validator" : "surfpool";
+}
+
+/** The account files the chain loads besides programs: fixtures as they are, the quote mints and GlobalConfigs as patched. */
+function accountFiles(dir: string) {
+  const { admin, migrate } = localnetKeys();
+  const quoteMints = quoteMintFixtures(dir, admin.publicKey);
+  const files = new Map<string, string>();
+  for (const folder of ["accounts", "quotes"]) {
+    for (const f of readdirSync(join(FIXTURES, folder))) {
+      const address = f.replace(/\.json$/, "");
+      if (!f.endsWith(".json") || address === SOL_GLOBAL_CONFIG.toBase58() || quoteMints.has(address)) continue;
+      files.set(address, join(FIXTURES, folder, f));
+    }
+  }
+  for (const [address, path] of quoteMints) files.set(address, path);
+  for (const [address, path] of globalConfigFixtures(dir, migrate.publicKey)) files.set(address, path);
+  return files;
+}
+
 /**
- * Starts a fresh solana-test-validator with the Raydium devnet programs and accounts from fixtures.
- * Without an `rpcPort` it takes a free block of ports; with one, it refuses to start if anything already holds them.
+ * Starts a fresh local chain with the Raydium devnet programs and accounts from fixtures: a `solana-test-validator`
+ * when one is installed, otherwise Surfpool embedded in this process (see `localnetRuntime`).
+ * Without an `rpcPort` the validator takes a free block of ports; with one, it refuses to start if anything already
+ * holds them. Surfpool picks its own ports.
  */
 export async function startLocalnet(opts: { rpcPort?: number } = {}): Promise<Localnet> {
+  if (localnetRuntime() !== "surfpool") return startTestValidator(opts);
+  if (opts.rpcPort !== undefined) throw new Error("Surfpool picks its own ports; RPC_PORT and TEST_RPC_PORT only apply to solana-test-validator");
+  return startSurfpool();
+}
+
+/**
+ * Surfpool runs the same programs and accounts in-process, for machines without the Solana tool suite (CI, cloud
+ * agents). It produces a block every 400 ms, so slots finalize about 13 s after they are confirmed, as on the validator.
+ * Surfpool picks its own ports, and web3.js expects the websocket one port above the RPC, so the chain is reached
+ * through two forwarded ports that sit side by side.
+ */
+async function startSurfpool(): Promise<Localnet> {
+  const { Surfnet } = await import("@solana/surfpool");
+  const surfnet = Surfnet.startWithConfig({ offline: true, blockProductionMode: "clock", slotTimeMs: 400 });
+  // Keyed by Surfpool's own port, so two chains started side by side never write over each other's account files.
+  const dir = join(ROOT, ".ledger", `surfpool-${new URL(surfnet.rpcUrl).port}`);
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const forwards: Server[] = [];
+  const stop = async () => {
+    for (const f of forwards) await new Promise<void>((resolve) => f.close(() => resolve()));
+    surfnet.stop();
+    rmSync(dir, { recursive: true, force: true });
+  };
+  try {
+    for (const f of readdirSync(join(FIXTURES, "programs")))
+      surfnet.deploy({ programId: f.replace(/\.so$/, ""), soPath: join(FIXTURES, "programs", f) });
+    for (const [address, path] of accountFiles(dir)) {
+      const fixture = JSON.parse(readFileSync(path, "utf8")) as AccountFixture & { account: { lamports: number } };
+      surfnet.setAccount(address, fixture.account.lamports, Uint8Array.from(Buffer.from(fixture.account.data[0], "base64")), fixture.account.owner);
+    }
+    const rpcPort = await freeRpcPort();
+    forwards.push(await forwardPort(rpcPort, Number(new URL(surfnet.rpcUrl).port)));
+    forwards.push(await forwardPort(rpcPort + 1, Number(new URL(surfnet.wsUrl).port)));
+    const rpcUrl = `http://127.0.0.1:${rpcPort}`;
+    const connection = new Connection(rpcUrl, "confirmed");
+    const deadline = Date.now() + 30_000;
+    while ((await connection.getSlot().catch(() => 0)) < 1) {
+      if (Date.now() > deadline) throw new Error("Surfpool did not start producing blocks within 30 s");
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    return { rpcUrl, connection, stop };
+  } catch (e) {
+    await stop();
+    throw e;
+  }
+}
+
+/** A TCP forward from `port` to `target` on localhost. */
+function forwardPort(port: number, target: number) {
+  return new Promise<Server>((resolve, reject) => {
+    const server = createServer((client) => {
+      const upstream = connect(target, "127.0.0.1");
+      client.pipe(upstream).pipe(client);
+      const drop = () => {
+        client.destroy();
+        upstream.destroy();
+      };
+      client.on("error", drop);
+      upstream.on("error", drop);
+    });
+    server.once("error", reject);
+    server.listen(port, "127.0.0.1", () => resolve(server));
+  });
+}
+
+async function startTestValidator(opts: { rpcPort?: number } = {}): Promise<Localnet> {
   const rpcPort = opts.rpcPort ?? (await freeRpcPort());
   if (opts.rpcPort !== undefined && !(await portsFree(rpcPort)))
     throw new Error(`port ${rpcPort} or one of the validator ports derived from it is in use; is another local chain running there?`);
@@ -219,23 +378,13 @@ export async function startLocalnet(opts: { rpcPort?: number } = {}): Promise<Lo
   rmSync(dir, { recursive: true, force: true });
   const ledger = join(dir, "ledger");
   mkdirSync(ledger, { recursive: true });
-  const { admin, migrate } = localnetKeys();
-  const quoteMints = quoteMintFixtures(dir, admin.publicKey);
   const args = [
     "--reset", "--quiet", "--ledger", ledger,
     "--rpc-port", String(rpcPort), "--faucet-port", String(ports.faucet),
     "--gossip-port", String(ports.gossip), "--dynamic-port-range", ports.dynamicRange,
   ];
   for (const f of readdirSync(join(FIXTURES, "programs"))) args.push("--bpf-program", f.replace(/\.so$/, ""), join(FIXTURES, "programs", f));
-  for (const folder of ["accounts", "quotes"]) {
-    for (const f of readdirSync(join(FIXTURES, folder))) {
-      const address = f.replace(/\.json$/, "");
-      if (!f.endsWith(".json") || address === SOL_GLOBAL_CONFIG.toBase58() || quoteMints.has(address)) continue;
-      args.push("--account", address, join(FIXTURES, folder, f));
-    }
-  }
-  for (const [address, path] of quoteMints) args.push("--account", address, path);
-  for (const [address, path] of globalConfigFixtures(dir, migrate.publicKey)) args.push("--account", address, path);
+  for (const [address, path] of accountFiles(dir)) args.push("--account", address, path);
 
   const proc: ChildProcess = spawn("solana-test-validator", args, { stdio: ["ignore", "pipe", "pipe"] });
   let stderr = "";
@@ -324,6 +473,7 @@ export async function bootstrapPlatform(connection: Connection, rpcUrl: string, 
     await airdrop(connection, operations.publicKey, 10);
     // Each migration pays CPMM's 0.15 SOL pool fee plus rent, as Raydium's crank does on real clusters.
     await airdrop(connection, migrate.publicKey, 100);
+    await ensureTaxedQuote(connection);
     await send(connection, [
       createPlatformConfigIx(program, admin.publicKey, {
         feeRate: new BN(5_000),
@@ -438,6 +588,7 @@ export function startCrank(connection: Connection, platformConfig: PublicKey, op
   const discriminator = launchlabCoder.accounts.memcmp("PoolState");
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  const failing = new Map<string, { attempts: number; at: number }>();
   const tick = async () => {
     try {
       const waiting = await connection.getProgramAccounts(program, {
@@ -450,8 +601,18 @@ export function startCrank(connection: Connection, platformConfig: PublicKey, op
       for (const { pubkey, account } of waiting) {
         const s = launchlabCoder.accounts.decode("PoolState", account.data) as { platform_config: PublicKey };
         if (!s.platform_config.equals(platformConfig)) continue;
-        const { signature, pool } = await migrateCurve(connection, pubkey);
-        opts.log?.(`crank: migrated curve ${pubkey.toBase58()} into pool ${pool.toBase58()} (${signature})`);
+        // One curve whose migration fails must not hold up the others: it is tried again with a growing wait.
+        const retryAt = failing.get(pubkey.toBase58());
+        if (retryAt && retryAt.at > Date.now()) continue;
+        try {
+          const { signature, pool } = await migrateCurve(connection, pubkey);
+          failing.delete(pubkey.toBase58());
+          opts.log?.(`crank: migrated curve ${pubkey.toBase58()} into pool ${pool.toBase58()} (${signature})`);
+        } catch (e) {
+          const attempts = (retryAt?.attempts ?? 0) + 1;
+          failing.set(pubkey.toBase58(), { attempts, at: Date.now() + Math.min(60_000, 3_000 * 2 ** attempts) });
+          opts.log?.(`crank: migrating ${pubkey.toBase58()} failed (attempt ${attempts}): ${(e as Error).message}`);
+        }
       }
     } catch (e) {
       opts.log?.(`crank: ${(e as Error).message}`);

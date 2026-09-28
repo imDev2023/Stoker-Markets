@@ -37,6 +37,8 @@ export type LaunchForm = {
   image?: { bytes: Uint8Array; type: string } | null;
   /** Quote Asset raw units. */
   firstBuy?: string;
+  /** Basis points, as the form sends it: "100", "300" or "500". */
+  rewardTax?: string;
   /** Sent as the JSON text the multipart form carries; a string is sent as it is. */
   airdrop?: { wallet: string; amount: string }[] | string;
 };
@@ -50,6 +52,39 @@ export async function prepare(form: LaunchForm) {
   const image = form.image === undefined ? { bytes: PNG, type: "image/png" } : form.image;
   if (image) body.set("image", new Blob([image.bytes], { type: image.type }), "logo.png");
   return fetch(`${env().apiUrl}/v1/launches/prepare`, { method: "POST", body });
+}
+
+export type TransactionOutcome = { signature: string; err: { InstructionError?: [number, unknown] } | null };
+
+/**
+ * Waits for a sent transaction and says how it ended. web3.js's `confirmTransaction` reports a failure two ways: as
+ * `value.err` when the failure arrives on its subscription, and as a rejection with the raw error object when the
+ * transaction had already failed by the time it looked (always the case on a chain as fast as Surfpool); either way the
+ * error is returned here, without the extra keys some RPCs add to it.
+ */
+export async function confirmOutcome(conn: Connection, signature: string, blockhash: string, lastValidBlockHeight: number): Promise<TransactionOutcome> {
+  try {
+    const result = await conn.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, "confirmed");
+    return { signature, err: normalizeError(result.value.err) };
+  } catch (e) {
+    if (e && typeof e === "object" && !(e instanceof Error) && "InstructionError" in e) return { signature, err: normalizeError(e) };
+    throw e;
+  }
+}
+
+function normalizeError(err: unknown): TransactionOutcome["err"] {
+  if (!err || typeof err !== "object") return err ? (err as TransactionOutcome["err"]) : null;
+  const { InstructionError } = err as { InstructionError?: [number, unknown] };
+  return InstructionError ? { InstructionError } : (err as TransactionOutcome["err"]);
+}
+
+/** Sends a signed transaction without the RPC's preflight, so a failing one lands on-chain and charges its fee. */
+export async function sendLanding(p: { transaction: string; lastValidBlockHeight: number }, signer: Keypair): Promise<TransactionOutcome> {
+  const tx = VersionedTransaction.deserialize(Buffer.from(p.transaction, "base64"));
+  tx.sign([signer]);
+  const conn = connection();
+  const signature = await conn.sendTransaction(tx, { skipPreflight: true });
+  return confirmOutcome(conn, signature, tx.message.recentBlockhash, p.lastValidBlockHeight);
 }
 
 /** The wallet side: add the signer's signature to a transaction the API prepared and send it. */
