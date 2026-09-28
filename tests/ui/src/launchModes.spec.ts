@@ -5,7 +5,7 @@ import type { Page } from "@playwright/test";
 import { PreparedAirdrop, PreparedLaunch } from "@launchpad/contract";
 import { coinBalance, drain, expect, fund, fundQuote, launchViaApi, listLaunches, sol, test } from "./fixtures";
 import { acceptDisclaimer, connectWallet, fillForm, fillOptions, formAlert, notConfirmed, review } from "./launchPage";
-import { TEST_WALLET_NAME } from "./wallet";
+import { connectTestWallet } from "./wallet";
 
 const airdropCard = (page: Page) => page.getByRole("region", { name: "Airdrop" });
 const wallets = (n: number) => Array.from({ length: n }, () => Keypair.generate().publicKey.toBase58());
@@ -223,8 +223,7 @@ test("declining the airdrop sends nothing, and the Creator can send it once the 
   // Only the Creator can send it.
   await expect(card.getByRole("button")).toHaveCount(0);
 
-  await page.getByRole("banner").getByRole("button", { name: "Connect wallet" }).click();
-  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await connectTestWallet(page, page.getByRole("banner").getByRole("button", { name: "Connect wallet" }));
   wallet.declineNext();
   await card.getByRole("button", { name: "Send airdrop" }).click();
   await expect(card.getByRole("alert")).toHaveText(

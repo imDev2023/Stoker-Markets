@@ -4,7 +4,7 @@ import {
   COIN_PNG, creatorFeeVault, drain, expect, fundedKeypair, launchViaApi, listLaunches, sol, solBalance, test, tradeViaApi,
 } from "./fixtures";
 import { acceptDisclaimer, COIN, connectWallet, disclaimer, fillForm, formAlert, review } from "./launchPage";
-import { TEST_WALLET_NAME } from "./wallet";
+import { connectTestWallet } from "./wallet";
 
 test("a Creator launches a SOL-paired coin and finds it on the board and its coin page", async ({ page, wallet, stack }) => {
   await page.goto("/launch");
@@ -140,8 +140,7 @@ test("a Creator finds their Creator Fee from their coin, claims it, and sees it 
   await expect(page.getByText("No claims yet.")).toBeVisible();
 
   // Connecting the Creator's wallet turns it into their own page.
-  await page.getByRole("main").getByRole("button", { name: "Connect wallet" }).click();
-  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
   await expect(page.getByRole("heading", { name: "Your Creator Fee" })).toBeVisible();
 
   // The review shows what reaches the wallet before anything is signed; declining moves nothing.

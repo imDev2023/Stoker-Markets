@@ -1,7 +1,7 @@
 // What a Creator does on the launch page, shared by every spec that launches through the web app.
 import type { Page } from "@playwright/test";
 import { COIN_PNG, expect } from "./fixtures";
-import { TEST_WALLET_NAME } from "./wallet";
+import { connectTestWallet } from "./wallet";
 
 export const COIN = {
   name: "Tracer Bullet",
@@ -13,8 +13,7 @@ export const COIN = {
 };
 
 export async function connectWallet(page: Page) {
-  await page.getByRole("main").getByRole("button", { name: "Connect wallet" }).click();
-  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
   await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
 }
 

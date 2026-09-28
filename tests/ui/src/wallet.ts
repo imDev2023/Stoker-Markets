@@ -1,6 +1,6 @@
 // A Wallet Standard wallet for the browser under test. The page sees an ordinary installed Solana wallet; the key stays in
 // Node and signs through an exposed function, so tests decide per request whether the "user" approves or declines.
-import type { Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { Keypair, VersionedTransaction } from "@solana/web3.js";
 
 export const TEST_WALLET_NAME = "Test Wallet";
@@ -81,6 +81,25 @@ function register({ name, icon, address, publicKey }: InitArgs) {
   const give = (api: { register: (w: unknown) => unknown }) => api.register(wallet);
   window.addEventListener("wallet-standard:app-ready", (e) => give((e as CustomEvent).detail));
   window.dispatchEvent(new CustomEvent("wallet-standard:register-wallet", { detail: give }));
+}
+
+/**
+ * Opens the wallet menu from a "Connect wallet" button and returns the test wallet's entry in it. A click that lands
+ * before the page has hydrated does nothing (the button has no handler yet), and on a busy machine hydration can come
+ * well after the page looks ready, so it clicks again until the menu is open.
+ */
+export async function openWalletMenu(page: Page, button: Locator) {
+  const item = page.getByRole("menuitem", { name: TEST_WALLET_NAME });
+  await expect(async () => {
+    if (!(await item.isVisible())) await button.click();
+    await expect(item).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 30_000 });
+  return item;
+}
+
+/** Connects the test wallet from a "Connect wallet" button. */
+export async function connectTestWallet(page: Page, button: Locator) {
+  await (await openWalletMenu(page, button)).click();
 }
 
 /** Installs the wallet into a page; call before the first navigation. */
