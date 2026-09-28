@@ -6,7 +6,7 @@ import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { PreparedTrade } from "@launchpad/contract";
 import { expect, fundQuote, fundedKeypair, launchViaApi, moveSolRoute, solBalance, stackEnv, test, tradeViaApi } from "./fixtures";
-import { TEST_WALLET_NAME } from "./wallet";
+import { connectTestWallet } from "./wallet";
 
 const panel = (page: Page) => page.getByRole("region", { name: /^Trade( |$)/ });
 const payWith = (page: Page) => panel(page).getByRole("group", { name: "Pay with" });
@@ -18,8 +18,7 @@ async function jtoCoin(symbol: string) {
 
 async function openConnected(page: Page, mint: string) {
   await page.goto(`/coin/${mint}`);
-  await panel(page).getByRole("button", { name: "Connect wallet" }).click();
-  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await connectTestWallet(page, panel(page).getByRole("button", { name: "Connect wallet" }));
   await expect(panel(page).getByRole("button", { name: "Review buy" })).toBeVisible();
 }
 

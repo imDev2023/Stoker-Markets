@@ -3,7 +3,7 @@
 import type { Page } from "@playwright/test";
 import { PreparedLaunch } from "@launchpad/contract";
 import { COIN_PNG, QUOTES, expect, fundQuote, fundedKeypair, launchViaApi, listLaunches, test } from "./fixtures";
-import { TEST_WALLET_NAME } from "./wallet";
+import { connectTestWallet } from "./wallet";
 
 const picker = (page: Page) => page.getByRole("button", { name: /^Pair with/ });
 const options = (page: Page) => page.getByRole("listbox", { name: "Quote Assets" }).getByRole("option");
@@ -12,8 +12,7 @@ const terms = (page: Page) => page.getByRole("definition").filter({ hasText: "ra
 const review = (page: Page) => page.getByRole("region", { name: "Review your launch" });
 
 async function connectWallet(page: Page) {
-  await page.getByRole("main").getByRole("button", { name: "Connect wallet" }).click();
-  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
 }
 
 async function fillCoin(page: Page, name: string, symbol: string) {
@@ -140,8 +139,7 @@ test("a trader buys and sells a USDC-paired coin in USDC", async ({ page, wallet
   await page.goto(`/coin/${mint}`);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/DLRP paired with USDC/);
   await expect(page.getByText("0 of 150 USDC raised")).toBeVisible();
-  await page.getByRole("main").getByRole("button", { name: "Connect wallet" }).click();
-  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
 
   // Buying spends the wallet's USDC; the presets are worth about 0.1, 0.5 and 1 SOL.
   const panel = page.getByRole("region", { name: "Trade DLRP" });
