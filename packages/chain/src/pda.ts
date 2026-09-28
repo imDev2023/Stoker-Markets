@@ -10,6 +10,9 @@ export function launchlabPdas(program: PublicKey) {
     authority: find([seed("vault_auth_seed")], program),
     eventAuthority: find([seed("__event_authority")], program),
     platformConfig: (admin: PublicKey) => find([seed("platform_config"), admin.toBuffer()], program),
+    /** Raydium creates these; the local chain plants its own. The index is big-endian (checked against devnet's SOL index 1). */
+    globalConfig: (quoteMint: PublicKey, curveType = 0, index = 0) =>
+      find([seed("global_config"), quoteMint.toBuffer(), Uint8Array.of(curveType), Uint8Array.of(index >> 8, index & 0xff)], program),
     curveRule: (platformConfig: PublicKey, globalConfig: PublicKey) =>
       find([seed("platform_curve_rule"), platformConfig.toBuffer(), globalConfig.toBuffer()], program),
     pool: (baseMint: PublicKey, quoteMint: PublicKey) => find([seed("pool"), baseMint.toBuffer(), quoteMint.toBuffer()], program),

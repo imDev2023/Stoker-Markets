@@ -15,6 +15,13 @@
       "when": 1790535574571,
       "tag": "0001_trades",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790542842184,
+      "tag": "0002_quote_registry",
+      "breakpoints": true
     }
   ]
 }

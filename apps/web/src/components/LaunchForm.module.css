@@ -61,9 +61,15 @@
   transition: border-color 120ms ease;
 }
 
-.drop:hover,
 .drop:focus-within {
   border-color: var(--cobalt);
+}
+
+/* Hovers only with a real pointer, so a tap on a phone doesn't leave one behind. */
+@media (hover: hover) {
+  .drop:hover {
+    border-color: var(--cobalt);
+  }
 }
 
 .drop:focus-within {
@@ -134,9 +140,11 @@
   min-height: 88px;
 }
 
-.field input:hover,
-.field textarea:hover {
-  border-color: var(--ink-3);
+@media (hover: hover) {
+  .field input:hover,
+  .field textarea:hover {
+    border-color: var(--ink-3);
+  }
 }
 
 .field input:focus,
@@ -189,6 +197,13 @@
   margin: 0;
 }
 
+.termsNote {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
 .error {
   margin: 0;
   padding: 12px 14px;
@@ -215,8 +230,10 @@
   color: var(--on-cobalt);
 }
 
-.primary:hover:not(:disabled) {
-  background: var(--cobalt-strong);
+@media (hover: hover) {
+  .primary:hover:not(:disabled) {
+    background: var(--cobalt-strong);
+  }
 }
 
 .primary:disabled,
@@ -230,8 +247,10 @@
   background: var(--paper);
 }
 
-.secondary:hover:not(:disabled) {
-  border-color: var(--ink-3);
+@media (hover: hover) {
+  .secondary:hover:not(:disabled) {
+    border-color: var(--ink-3);
+  }
 }
 
 .review {

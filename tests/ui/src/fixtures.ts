@@ -2,12 +2,16 @@
 // guard that fails the test on any browser error, since a console error is a bug a user would hit.
 import { readFileSync } from "node:fs";
 import { test as base, expect, type Page } from "@playwright/test";
-import { Connection, Keypair, LAMPORTS_PER_SOL, VersionedTransaction } from "@solana/web3.js";
+import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, VersionedTransaction } from "@solana/web3.js";
 import { LaunchList, PreparedLaunch, PreparedTrade, type TradeSide } from "@launchpad/contract";
+import { LOCAL_QUOTES, mintLocalQuote } from "@launchpad/localnet";
 import type { StackEnv } from "@launchpad/stack";
 import { installTestWallet, type TestWallet } from "./wallet";
 
 export { expect };
+
+/** The Quote Assets on the local chain; the stack prices SOL at 150 USD, USDC at 1, NVDAx at 180 and JTO at 2.5, and not BULLWHALE. */
+export const QUOTES = { SOL: new PublicKey("So11111111111111111111111111111111111111112"), ...LOCAL_QUOTES };
 
 export const COIN_PNG = readFileSync(new URL("../fixtures/coin.png", import.meta.url));
 
@@ -31,51 +35,62 @@ export async function listLaunches() {
   return LaunchList.parse(await (await fetch(`${stackEnv().apiUrl}/v1/launches?limit=100`)).json()).launches;
 }
 
-export type LaunchFields = { name: string; symbol: string; description?: string; website?: string; x?: string; telegram?: string };
+export type LaunchFields = {
+  name: string;
+  symbol: string;
+  /** Defaults to SOL. */
+  quote?: keyof typeof QUOTES;
+  description?: string;
+  website?: string;
+  x?: string;
+  telegram?: string;
+};
 
-/** Launches a coin the way any API client would: prepare, sign, send, report. */
-export async function launchViaApi(creator: Keypair, fields: LaunchFields) {
-  const { apiUrl } = stackEnv();
-  const form = new FormData();
-  form.set("creator", creator.publicKey.toBase58());
-  for (const [k, v] of Object.entries(fields)) if (v) form.set(k, v);
-  form.set("image", new Blob([COIN_PNG], { type: "image/png" }), "coin.png");
-  const res = await fetch(`${apiUrl}/v1/launches/prepare`, { method: "POST", body: form });
-  if (!res.ok) throw new Error(`prepare failed: ${res.status} ${await res.text()}`);
-  const prepared = PreparedLaunch.parse(await res.json());
+/** What a wallet does with a transaction the API prepared: sign, send, wait for confirmation, then report it for indexing. */
+async function signSendReport(prepared: { transaction: string; lastValidBlockHeight: number }, signer: Keypair) {
   const tx = VersionedTransaction.deserialize(Buffer.from(prepared.transaction, "base64"));
-  tx.sign([creator]);
-  const conn = connection();
-  const signature = await conn.sendTransaction(tx);
-  await conn.confirmTransaction(
-    { signature, blockhash: tx.message.recentBlockhash, lastValidBlockHeight: prepared.lastValidBlockHeight },
-    "confirmed",
-  );
-  await fetch(`${apiUrl}/v1/transactions/${signature}`, { method: "POST" });
-  return prepared.mint;
-}
-
-/** Trades on a Launch the way any API client would: prepare, sign, send, report. `amount` is raw units of what is paid. */
-export async function tradeViaApi(trader: Keypair, mint: string, side: TradeSide, amount: bigint, slippageBps = 100) {
-  const { apiUrl } = stackEnv();
-  const res = await fetch(`${apiUrl}/v1/trades/prepare`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ mint, trader: trader.publicKey.toBase58(), side, amount: amount.toString(), slippageBps }),
-  });
-  if (!res.ok) throw new Error(`prepare trade failed: ${res.status} ${await res.text()}`);
-  const prepared = PreparedTrade.parse(await res.json());
-  const tx = VersionedTransaction.deserialize(Buffer.from(prepared.transaction, "base64"));
-  tx.sign([trader]);
+  tx.sign([signer]);
   const conn = connection();
   const signature = await conn.sendTransaction(tx);
   const result = await conn.confirmTransaction(
     { signature, blockhash: tx.message.recentBlockhash, lastValidBlockHeight: prepared.lastValidBlockHeight },
     "confirmed",
   );
-  if (result.value.err) throw new Error(`trade failed: ${JSON.stringify(result.value.err)}`);
-  await fetch(`${apiUrl}/v1/transactions/${signature}`, { method: "POST" });
+  if (result.value.err) throw new Error(`transaction ${signature} failed: ${JSON.stringify(result.value.err)}`);
+  await fetch(`${stackEnv().apiUrl}/v1/transactions/${signature}`, { method: "POST" });
+  return signature;
+}
+
+/** Launches a coin the way any API client would: prepare, sign, send, report. */
+export async function launchViaApi(creator: Keypair, { quote = "SOL", ...fields }: LaunchFields) {
+  const form = new FormData();
+  form.set("creator", creator.publicKey.toBase58());
+  form.set("quoteMint", QUOTES[quote].toBase58());
+  for (const [k, v] of Object.entries(fields)) if (v) form.set(k, v);
+  form.set("image", new Blob([COIN_PNG], { type: "image/png" }), "coin.png");
+  const res = await fetch(`${stackEnv().apiUrl}/v1/launches/prepare`, { method: "POST", body: form });
+  if (!res.ok) throw new Error(`prepare failed: ${res.status} ${await res.text()}`);
+  const prepared = PreparedLaunch.parse(await res.json());
+  await signSendReport(prepared, creator);
+  return prepared.mint;
+}
+
+/** Trades on a Launch the way any API client would: prepare, sign, send, report. `amount` is raw units of what is paid. */
+export async function tradeViaApi(trader: Keypair, mint: string, side: TradeSide, amount: bigint, slippageBps = 100) {
+  const res = await fetch(`${stackEnv().apiUrl}/v1/trades/prepare`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ mint, trader: trader.publicKey.toBase58(), side, amount: amount.toString(), slippageBps }),
+  });
+  if (!res.ok) throw new Error(`prepare trade failed: ${res.status} ${await res.text()}`);
+  const prepared = PreparedTrade.parse(await res.json());
+  await signSendReport(prepared, trader);
   return prepared.quote;
+}
+
+/** Hands a wallet a non-SOL Quote Asset: the local chain's admin holds every cloned quote mint's authority. */
+export async function fundQuote(owner: PublicKey, quote: Exclude<keyof typeof QUOTES, "SOL">, raw: bigint) {
+  await mintLocalQuote(connection(), QUOTES[quote], owner, raw);
 }
 
 /** Nothing on the page may be wider than the viewport: a sideways scroll on a phone is a layout bug. */
@@ -104,19 +119,29 @@ export async function expectNoTruncatedText(page: Page) {
   expect(cut, "text cut off with an ellipsis").toEqual([]);
 }
 
-export const test = base.extend<{ stack: StackEnv; wallet: TestWallet; browserErrors: void }>({
+export const test = base.extend<{
+  stack: StackEnv;
+  wallet: TestWallet;
+  /** URLs a test expects to answer with an error status, which the browser logs to the console. */
+  expectedHttpErrors: RegExp[];
+  browserErrors: void;
+}>({
   // eslint-disable-next-line no-empty-pattern
   stack: async ({}, use) => use(stackEnv()),
   baseURL: async ({ stack }, use) => use(stack.webUrl ?? undefined),
   wallet: async ({ page }, use) => use(await installTestWallet(page, await fundedKeypair())),
+  // eslint-disable-next-line no-empty-pattern
+  expectedHttpErrors: async ({}, use) => use([]),
   browserErrors: [
-    async ({ page }, use) => {
+    async ({ page, expectedHttpErrors }, use) => {
       const errors: string[] = [];
       page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}`));
       page.on("console", (m) => {
         // A page's own HTTP status (a 404 for a coin that doesn't exist) is asserted by the test, not treated as an error.
-        const ownStatus = m.text().startsWith("Failed to load resource") && m.location().url === page.url();
-        if (m.type() === "error" && !ownStatus) errors.push(`console: ${m.text()}`);
+        // So is a status a test provokes on purpose.
+        const url = m.location().url;
+        const expected = m.text().startsWith("Failed to load resource") && (url === page.url() || expectedHttpErrors.some((re) => re.test(url)));
+        if (m.type() === "error" && !expected) errors.push(`console: ${m.text()}`);
       });
       await use();
       expect(errors, "the browser reported errors").toEqual([]);

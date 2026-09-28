@@ -79,3 +79,27 @@ export const curves = pgTable("curves", {
   slot: bigint("slot", { mode: "number" }).notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * The Quote Registry: one row per Quote Asset (a quote mint with a LaunchLab GlobalConfig), rewritten by the scheduled refresh.
+ * The price and Graduation Target are as of `pricedAt`; the rule band mirrors our on-chain curve rule once the refresh has written it.
+ */
+export const quoteAssets = pgTable("quote_assets", {
+  mint: text("mint").primaryKey(),
+  globalConfig: text("global_config").notNull().unique(),
+  tokenProgram: text("token_program").notNull(),
+  decimals: integer("decimals").notNull(),
+  symbol: text("symbol"),
+  name: text("name"),
+  logo: text("logo"),
+  /** Null when no source gives a reliable price. */
+  priceUsd: numeric("price_usd"),
+  priceSol: numeric("price_sol"),
+  pricedAt: timestamp("priced_at", { withTimezone: true }),
+  /** Raw units of the Quote Asset worth the Graduation Target in SOL at `pricedAt`. */
+  graduationTarget: numeric("graduation_target", { precision: 40, scale: 0 }),
+  /** The Graduation Targets our curve rule accepts; null while the rule is closed. */
+  ruleMin: numeric("rule_min", { precision: 40, scale: 0 }),
+  ruleMax: numeric("rule_max", { precision: 40, scale: 0 }),
+  refreshedAt: timestamp("refreshed_at", { withTimezone: true }).notNull(),
+});

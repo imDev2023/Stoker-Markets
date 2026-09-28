@@ -1,8 +1,10 @@
 import { z } from "zod";
+import { GraduationTarget, QuoteRef } from "./quotes";
 import { CurveProgress } from "./trades";
 
 /** The public API contract, shared by the API (which validates with it) and every client, including our web app. */
 
+export * from "./quotes";
 export * from "./trades";
 
 const base58 = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "must be a base58 address");
@@ -14,6 +16,8 @@ export const LAUNCH_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "ima
 /** Text fields of the launch form; the image travels alongside as a multipart file. */
 export const PrepareLaunchFields = z.object({
   creator: base58,
+  /** The Quote Asset's mint; see GET /v1/quotes. */
+  quoteMint: base58,
   name: z.string().trim().min(1).max(32),
   symbol: z.string().trim().min(1).max(10).regex(/^[A-Za-z0-9$]+$/, "letters, digits and $ only"),
   description: z.string().trim().max(1000).default(""),
@@ -30,6 +34,8 @@ export const PreparedLaunch = z.object({
   pool: base58,
   metadataUri: z.string(),
   lastValidBlockHeight: z.number().int(),
+  /** Fixed in the transaction from the Quote Asset's price at the moment it was built. */
+  graduationTarget: GraduationTarget,
 });
 export type PreparedLaunch = z.infer<typeof PreparedLaunch>;
 
@@ -37,7 +43,7 @@ export const LaunchSummary = z.object({
   mint: base58,
   pool: base58,
   creator: base58,
-  quoteMint: base58,
+  quote: QuoteRef,
   name: z.string(),
   symbol: z.string(),
   metadataUri: z.string(),
@@ -63,8 +69,8 @@ export const PlatformInfo = z.object({
   cluster: z.enum(["localnet", "devnet", "mainnet"]),
   rpcUrl: z.string(),
   platformConfig: base58,
-  quoteMint: base58,
-  graduationTarget: z.string(),
+  /** Every Launch's Graduation Target is worth this much SOL, in lamports, at the moment it launches. */
+  graduationTargetLamports: z.string(),
   platformFeeBps: z.number(),
   creatorFeeBps: z.number(),
 });

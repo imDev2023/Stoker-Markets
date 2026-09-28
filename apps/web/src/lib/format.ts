@@ -1,12 +1,19 @@
-const WSOL = "So11111111111111111111111111111111111111112";
+import type { QuoteRef } from "@launchpad/contract";
 
-/** Quote Asset tickers. SOL is the only Quote Asset until the Quote Registry lands. */
-export function quoteSymbol(mint: string) {
-  return mint === WSOL ? "SOL" : `${mint.slice(0, 4)}…`;
+/** A Quote Asset's ticker from the Quote Registry, or its short mint address when the mint has no metadata. */
+export function quoteTicker(quote: Pick<QuoteRef, "mint" | "symbol">) {
+  return quote.symbol ?? shortAddress(quote.mint);
 }
 
-/** Decimals of the Quote Asset's raw units; SOL's 9 until the Quote Registry lands. */
-export const QUOTE_DECIMALS = 9;
+const WSOL_MINT = "So11111111111111111111111111111111111111112";
+/** SOL's decimals: lamports per SOL is 10^9. */
+export const SOL_DECIMALS = 9;
+
+/** SOL is paid from and to the wallet's own balance; every other Quote Asset from a token account. */
+export function isSol(quote: Pick<QuoteRef, "mint">) {
+  return quote.mint === WSOL_MINT;
+}
+
 /** Every Launch's coin has 6 decimals and a supply of 1B: the launch shape our curve rules pin on-chain. */
 export const COIN_DECIMALS = 6;
 export const COIN_SUPPLY = 1_000_000_000;
@@ -48,6 +55,11 @@ export function formatPriceCompact(price: number) {
   if (!match) return full;
   const zeros = String(match[1]!.length).replace(/\d/g, (d) => SUBSCRIPT[Number(d)]!);
   return `0.0${zeros}${match[2]}`;
+}
+
+/** A raw amount for display where space is short: two decimals from 1 upward (70.83), four below (0.1275). */
+export function formatAmount(raw: string, decimals: number) {
+  return formatUnits(raw, decimals, BigInt(raw) >= 10n ** BigInt(decimals) ? 2 : 4);
 }
 
 export function timeAgo(iso: string, now = Date.now()) {

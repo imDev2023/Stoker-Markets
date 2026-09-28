@@ -1,6 +1,6 @@
 import {
-  ApiError, CandleList, LaunchList, LaunchSummary, PlatformInfo, PreparedLaunch, PreparedTrade, TradeList, TradeQuote,
-  type CandleInterval, type PrepareTradeRequest, type TradeQuoteQuery,
+  ApiError, CandleList, LaunchList, LaunchSummary, PlatformInfo, PreparedLaunch, PreparedTrade, QuoteAssetList, TradeList,
+  TradeQuote, type CandleInterval, type PrepareTradeRequest, type TradeQuoteQuery,
 } from "@launchpad/contract";
 
 /** The web app is a client of the public API like any other; it never builds transactions itself (ADR 0003). */
@@ -17,6 +17,10 @@ async function read<T>(res: Response, schema: { parse: (v: unknown) => T }): Pro
 
 export async function getPlatform() {
   return read(await fetch(`${API_URL}/v1/platform`, { cache: "no-store" }), PlatformInfo);
+}
+
+export async function listQuotes() {
+  return read(await fetch(`${API_URL}/v1/quotes`, { cache: "no-store" }), QuoteAssetList);
 }
 
 export async function listLaunches() {

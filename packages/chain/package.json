@@ -2,14 +2,22 @@
   "name": "@launchpad/chain",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "scripts": { "typecheck": "tsc -p ." },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",
     "@solana/spl-token": "^0.4.15",
+    "@solana/spl-token-metadata": "^0.1.6",
     "@solana/web3.js": "^1.99.0",
     "bn.js": "^5.2.2",
     "bs58": "^6.0.0"
   },
-  "devDependencies": { "@types/bn.js": "^5.2.0", "@types/node": "^24.0.0" }
+  "devDependencies": {
+    "@types/bn.js": "^5.2.0",
+    "@types/node": "^24.0.0"
+  }
 }

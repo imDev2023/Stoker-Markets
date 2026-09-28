@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CandleInterval, CandleList, LaunchSummary, PlatformInfo, Trade } from "@launchpad/contract";
 import { getCandles, getLaunch, listTrades } from "@/lib/api";
-import { quoteSymbol } from "@/lib/format";
+import { quoteTicker } from "@/lib/format";
 import { CurveProgress } from "./CurveProgress";
 import { PriceChart } from "./PriceChart";
 import { TradeHistory } from "./TradeHistory";
@@ -29,7 +29,7 @@ export function CoinMarket({
   const shownInterval = useRef(initialCandles.interval);
   const [candles, setCandles] = useState(initialCandles);
   const [now, setNow] = useState(renderedAt);
-  const quote = quoteSymbol(launch.quoteMint);
+  const quote = quoteTicker(launch.quote);
 
   // Candles for an interval the trader has since switched away from are dropped.
   const loadCandles = useCallback(async (i: CandleInterval) => {
@@ -66,12 +66,12 @@ export function CoinMarket({
           <PriceChart data={candles} interval={candleInterval} onIntervalChange={changeInterval} price={launch.curve.price} quote={quote} />
         </div>
         <div className={styles.history}>
-          <TradeHistory trades={trades} symbol={launch.symbol} quote={quote} platform={platform} now={now} />
+          <TradeHistory trades={trades} symbol={launch.symbol} quote={launch.quote} platform={platform} now={now} />
         </div>
       </div>
       <div className={styles.side}>
         <div className={styles.progress}>
-          <CurveProgress launch={launch} quote={quote} />
+          <CurveProgress launch={launch} />
         </div>
         <div className={styles.trade}>
           <TradePanel launch={launch} platform={platform} onTraded={() => void refresh()} />

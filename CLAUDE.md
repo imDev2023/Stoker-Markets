@@ -7,7 +7,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 
 1. GitHub issue #5 (`gh issue view 5`) - the v1 PRD; slices are issues #8 to #23, each with "Blocked by". A slice's latest comment is its current status.
 2. `CONTEXT.md` - the domain glossary; use its terms in code, issues and UI copy.
-3. `docs/adr/` - fee model (0001), Cloudflare hosting (0002), server-built transactions (0003), key custody (0004).
+3. `docs/adr/` - fee model (0001), Cloudflare hosting (0002), server-built transactions (0003), key custody (0004), price-banded curve rules (0005, proposed).
 4. `spike/launchlab-devnet/README.md` - what LaunchLab really does on devnet, with tx evidence and gotchas.
 5. `research/README.md` - background on StonkFun only; don't re-derive its findings.
 
@@ -25,7 +25,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 
 ## Run and test
 
-- Dev: `docker compose up -d` (Postgres on 5442), `pnpm localnet` (chain on 8899, writes `tools/localnet/.ledger/state.json`), `apps/api`: `pnpm exec wrangler dev --port 8791 --var PLATFORM_CONFIG:<from state.json>`, `apps/web`: `pnpm dev` (3100). Migrate the dev DB with `runMigrations` from `@launchpad/db/migrate`.
+- Dev: `docker compose up -d` (Postgres on 5442), `pnpm localnet` (chain on 8899, writes `tools/localnet/.ledger/state.json`), `apps/api`: `pnpm exec wrangler dev --port 8791 --test-scheduled --var PLATFORM_CONFIG:<from state.json>`, `apps/web`: `pnpm dev` (3100). Migrate the dev DB with `runMigrations` from `@launchpad/db/migrate`.
 - Tests: `pnpm test:backend` and `pnpm test:ui`, each on its own throwaway stack; the chain takes a free block of ports, so checkouts and agents can run suites side by side (`TEST_RPC_PORT` pins it). `pnpm lint`, `pnpm typecheck`; CI runs both.
 - UI baselines live in `tests/ui/screenshots/<platform>/`; after an intended UI change, run `pnpm test:ui --update-snapshots=all` and look at every changed image before committing.
 - Port 8787 and 3000 belong to other projects on this machine; ours are 3100, 8791, 8899, 5442.
@@ -51,6 +51,9 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 - A `container-type: inline-size` box has no width of its own: in a column flex with `align-items: flex-start` it collapses to 0 and anything sized in `cqi` vanishes. `PairMark` measures its glyphs to fit, because per-character estimates break on wide letters like W.
 - `grep` in this shell is aliased to ugrep with different flags; use `/usr/bin/grep` in scripts.
 - Test `next dev` runs rewrite `apps/web/next-env.d.ts` to point at their throwaway build folder; the web `typecheck` runs `next typegen` first, so ignore that file.
+- A Quote Asset with no curve rule account is unrestricted even with `restrict_curve_param` on, so the Quote Registry refresh (`/__scheduled`, run once by `tools/stack` at startup) gives every GlobalConfig a rule, a closed one when unpriced (ADR 0005). The dev API needs `OPERATIONS_KEY` (the operations key as a JSON byte array, `tools/localnet/.keys/operations.json`) in `apps/api/.dev.vars` and one `curl localhost:8791/__scheduled` before anything can launch.
+- The local quote mints are clones of mainnet mints whose mint authority the local admin key holds; fund a test wallet with `mintLocalQuote`, never by transfer.
+- lightweight-charts lays out its chart with a `<table>`, so in UI tests scope table queries to the Trades region. Playwright won't click an `aria-disabled` option without `force: true`.
 - `agent-browser screenshot` needs absolute paths. Firecrawl is out of credits.
 - Devnet faucets are rate-limited and faucet.solana.com is closed to agents; the owner's default Solana CLI wallet holds devnet SOL.
 - StonkFun's Terms of Use ban scraping and copying: never use its frontend, copy or branding; never open its `/admin`, `/api/admin/*` or `/integrators`.
