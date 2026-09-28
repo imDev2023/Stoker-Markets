@@ -4,7 +4,6 @@ import { decodeRevenue, type RawTransaction, type RevenueContext } from "@launch
 import type { RevenueAsset } from "@launchpad/contract";
 import { graduations, launches, launchMetadata, ledgerEntries, quoteAssets, type Db } from "@launchpad/db";
 import type { Config } from "../env";
-import { toQuoteRef } from "../quotes/assets";
 
 export function revenueContext(cfg: Config, operationsWallet: PublicKey): RevenueContext {
   return {
@@ -73,7 +72,7 @@ export async function revenueAssets(db: Db, publicApiUrl: string, decimals: Map<
       c.mint,
       { mint: c.mint, symbol: c.symbol, name: c.name, decimals: c.decimals, logo: c.image ? `${publicApiUrl}/metadata/${c.mint}/image` : null },
     ]),
-    ...quotes.map((q): [string, RevenueAsset] => [q.mint, toQuoteRef(q)]),
+    ...quotes.map((q): [string, RevenueAsset] => [q.mint, { mint: q.mint, symbol: q.symbol, name: q.name, decimals: q.decimals, logo: q.logo }]),
   ]);
   return (mint: string): RevenueAsset => known.get(mint) ?? { mint, symbol: null, name: null, decimals: decimals.get(mint)!, logo: null };
 }
