@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCandles, getLaunch, getPlatform, listTrades } from "@/lib/api";
-import { explorerUrl, quoteTicker, shortAddress } from "@/lib/format";
+import { explorerUrl, formatUtc, quoteTicker, shortAddress } from "@/lib/format";
 import { CoinMarket } from "@/components/CoinMarket";
 import { CopyButton } from "@/components/CopyButton";
 import { PairMark } from "@/components/PairMark";
@@ -60,13 +60,14 @@ export default async function CoinPage({ params }: Props) {
             <dd>
               {platform.creatorFeeBps / 100}% of every trade until graduation
               <span className={styles.verified}>Paid by the chain</span>
+              <Link href={`/creator/${launch.creator}`} className={styles.factLink}>See what the Creator earned and claimed</Link>
             </dd>
           </div>
           <div>
             <dt>Launched</dt>
             <dd>
               <time dateTime={launch.createdAt}>
-                {`${new Date(launch.createdAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC`}
+                {formatUtc(launch.createdAt)}
               </time>
             </dd>
           </div>

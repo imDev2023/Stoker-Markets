@@ -14,6 +14,7 @@ import { fetchRawTransaction, indexTransactions } from "./indexer";
 import { sniffImageType } from "./images";
 import { priceLaunch, toQuoteRef } from "./quotes/assets";
 import { refreshQuoteRegistry } from "./quotes/registry";
+import { creatorFeeRoutes } from "./routes/creatorFees";
 import { quotes } from "./routes/quotes";
 import { curveProgress, tradeRoutes } from "./routes/trades";
 
@@ -49,6 +50,7 @@ app.get("/v1/platform", (c) => {
   const info: PlatformInfo = {
     cluster: cfg.cluster,
     rpcUrl: cfg.rpcUrl,
+    launchlabProgram: cfg.launchlab.toBase58(),
     platformConfig: cfg.platformConfig.toBase58(),
     graduationTargetLamports: cfg.graduationTargetLamports.toString(),
     platformFeeBps: 50,
@@ -128,7 +130,7 @@ app.post("/v1/webhooks/helius", async (c) => {
   return c.json(await indexTransactions(c.get("db"), c.get("cfg"), body));
 });
 
-/** Fast path: the web app reports a confirmed signature so a Launch or trade appears without waiting for the webhook. */
+/** Fast path: the web app reports a confirmed signature so a Launch, trade or claim appears without waiting for the webhook. */
 app.post("/v1/transactions/:signature", async (c) => {
   const signature = c.req.param("signature");
   if (!/^[1-9A-HJ-NP-Za-km-z]{64,88}$/.test(signature)) return c.json({ error: "invalid signature" }, 400);
@@ -169,6 +171,7 @@ app.get("/v1/launches/:mint", async (c) => {
 
 app.route("/v1", quotes);
 app.route("/v1", tradeRoutes);
+app.route("/v1", creatorFeeRoutes);
 
 /** Token metadata JSON in the Metaplex off-chain format, as referenced by the on-chain metadata URI. */
 app.get("/metadata/:file", async (c) => {

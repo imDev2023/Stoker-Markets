@@ -12,3 +12,12 @@ time {
   white-space: nowrap;
   overflow: hidden;
 }
+
+/* The latest candle's prices depend on whether the seed trades straddled a minute, so they are masked; a fixed box keeps
+   the mask the same size every run. */
+dl[aria-label$="candle"] .mono {
+  display: inline-block;
+  width: 7ch;
+  white-space: nowrap;
+  overflow: hidden;
+}

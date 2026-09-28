@@ -1,7 +1,9 @@
 // What a Creator does in the web app, end to end against the real chain and API.
 import { Connection, Keypair, LAMPORTS_PER_SOL, SystemProgram, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
 import type { Page } from "@playwright/test";
-import { COIN_PNG, expect, listLaunches, test } from "./fixtures";
+import {
+  COIN_PNG, creatorFeeVault, expect, fundedKeypair, launchViaApi, listLaunches, sol, solBalance, test, tradeViaApi,
+} from "./fixtures";
 import { TEST_WALLET_NAME } from "./wallet";
 
 const COIN = {
@@ -161,6 +163,63 @@ test("a wallet without enough SOL is told so before signing", async ({ page, wal
   expect(wallet.requests).toHaveLength(0);
 });
 
+test("a Creator finds their Creator Fee from their coin, claims it, and sees it land in their wallet and the history", async ({ page, wallet, stack }) => {
+  const creator = wallet.keypair.publicKey;
+  const mint = await launchViaApi(wallet.keypair, { name: "Fee Earner", symbol: "EARN" });
+  await tradeViaApi(await fundedKeypair(), mint, "buy", BigInt(0.4 * LAMPORTS_PER_SOL));
+  const { balance: inVault } = await creatorFeeVault(creator);
+  expect(inVault).toBeGreaterThan(0n);
+
+  // Anyone can follow a coin to its Creator's public page, but only the Creator's wallet can claim.
+  await page.goto(`/coin/${mint}`);
+  await page.getByRole("link", { name: "See what the Creator earned and claimed" }).click();
+  await page.waitForURL(`**/creator/${creator.toBase58()}`);
+  const card = page.getByRole("region", { name: "SOL" });
+  await expect(card).toContainText(`${sol(inVault)} SOL`);
+  await expect(page.getByRole("button", { name: "Claim SOL" })).toBeHidden();
+  await expect(page.getByRole("link", { name: /EARN\s*Fee Earner/ })).toContainText("Earning");
+  await expect(page.getByText("No claims yet.")).toBeVisible();
+
+  // Connecting the Creator's wallet turns it into their own page.
+  await page.getByRole("main").getByRole("button", { name: "Connect wallet" }).click();
+  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await expect(page.getByRole("heading", { name: "Your Creator Fee" })).toBeVisible();
+
+  // The review shows what reaches the wallet before anything is signed; declining moves nothing.
+  const reviewClaim = page.getByRole("region", { name: "Review your claim" });
+  await card.getByRole("button", { name: "Claim SOL" }).click();
+  await expect(reviewClaim).toContainText(`Your wallet receives about ${sol(inVault - 5_000n)} SOL after the network fee.`);
+  expect(wallet.requests).toHaveLength(0);
+  wallet.declineNext();
+  await reviewClaim.getByRole("button", { name: "Sign and claim" }).click();
+  await expect(card.getByRole("alert")).toHaveText("You declined the transaction in your wallet. Nothing was claimed.");
+  expect(wallet.requests).toHaveLength(1);
+  expect((await creatorFeeVault(creator)).balance).toBe(inVault);
+
+  const before = await solBalance(creator);
+  await card.getByRole("button", { name: "Claim SOL" }).click();
+  await reviewClaim.getByRole("button", { name: "Sign and claim" }).click();
+  await expect(card.getByRole("status")).toHaveText(`Claimed ${sol(inVault)} SOL. View transaction`);
+  expect(wallet.requests).toHaveLength(2);
+  expect((await creatorFeeVault(creator)).balance).toBe(0n);
+  expect((await solBalance(creator)) - before).toBe(inVault - 5_000n);
+
+  // The claim is in the public history, linked to its transaction, and the vault shows empty.
+  await expect(card).toContainText("Nothing to claim right now.");
+  const history = page.getByRole("region", { name: "Claim history" });
+  await expect(history.getByRole("listitem")).toHaveCount(1);
+  await expect(history.getByRole("listitem")).toContainText(`${sol(inVault)} SOL`);
+  const tx = new URL((await history.getByRole("link", { name: "View transaction" }).getAttribute("href"))!);
+  expect(tx.pathname).toMatch(/^\/tx\/[1-9A-HJ-NP-Za-km-z]{64,88}$/);
+  expect(tx.searchParams.get("customUrl")).toBe(stack.rpcUrl);
+
+  // The account menu leads back to this page from anywhere.
+  await page.goto("/");
+  await page.getByRole("banner").getByRole("button", { name: creator.toBase58().slice(0, 4), exact: false }).click();
+  await page.getByRole("menuitem", { name: "Your Creator Fee" }).click();
+  await page.waitForURL(`**/creator/${creator.toBase58()}`);
+});
+
 test("no Raydium SDK or program code ships to the browser", async ({ page, wallet }) => {
   const scripts: { url: string; body: string }[] = [];
   page.on("response", async (res) => {
@@ -171,6 +230,10 @@ test("no Raydium SDK or program code ships to the browser", async ({ page, walle
   await page.goto("/launch");
   await connectWallet(page);
   await page.goto(`/coin/${launch!.mint}`);
+  await page.waitForLoadState("networkidle");
+  await page.goto(`/creator/${launch!.creator}`);
+  await page.waitForLoadState("networkidle");
+  await page.goto("/docs/claim-creator-fee");
   await page.waitForLoadState("networkidle");
   expect(scripts.length).toBeGreaterThan(0);
   expect(wallet.requests).toHaveLength(0);

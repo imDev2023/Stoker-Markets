@@ -19,6 +19,8 @@ export function launchlabPdas(program: PublicKey) {
     vault: (pool: PublicKey, mint: PublicKey) => find([seed("pool_vault"), pool.toBuffer(), mint.toBuffer()], program),
     platformFeeVault: (platformConfig: PublicKey, quoteMint: PublicKey) => find([platformConfig.toBuffer(), quoteMint.toBuffer()], program),
     creatorFeeVault: (creator: PublicKey, quoteMint: PublicKey) => find([creator.toBuffer(), quoteMint.toBuffer()], program),
+    /** Owns every Creator Fee vault; one address for all Creators, so a webhook on it sees every Creator Fee claim. */
+    creatorFeeVaultAuthority: find([seed("creator_fee_vault_auth_seed")], program),
   };
 }
 

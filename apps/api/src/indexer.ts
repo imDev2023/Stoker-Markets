@@ -1,17 +1,26 @@
-import { sql } from "drizzle-orm";
-import { curvePrice, decodeTransaction, type LaunchCreated, type RawTransaction, type TradeExecuted } from "@launchpad/chain";
-import { curves, launches, trades, type Db } from "@launchpad/db";
+import { eq, sql } from "drizzle-orm";
+import {
+  curvePrice, decodeTransaction, type CreatorFeeClaimed, type LaunchCreated, type RawTransaction, type TradeExecuted,
+} from "@launchpad/chain";
+import { creatorFeeClaims, curves, launches, trades, type Db } from "@launchpad/db";
 import type { Config } from "./env";
 
 /**
- * Writes the Launches and curve trades in a batch of confirmed transactions. Only events on our PlatformConfig count.
+ * Writes the Launches, curve trades and Creator Fee claims in a batch of confirmed transactions. Launches and trades count
+ * only on our PlatformConfig. A claim names no platform (a Creator's vault serves all of them), so it counts when its
+ * Creator has launched on our platform.
  * Idempotent: the same transaction delivered twice (webhook retries, the client fast path, backfills) writes one row.
  */
 export async function indexTransactions(db: Db, cfg: Config, txs: RawTransaction[]) {
   let launched = 0;
   let traded = 0;
+  let claimed = 0;
   for (const tx of txs) {
     for (const e of decodeTransaction(tx, cfg.launchlab)) {
+      if (e.kind === "creator_fee_claimed") {
+        claimed += await indexClaim(db, e);
+        continue;
+      }
       if (!e.platformConfig.equals(cfg.platformConfig)) continue;
       if (e.kind === "launch_created") {
         // Only a GlobalConfig newer than the last Quote Registry refresh lets such a launch through (ADR 0005).
@@ -20,11 +29,10 @@ export async function indexTransactions(db: Db, cfg: Config, txs: RawTransaction
           continue;
         }
         launched += await indexLaunch(db, e);
-      }
-      else traded += await indexTrade(db, e);
+      } else traded += await indexTrade(db, e);
     }
   }
-  return { launched, traded };
+  return { launched, traded, claimed };
 }
 
 const time = (blockTime: number | null) => new Date((blockTime ?? Math.floor(Date.now() / 1000)) * 1000);
@@ -102,6 +110,27 @@ async function indexTrade(db: Db, e: TradeExecuted) {
       },
       setWhere: sql`excluded.slot > ${curves.slot} or (excluded.slot = ${curves.slot} and ${curves.realBase} = ${e.before.realBase.toString()} and ${curves.realQuote} = ${e.before.realQuote.toString()})`,
     });
+  return inserted.length;
+}
+
+async function indexClaim(db: Db, e: CreatorFeeClaimed) {
+  const creator = e.creator.toBase58();
+  const [ours] = await db.select({ mint: launches.mint }).from(launches).where(eq(launches.creator, creator)).limit(1);
+  if (!ours) return 0;
+  const inserted = await db
+    .insert(creatorFeeClaims)
+    .values({
+      signature: e.signature,
+      eventIndex: e.index,
+      creator,
+      quoteMint: e.quoteMint.toBase58(),
+      quoteDecimals: e.quoteDecimals,
+      amount: e.amount.toString(),
+      slot: e.slot,
+      blockTime: time(e.blockTime),
+    })
+    .onConflictDoNothing()
+    .returning({ signature: creatorFeeClaims.signature });
   return inserted.length;
 }
 
