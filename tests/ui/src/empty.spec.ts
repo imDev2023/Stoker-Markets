@@ -8,3 +8,12 @@ test("the empty board invites the first launch", async ({ page }) => {
   await expectNoHorizontalOverflow(page);
   await expect(page).toHaveScreenshot("board-empty.png", { fullPage: true });
 });
+
+test("the revenue page before anything is collected", async ({ page }) => {
+  await page.goto("/revenue");
+  await expect(page.getByText(/^No revenue collected yet\./)).toBeVisible();
+  await expect(page.getByRole("region", { name: "Ledger" })).toHaveCount(0);
+  await expectNoHorizontalOverflow(page);
+  // The operations wallet and treasury addresses differ between runs.
+  await expect(page).toHaveScreenshot("revenue-empty.png", { fullPage: true, mask: [page.locator("a.mono")] });
+});

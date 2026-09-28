@@ -1,6 +1,7 @@
 // Every screen at desktop and phone width, light and dark, against committed baselines. Values that change from run to
 // run (addresses, times, costs) are masked; everything else must match to the pixel.
 import type { Page } from "@playwright/test";
+import { LedgerPage, Revenue } from "@launchpad/contract";
 import {
   COIN_PNG, drain, expect, expectNoHorizontalOverflow, expectNoTruncatedText, fixedKeypair, giveCoins, listLaunches, SEED_CREATOR, SEED_HOLDER,
   test,
@@ -372,4 +373,22 @@ test("docs: claim without this website", async ({ page }) => {
   await page.goto("/docs/claim-creator-fee");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Claim your Creator Fee without this website");
   await snap(page, "docs-claim.png");
+});
+
+test("revenue page", async ({ page, stack }) => {
+  const revenue = Revenue.parse(await (await fetch(`${stack.apiUrl}/v1/revenue`)).json());
+  const ledger = LedgerPage.parse(await (await fetch(`${stack.apiUrl}/v1/ledger?limit=25`)).json());
+  await page.goto("/revenue");
+  await expect(page.getByRole("heading", { name: "Platform revenue" })).toBeVisible();
+  // The page shows what the API's Ledger says, asset by asset, and every entry links to its transaction.
+  const totals = page.getByRole("region", { name: "All time" }).getByRole("listitem");
+  await expect(totals).toHaveCount(revenue.totals.length);
+  for (const [i, t] of revenue.totals.entries()) await expect(totals.nth(i)).toContainText(t.asset.symbol!);
+  const entries = page.getByRole("region", { name: "Ledger" }).getByRole("listitem");
+  await expect(entries).toHaveCount(ledger.entries.length);
+  for (const [i, e] of ledger.entries.entries())
+    await expect(entries.nth(i).getByRole("link").last()).toHaveAttribute("href", new RegExp(`/tx/${e.signature}`));
+  await expect(page.locator("main img").first()).toHaveJSProperty("complete", true);
+  // Addresses and times differ between runs; every amount follows from the seed's fixed trades.
+  await snap(page, "revenue.png", (p) => [p.locator("time"), p.locator("a.mono")]);
 });
