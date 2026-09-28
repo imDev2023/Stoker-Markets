@@ -136,7 +136,7 @@ describe("paying with SOL on a USDC-paired Launch", () => {
     });
 
     // The Indexer sees a USDC buy on the curve; the route's swap is in a pool none of our Launches graduated into.
-    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 1, claimed: 0, graduated: 0 });
+    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 1, claimed: 0, graduated: 0, airdropped: 0 });
     expect(await trades(mint)).toMatchObject([
       { signature, venue: "curve", side: "buy", trader: trader.publicKey.toBase58(), baseAmount: shown.amountOut, quoteAmount: r.quoteOut },
     ]);
@@ -177,8 +177,9 @@ describe("paying with SOL on a USDC-paired Launch", () => {
     const programOf = (step: string) => p.steps.flatMap((s, i) => (s === step ? [keys[tx.message.compiledInstructions[i]!.programIdIndex]!.toBase58()] : []));
     expect(programOf("route")).toEqual([programs.cpmm.toBase58()]);
     expect(programOf("trade")).toEqual([programs.launchlab.toBase58()]);
-    // It goes out as v0 through the route's lookup table, which keeps it under the size limit.
-    expect(tx.message.addressTableLookups.map((l) => l.accountKey.toBase58())).toEqual([env().solRoutes.lookupTable]);
+    // It goes out as v0 through the Platform Lookup Table, which holds the route pools' accounts too and keeps it under
+    // the size limit.
+    expect(tx.message.addressTableLookups.map((l) => l.accountKey.toBase58())).toEqual([env().platform.lookupTable]);
     expect(Buffer.from(p.transaction, "base64").length).toBeLessThanOrEqual(1232);
   });
 
@@ -251,7 +252,7 @@ describe("paying with SOL on a USDC-paired Launch", () => {
     expect(await coinsOf(mint, trader)).toBe(BigInt(shown.amountOut));
     expect(sol - (await solOf(trader))).toBe(BigInt(shown.route!.solIn) + (await networkFee(signature)) + (await rent()));
     expect(await tokenAccounts(trader)).toEqual([{ mint, amount: shown.amountOut }]);
-    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 1, claimed: 0, graduated: 0 });
+    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 1, claimed: 0, graduated: 0, airdropped: 0 });
     expect((await trades(mint))[0]).toMatchObject({ signature, venue: "pool", side: "buy", quoteAmount: shown.amountIn });
   });
 });

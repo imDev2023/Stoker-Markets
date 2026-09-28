@@ -27,10 +27,11 @@ export type Bindings = {
    * SOL_ROUTE_POOLS (the local chain, devnet), or "none" to offer no SOL payment on non-SOL Launches.
    */
   SOL_ROUTE_SOURCE?: "jupiter" | "raydium-cpmm" | "none";
-  /** JSON object of the Raydium CPMM pool of SOL against each Quote Asset, by quote mint, for the "raydium-cpmm" source. */
+  /**
+   * JSON object of the Raydium CPMM pool of SOL against each Quote Asset, by quote mint, for the "raydium-cpmm" source.
+   * The pools' accounts belong in the Platform Lookup Table too, or a buy routed through them won't fit a transaction.
+   */
   SOL_ROUTE_POOLS?: string;
-  /** Comma-separated address lookup tables every buy paid with SOL compiles with, to stay under the transaction size limit. */
-  SOL_ROUTE_LOOKUP_TABLES?: string;
   /** The operations wallet's secret key as a JSON byte array: it signs curve rule updates as the curve rule manager (ADR 0005). */
   OPERATIONS_KEY: string;
   /** How long a sold-out curve may wait for Raydium's migration before the operator is alerted. */
@@ -85,9 +86,7 @@ export type Config = {
   solRoute: SolRouteConfig | null;
 };
 
-export type SolRouteConfig =
-  | { source: "jupiter"; lookupTables: PublicKey[] }
-  | { source: "raydium-cpmm"; pools: Map<string, PublicKey>; lookupTables: PublicKey[] };
+export type SolRouteConfig = { source: "jupiter" } | { source: "raydium-cpmm"; pools: Map<string, PublicKey> };
 
 const MINT_KEY_SECRET_MIN_LENGTH = 32;
 
@@ -152,13 +151,12 @@ function lamports(raw: string, name: string) {
 
 function solRouteConfig(env: Bindings): SolRouteConfig | null {
   const source = env.SOL_ROUTE_SOURCE || "none";
-  const lookupTables = (env.SOL_ROUTE_LOOKUP_TABLES ?? "").split(",").filter(Boolean).map((a) => new PublicKey(a.trim()));
   if (source === "none") return null;
-  if (source === "jupiter") return { source, lookupTables };
+  if (source === "jupiter") return { source };
   if (source === "raydium-cpmm") {
     const pools = Object.entries(JSON.parse(env.SOL_ROUTE_POOLS || "{}") as Record<string, string>);
     if (!pools.length) throw new Error("SOL_ROUTE_SOURCE raydium-cpmm needs SOL_ROUTE_POOLS");
-    return { source, lookupTables, pools: new Map(pools.map(([mint, pool]) => [new PublicKey(mint).toBase58(), new PublicKey(pool)])) };
+    return { source, pools: new Map(pools.map(([mint, pool]) => [new PublicKey(mint).toBase58(), new PublicKey(pool)])) };
   }
   throw new Error(`unknown SOL_ROUTE_SOURCE: ${String(source)}`);
 }
@@ -167,8 +165,8 @@ function solRouteConfig(env: Bindings): SolRouteConfig | null {
 export function solRoutes(env: Bindings, cfg: Config, connection: Connection): SolRoutes | null {
   const r = cfg.solRoute;
   if (!r) return null;
-  if (r.source === "jupiter") return jupiterSolRoutes(env.JUPITER_API_KEY || undefined, r.lookupTables);
-  return cpmmSolRoutes(connection, cfg.cpmm, r.pools, r.lookupTables);
+  if (r.source === "jupiter") return jupiterSolRoutes(env.JUPITER_API_KEY || undefined);
+  return cpmmSolRoutes(connection, cfg.cpmm, r.pools);
 }
 
 export function quoteMarket(env: Bindings): QuoteMarket {
