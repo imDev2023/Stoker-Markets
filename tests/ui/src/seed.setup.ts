@@ -3,7 +3,8 @@
 import { test as setup } from "@playwright/test";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
-  claimViaApi, coinBalance, fund, fundedKeypair, fundQuote, graduate, launchViaApi, payAirdropViaApi, SEED_CREATOR, SEED_HOLDER, tradeViaApi,
+  claimViaApi, coinBalance, fund, fundedKeypair, fundQuote, graduate, launchViaApi, payAirdropViaApi, runFeeCollector, SEED_CREATOR,
+  SEED_HOLDER, tradeViaApi,
   type LaunchFields,
 } from "./fixtures";
 import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING } from "./seedData";
@@ -65,4 +66,8 @@ setup("seed the board", async () => {
   await graduate(graduated);
   await tradeViaApi(holder, graduated, "buy", BigInt(0.5 * LAMPORTS_PER_SOL));
   await tradeViaApi(holder, graduated, "sell", (await coinBalance(holder, graduated)) / 4n);
+
+  // The Fee Collector's hourly run takes in the platform's revenue: the Platform Fee of every curve so far, and Cap and
+  // Gown's pool fee and Fee Key LP fees, so the revenue page shows every stream.
+  await runFeeCollector();
 });

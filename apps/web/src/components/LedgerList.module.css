@@ -1,0 +1,139 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.entries {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A fixed grid rather than a table, so long amounts wrap under their label on a phone instead of widening the page. */
+.entries li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 16px;
+  padding: 11px 0;
+  font-size: 0.875rem;
+}
+
+.entries li:first-child {
+  padding-top: 0;
+}
+
+.entries li:last-child {
+  padding-bottom: 0;
+}
+
+.entries li + li {
+  border-top: 1px solid var(--line);
+}
+
+.kind {
+  font-weight: 600;
+}
+
+.amount {
+  font-weight: 500;
+  text-align: right;
+  color: var(--verified);
+  overflow-wrap: anywhere;
+}
+
+.out .amount {
+  color: var(--ink-2);
+}
+
+.origin {
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+}
+
+.origin a,
+.tx {
+  color: var(--ink-2);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line);
+}
+
+.origin a:hover,
+.tx:hover {
+  color: var(--cobalt);
+  border-color: var(--cobalt);
+}
+
+.tx {
+  justify-self: end;
+  color: var(--ink-3);
+  font-size: 0.8125rem;
+}
+
+/* Wide enough for any date and time, so the column never shifts with the clock. */
+.tx time {
+  display: inline-block;
+  min-width: 14em;
+  text-align: right;
+}
+
+.error {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-weight: 500;
+  font-size: 0.9375rem;
+}
+
+.more {
+  align-self: flex-start;
+  height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.more:hover:not(:disabled) {
+  border-color: var(--cobalt);
+  color: var(--cobalt);
+}
+
+.more:disabled {
+  color: var(--ink-3);
+  cursor: progress;
+}
+
+@media (max-width: 560px) {
+  .card {
+    padding: 16px;
+  }
+  .entries li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .amount,
+  .tx,
+  .tx time {
+    justify-self: start;
+    text-align: left;
+  }
+}

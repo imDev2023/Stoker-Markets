@@ -67,6 +67,11 @@ export function formatUtc(iso: string) {
   return `${new Date(iso).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC`;
 }
 
+/** A UTC calendar day (YYYY-MM-DD) as people write it: Sep 28, 2026. */
+export function formatUtcDay(day: string) {
+  return new Date(`${day}T00:00:00Z`).toLocaleDateString("en-US", { dateStyle: "medium", timeZone: "UTC" });
+}
+
 export function timeAgo(iso: string, now = Date.now()) {
   const s = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
   if (s < 60) return `${s}s ago`;

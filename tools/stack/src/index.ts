@@ -8,7 +8,7 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import BN from "bn.js";
 import { runMigrations } from "@launchpad/db/migrate";
 import { bootstrapPlatform, LOCAL_QUOTE_PRICES_USD, localnetKeys, startLocalnet, type LocalnetState } from "@launchpad/localnet";
@@ -27,6 +27,12 @@ export type StackEnv = {
   alertSinkUrl: string;
   /** How long a sold-out curve waits for migration before the API alerts. */
   graduationAlertAfterSeconds: number;
+  /** Where the Fee Collector sweeps revenue: a fresh address per stack, standing in for the cold treasury. */
+  treasury: string;
+  /** The Fee Collector's settings, as the API has them. */
+  sweepThresholdLamports: string;
+  sweepFloatLamports: string;
+  collectMinLamports: string;
   platform: LocalnetState;
 };
 
@@ -96,6 +102,11 @@ function run(name: string, cmd: string, args: string[], cwd: string, env: NodeJS
 }
 
 export const WEBHOOK_SECRET = "test-webhook-secret";
+
+/** The API's Cron Triggers (apps/api/wrangler.jsonc), for running one job through `/__scheduled?cron=`. */
+export const QUOTE_REGISTRY_CRON = "*/5 * * * *";
+export const GRADUATION_WATCH_CRON = "* * * * *";
+export const FEE_COLLECTOR_CRON = "15 * * * *";
 export const OPERATOR_TOKEN = "test-operator-token";
 
 /** A stand-in for the operator's chat webhook: keeps every JSON body posted to it and lists them on GET. */
@@ -182,6 +193,12 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
     const webUrl = webPort ? `http://127.0.0.1:${webPort}` : null;
     const apiPort = await freePort();
     const apiUrl = `http://127.0.0.1:${apiPort}`;
+    const fees = {
+      treasury: Keypair.generate().publicKey.toBase58(),
+      sweepThresholdLamports: String(5 * LAMPORTS_PER_SOL),
+      sweepFloatLamports: String(2 * LAMPORTS_PER_SOL),
+      collectMinLamports: "100000",
+    };
     const vars = {
       RPC_URL: chain.rpcUrl,
       PUBLIC_API_URL: apiUrl,
@@ -197,12 +214,16 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       OPERATOR_TOKEN,
       ALERT_WEBHOOK_URL: sink.url,
       MINT_KEY_SECRET: randomBytes(32).toString("hex"),
+      TREASURY_WALLET: fees.treasury,
+      SWEEP_THRESHOLD_LAMPORTS: fees.sweepThresholdLamports,
+      SWEEP_FLOAT_LAMPORTS: fees.sweepFloatLamports,
+      COLLECT_MIN_LAMPORTS: fees.collectMinLamports,
     };
     const api = await startApi({ port: apiPort, vars, databaseUrl: pg.url });
     cleanups.push(api.stop);
     await waitFor("API", async () => (await fetch(`${apiUrl}/health`)).ok, 30_000, api.log);
     // As a deploy would: fill the Quote Registry and write the curve rules before anything launches.
-    const refresh = await fetch(`${apiUrl}/__scheduled`);
+    const refresh = await fetch(`${apiUrl}/__scheduled?cron=${encodeURIComponent(QUOTE_REGISTRY_CRON)}`);
     if (!refresh.ok) throw new Error(`first Quote Registry refresh failed: ${refresh.status}\n${api.log()}`);
 
     if (webPort && webUrl) {
@@ -221,7 +242,7 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
     return {
       env: {
         apiUrl, webUrl, rpcUrl: chain.rpcUrl, databaseUrl: pg.url, webhookSecret: WEBHOOK_SECRET, operatorToken: OPERATOR_TOKEN,
-        alertSinkUrl: sink.url, graduationAlertAfterSeconds, platform,
+        alertSinkUrl: sink.url, graduationAlertAfterSeconds, ...fees, platform,
       },
       stop,
     };

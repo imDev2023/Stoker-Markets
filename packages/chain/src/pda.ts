@@ -18,6 +18,8 @@ export function launchlabPdas(program: PublicKey) {
     pool: (baseMint: PublicKey, quoteMint: PublicKey) => find([seed("pool"), baseMint.toBuffer(), quoteMint.toBuffer()], program),
     vault: (pool: PublicKey, mint: PublicKey) => find([seed("pool_vault"), pool.toBuffer(), mint.toBuffer()], program),
     platformFeeVault: (platformConfig: PublicKey, quoteMint: PublicKey) => find([platformConfig.toBuffer(), quoteMint.toBuffer()], program),
+    /** Owns every Platform Fee vault; the PlatformConfig's fee wallet claims through it. */
+    platformFeeVaultAuthority: find([seed("platform_fee_vault_auth_seed")], program),
     creatorFeeVault: (creator: PublicKey, quoteMint: PublicKey) => find([creator.toBuffer(), quoteMint.toBuffer()], program),
     /** Owns every Creator Fee vault; one address for all Creators, so a webhook on it sees every Creator Fee claim. */
     creatorFeeVaultAuthority: find([seed("creator_fee_vault_auth_seed")], program),
@@ -43,6 +45,8 @@ export function cpmmPdas(program: PublicKey) {
     observation: (pool: PublicKey) => find([seed("observation"), pool.toBuffer()], program),
     permission: (owner: PublicKey) => find([seed("permission"), owner.toBuffer()], program),
     supportMint: (mint: PublicKey) => find([seed("support_mint"), mint.toBuffer()], program),
+    /** Where a pool creator's share of its creator fee would be split off, per creator and CPMM config; ours has none. */
+    creatorFeeShare: (creator: PublicKey, ammConfig: PublicKey) => find([seed("creator_fee_share"), creator.toBuffer(), ammConfig.toBuffer()], program),
   };
 }
 

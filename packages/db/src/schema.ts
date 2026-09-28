@@ -1,4 +1,4 @@
-import { bigint, doublePrecision, index, integer, numeric, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
+import { bigint, doublePrecision, index, integer, jsonb, numeric, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
 
 /** One row per Launch on our platform, written by the Indexer from the launch transaction. */
 export const launches = pgTable(
@@ -243,3 +243,90 @@ export const airdropRecipients = pgTable(
   },
   (t) => [primaryKey({ columns: [t.mint, t.wallet] })],
 );
+
+/**
+ * The Ledger: the append-only public record of platform revenue, one row per movement in a confirmed transaction, such as
+ * a Platform Fee claim, a pool creator fee or Fee Key collection, or a sweep to the treasury. Rows are only ever inserted,
+ * keyed by transaction signature, so a retried job or a replayed transaction never records anything twice.
+ * `kind` is open text so later jobs (Reward Rounds, Burns, Flywheel buys) add their own kinds without a migration.
+ */
+export const ledgerEntries = pgTable(
+  "ledger_entries",
+  {
+    signature: text("signature").notNull(),
+    /** Position among the movements in the transaction. */
+    eventIndex: integer("event_index").notNull(),
+    /** platform_fee, pool_fee, fee_key or sweep so far. */
+    kind: text("kind").notNull(),
+    /** What moved: a Quote Asset or a coin; SOL as the wrapped-SOL mint. */
+    assetMint: text("asset_mint").notNull(),
+    assetDecimals: integer("asset_decimals").notNull(),
+    /** Raw units that moved. */
+    amount: numeric("amount", { precision: 40, scale: 0 }).notNull(),
+    /** Where it came from: a Platform Fee vault, a CPMM pool, or the operations wallet. */
+    source: text("source").notNull(),
+    /** Where it went: the operations wallet, or the treasury for a sweep. */
+    destination: text("destination").notNull(),
+    /** The Launch it came from, when one did: a graduated coin's pool fees and Fee Key. A Platform Fee vault pools every Launch. */
+    launchMint: text("launch_mint"),
+    slot: bigint("slot", { mode: "number" }).notNull(),
+    blockTime: timestamp("block_time", { withTimezone: true }).notNull(),
+    recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.signature, t.eventIndex] }),
+    index("ledger_entries_slot_idx").on(t.slot),
+    index("ledger_entries_kind_source_idx").on(t.kind, t.source),
+  ],
+);
+
+/**
+ * Every transaction a scheduled job signs, written before it is sent: a job that dies between sending and recording finds
+ * its transaction here on the next run and records what landed, so nothing it moved is missing from the Ledger.
+ */
+export const jobTransactions = pgTable("job_transactions", {
+  signature: text("signature").primaryKey(),
+  job: text("job").notNull(),
+  /** What the transaction does, such as a revenue kind. */
+  purpose: text("purpose").notNull(),
+  /** The account it acts on: a fee vault, a pool, or the treasury. */
+  subject: text("subject").notNull(),
+  status: text("status", { enum: ["pending", "landed", "failed", "expired"] }).notNull().default("pending"),
+  /** Past this block height an unconfirmed transaction can never land. */
+  lastValidBlockHeight: bigint("last_valid_block_height", { mode: "number" }).notNull(),
+  error: text("error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+});
+
+/** One row per run of a scheduled job: when it ran, how it ended, and what it did, for the operator. */
+export const jobRuns = pgTable(
+  "job_runs",
+  {
+    id: text("id").primaryKey(),
+    job: text("job").notNull(),
+    status: text("status", { enum: ["running", "succeeded", "failed", "skipped"] }).notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    /** What the run did, as the job reports it. */
+    summary: jsonb("summary"),
+    error: text("error"),
+  },
+  (t) => [index("job_runs_job_started_idx").on(t.job, t.startedAt)],
+);
+
+/** A lease on a job, so two runs of it (a Cron Trigger and a manual one) never overlap. It lapses if its holder dies. */
+export const jobLocks = pgTable("job_locks", {
+  job: text("job").primaryKey(),
+  runId: text("run_id").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
+
+/** Fee Key NFTs the operations wallet holds, each found on-chain once: which pool's locked LP it collects for. */
+export const feeKeys = pgTable("fee_keys", {
+  nftMint: text("nft_mint").primaryKey(),
+  nftAccount: text("nft_account").notNull(),
+  lockedLiquidity: text("locked_liquidity").notNull(),
+  pool: text("pool").notNull().unique(),
+  foundAt: timestamp("found_at", { withTimezone: true }).notNull().defaultNow(),
+});
