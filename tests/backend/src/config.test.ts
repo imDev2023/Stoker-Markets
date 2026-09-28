@@ -20,9 +20,10 @@ describe("mainnet metadata address", () => {
         PUBLIC_API_URL: publicApiUrl,
         WEB_ORIGIN: "https://example.com",
         PLATFORM_CONFIG: h.platform.platformConfig,
-        SOL_GLOBAL_CONFIG: h.platform.solGlobalConfig,
+        PLATFORM_LOOKUP_TABLE: h.platform.lookupTable,
         GRADUATION_TARGET_LAMPORTS: h.platform.graduationTargetLamports,
         HELIUS_WEBHOOK_SECRET: WEBHOOK_SECRET,
+        MINT_KEY_SECRET: "a-test-secret-that-is-at-least-32-characters",
       },
     });
     stops.push(api.stop);

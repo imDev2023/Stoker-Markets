@@ -1,0 +1,224 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.count {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--plate);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: 999px;
+  background: var(--verified);
+  transition: width 400ms ease;
+}
+
+.summary,
+.hint {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.hint {
+  color: var(--ink-3);
+}
+
+.error,
+.notice {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.error {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.notice {
+  background: var(--plate);
+  color: var(--cobalt-strong);
+}
+
+.action {
+  display: flex;
+  align-items: center;
+  gap: 10px 16px;
+  flex-wrap: wrap;
+}
+
+.action .hint {
+  flex: 1 1 240px;
+}
+
+.primary {
+  height: 44px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--cobalt);
+  color: var(--on-cobalt);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+/* Hovers only with a real pointer, so a tap on a phone doesn't leave one behind. */
+@media (hover: hover) {
+  .primary:hover:not(:disabled) {
+    background: var(--cobalt-strong);
+  }
+  .wallets summary:hover {
+    color: var(--cobalt);
+  }
+  .table a:hover {
+    color: var(--cobalt);
+    border-color: var(--cobalt);
+  }
+}
+
+.primary:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.wallets summary {
+  width: fit-content;
+  color: var(--ink-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wallets[open] summary {
+  margin-bottom: 10px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.table th {
+  padding: 0 8px 8px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-3);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 9px 8px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.table tr > :first-child {
+  padding-left: 0;
+}
+
+.table tr > :last-child {
+  padding-right: 0;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table .num {
+  text-align: right;
+}
+
+.table a {
+  color: var(--ink-2);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.status::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+}
+
+.table a.status {
+  border-bottom: 0;
+}
+
+.paid {
+  color: var(--verified);
+}
+
+.table a.paid {
+  color: var(--verified);
+}
+
+.paid::before {
+  background: var(--verified);
+}
+
+.sending {
+  color: var(--cobalt-strong);
+}
+
+.sending::before {
+  background: var(--cobalt);
+}
+
+.unpaid {
+  color: var(--ink-3);
+}
+
+.unpaid::before {
+  background: var(--line);
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 16px;
+  }
+}

@@ -1,4 +1,4 @@
-import { ComputeBudgetProgram, type Connection, type PublicKey } from "@solana/web3.js";
+import { ComputeBudgetProgram, type Connection, type PublicKey, type TransactionInstruction } from "@solana/web3.js";
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import type BN from "bn.js";
 import { launchlabCoder } from "./coder";
@@ -34,15 +34,26 @@ type PoolState = {
   global_config: PublicKey; platform_config: PublicKey; creator: PublicKey; base_mint: PublicKey; quote_mint: PublicKey;
 };
 
+/**
+ * The fee rates a curve trades at right now, Raydium's from the GlobalConfig and ours from the PlatformConfig, plus the
+ * GlobalConfig's migrate fee, which shapes a new curve.
+ */
+export async function loadFeeRates(connection: Connection, globalConfig: PublicKey, platformConfig: PublicKey) {
+  const [global, platform] = await connection.getMultipleAccountsInfo([globalConfig, platformConfig], "confirmed");
+  if (!global) throw new Error(`GlobalConfig ${globalConfig.toBase58()} does not exist`);
+  if (!platform) throw new Error(`PlatformConfig ${platformConfig.toBase58()} does not exist`);
+  const g = launchlabCoder.accounts.decode("GlobalConfig", global.data) as { trade_fee_rate: BN; migrate_fee: BN };
+  const p = launchlabCoder.accounts.decode("PlatformConfig", platform.data) as { fee_rate: BN; creator_fee_rate: BN };
+  const rates: FeeRates = { protocol: g.trade_fee_rate, platform: p.fee_rate, creator: p.creator_fee_rate };
+  return { rates, migrateFee: g.migrate_fee };
+}
+
 /** Reads a curve with its current fee rates: Raydium's from the GlobalConfig, ours from the PlatformConfig. Null if there is no pool. */
 export async function loadCurve(connection: Connection, pool: PublicKey): Promise<Curve | null> {
   const account = await connection.getAccountInfo(pool, "confirmed");
   if (!account) return null;
   const s = launchlabCoder.accounts.decode("PoolState", account.data) as PoolState;
-  const [global, platform] = await connection.getMultipleAccountsInfo([s.global_config, s.platform_config], "confirmed");
-  if (!global || !platform) throw new Error(`curve ${pool.toBase58()} points at a missing config account`);
-  const g = launchlabCoder.accounts.decode("GlobalConfig", global.data) as { trade_fee_rate: BN };
-  const p = launchlabCoder.accounts.decode("PlatformConfig", platform.data) as { fee_rate: BN; creator_fee_rate: BN };
+  const { rates } = await loadFeeRates(connection, s.global_config, s.platform_config);
   const tokenProgram = (bit: number) => (s.token_program_flag & bit ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID);
   return {
     pool,
@@ -51,7 +62,7 @@ export async function loadCurve(connection: Connection, pool: PublicKey): Promis
       virtualBase: s.virtual_base, virtualQuote: s.virtual_quote, realBase: s.real_base, realQuote: s.real_quote,
       totalBaseSell: s.total_base_sell,
     },
-    rates: { protocol: g.trade_fee_rate, platform: p.fee_rate, creator: p.creator_fee_rate },
+    rates,
     graduationTarget: s.total_quote_fund_raising,
     baseDecimals: s.base_decimals,
     quoteDecimals: s.quote_decimals,
@@ -80,10 +91,25 @@ const TRADE_COMPUTE_UNITS = 200_000;
 
 /** Builds a buy or sell on the curve server-side (ADR 0003). The trader is the only signer. */
 export async function prepareTrade(connection: Connection, r: TradeRequest): Promise<PreparedTrade> {
+  return unsignedTransaction(connection, r.trader, [
+    ComputeBudgetProgram.setComputeUnitLimit({ units: TRADE_COMPUTE_UNITS }),
+    ...(await tradeInstructions(connection, r)),
+  ]);
+}
+
+/** The accounts a curve trade names; a First Buy names them before its curve exists. */
+export type CurveAccounts = Pick<
+  Curve, "pool" | "globalConfig" | "platformConfig" | "creator" | "baseMint" | "quoteMint" | "baseTokenProgram" | "quoteTokenProgram"
+>;
+
+/** The instructions of one buy or sell on a curve, with the trader's token accounts opened and closed around it. */
+export async function tradeInstructions(
+  connection: Connection,
+  r: { program: PublicKey; curve: CurveAccounts; trader: PublicKey; side: Side; amountIn: BN; minAmountOut: BN },
+): Promise<TransactionInstruction[]> {
   const { curve: c, trader, side } = r;
   const accounts = await tradeAccounts(connection, { ...c, trader, side, amountIn: r.amountIn });
-  return unsignedTransaction(connection, trader, [
-    ComputeBudgetProgram.setComputeUnitLimit({ units: TRADE_COMPUTE_UNITS }),
+  return [
     ...accounts.setup,
     tradeExactInIx(side, {
       program: r.program,
@@ -102,5 +128,5 @@ export async function prepareTrade(connection: Connection, r: TradeRequest): Pro
       minAmountOut: r.minAmountOut,
     }),
     ...accounts.cleanup,
-  ]);
+  ];
 }

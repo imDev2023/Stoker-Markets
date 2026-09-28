@@ -84,6 +84,11 @@
   gap: 16px;
 }
 
+.wide {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
 .facts,
 .addresses {
   display: grid;

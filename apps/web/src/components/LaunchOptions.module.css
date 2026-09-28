@@ -1,0 +1,158 @@
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field > label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.field em {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.amount {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+/* Hovers only with a real pointer, so a tap on a phone doesn't leave one behind. */
+@media (hover: hover) {
+  .amount:hover,
+  .list:hover {
+    border-color: var(--ink-3);
+  }
+}
+
+.amount:focus-within,
+.list:focus {
+  outline: none;
+  border-color: var(--cobalt);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cobalt) 22%, transparent);
+}
+
+/* The height of the form's other inputs: 11px padding around a 1.55 line. */
+.amount input {
+  flex: 1;
+  min-width: 0;
+  height: calc(1.55em + 22px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 1rem;
+}
+
+.amount input:focus {
+  outline: none;
+}
+
+.amount input::placeholder,
+.list::placeholder {
+  color: var(--ink-3);
+  opacity: 0.7;
+}
+
+.unit {
+  flex: none;
+  font-family: var(--font-display);
+  font-stretch: 125%;
+  font-weight: 800;
+  font-size: 0.875rem;
+  color: var(--ink-2);
+}
+
+.hint,
+.hintError {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--ink-3);
+}
+
+.hintError {
+  color: var(--danger);
+}
+
+.hint :global(.mono) {
+  color: var(--ink-2);
+}
+
+.airdrop {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.toggle {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  align-self: flex-start;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.toggle input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 3px 0 0;
+  accent-color: var(--cobalt);
+  cursor: pointer;
+}
+
+.list {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  resize: vertical;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+/*
+ * Where the browser can, the box fits its wrapped lines (a phone wraps each amount under its address), from 4 lines up
+ * to 12, then scrolls; elsewhere `rows` sizes it by line breaks.
+ */
+@supports (field-sizing: content) {
+  .list {
+    field-sizing: content;
+    min-height: calc(4lh + 24px);
+    max-height: calc(12lh + 24px);
+  }
+}
+
+/* A 44-character address plus padding fits a 390px phone at 12px mono; its amount wraps to the next line. */
+@media (max-width: 560px) {
+  .list {
+    font-size: 0.75rem;
+  }
+}
+
+.amount.invalid,
+.list.invalid {
+  border-color: var(--danger);
+}
