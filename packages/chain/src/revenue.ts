@@ -321,7 +321,7 @@ export type RevenueMovement = {
   index: number;
   /** What moved; SOL as the wrapped-SOL mint. */
   mint: PublicKey;
-  /** Raw units that left the source. */
+  /** Raw units that arrived at the destination: what left the source, less any Token-2022 transfer fee. */
   amount: BN;
   decimals: number;
   /** Where it came from: the Platform Fee vault, the CPMM pool, or the operations wallet for a sweep. */
@@ -369,8 +369,8 @@ function tokenTransfer(ix: RawInstruction, keys: string[]): Transfer | null {
 
 /**
  * The platform revenue a confirmed transaction moved: Platform Fee claims on our PlatformConfig, creator fees and Fee Key
- * collections paid to the operations wallet, and sweeps from the operations wallet to the treasury. Amounts are what the
- * token transfers moved, read from the instructions themselves. Failed transactions move nothing.
+ * collections paid to the operations wallet, and sweeps from the operations wallet to the treasury, each with what arrived.
+ * Failed transactions move nothing.
  */
 export function decodeRevenue(raw: RawTransaction, ctx: RevenueContext): RevenueMovement[] {
   const tx = raw as RevenueTransaction;
@@ -384,6 +384,20 @@ export function decodeRevenue(raw: RawTransaction, ctx: RevenueContext): Revenue
   const balances = [...(meta.postTokenBalances ?? []), ...(meta.preTokenBalances ?? [])];
   const decimalsOf = (mint: string) => balances.find((b) => b.mint === mint)?.uiTokenAmount.decimals ?? null;
   const ownerOf = (account: string) => balances.find((b) => keys[b.accountIndex] === account)?.owner ?? null;
+  // What an account received: its balance change when this transfer is the only one into it (so a Token-2022 transfer
+  // fee withheld on the way is not counted), otherwise the transfer's amount. An account closed in the same transaction
+  // (the unwrapped SOL) has no closing balance, and SOL has no transfer fee.
+  const transfersInto = new Map<string, number>();
+  for (const ix of [...tx.transaction.message.instructions, ...(meta.innerInstructions ?? []).flatMap((g) => g.instructions)]) {
+    const t = tokenTransfer(ix, keys);
+    if (t) transfersInto.set(t.destination, (transfersInto.get(t.destination) ?? 0) + 1);
+  }
+  const balanceOf = (list: TokenBalance[] | undefined, account: string) => list?.find((b) => keys[b.accountIndex] === account)?.uiTokenAmount.amount;
+  const received = (t: Transfer) => {
+    const post = balanceOf(meta.postTokenBalances, t.destination);
+    if (post === undefined || transfersInto.get(t.destination) !== 1) return t.amount;
+    return new BN(post).sub(new BN(balanceOf(meta.preTokenBalances, t.destination) ?? "0"));
+  };
   const ops = ctx.operationsWallet.toBase58();
   const treasury = ctx.treasury?.toBase58() ?? null;
   const signature = tx.transaction.signatures[0]!;
@@ -402,7 +416,7 @@ export function decodeRevenue(raw: RawTransaction, ctx: RevenueContext): Revenue
       if (owner !== null && owner !== recipientOwner) return [];
       const decimals = t.decimals ?? decimalsOf(mint);
       if (decimals === null) throw new Error(`transaction ${signature} has no token balance for ${mint}`);
-      return [{ mint: new PublicKey(mint), amount: t.amount, decimals }];
+      return [{ mint: new PublicKey(mint), amount: received(t), decimals }];
     });
 
   tx.transaction.message.instructions.forEach((ix, i) => {
@@ -450,7 +464,7 @@ export function decodeRevenue(raw: RawTransaction, ctx: RevenueContext): Revenue
     if (!mint) return;
     const decimals = t.decimals ?? decimalsOf(mint);
     if (decimals === null) return;
-    push({ kind: "sweep", mint: new PublicKey(mint), amount: t.amount, decimals, source: ctx.operationsWallet, destination: ctx.treasury!, pool: null });
+    push({ kind: "sweep", mint: new PublicKey(mint), amount: received(t), decimals, source: ctx.operationsWallet, destination: ctx.treasury!, pool: null });
   });
   return out;
 }

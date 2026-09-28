@@ -91,7 +91,7 @@ export const Revenue = z.object({
   sweepThresholdLamports: raw,
   /** ...down to this, which stays behind for network fees. */
   sweepFloatLamports: raw,
-  /** All-time totals per asset, SOL first, then by most collected. */
+  /** All-time totals per asset, SOL first, then by ticker. */
   totals: z.array(RevenueTotal),
   /** Daily totals for the latest 30 days with revenue, newest first. */
   days: z.array(RevenueDay),
