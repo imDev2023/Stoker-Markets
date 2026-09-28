@@ -1,0 +1,176 @@
+# Mainnet go-live runbook (#23)
+
+What it takes to put the platform on mainnet, in the order it has to happen. Everything an agent can prepare is here; the steps only the owner can do (keys, money, names, third-party accounts) are marked **owner** and gathered again at the end. Terms are `CONTEXT.md`'s; the decisions behind the steps are ADR 0001 (fees), 0002 (Cloudflare), 0003 (server-built transactions), 0004 (key custody) and 0005 (curve rules).
+
+The API refuses to start on mainnet until the settings below are right (`apps/api/src/env.ts`, `config()`), and `GET /health` fails the same way, so a wrong deploy never looks healthy.
+
+## 0. Before anything is created on mainnet
+
+- **owner** #7: the product name, the domain and the Platform Token ticker. The PlatformConfig's `name`, `web` and `img` and every coin's metadata URL carry them, and none can change afterwards.
+- **owner** ADR 0005 must be accepted (it is still marked proposed): the hot operations wallet writes every curve rule, and pays about 2 SOL of rent for mainnet's 571 GlobalConfigs.
+- **owner** A devnet dress rehearsal (section 11) with the mainnet configuration flags on, since the local chain cannot prove Raydium's crank, Jupiter or Helius.
+
+## 1. Keys and wallets (owner)
+
+| Key | Where it lives | What it does |
+| --- | --- | --- |
+| Admin key | Cold: a hardware wallet or a Squads multisig. Never on a server. | Creates the PlatformConfig, whose address is derived from it (`["platform_config", admin]`) and can never change (ADR 0004). Signs the rare `update_platform_config`: fee changes (#22), and re-pointing the wallet roles after a leak. |
+| Operations wallet | Hot: its secret key is the Worker secret `OPERATIONS_KEY` (JSON byte array). | Every day-to-day role: fee wallet, Fee Key NFT wallet, `platform_cp_creator`, Reward Tax withdraw authority, fee-extension authority, curve rule manager, Reward Round payer, Burn and Flywheel buyer, Platform Lookup Table authority. |
+| Treasury | Cold: a hardware wallet or a Squads vault; `TREASURY_WALLET` is only its address. | Receives the Fee Collector's sweeps. |
+
+Generate the admin key on the cold device and note its public key: that address is the platform's identity for good. Generate the operations wallet with `solana-keygen new -o operations.json` on a machine you trust, put the JSON array into the Worker secret, and keep an offline copy: losing it strands the Reward Tax withdraw authority on every Reward Launch and the curve rule manager role until the admin re-points them.
+
+Funding the operations wallet, in SOL, before the first refresh:
+
+| Need | About |
+| --- | --- |
+| Curve rule accounts, one per GlobalConfig (ADR 0005) | 0.003 each, 2 for all 571 |
+| Platform Lookup Table (section 3) | 0.02 |
+| Fee vault and token account rents as Quote Assets get their first trade, Reward Round payouts (network fees and holders' new coin accounts), Burn and Flywheel network fees | keep the `SWEEP_FLOAT_LAMPORTS` float, 1 SOL by default |
+| A margin | 5 in total is comfortable |
+
+The admin key needs about 0.01 SOL: the PlatformConfig's rent (0.0075) and four transaction fees.
+
+## 2. Create the mainnet PlatformConfig (cold admin key)
+
+Exactly what `bootstrapPlatform` in `tools/localnet/src/index.ts` does on the local chain, signed by the cold key instead. Mainnet program ids are in `packages/chain/src/programs.ts` (`programsFor("mainnet")`): LaunchLab `LanMV9sAd7wArD4vJFi2qDdfnVhFxYSUg6eADduJ3uj`, CPMM `CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C`, lock `LockrWmn6K5twhz3y9w1dQERbmgSaRkfnTeTKbpofwE`.
+
+1. **owner** Pick the CPMM config graduated pools use: list mainnet's CPMM configs (the spike's `list_cpmm_configs.ts` against a mainnet RPC) and take the one with a 1% creator fee, which is what the PRD and StonkFun use; the config fixes the post-Graduation Platform Fee for every pool for good (ADR 0001).
+2. Build the four instructions, in one transaction, with `packages/chain`:
+   - `createPlatformConfigIx(program, admin, { feeRate: 5000, creatorFeeRate: 5000, name, web, img, operationsWallet, cpswapConfig })`: Platform Fee 0.5% and Creator Fee 0.5% (rates use LaunchLab's 1e6 denominator), all locked-LP Fee Key rights to the platform (`migrate_nft_info.platform_scale` 1e6), no platform vesting, and the operations wallet as fee wallet, NFT wallet, transfer-fee-extension authority and vesting wallet.
+   - `updatePlatformConfigIx(program, admin, { PlatformCPCreator: [operations] })`: the platform is every graduated pool's creator.
+   - `updatePlatformConfigIx(program, admin, { RestrictCurveParam: [1] })`: launches must match a curve rule.
+   - `updatePlatformConfigIx(program, admin, { CurveRuleManager: [operations] })`: the operations wallet writes the rules (ADR 0005).
+3. Serialise it unsigned with a recent blockhash and the admin as fee payer (the same way `POST /v1/operator/fees/prepare` hands the admin a fee change), sign it on the cold device or through Squads, and send it. A short `tsx` script in the repo can do the building; nothing in the API does, since the API never holds the admin key.
+4. Verify by decoding the account, which is the acceptance criterion in #23: `launchlabCoder.accounts.decode("PlatformConfig", data)` from `packages/chain` and check `fee_rate` 5000, `creator_fee_rate` 5000, `migrate_nft_info` `{1000000, 0, 0}`, `platform_vesting_scale` 0, `fee_wallet`, `nft_wallet`, `transfer_fee_extension_auth`, `vesting_wallet` and `platform_cp_creator` all the operations wallet, `curve_rule_manager` the operations wallet, `restrict_curve_param` on, `cpswap_config` the chosen config, `name`, `web` and `img` as decided in #7.
+5. `PLATFORM_CONFIG` is `launchlabPdas(program).platformConfig(admin)`; `PLATFORM_ADMIN` is the admin's address, and the API checks on mainnet that the one derives from the other.
+
+Every curve rule is written by the API's Quote Registry refresh (section 6), never by the admin.
+
+## 3. The Platform Lookup Table (operations wallet)
+
+A launch with a First Buy only fits Solana's 1,232 bytes through an address lookup table, and a buy paid with SOL needs the same table (CLAUDE.md traps). The table is owned by the operations wallet and holds `platformLookupAddresses(program, platformConfig, quotes)` from `packages/chain/src/lookup.ts`: 11 shared accounts plus 4 per listed Quote Asset (its GlobalConfig, mint, curve rule and platform fee vault). A table holds 256 addresses, so list SOL (required: a SOL First Buy needs SOL's own accounts) and up to 61 of the busiest Quote Assets, never all 571.
+
+`ensureLookupTable(connection, operations, addresses)` from `tools/localnet` creates or extends it against any RPC and waits until the last extension is rooted (about 32 slots), so a `tsx` one-off script can run it against mainnet with the operations keypair. Its address is `PLATFORM_LOOKUP_TABLE`. Extending it later (a Quote Asset getting popular) is the same call; a new address is usable a minute after it is added. Jupiter routes bring their own tables.
+
+## 4. Postgres and Hyperdrive
+
+1. **owner** A managed Postgres (Neon, Supabase, Crunchy or the like) reachable from Cloudflare, with a password (Hyperdrive refuses a URL without one).
+2. Run the migrations from a machine, never from the Worker: `runMigrations(directUrl)` from `@launchpad/db/migrate` applies `packages/db/migrations`, including the trigger that makes `ledger_entries` append-only. Re-run it on every deploy that adds a migration.
+3. Create a Hyperdrive configuration for the database and put its id in `wrangler.jsonc` (`hyperdrive[0].id`, binding `HYPERDRIVE`).
+
+## 5. The API Worker: production configuration checklist
+
+Put the mainnet values in an `env.production` block of `apps/api/wrangler.jsonc` (deploy with `wrangler deploy --env production`) so the local defaults stay as they are. Everything below is read by `config()` and refused on mainnet when wrong.
+
+| Variable | Mainnet value | Checked |
+| --- | --- | --- |
+| `CLUSTER` | `mainnet` | turns every check below on |
+| `RPC_URL` | the Helius (or other provider) RPC URL with its key | must be https; never reaches a browser |
+| `PUBLIC_RPC_URL` | a public endpoint, or a browser key restricted to our domain | required on mainnet; https; refused if the URL carries a key, token or secret |
+| `PUBLIC_API_URL` | `https://api.<our domain>` | refused if not https, or on localhost, a bare IP or `workers.dev`: every coin's metadata URL is built from it and can never change (section 8) |
+| `WEB_ORIGIN` | `https://<our domain>` | CORS |
+| `LAUNCHLAB_PROGRAM`, `CPMM_PROGRAM`, `LOCK_PROGRAM` | the mainnet ids in section 2 | the local defaults are devnet's |
+| `PLATFORM_CONFIG`, `PLATFORM_ADMIN` | from section 2 | the config must derive from the admin |
+| `PLATFORM_LOOKUP_TABLE` | from section 3 | must exist and be active |
+| `GRADUATION_TARGET_LAMPORTS` | `85000000000` (85 SOL, PRD) | the local stack uses 1 SOL |
+| `GRADUATION_ALERT_AFTER_SECONDS` | `300` | a stuck Graduation alert after five minutes without Raydium's crank |
+| `PRICE_SOURCE` | `jupiter` | `static` is refused on mainnet; drop `QUOTE_PRICES_USD` |
+| `SOL_ROUTE_SOURCE` | `jupiter` (or `none` to offer no SOL payment on non-SOL Launches) | `raydium-cpmm` is refused; drop `SOL_ROUTE_POOLS` |
+| `TREASURY_WALLET` | the Treasury address | required on mainnet |
+| `SWEEP_THRESHOLD_LAMPORTS`, `SWEEP_FLOAT_LAMPORTS`, `COLLECT_MIN_LAMPORTS` | `5000000000`, `1000000000`, `1000000` unless the owner decides otherwise (#14's open question) | float below threshold and above the rent a sweep may pay |
+| `FEE_CHANGE_LEAD_SECONDS`, `REWARD_RULES_LEAD_SECONDS` | `86400` | the fee lead is refused under an hour on mainnet |
+| `BURN_SHARE_BPS`, `FLYWHEEL_SHARE_BPS`, `FLYWHEEL_TOP_N`, `BURN_MIN_SPEND_LAMPORTS` | `6000`, `500`, `10`, `10000000` (PRD) | whole basis points |
+| `REFERRAL_SHARE_BPS` | `50` | capped per Quote Asset by its GlobalConfig |
+| `triggers.crons` | the five in `wrangler.jsonc` as they are | graduation watch, Quote Registry, Fee Collector, Reward Engine, Burn |
+| `hyperdrive[0].id`, `r2_buckets[0].bucket_name` | from section 4 and 8 | |
+
+Secrets, set with `wrangler secret put <NAME> --env production`, never in the config file:
+
+| Secret | Value |
+| --- | --- |
+| `OPERATIONS_KEY` | the operations wallet's secret key as a JSON byte array |
+| `HELIUS_WEBHOOK_SECRET` | a long random string; the same one goes into the webhook's auth header (section 7) |
+| `MINT_KEY_SECRET` | at least 32 random characters. Every launch's mint key is derived from it and a nonce, so a retry rebuilds the same coin address; never rotate it while any prepared launch could still be retried, and keep an offline copy |
+| `OPERATOR_TOKEN` | a long random string; whoever holds it has the operator endpoints and the `/operator` page. **owner**: who holds it |
+| `ALERT_WEBHOOK_URL` | the chat webhook (Slack, Discord, Telegram) alerts are posted to as JSON; without it alerts are only stored. **owner**: which channel |
+| `JUPITER_API_KEY` | optional; without it prices and routes use the free `lite-api.jup.ag` host with its lower limits. **owner**: whether to pay for one |
+
+After the deploy: `GET https://api.<domain>/health` must answer `{"ok":true}`; any configuration error is its message.
+
+## 6. First refresh: the Quote Registry and every curve rule
+
+A GlobalConfig with no curve rule account is unrestricted even with `restrict_curve_param` on (ADR 0005), so nothing may launch before every GlobalConfig has a rule. The refresh writes at most 120 rules a run, missing ones first, and runs every five minutes: mainnet's 571 take five runs, about 25 minutes, or run the job by hand five times (`POST /v1/operator/jobs/quote-registry`, or the operator page's button) and check `GET /v1/operator/jobs?job=quote-registry`. Then `GET /v1/quotes` should list 571 Quote Assets, launchable where Jupiter prices them, each with a Graduation Target worth 85 SOL.
+
+Keep the site's launch page closed (or the DNS unpublished) until that count is right.
+
+## 7. The Helius webhook
+
+The Indexer reads Helius payloads as raw `getTransaction` JSON, so the webhook must be of type **raw** (the enhanced type has a different shape and is not decoded); transaction types: all. Deliveries carry `Authorization: <HELIUS_WEBHOOK_SECRET>`, and the API answers 500 for a batch it could not fully index, so Helius delivers it again and the rest are no-ops. Endpoint: `POST https://api.<domain>/v1/webhooks/helius`.
+
+Addresses to watch (print them with `launchlabPdas(program)` from `packages/chain`):
+
+| Address | Why |
+| --- | --- |
+| Our PlatformConfig | Every launch, curve trade, Graduation (migration) and `update_platform_config` on our platform names it. Watching the whole LaunchLab program instead would deliver every other platform's traffic. |
+| `launchlabPdas(program).creatorFeeVaultAuthority` (seed `creator_fee_vault_auth_seed`) | `claim_creator_fee` names no platform, so claims made without our site only reach us through this PDA, which every claim passes (CLAUDE.md traps). |
+| Each graduated pool | Pool trades after Graduation. The Indexer backfills a pool's history when it indexes the Graduation, but the webhook needs the pool's address added to keep receiving its swaps. Not automated yet: it takes a call to Helius's webhook API (`PUT /v0/webhooks/<id>` with a `HELIUS_API_KEY`) from the Indexer when a Graduation lands; until then add pools by hand or watch the CPMM program (high volume). |
+| The operations wallet | Optional: the jobs record their own transactions, but this catches anything sent from the wallet by hand. |
+| Each quote mint | Only once #11 ships, so Quote Risk Labels update within seconds of an issuer changing a mint; otherwise the five-minute refresh re-reads them. |
+
+A Helius webhook holds up to 100,000 addresses. The `POST /v1/transactions/:signature` fast path means the web app never waits for the webhook, but every trade made elsewhere does.
+
+## 8. Metadata hosting and the permanent domain
+
+Every coin's metadata URI is `PUBLIC_API_URL/metadata/<file>` and its image `PUBLIC_API_URL/metadata/<mint>/image`, written on-chain at launch where LaunchLab holds the update authority: the domain in `PUBLIC_API_URL` must stay ours for good, and the API refuses a temporary one on mainnet. Metadata bodies live in Postgres and images in the R2 bucket (`METADATA_BUCKET`, `launchpad-metadata` in `wrangler.jsonc`; create it in the Cloudflare account, or name the one created).
+
+- **owner** Register the domain (#7) and keep it renewed on auto-pay under an account nobody else controls; add `api.<domain>` as the API Worker's custom domain and `<domain>` as the web Worker's.
+- Arweave, decided 2026-09-27: optional, but if wanted it must ship before the first mainnet launch, because launched coins keep their URL. If added, use ArDrive Turbo (`@ardrive/turbo-sdk`, pays in SOL from the operations wallet), never Irys, which retires its Arweave endpoints on 2026-11-01; sign the upload at prepare time and upload only once the launch confirms, so abandoned launches cost nothing; first confirm the SDK runs under Workers' `nodejs_compat`. Not built. **owner**: decide yes or no before section 10.
+
+## 9. The web Worker
+
+`NEXT_PUBLIC_API_URL=https://api.<domain>` at build time, then `pnpm --filter web deploy` (OpenNext build and `opennextjs-cloudflare deploy`; `apps/web/wrangler.jsonc`), with `<domain>` as its custom domain. Confirm the `/launch` page shows the 571 Quote Assets and `/operator` opens with the token. The public site needs no secret.
+
+## 10. Launch #1: the Platform Token (owner)
+
+1. Launch it from the site like any Creator, paired with SOL, standard (not a Reward Launch), with **no First Buy and no Airdrop**: a First Buy is a team allocation, and the PRD promises none. The launch transaction is public proof; publish its signature and the mint.
+2. Name it for the Burn: `PUT /v1/operator/platform-token` with the mint (the Burn is idle until then).
+3. Once it graduates (85 SOL raised, Raydium's crank migrates it within seconds), ask Raydium for a LaunchLab GlobalConfig with the Platform Token as quote mint; only Raydium can create one (CLAUDE.md, settled). When it exists, the next Quote Registry refresh lists it, prices it and writes its curve rule, and the token becomes a Quote Asset with no code change.
+4. If the Platform Token's GlobalConfig should be in the Platform Lookup Table, extend the table (section 3).
+
+## 11. Before the switch: the devnet dress rehearsal (owner runs it, an agent prepares it)
+
+Run the same deploy against real devnet (`CLUSTER=devnet`, the devnet program ids the local config already has, `PRICE_SOURCE=static` and `SOL_ROUTE_SOURCE=none` since devnet has no Jupiter), fund the wallets from the owner's CLI wallet (faucets are rate-limited), and prove what the local chain cannot:
+
+- Raydium's crank migrates our pools (proven once on 2026-09-27 in the spike; prove it on the production code path), including a coin whose mint sorts before SOL (about 1 in 40, error 2502 when the account order is wrong).
+- Graduation, pool fees and Fee Keys for a Token-2022 Quote Asset (devnet has no stock GlobalConfig, so this may only be provable on mainnet with a small amount).
+- The Helius webhook end to end: a trade made from another wallet appears on the board without the fast path.
+- The Fee Collector sweeps to the treasury, the Reward Engine pays a round, the Burn buys and burns (a SOL route is needed for the Burn: on devnet use `raydium-cpmm` pools you seed, as the local chain does).
+- The Jupiter route source and `PRICE_SOURCE=jupiter` can only be exercised on mainnet: exercise them with a tiny Launch before opening the site.
+
+## 12. Go-live checklist
+
+1. [ ] #7 decided: name, domain, ticker. ADR 0005 accepted.
+2. [ ] Admin key on a cold device; operations wallet and Treasury created; operations wallet funded (section 1).
+3. [ ] PlatformConfig created and decoded as expected (section 2).
+4. [ ] Platform Lookup Table created and rooted (section 3).
+5. [ ] Postgres migrated; Hyperdrive configured (section 4).
+6. [ ] API deployed with the checklist's values and secrets; `/health` ok (section 5).
+7. [ ] Quote Registry refreshed until 571 Quote Assets each have a curve rule (section 6).
+8. [ ] Helius raw webhook on the PlatformConfig and the creator fee vault authority, with the secret (section 7).
+9. [ ] Domain and R2 in place; Arweave decided (section 8).
+10. [ ] Web deployed on the domain (section 9).
+11. [ ] Alerts arrive in the chosen channel: `POST /v1/operator/jobs/fee-collector?fail=simulated` raises `job_failed`, the next run resolves it.
+12. [ ] Platform Token launched fairly and named; GlobalConfig requested after Graduation (section 10).
+
+## Only the owner can do
+
+- Decide the name, domain and ticker (#7), and register the domain.
+- Accept ADR 0005.
+- Generate and keep the admin key, the operations wallet and the Treasury; fund the operations wallet; sign the PlatformConfig transaction with the cold key.
+- Choose the mainnet CPMM config (the 1% creator fee one).
+- Open the Cloudflare, Helius, Jupiter (if a key is wanted) and Postgres accounts, and create the Hyperdrive configuration, the R2 bucket and the webhook.
+- Choose the alert channel and who holds the operator token; set the sweep thresholds if the defaults are wrong.
+- Decide on Arweave before the first launch.
+- Launch the Platform Token, publish the proof, and ask Raydium for its GlobalConfig.
+- Run the devnet rehearsal, and the first tiny mainnet Launch that proves Jupiter prices and routes.

@@ -10,6 +10,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 3. `docs/adr/` - fee model (0001), Cloudflare hosting (0002), server-built transactions (0003), key custody (0004), price-banded curve rules (0005, proposed).
 4. `spike/launchlab-devnet/README.md` - what LaunchLab really does on devnet, with tx evidence and gotchas.
 5. `research/README.md` - background on StonkFun only; don't re-derive its findings.
+6. `docs/runbooks/mainnet.md` - the go-live runbook (#23): what an agent prepared, and what only the owner can do.
 
 ## Code map
 
