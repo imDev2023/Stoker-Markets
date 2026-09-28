@@ -63,6 +63,7 @@ app.get("/v1/platform", (c) => {
     graduationTargetLamports: cfg.graduationTargetLamports.toString(),
     platformFeeBps: 50,
     creatorFeeBps: 50,
+    solRoute: cfg.solRoute?.source ?? null,
   };
   return c.json(info);
 });

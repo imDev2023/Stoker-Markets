@@ -1,8 +1,9 @@
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey, type Connection } from "@solana/web3.js";
 import BN from "bn.js";
 import type { Cluster } from "@launchpad/chain";
 import type { Db } from "@launchpad/db";
 import { jupiterMarket, staticMarket, type QuoteMarket } from "./quotes/pricing";
+import { cpmmSolRoutes, jupiterSolRoutes, type SolRoutes } from "./solRoutes";
 
 export type Bindings = {
   CLUSTER: Cluster;
@@ -19,8 +20,17 @@ export type Bindings = {
   PRICE_SOURCE: "jupiter" | "static";
   /** JSON object of USD prices by mint, for the static price source. */
   QUOTE_PRICES_USD: string;
-  /** Optional; without it the free Jupiter host is used. */
+  /** Optional; without it the free Jupiter host is used, for prices and for SOL routes. */
   JUPITER_API_KEY?: string;
+  /**
+   * Where buys paid with SOL get their Quote Asset: "jupiter" on mainnet, "raydium-cpmm" through the pools in
+   * SOL_ROUTE_POOLS (the local chain, devnet), or "none" to offer no SOL payment on non-SOL Launches.
+   */
+  SOL_ROUTE_SOURCE?: "jupiter" | "raydium-cpmm" | "none";
+  /** JSON object of the Raydium CPMM pool of SOL against each Quote Asset, by quote mint, for the "raydium-cpmm" source. */
+  SOL_ROUTE_POOLS?: string;
+  /** Comma-separated address lookup tables every buy paid with SOL compiles with, to stay under the transaction size limit. */
+  SOL_ROUTE_LOOKUP_TABLES?: string;
   /** The operations wallet's secret key as a JSON byte array: it signs curve rule updates as the curve rule manager (ADR 0005). */
   OPERATIONS_KEY: string;
   /** How long a sold-out curve may wait for Raydium's migration before the operator is alerted. */
@@ -72,7 +82,12 @@ export type Config = {
   sweepThresholdLamports: bigint;
   sweepFloatLamports: bigint;
   collectMinLamports: bigint;
+  solRoute: SolRouteConfig | null;
 };
+
+export type SolRouteConfig =
+  | { source: "jupiter"; lookupTables: PublicKey[] }
+  | { source: "raydium-cpmm"; pools: Map<string, PublicKey>; lookupTables: PublicKey[] };
 
 const MINT_KEY_SECRET_MIN_LENGTH = 32;
 
@@ -126,12 +141,34 @@ export function config(env: Bindings): Config {
     sweepThresholdLamports,
     sweepFloatLamports,
     collectMinLamports: lamports(env.COLLECT_MIN_LAMPORTS, "COLLECT_MIN_LAMPORTS"),
+    solRoute: solRouteConfig(env),
   };
 }
 
 function lamports(raw: string, name: string) {
   if (!/^\d+$/.test(raw ?? "")) throw new Error(`${name} must be a whole number of lamports (got ${raw})`);
   return BigInt(raw);
+}
+
+function solRouteConfig(env: Bindings): SolRouteConfig | null {
+  const source = env.SOL_ROUTE_SOURCE || "none";
+  const lookupTables = (env.SOL_ROUTE_LOOKUP_TABLES ?? "").split(",").filter(Boolean).map((a) => new PublicKey(a.trim()));
+  if (source === "none") return null;
+  if (source === "jupiter") return { source, lookupTables };
+  if (source === "raydium-cpmm") {
+    const pools = Object.entries(JSON.parse(env.SOL_ROUTE_POOLS || "{}") as Record<string, string>);
+    if (!pools.length) throw new Error("SOL_ROUTE_SOURCE raydium-cpmm needs SOL_ROUTE_POOLS");
+    return { source, lookupTables, pools: new Map(pools.map(([mint, pool]) => [new PublicKey(mint).toBase58(), new PublicKey(pool)])) };
+  }
+  throw new Error(`unknown SOL_ROUTE_SOURCE: ${String(source)}`);
+}
+
+/** The SOL route source for one request, or null when this deployment offers none. */
+export function solRoutes(env: Bindings, cfg: Config, connection: Connection): SolRoutes | null {
+  const r = cfg.solRoute;
+  if (!r) return null;
+  if (r.source === "jupiter") return jupiterSolRoutes(env.JUPITER_API_KEY || undefined, r.lookupTables);
+  return cpmmSolRoutes(connection, cfg.cpmm, r.pools, r.lookupTables);
 }
 
 export function quoteMarket(env: Bindings): QuoteMarket {
