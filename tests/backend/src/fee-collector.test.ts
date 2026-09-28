@@ -111,11 +111,16 @@ beforeAll(async () => {
 
 describe("the Platform Fee", () => {
   it("claims exactly what curve trades paid into the SOL vault, as plain SOL, and records it on the Ledger", async () => {
-    const { mint } = await launchedCoin();
+    // The Creator's First Buy, in the launch transaction, pays the Platform Fee like any curve trade.
+    const creator = await fundedWallet();
+    const launched = await launch(creator, { firstBuy: SOL(0.2).toString() });
+    await deliverWebhook([launched.signature]);
+    const mint = launched.prepared.mint;
     const trader = await fundedWallet();
     const trades = [await trade(trader, mint, "buy", SOL(0.4)), await trade(trader, mint, "buy", SOL(0.1))];
     trades.push(await trade(trader, mint, "sell", (await coinsOf(mint, trader)) / 2n));
-    const paid = sum(trades.map((t) => BigInt(t.quote.fees.platform)));
+    const paid = BigInt(launched.prepared.firstBuy!.fees.platform) + sum(trades.map((t) => BigInt(t.quote.fees.platform)));
+    expect(BigInt(launched.prepared.firstBuy!.fees.platform)).toBe(SOL(0.2) / 200n);
     const vault = platformFeeVault(WSOL_MINT);
     expect(await tokenBalance(vault)).toBe(paid);
 
