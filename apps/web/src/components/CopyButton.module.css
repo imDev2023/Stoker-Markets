@@ -1,0 +1,15 @@
+.copy {
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: none;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.copy:hover {
+  border-color: var(--ink-3);
+  color: var(--ink);
+}

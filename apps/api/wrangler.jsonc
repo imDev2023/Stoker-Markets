@@ -1,0 +1,26 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "launchpad-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "vars": {
+    "CLUSTER": "localnet",
+    "RPC_URL": "http://127.0.0.1:8899",
+    "PUBLIC_API_URL": "http://localhost:8791",
+    "WEB_ORIGIN": "http://localhost:3100",
+    "LAUNCHLAB_PROGRAM": "DRay6fNdQ5J82H7xV6uq2aV3mNrUZ1J4PgSKsWgptcm6",
+    "PLATFORM_CONFIG": "",
+    "SOL_GLOBAL_CONFIG": "7ZR4zD7PYfY2XxoG1Gxcy2EgEeGYrpxrwzPuwdUBssEt",
+    "GRADUATION_TARGET_LAMPORTS": "85000000000"
+  },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "00000000000000000000000000000000",
+      "localConnectionString": "postgres://launchpad:launchpad@127.0.0.1:5442/launchpad"
+    }
+  ],
+  "r2_buckets": [{ "binding": "METADATA_BUCKET", "bucket_name": "launchpad-metadata" }]
+}
