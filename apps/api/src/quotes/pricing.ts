@@ -49,33 +49,54 @@ export function graduationTargetRaw(lamports: bigint, decimals: number, quoteUsd
   return (numerator * 2n + denominator) / (2n * denominator);
 }
 
-/** Where Quote Asset prices and logos come from. */
+/** What a token list says about a mint: whether it is on the list's verified set, and the market liquidity it tracks, in USD. */
+export type TokenListing = { verified: boolean; liquidityUsd: number | null };
+
+/** Where Quote Asset prices, logos and token-list facts (Quote Risk Labels, #11) come from. */
 export interface QuoteMarket {
   /** USD prices by mint, for the mints the source prices reliably. The rest are left out, never guessed. */
   usdPrices(mints: string[]): Promise<Map<string, Decimal>>;
   /** Logo URLs by mint, where the source knows one. */
   logos(mints: string[]): Promise<Map<string, string>>;
+  /** The token list's entry for each mint it knows; a mint it doesn't know is left out, which is itself a fact. */
+  listings(mints: string[]): Promise<Map<string, TokenListing>>;
+  /** How the token list is named to people in a label's source: "Jupiter's token list". */
+  listName: string;
 }
 
-/** A fixed table of USD prices by mint (JSON), for chains with no market: the local chain and devnet. */
-export function staticMarket(pricesJson: string): QuoteMarket {
+/**
+ * A fixed table of USD prices by mint (JSON), for chains with no market: the local chain and devnet. The token list is
+ * a fixed table too (`{ "<mint>": { "verified": true, "liquidityUsd": 5000000 } }`).
+ */
+export function staticMarket(pricesJson: string, tokenListJson = "{}"): QuoteMarket {
   const table = new Map<string, Decimal>();
   for (const [mint, price] of Object.entries(JSON.parse(pricesJson || "{}") as Record<string, string>)) {
     const d = parseDecimal(price);
     if (!d) throw new Error(`QUOTE_PRICES_USD: ${mint} has an invalid price ${price}`);
     table.set(mint, d);
   }
+  const listings = new Map<string, TokenListing>();
+  for (const [mint, entry] of Object.entries(JSON.parse(tokenListJson || "{}") as Record<string, { verified?: boolean; liquidityUsd?: number | null }>)) {
+    if (entry.liquidityUsd != null && !(Number.isFinite(entry.liquidityUsd) && entry.liquidityUsd >= 0))
+      throw new Error(`QUOTE_TOKEN_LIST: ${mint} has an invalid liquidityUsd ${String(entry.liquidityUsd)}`);
+    listings.set(mint, { verified: entry.verified === true, liquidityUsd: entry.liquidityUsd ?? null });
+  }
   return {
     usdPrices: async (mints) => new Map(mints.flatMap((m) => (table.has(m) ? [[m, table.get(m)!] as const] : []))),
     logos: async () => new Map(),
+    listings: async (mints) => new Map(mints.flatMap((m) => (listings.has(m) ? [[m, listings.get(m)!] as const] : []))),
+    listName: "the local token list",
   };
 }
 
 const JUPITER_PRICE_IDS_MAX = 50;
 const JUPITER_TOKEN_IDS_MAX = 100;
 
+type JupiterToken = { id: string; icon?: string; isVerified?: boolean; liquidity?: number | null };
+
 /**
- * Jupiter's Price API v3, which leaves out tokens it can't price reliably, and its Tokens API v2 for logos.
+ * Jupiter's Price API v3, which leaves out tokens it can't price reliably, and its Tokens API v2 for logos and for what
+ * its list says about a mint: `isVerified` (Jupiter's verified set) and `liquidity` (USD across the markets it routes).
  * Uses the keyed host when an API key is configured, the free one otherwise.
  */
 export function jupiterMarket(apiKey: string | undefined): QuoteMarket {
@@ -103,11 +124,21 @@ export function jupiterMarket(apiKey: string | undefined): QuoteMarket {
     },
     async logos(mints) {
       const out = new Map<string, string>();
-      for (let i = 0; i < mints.length; i += JUPITER_TOKEN_IDS_MAX) {
-        const body = (await get(`/tokens/v2/search?query=${mints.slice(i, i + JUPITER_TOKEN_IDS_MAX).join(",")}`)) as { id: string; icon?: string }[];
-        for (const t of body ?? []) if (t.icon && /^https:\/\//.test(t.icon)) out.set(t.id, t.icon);
-      }
+      for (const t of await tokens(mints)) if (t.icon && /^https:\/\//.test(t.icon)) out.set(t.id, t.icon);
       return out;
     },
+    async listings(mints) {
+      const out = new Map<string, TokenListing>();
+      for (const t of await tokens(mints))
+        out.set(t.id, { verified: t.isVerified === true, liquidityUsd: typeof t.liquidity === "number" && Number.isFinite(t.liquidity) ? t.liquidity : null });
+      return out;
+    },
+    listName: "Jupiter's token list",
   };
+  async function tokens(mints: string[]) {
+    const out: JupiterToken[] = [];
+    for (let i = 0; i < mints.length; i += JUPITER_TOKEN_IDS_MAX)
+      out.push(...(((await get(`/tokens/v2/search?query=${mints.slice(i, i + JUPITER_TOKEN_IDS_MAX).join(",")}`)) as JupiterToken[] | null) ?? []));
+    return out;
+  }
 }

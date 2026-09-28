@@ -9,7 +9,7 @@ Base URL: `PUBLIC_API_URL` (locally `http://localhost:8791`). Everything below i
 | Endpoint | What it answers |
 | --- | --- |
 | `GET /platform` | Cluster, RPC for browsers, program and PlatformConfig addresses, the Graduation Target in lamports, the Platform Fee and Creator Fee as the chain has them now, the referral share rate. |
-| `GET /quotes`, `GET /quotes/:mint` | The Quote Registry: every Quote Asset with its price, Graduation Target, whether it can be launched against, and whether a referral share fee applies on it. |
+| `GET /quotes`, `GET /quotes/:mint` | The Quote Registry: every Quote Asset with its price, Graduation Target, whether it can be launched against, whether a referral share fee applies on it, and its Quote Risk Labels (`labels`: `kind`, `severity`, `title`, `detail`, `source`; null until the Quote Registry refresh has checked the mint, an empty list when there is nothing to flag). Labels come from the mint's authorities and Token-2022 extensions and from the token list; they inform and never block. |
 | `GET /launches` | The board. `sort` (`new`, `trending`, `marketCap`, `volume`, `graduating`), `category`, `quote`, `status`, `limit`, `offset`. |
 | `GET /launches/quotes` | The Quote Assets that have Launches, for filters. |
 | `GET /launches/:mint` | One Launch: curve progress, Graduation, Reward Tax, market. |

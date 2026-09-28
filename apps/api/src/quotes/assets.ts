@@ -31,6 +31,7 @@ export function toQuoteAsset(cfg: Config, r: Row): QuoteAsset {
     launchable: reason === null,
     reason,
     referralShare: referralShare(cfg, r.maxShareFeeRate),
+    labels: r.labels ?? null,
   };
 }
 

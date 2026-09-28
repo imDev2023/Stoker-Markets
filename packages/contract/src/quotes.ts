@@ -18,6 +18,32 @@ export const QUOTE_CATEGORIES = ["sol", "stablecoin", "tokenized_stock", "commun
 export const QuoteCategory = z.enum(QUOTE_CATEGORIES);
 export type QuoteCategory = z.infer<typeof QuoteCategory>;
 
+/**
+ * The kinds of Quote Risk Label. From the mint: its issuer's power to freeze wallets, move tokens, pause transfers, add
+ * a transfer hook or freeze new accounts by default, a transfer fee (current or scheduled), and balances shown through a
+ * multiplier or with interest. From the token list: not verified, and low or unknown liquidity.
+ */
+export const QUOTE_LABEL_KINDS = [
+  "freeze", "permanent_delegate", "pausable", "transfer_hook", "default_frozen", "transfer_fee", "scaled_balance", "interest_bearing",
+  "unverified", "low_liquidity",
+] as const;
+export const QuoteLabelKind = z.enum(QUOTE_LABEL_KINDS);
+export type QuoteLabelKind = z.infer<typeof QuoteLabelKind>;
+
+/** A Quote Risk Label: one fact about a Quote Asset, written for people, with where it was read from. It informs; it never blocks. */
+export const QuoteLabel = z.object({
+  kind: QuoteLabelKind,
+  /** `caution` for a power someone holds over the asset or its holders, `info` for a fact about how it trades. */
+  severity: z.enum(["caution", "info"]),
+  /** Short enough for a chip: "Can freeze wallets", "1% transfer fee". */
+  title: z.string(),
+  /** A sentence or two on what it means for a Creator or trader. */
+  detail: z.string(),
+  /** Where the fact was read: the mint on-chain, or the token list by name. */
+  source: z.string(),
+});
+export type QuoteLabel = z.infer<typeof QuoteLabel>;
+
 /** Enough about a Quote Asset to show an amount in it: every Launch carries one. */
 export const QuoteRef = z.object({
   mint: base58,
@@ -46,6 +72,11 @@ export const QuoteAsset = QuoteRef.extend({
    * share fee (SOL's does, most don't), and the rate a referred trade pays its referrer, in basis points of the trade.
    */
   referralShare: z.object({ allowed: z.boolean(), bps: z.number().int() }),
+  /**
+   * Its Quote Risk Labels, cautions first: null until the Quote Registry refresh has checked the mint, an empty list
+   * when there is nothing to flag. Never a reason to refuse a launch or a trade.
+   */
+  labels: z.array(QuoteLabel).nullable(),
 });
 export type QuoteAsset = z.infer<typeof QuoteAsset>;
 

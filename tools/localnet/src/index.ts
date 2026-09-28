@@ -56,6 +56,18 @@ export const LOCAL_QUOTES = {
   TAXQ: TAXED_QUOTE_KEYPAIR.publicKey,
 } as const;
 
+/**
+ * The local stand-in for Jupiter's token list (Quote Risk Labels, #11), for the API's static source: SOL, USDC, NVDAx and
+ * JTO verified with deep markets; TAXQ listed but unverified and thin; BULLWHALE not listed at all, on purpose.
+ */
+export const LOCAL_QUOTE_TOKEN_LIST: Record<string, { verified: boolean; liquidityUsd: number | null }> = {
+  So11111111111111111111111111111111111111112: { verified: true, liquidityUsd: 2_500_000_000 },
+  [LOCAL_QUOTES.USDC.toBase58()]: { verified: true, liquidityUsd: 900_000_000 },
+  [LOCAL_QUOTES.NVDAx.toBase58()]: { verified: true, liquidityUsd: 4_000_000 },
+  [LOCAL_QUOTES.JTO.toBase58()]: { verified: true, liquidityUsd: 12_000_000 },
+  [LOCAL_QUOTES.TAXQ.toBase58()]: { verified: false, liquidityUsd: 25_000 },
+};
+
 /** USD prices for the API's static price source on the local chain. BULLWHALE is missing on purpose. */
 export const LOCAL_QUOTE_PRICES_USD: Record<string, string> = {
   So11111111111111111111111111111111111111112: "150",

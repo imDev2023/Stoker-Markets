@@ -1,7 +1,7 @@
 import {
   AirdropStatus, ApiError, ApiKeyList, BurnsPage, CandleList, CoinRewards, CreatorFeeClaimList, CreatorFees, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote,
   HolderList, IssuedApiKey, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PreparedAirdrop,
-  PreparedCreatorFeeClaim, PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, TradeList,
+  PreparedCreatorFeeClaim, PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAsset, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, TradeList,
   TradeQuote, WalletRewards,
   type AnnounceFeeChange, type CandleInterval, type CreateApiKey, type CurveStatus, type LaunchSort, type PrepareCreatorFeeClaimRequest, type PrepareTradeRequest,
   type QuoteCategory, type TradeQuoteQuery,
@@ -32,6 +32,13 @@ export async function getPlatform() {
 
 export async function listQuotes() {
   return read(await fetch(`${API_URL}/v1/quotes`, { cache: "no-store" }), QuoteAssetList);
+}
+
+/** One Quote Asset as the Quote Registry has it, its Quote Risk Labels included; null when the mint is no Quote Asset. */
+export async function getQuoteAsset(mint: string): Promise<QuoteAsset | null> {
+  const res = await fetch(`${API_URL}/v1/quotes/${encodeURIComponent(mint)}`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  return read(res, QuoteAsset);
 }
 
 /** How many coins the board shows at once. */
