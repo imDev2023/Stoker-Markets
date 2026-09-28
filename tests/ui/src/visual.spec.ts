@@ -169,6 +169,8 @@ test("trade panel after graduation, with the pool's fees", async ({ page, wallet
   await panel.getByRole("button", { name: "50%", exact: true }).click();
   await expect(panel.getByText("Raydium pool fee")).toBeVisible();
   await expect(panel).toHaveScreenshot("trade-pool-sell-quote.png", { mask: tradedDynamic(page) });
+  // Handed back, so the coin page's top holders look the same in every project whatever order they run in.
+  await giveCoins(wallet.keypair, SEED_HOLDER.publicKey, mint, 1_000_000n * 1_000_000n);
 });
 
 test("coin not found", async ({ page }) => {
