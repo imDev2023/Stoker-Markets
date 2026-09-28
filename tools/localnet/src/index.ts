@@ -54,8 +54,9 @@ export const LOCAL_QUOTE_PRICES_USD: Record<string, string> = {
 /**
  * `migrate` stands in for Raydium's migrate wallet (its crank), the only key allowed to graduate a curve. It is kept
  * apart from our admin so nothing local can lean on a power the platform does not have on a real cluster.
+ * `liquidity` stands in for the market: it seeds the pools a buy paid with SOL routes through (`./routes`).
  */
-export type LocalnetKeys = { admin: Keypair; operations: Keypair; migrate: Keypair };
+export type LocalnetKeys = { admin: Keypair; operations: Keypair; migrate: Keypair; liquidity: Keypair };
 
 export type LocalnetState = {
   rpcUrl: string;
@@ -77,7 +78,7 @@ export function localnetKeys(): LocalnetKeys {
     if (!existsSync(path)) writeFileSync(path, JSON.stringify(Array.from(Keypair.generate().secretKey)));
     return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(readFileSync(path, "utf8"))));
   };
-  return { admin: load("admin"), operations: load("operations"), migrate: load("migrate") };
+  return { admin: load("admin"), operations: load("operations"), migrate: load("migrate"), liquidity: load("liquidity") };
 }
 
 // GlobalConfig offsets: discriminator, epoch, curve_type, index and eight u64 fields come before quote_mint,

@@ -4,15 +4,16 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { desc, eq, sql } from "drizzle-orm";
 import {
-  curvePrice, graduationPoolAddress, loadCurve, loadPool, minAmountOut, preparePoolTrade, prepareTrade, quotePoolTrade, quoteTrade,
-  RATE_DENOMINATOR, type UnsignedTransaction,
+  curvePrice, graduationPoolAddress, loadCurve, loadPool, minAmountOut, poolSides, preparePoolTrade, prepareRoutedBuy, prepareTrade,
+  quotePoolTrade, quoteTrade, RATE_DENOMINATOR, routedLimits, splitSlippage, TransactionTooLargeError, transferFeeBps, WSOL_MINT,
+  type PreparedTrade as ChainPreparedTrade, type RoutedMarket,
 } from "@launchpad/chain";
 import {
   CandleInterval, PrepareTradeRequest, TradeQuoteQuery, type CandleList, type CurveProgress, type PreparedTrade, type TradeList,
-  type TradeQuote,
+  type TradeQuote, type TradeSide,
 } from "@launchpad/contract";
-import { curves, launches, trades, type Db } from "@launchpad/db";
-import type { AppEnv, Config } from "../env";
+import { curves, launches, quoteAssets, trades, type Db } from "@launchpad/db";
+import { solRoutes, type AppEnv, type Bindings, type Config } from "../env";
 
 /**
  * Trading a Launch's coin: quotes and unsigned trade transactions (ADR 0003), plus the indexed trade history and candles.
@@ -24,7 +25,7 @@ export const tradeRoutes = new Hono<AppEnv>();
 tradeRoutes.get("/launches/:mint/quote", async (c) => {
   const query = TradeQuoteQuery.safeParse(c.req.query());
   if (!query.success) return c.json({ error: "invalid quote request", details: query.error.issues }, 400);
-  const { quote } = await quoteMarket(c.get("db"), c.get("cfg"), c.req.param("mint"), query.data);
+  const { quote } = await quoteMarket(c.env, c.get("db"), c.get("cfg"), c.req.param("mint"), query.data);
   return c.json(quote);
 });
 
@@ -32,7 +33,7 @@ tradeRoutes.get("/launches/:mint/quote", async (c) => {
 tradeRoutes.post("/trades/prepare", async (c) => {
   const body = PrepareTradeRequest.safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: "invalid trade request", details: body.error.issues }, 400);
-  const { quote, prepare } = await quoteMarket(c.get("db"), c.get("cfg"), body.data.mint, body.data);
+  const { quote, prepare } = await quoteMarket(c.env, c.get("db"), c.get("cfg"), body.data.mint, body.data);
   const res: PreparedTrade = { ...(await prepare(new PublicKey(body.data.trader))), quote };
   return c.json(res);
 });
@@ -116,19 +117,55 @@ export function curveProgress(row: typeof curves.$inferSelect | null, graduated:
 /** Basis points from a rate in the 1e6 denominator LaunchLab and CPMM share. */
 const bps = (rate: BN) => (Number(rate.toString()) * 10_000) / RATE_DENOMINATOR;
 
-type Market = { quote: TradeQuote; prepare: (trader: PublicKey) => Promise<UnsignedTransaction> };
+type Market = { quote: TradeQuote; prepare: (trader: PublicKey) => Promise<ChainPreparedTrade> };
+
+/** A trade priced where the coin trades now, before any slippage limit is put on it. */
+type VenueQuote = {
+  priced: Omit<TradeQuote, "minAmountOut" | "slippageBps" | "route">;
+  /** Builds the trade on its own, paid from and to the trader's wallet. */
+  prepare: (trader: PublicKey, amountIn: BN, minAmountOut: BN) => Promise<ChainPreparedTrade>;
+};
+
+/** Where the coin trades now, able to price a trade of any size there. */
+type Venue = { market: RoutedMarket; quoteMint: PublicKey; quoteTokenProgram: PublicKey; price: (side: TradeSide, amount: BN) => VenueQuote };
 
 /**
  * Prices a trade where the coin trades now, read from the chain rather than the index so a lagging webhook never sends
- * a trade to the wrong place: the curve while it is live, the Raydium CPMM pool once Raydium has migrated it.
+ * a trade to the wrong place: the curve while it is live, the Raydium CPMM pool once Raydium has migrated it. A buy paid
+ * with SOL on a Launch paired with anything else goes through the SOL route first.
  */
-async function quoteMarket(db: Db, cfg: Config, mint: string, r: TradeQuoteQuery): Promise<Market> {
-  const [launch] = await db.select({ pool: launches.pool }).from(launches).where(eq(launches.mint, mint)).limit(1);
+async function quoteMarket(env: Bindings, db: Db, cfg: Config, mint: string, r: TradeQuoteQuery): Promise<Market> {
+  const [launch] = await db
+    .select({ pool: launches.pool, quoteSymbol: quoteAssets.symbol })
+    .from(launches)
+    .leftJoin(quoteAssets, eq(quoteAssets.mint, launches.quoteMint))
+    .where(eq(launches.mint, mint))
+    .limit(1);
   if (!launch) throw new HTTPException(404, { message: "launch not found" });
   const connection = new Connection(cfg.rpcUrl, "confirmed");
-  const curve = await loadCurve(connection, new PublicKey(launch.pool));
-  if (!curve) throw new Error(`launch ${mint} has no curve account at ${launch.pool}`);
+  const venue = await venueOf(connection, cfg, mint, new PublicKey(launch.pool));
   const amount = new BN(r.amount);
+
+  if (r.payWith === "sol" && r.side === "sell")
+    throw new HTTPException(400, { message: "Only a buy can be paid with SOL; a sell pays out the coin's Quote Asset." });
+  if (r.payWith === "sol" && !venue.quoteMint.equals(WSOL_MINT)) {
+    const symbol = launch.quoteSymbol ?? `${venue.quoteMint.toBase58().slice(0, 4)}...`;
+    return routedMarket(connection, env, cfg, venue, symbol, amount, r.slippageBps);
+  }
+
+  const { priced, prepare } = venue.price(r.side, amount);
+  const quote: TradeQuote = {
+    ...priced,
+    minAmountOut: minAmountOut(new BN(priced.amountOut), r.slippageBps).toString(),
+    slippageBps: r.slippageBps,
+    route: null,
+  };
+  return { quote, prepare: (trader) => prepare(trader, new BN(quote.amountIn), new BN(quote.minAmountOut)) };
+}
+
+async function venueOf(connection: Connection, cfg: Config, mint: string, curveAddress: PublicKey): Promise<Venue> {
+  const curve = await loadCurve(connection, curveAddress);
+  if (!curve) throw new Error(`launch ${mint} has no curve account at ${curveAddress.toBase58()}`);
 
   if (curve.status === "graduating")
     throw new HTTPException(409, {
@@ -140,52 +177,118 @@ async function quoteMarket(db: Db, cfg: Config, mint: string, r: TradeQuoteQuery
     if (!pool) throw new Error(`launch ${mint} is migrated but has no pool`);
     if (!pool.swapEnabled) throw new HTTPException(409, { message: "Raydium has paused trading in this coin's pool." });
     if (pool.chainTime < pool.openTime) throw new HTTPException(409, { message: "This coin's pool opens in a moment. Try again in a few seconds." });
-    const t = quotePoolTrade(pool, curve.baseMint, r.side, amount);
-    if (t.amountOut.isZero()) throw new HTTPException(400, { message: "amount is too small to trade" });
-    const quote: TradeQuote = {
-      venue: "pool",
-      side: r.side,
-      amountIn: t.amountIn.toString(),
-      amountOut: t.amountOut.toString(),
-      minAmountOut: minAmountOut(t.amountOut, r.slippageBps).toString(),
-      slippageBps: r.slippageBps,
-      fees: { raydium: t.fees.protocol.toString(), platform: t.fees.platform.toString(), creator: t.fees.creator.toString() },
-      feeBps: { raydium: bps(pool.rates.trade), platform: bps(pool.rates.creator), creator: 0 },
-      priceBefore: t.priceBefore,
-      priceAfter: t.priceAfter,
-      completesCurve: false,
-    };
+    const { quote } = poolSides(pool, curve.baseMint);
     return {
-      quote,
-      prepare: (trader) =>
-        preparePoolTrade(connection, {
-          cpmm: cfg.cpmm, pool, baseMint: curve.baseMint, trader, side: r.side, amountIn: t.amountIn, minAmountOut: new BN(quote.minAmountOut),
-        }),
+      market: { venue: "pool", cpmm: cfg.cpmm, pool, baseMint: curve.baseMint, baseTokenProgram: curve.baseTokenProgram },
+      quoteMint: quote.mint,
+      quoteTokenProgram: quote.program,
+      price: (side, amount) => {
+        const t = quotePoolTrade(pool, curve.baseMint, side, amount);
+        if (t.amountOut.isZero()) throw new HTTPException(400, { message: "amount is too small to trade" });
+        return {
+          priced: {
+            venue: "pool",
+            side,
+            amountIn: t.amountIn.toString(),
+            amountOut: t.amountOut.toString(),
+            fees: { raydium: t.fees.protocol.toString(), platform: t.fees.platform.toString(), creator: t.fees.creator.toString() },
+            feeBps: { raydium: bps(pool.rates.trade), platform: bps(pool.rates.creator), creator: 0 },
+            priceBefore: t.priceBefore,
+            priceAfter: t.priceAfter,
+            completesCurve: false,
+          },
+          prepare: (trader, amountIn, min) =>
+            preparePoolTrade(connection, { cpmm: cfg.cpmm, pool, baseMint: curve.baseMint, trader, side, amountIn, minAmountOut: min }),
+        };
+      },
     };
   }
 
-  if (r.side === "sell" && amount.gt(curve.reserves.realBase)) throw new HTTPException(400, { message: "amount is more than the curve has sold" });
-  const t = quoteTrade(curve.reserves, curve.rates, r.side, amount);
-  if (t.amountOut.isZero()) throw new HTTPException(400, { message: "amount is too small to trade" });
+  return {
+    market: { venue: "curve", program: cfg.launchlab, curve },
+    quoteMint: curve.quoteMint,
+    quoteTokenProgram: curve.quoteTokenProgram,
+    price: (side, amount) => {
+      if (side === "sell" && amount.gt(curve.reserves.realBase)) throw new HTTPException(400, { message: "amount is more than the curve has sold" });
+      const t = quoteTrade(curve.reserves, curve.rates, side, amount);
+      if (t.amountOut.isZero()) throw new HTTPException(400, { message: "amount is too small to trade" });
+      return {
+        priced: {
+          venue: "curve",
+          side,
+          amountIn: t.amountIn.toString(),
+          amountOut: t.amountOut.toString(),
+          fees: { raydium: t.fees.protocol.toString(), platform: t.fees.platform.toString(), creator: t.fees.creator.toString() },
+          feeBps: { raydium: bps(curve.rates.protocol), platform: bps(curve.rates.platform), creator: bps(curve.rates.creator) },
+          priceBefore: curvePrice(curve.reserves, curve.baseDecimals, curve.quoteDecimals),
+          priceAfter: curvePrice(t.after, curve.baseDecimals, curve.quoteDecimals),
+          completesCurve: t.after.realBase.eq(t.after.totalBaseSell),
+        },
+        prepare: (trader, amountIn, min) => prepareTrade(connection, { program: cfg.launchlab, curve, trader, side, amountIn, minAmountOut: min }),
+      };
+    },
+  };
+}
+
+/**
+ * A buy paid with `lamports` of SOL. The trade spends the Quote Asset that SOL buys right now (less, when the buy takes
+ * the rest of the curve), and the route buys exactly that much. The trader's slippage is split between the two.
+ */
+async function routedMarket(
+  connection: Connection, env: Bindings, cfg: Config, venue: Venue, symbol: string, lamports: BN, slippageBps: number,
+): Promise<Market> {
+  const routes = solRoutes(env, cfg, connection);
+  if (!routes) throw new HTTPException(422, { message: `Paying with SOL isn't available here. Pay in ${symbol} instead.` });
+  if ((await transferFeeBps(connection, venue.quoteMint, venue.quoteTokenProgram)) > 0)
+    throw new HTTPException(422, {
+      message: `${symbol} charges a fee on every transfer, so it can't be bought with SOL in the same transaction yet. Pay in ${symbol} instead.`,
+    });
+  const noRoute = () => new HTTPException(422, { message: `There's no SOL route to ${symbol} right now. Pay in ${symbol} instead.` });
+  const unavailable = (e: unknown) => {
+    console.error("SOL route source failed", e);
+    return new HTTPException(503, { message: "The SOL route is unavailable right now. Try again in a minute." });
+  };
+  const bought = await routes.exactIn(venue.quoteMint, lamports).catch((e: unknown) => Promise.reject(unavailable(e)));
+  if (!bought) throw noRoute();
+  if (bought.isZero()) throw new HTTPException(400, { message: "amount is too small to trade" });
+  const { priced } = venue.price("buy", bought);
+  const quoteAmount = new BN(priced.amountIn);
+  const split = splitSlippage(slippageBps);
+  const plan = await routes.exactOut(venue.quoteMint, quoteAmount, split.route).catch((e: unknown) => Promise.reject(unavailable(e)));
+  if (!plan) throw noRoute();
+  const { minCoins } = routedLimits(plan.solIn, new BN(priced.amountOut), split);
   const quote: TradeQuote = {
-    venue: "curve",
-    side: r.side,
-    amountIn: t.amountIn.toString(),
-    amountOut: t.amountOut.toString(),
-    minAmountOut: minAmountOut(t.amountOut, r.slippageBps).toString(),
-    slippageBps: r.slippageBps,
-    fees: { raydium: t.fees.protocol.toString(), platform: t.fees.platform.toString(), creator: t.fees.creator.toString() },
-    feeBps: { raydium: bps(curve.rates.protocol), platform: bps(curve.rates.platform), creator: bps(curve.rates.creator) },
-    priceBefore: curvePrice(curve.reserves, curve.baseDecimals, curve.quoteDecimals),
-    priceAfter: curvePrice(t.after, curve.baseDecimals, curve.quoteDecimals),
-    completesCurve: t.after.realBase.eq(t.after.totalBaseSell),
+    ...priced,
+    minAmountOut: minCoins.toString(),
+    slippageBps,
+    route: {
+      source: plan.source,
+      via: plan.via,
+      solIn: plan.solIn.toString(),
+      maxSolIn: plan.maxSolIn.toString(),
+      quoteOut: quoteAmount.toString(),
+      fee: plan.fee?.toString() ?? null,
+      feeBps: plan.feeBps,
+      slippageBps: split,
+    },
   };
   return {
     quote,
     prepare: (trader) =>
-      prepareTrade(connection, {
-        program: cfg.launchlab, curve, trader, side: r.side, amountIn: t.amountIn, minAmountOut: new BN(quote.minAmountOut),
+      prepareRoutedBuy(connection, {
+        trader,
+        market: venue.market,
+        quoteMint: venue.quoteMint,
+        quoteTokenProgram: venue.quoteTokenProgram,
+        quoteAmount,
+        minAmountOut: minCoins,
+        swap: plan.swap,
+        // Our own shared accounts are in the Platform Lookup Table; the swap brings any tables its route needs.
+        lookupTables: [cfg.lookupTable],
+      }).catch((e: unknown) => {
+        if (e instanceof TransactionTooLargeError)
+          throw new HTTPException(422, { message: `This SOL route doesn't fit in one transaction. Pay in ${symbol} instead.` });
+        throw e;
       }),
   };
 }
-

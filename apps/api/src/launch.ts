@@ -73,6 +73,8 @@ export function firstBuyToContract(q: FirstBuyQuote, quoteDecimals: number): Tra
     priceBefore: curvePrice(q.start, LAUNCH_SHAPE.decimals, quoteDecimals),
     priceAfter: curvePrice(t.after, LAUNCH_SHAPE.decimals, quoteDecimals),
     completesCurve: firstBuyTakesCurve(t),
+    // A first buy is paid in the Quote Asset: a SOL swap would not fit the launch transaction beside it.
+    route: null,
   };
 }
 

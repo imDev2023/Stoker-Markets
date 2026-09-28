@@ -22,12 +22,23 @@ export type TradeVenue = z.infer<typeof TradeVenue>;
 
 export const SLIPPAGE_MAX_BPS = 5_000;
 
+/**
+ * What a buy is paid with: the coin's Quote Asset, or SOL, which the same transaction swaps for exactly the Quote Asset
+ * the buy spends. A Launch paired with SOL takes SOL either way, and a sell always pays out the Quote Asset.
+ */
+export const PayWith = z.enum(["quote", "sol"]);
+export type PayWith = z.infer<typeof PayWith>;
+
 export const TradeQuoteQuery = z.object({
   side: TradeSide,
-  /** What the trader pays, in raw units: Quote Asset for a buy, coins for a sell. */
+  /** What the trader pays, in raw units: Quote Asset (lamports when paying with SOL) for a buy, coins for a sell. */
   amount: z.string().regex(/^[1-9]\d*$/, "must be a whole number of raw units, more than zero"),
-  /** How far below the quoted output the trade may still fill, in basis points. */
+  /**
+   * How far the trade may fill worse than quoted, in basis points. Paying with SOL splits it between the swap and the
+   * trade, so the two together never go past it (see `SolRoute.slippageBps`).
+   */
   slippageBps: z.coerce.number().int().min(0).max(SLIPPAGE_MAX_BPS).default(100),
+  payWith: PayWith.default("quote"),
 });
 export type TradeQuoteQuery = z.infer<typeof TradeQuoteQuery>;
 
@@ -51,6 +62,37 @@ export type TradeFees = z.infer<typeof TradeFees>;
 export const TradeFeeRates = z.object({ raydium: z.number(), platform: z.number(), creator: z.number() });
 export type TradeFeeRates = z.infer<typeof TradeFeeRates>;
 
+/** Where a buy paid with SOL gets its Quote Asset: Raydium pools we name (local chain, devnet) or Jupiter (mainnet). */
+export const SolRouteSource = z.enum(["raydium-cpmm", "jupiter"]);
+export type SolRouteSource = z.infer<typeof SolRouteSource>;
+
+/**
+ * The swap in front of a buy paid with SOL. It buys exactly `quoteOut` of the Quote Asset, which the trade then spends
+ * in full, so no Quote Asset is left in the wallet; SOL the swap doesn't use goes back to the wallet in the same
+ * transaction. If either step fails, the whole transaction fails and nothing moves.
+ */
+export const SolRoute = z.object({
+  source: SolRouteSource,
+  /** The venues the swap goes through, such as "Raydium CPMM", or the hops Jupiter picked. */
+  via: z.array(z.string()),
+  /** Lamports the swap costs at the current price. */
+  solIn: raw,
+  /** The most lamports the swap may take; above this it fails. */
+  maxSolIn: raw,
+  /** Quote Asset the swap buys, exactly, in raw units: the trade's `amountIn`. */
+  quoteOut: raw,
+  /** The swap's own fees in lamports, part of `solIn`; null when the source prices them into its route without saying. */
+  fee: raw.nullable(),
+  /** The rate behind `fee`, in basis points of what goes into the swap; null with it. */
+  feeBps: z.number().nullable(),
+  /**
+   * The trader's slippage split between the two steps: the swap may cost up to `route` bps more SOL, and the trade may
+   * give up to `trade` bps fewer coins. Together they never let the SOL paid per coin get worse than `slippageBps` allows.
+   */
+  slippageBps: z.object({ route: z.number().int(), trade: z.number().int() }),
+});
+export type SolRoute = z.infer<typeof SolRoute>;
+
 export const TradeQuote = z.object({
   venue: TradeVenue,
   side: TradeSide,
@@ -68,14 +110,25 @@ export const TradeQuote = z.object({
   priceAfter: z.number(),
   /** The buy takes every coin left on the curve, which starts Graduation. Always false in the pool. */
   completesCurve: z.boolean(),
+  /** The SOL swap in front of a buy paid with SOL; null when the trade is paid in the Quote Asset or SOL is the Quote Asset. */
+  route: SolRoute.nullable(),
 });
 export type TradeQuote = z.infer<typeof TradeQuote>;
+
+/**
+ * What each instruction of a prepared trade is for, so a client can say which step failed: opening or closing the
+ * trader's accounts, the SOL swap in front of a buy paid with SOL, or the trade itself.
+ */
+export const TradeStep = z.enum(["setup", "route", "trade", "cleanup"]);
+export type TradeStep = z.infer<typeof TradeStep>;
 
 export const PreparedTrade = z.object({
   /** Base64 unsigned v0 transaction; the trader's wallet signs it as fee payer and sends it. */
   transaction: z.string(),
   lastValidBlockHeight: z.number().int(),
   quote: TradeQuote,
+  /** One entry per instruction of the transaction, in order. */
+  steps: z.array(TradeStep),
 });
 export type PreparedTrade = z.infer<typeof PreparedTrade>;
 

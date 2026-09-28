@@ -26,6 +26,11 @@
     "GRADUATION_ALERT_AFTER_SECONDS": "300",
     // The local chain's quote fixtures, priced as in tools/localnet LOCAL_QUOTE_PRICES_USD; mainnet uses "jupiter".
     "PRICE_SOURCE": "static",
+    // Buys paid with SOL route through the local chain's CPMM pools of SOL against USDC and JTO (tools/localnet
+    // routes.ts), whose addresses never change and whose accounts it adds to the Platform Lookup Table. Mainnet uses
+    // "jupiter".
+    "SOL_ROUTE_SOURCE": "raydium-cpmm",
+    "SOL_ROUTE_POOLS": "{\"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v\":\"5xFjKk9ca4K82RgiExkLGHZisPtGkLpWRQoSw3xfLazW\",\"jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL\":\"FHDkeZECVQ2aWkLwhyZtdAsCXeQQop1uNkChDM6cGbYy\"}",
     "QUOTE_PRICES_USD": "{\"So11111111111111111111111111111111111111112\":\"150\",\"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v\":\"1\",\"Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh\":\"180\",\"jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL\":\"2.5\"}"
   },
   // Scheduled jobs: the graduation watch every minute, the Quote Registry refresh (ADR 0005) every five, the Fee

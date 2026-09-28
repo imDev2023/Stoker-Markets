@@ -2,7 +2,9 @@
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, VersionedTransaction } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { inject } from "vitest";
-import { LaunchList, LaunchSummary, PreparedLaunch, PreparedTrade, QuoteAssetList, TradeList, type TradeSide } from "@launchpad/contract";
+import {
+  LaunchList, LaunchSummary, PreparedLaunch, PreparedTrade, QuoteAssetList, TradeList, type PayWith, type TradeSide,
+} from "@launchpad/contract";
 import { WSOL_MINT, type RawTransaction } from "@launchpad/chain";
 import { QUOTE_REGISTRY_CRON } from "@launchpad/stack";
 
@@ -118,7 +120,7 @@ export async function listQuotes() {
   return QuoteAssetList.parse(await res.json()).quotes;
 }
 
-type TradeBody = { mint: string; trader: string; side: TradeSide; amount: string; slippageBps?: number };
+type TradeBody = { mint: string; trader: string; side: TradeSide; amount: string; slippageBps?: number; payWith?: PayWith };
 
 export function prepareTrade(body: TradeBody) {
   return fetch(`${env().apiUrl}/v1/trades/prepare`, {

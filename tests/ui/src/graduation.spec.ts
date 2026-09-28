@@ -3,7 +3,7 @@
 import type { Page } from "@playwright/test";
 import type { VersionedTransaction } from "@solana/web3.js";
 import { coinBalance, expect, fundedKeypair, graduate, launchViaApi, listLaunches, test, tradeViaApi } from "./fixtures";
-import { TEST_WALLET_NAME } from "./wallet";
+import { connectTestWallet } from "./wallet";
 
 // The devnet program ids the local chain runs: which one a trade invokes shows where it traded.
 const LAUNCHLAB = "DRay6fNdQ5J82H7xV6uq2aV3mNrUZ1J4PgSKsWgptcm6";
@@ -17,8 +17,7 @@ const progress = (page: Page) => page.getByRole("region", { name: "Graduation" }
 const review = (page: Page) => page.getByRole("region", { name: "Review your trade" });
 
 async function connectWallet(page: Page) {
-  await page.getByRole("main").getByRole("button", { name: "Connect wallet" }).click();
-  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
   await expect(page.getByRole("button", { name: "Review buy" })).toBeVisible();
 }
 

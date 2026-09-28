@@ -4,7 +4,7 @@ import type BN from "bn.js";
 import { launchlabCoder } from "./coder";
 import type { CurveReserves, FeeRates, Side } from "./curve";
 import { tradeExactInIx } from "./instructions";
-import { tradeAccounts, unsignedTransaction, type UnsignedTransaction } from "./wallet";
+import { steppedTransaction, tradeAccounts, type PreparedTrade } from "./wallet";
 
 /** Where a curve is in its life: trading, sold out and waiting for Raydium to migrate it, or migrated to a CPMM pool. */
 export type CurveStatus = "live" | "graduating" | "graduated";
@@ -85,15 +85,15 @@ export type TradeRequest = {
   minAmountOut: BN;
 };
 
-export type PreparedTrade = UnsignedTransaction;
-
 const TRADE_COMPUTE_UNITS = 200_000;
 
 /** Builds a buy or sell on the curve server-side (ADR 0003). The trader is the only signer. */
 export async function prepareTrade(connection: Connection, r: TradeRequest): Promise<PreparedTrade> {
-  return unsignedTransaction(connection, r.trader, [
-    ComputeBudgetProgram.setComputeUnitLimit({ units: TRADE_COMPUTE_UNITS }),
-    ...(await tradeInstructions(connection, r)),
+  const accounts = await tradeAccounts(connection, { ...r.curve, trader: r.trader, side: r.side, amountIn: r.amountIn });
+  return steppedTransaction(connection, r.trader, [
+    { step: "setup", instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units: TRADE_COMPUTE_UNITS }), ...accounts.setup] },
+    { step: "trade", instructions: [curveTradeIx(r.program, r.curve, { ...r, baseAccount: accounts.base, quoteAccount: accounts.quote })] },
+    { step: "cleanup", instructions: accounts.cleanup },
   ]);
 }
 
@@ -107,26 +107,33 @@ export async function tradeInstructions(
   connection: Connection,
   r: { program: PublicKey; curve: CurveAccounts; trader: PublicKey; side: Side; amountIn: BN; minAmountOut: BN },
 ): Promise<TransactionInstruction[]> {
-  const { curve: c, trader, side } = r;
-  const accounts = await tradeAccounts(connection, { ...c, trader, side, amountIn: r.amountIn });
+  const accounts = await tradeAccounts(connection, { ...r.curve, trader: r.trader, side: r.side, amountIn: r.amountIn });
   return [
     ...accounts.setup,
-    tradeExactInIx(side, {
-      program: r.program,
-      trader,
-      pool: c.pool,
-      globalConfig: c.globalConfig,
-      platformConfig: c.platformConfig,
-      creator: c.creator,
-      baseMint: c.baseMint,
-      quoteMint: c.quoteMint,
-      baseTokenProgram: c.baseTokenProgram,
-      quoteTokenProgram: c.quoteTokenProgram,
-      traderBaseAccount: accounts.base,
-      traderQuoteAccount: accounts.quote,
-      amountIn: r.amountIn,
-      minAmountOut: r.minAmountOut,
-    }),
+    curveTradeIx(r.program, r.curve, { ...r, baseAccount: accounts.base, quoteAccount: accounts.quote }),
     ...accounts.cleanup,
   ];
+}
+
+/** A buy or sell on a curve from and to the given token accounts. */
+export function curveTradeIx(
+  program: PublicKey, c: CurveAccounts,
+  t: { trader: PublicKey; side: Side; baseAccount: PublicKey; quoteAccount: PublicKey; amountIn: BN; minAmountOut: BN },
+) {
+  return tradeExactInIx(t.side, {
+    program,
+    trader: t.trader,
+    pool: c.pool,
+    globalConfig: c.globalConfig,
+    platformConfig: c.platformConfig,
+    creator: c.creator,
+    baseMint: c.baseMint,
+    quoteMint: c.quoteMint,
+    baseTokenProgram: c.baseTokenProgram,
+    quoteTokenProgram: c.quoteTokenProgram,
+    traderBaseAccount: t.baseAccount,
+    traderQuoteAccount: t.quoteAccount,
+    amountIn: t.amountIn,
+    minAmountOut: t.minAmountOut,
+  });
 }
