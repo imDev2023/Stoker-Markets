@@ -37,6 +37,10 @@ export type Pool = {
   rates: PoolFeeRates;
   /** 0: on whichever token goes in; 1: only token 0; 2: only token 1. */
   creatorFeeOn: number;
+  /** The pool creator's fees waiting in the vaults for `collect_creator_fee`, per token in the pool's order. */
+  creatorFees: [BN, BN];
+  /** The pool's LP mint; the locked LP behind a Fee Key is in it. */
+  lpMint: PublicKey;
   /** Unix seconds before which the pool refuses swaps: a migrated pool opens one second after its migration. */
   openTime: number;
   /** The chain's clock when the pool was read, in Unix seconds; it can lag the wall clock, and it is what `openTime` is checked against. */
@@ -45,7 +49,7 @@ export type Pool = {
 };
 
 type PoolStateData = {
-  amm_config: PublicKey; pool_creator: PublicKey; token_0_vault: PublicKey; token_1_vault: PublicKey;
+  amm_config: PublicKey; pool_creator: PublicKey; lp_mint: PublicKey; token_0_vault: PublicKey; token_1_vault: PublicKey;
   token_0_mint: PublicKey; token_1_mint: PublicKey; token_0_program: PublicKey; token_1_program: PublicKey;
   observation_key: PublicKey; status: number; mint_0_decimals: number; mint_1_decimals: number;
   protocol_fees_token_0: BN; protocol_fees_token_1: BN; fund_fees_token_0: BN; fund_fees_token_1: BN;
@@ -94,10 +98,43 @@ export async function loadPool(connection: Connection, address: PublicKey): Prom
       fund: c.fund_fee_rate,
     },
     creatorFeeOn: s.creator_fee_on,
+    creatorFees: [s.creator_fees_token_0, s.creator_fees_token_1],
+    lpMint: s.lp_mint,
     openTime: s.open_time.toNumber(),
     chainTime: new BN(clock.data.subarray(CLOCK_UNIX_TIMESTAMP_OFFSET, CLOCK_UNIX_TIMESTAMP_OFFSET + 8), "le").toNumber(),
     swapEnabled: (s.status & SWAP_DISABLED) === 0,
   };
+}
+
+export type PoolTokenKeys = Pick<PoolToken, "mint" | "vault" | "program" | "decimals">;
+
+/** A pool's accounts and the creator fees it holds, without its reserves: enough to collect its fees. */
+export type PoolKeys = Pick<Pool, "address" | "ammConfig" | "creator" | "creatorFees" | "lpMint"> & { tokens: [PoolTokenKeys, PoolTokenKeys] };
+
+/** Reads many CPMM pools' keys in a few requests; addresses with no pool are left out. */
+export async function readPoolKeys(connection: Connection, addresses: PublicKey[]): Promise<PoolKeys[]> {
+  const out: PoolKeys[] = [];
+  for (let i = 0; i < addresses.length; i += 100) {
+    const batch = addresses.slice(i, i + 100);
+    const infos = await connection.getMultipleAccountsInfo(batch, "confirmed");
+    batch.forEach((address, j) => {
+      const info = infos[j];
+      if (!info) return;
+      const s = cpmmCoder.accounts.decode("PoolState", info.data) as PoolStateData;
+      out.push({
+        address,
+        ammConfig: s.amm_config,
+        creator: s.pool_creator,
+        creatorFees: [s.creator_fees_token_0, s.creator_fees_token_1],
+        lpMint: s.lp_mint,
+        tokens: [
+          { mint: s.token_0_mint, vault: s.token_0_vault, program: s.token_0_program, decimals: s.mint_0_decimals },
+          { mint: s.token_1_mint, vault: s.token_1_vault, program: s.token_1_program, decimals: s.mint_1_decimals },
+        ],
+      });
+    });
+  }
+  return out;
 }
 
 /** The CPMM pool a curve graduates into: fixed by the PlatformConfig's CPMM config and the two mints. */
