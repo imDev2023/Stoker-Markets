@@ -9,7 +9,7 @@ import {
 import { createAssociatedTokenAccountIdempotentInstruction, createTransferInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { LaunchList, PreparedAirdrop, PreparedCreatorFeeClaim, PreparedLaunch, PreparedTrade, type TradeSide } from "@launchpad/contract";
 import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
-import type { StackEnv } from "@launchpad/stack";
+import { FEE_COLLECTOR_CRON, type StackEnv } from "@launchpad/stack";
 import { installTestWallet, type TestWallet } from "./wallet";
 
 export { expect };
@@ -180,6 +180,16 @@ export async function creatorFeeVault(creator: PublicKey, quote: keyof typeof QU
   const [vault] = PublicKey.findProgramAddressSync([creator.toBuffer(), QUOTES[quote].toBuffer()], program);
   const balance = await connection().getTokenAccountBalance(vault, "confirmed").catch(() => null);
   return { vault, balance: BigInt(balance?.value.amount ?? 0) };
+}
+
+/** Runs the Fee Collector's Cron Trigger, as its hourly schedule would, and fails unless the run succeeded. */
+export async function runFeeCollector() {
+  const { apiUrl, operatorToken } = stackEnv();
+  const res = await fetch(`${apiUrl}/__scheduled?cron=${encodeURIComponent(FEE_COLLECTOR_CRON)}`);
+  const runs = (await (await fetch(`${apiUrl}/v1/operator/jobs?job=fee-collector`, { headers: { authorization: `Bearer ${operatorToken}` } })).json()) as {
+    runs: { status: string; error: string | null }[];
+  };
+  if (!res.ok || runs.runs[0]?.status !== "succeeded") throw new Error(`the Fee Collector failed: ${res.status} ${JSON.stringify(runs.runs[0])}`);
 }
 
 export const solBalance = async (owner: PublicKey) => BigInt(await connection().getBalance(owner, "confirmed"));

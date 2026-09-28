@@ -14,6 +14,7 @@ export function SiteHeader({ cluster }: { cluster: string }) {
           <Link href="/" className={styles.link}>Coins</Link>
           <Link href="/launch" className={styles.link}>Launch a coin</Link>
           <Link href="/creator" className={styles.link}>Creator Fee</Link>
+          <Link href="/revenue" className={styles.link}>Revenue</Link>
         </nav>
         <WalletButton />
       </div>

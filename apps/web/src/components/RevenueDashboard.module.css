@@ -1,0 +1,334 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding-top: clamp(28px, 5vw, 56px);
+  padding-bottom: 80px;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 44em;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 800;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.lede {
+  margin: 0;
+  font-size: 1.0625rem;
+  color: var(--ink-2);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+  gap: 16px;
+  align-items: start;
+}
+
+.main,
+.side,
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.section {
+  gap: 12px;
+}
+
+.card,
+.rule,
+.emptyCard,
+.asset {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  min-width: 0;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.rule {
+  border-color: transparent;
+  background: var(--plate);
+}
+
+.rule .cardTitle {
+  color: var(--cobalt-strong);
+}
+
+.emptyCard {
+  padding: 28px;
+}
+
+.emptyCard p {
+  margin: 0;
+  font-size: 1.0625rem;
+  color: var(--ink-2);
+}
+
+.muted {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--ink-3);
+}
+
+.totals {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.assetName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
+}
+
+.ticker {
+  font-family: var(--font-display);
+  font-stretch: 125%;
+  font-weight: 800;
+  font-size: 0.9375rem;
+  overflow-wrap: anywhere;
+}
+
+.name {
+  min-width: 0;
+  color: var(--ink-3);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.amount {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.amountLabel {
+  color: var(--ink-3);
+  font-size: 0.8125rem;
+}
+
+.amount :global(.mono) {
+  font-size: 1.75rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.streams,
+.explain,
+.wallets {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.streams {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.streams > div,
+.wallets > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.streams dt,
+.wallets dt {
+  color: var(--ink-2);
+}
+
+.streams dd,
+.wallets dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 500;
+}
+
+.sweptBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.subTitle {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.swept {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.swept > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.swept dt {
+  font-family: var(--font-display);
+  font-stretch: 125%;
+  font-weight: 800;
+  font-size: 0.8125rem;
+}
+
+.swept dd {
+  margin: 0;
+  font-weight: 500;
+}
+
+.explain {
+  gap: 10px;
+  font-size: 0.9375rem;
+}
+
+.explain dt {
+  font-weight: 600;
+}
+
+.explain dd {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.wallets {
+  gap: 10px;
+  font-size: 0.9375rem;
+}
+
+.wallets dd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wallets a {
+  text-decoration: none;
+  border-bottom: 1px solid var(--line);
+}
+
+.wallets a:hover {
+  color: var(--cobalt);
+  border-color: var(--cobalt);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.table th {
+  padding: 0 8px 8px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-3);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table td,
+.table tbody th {
+  padding: 9px 8px;
+  white-space: nowrap;
+}
+
+.table tbody th {
+  border-bottom: 0;
+  color: var(--ink);
+  font-size: 0.875rem;
+  font-weight: 500;
+  vertical-align: top;
+}
+
+/* A day's rows share one rule above them; the rows within a day run together. */
+.table tbody tr.dayStart > * {
+  border-top: 1px solid var(--line);
+}
+
+.table tbody tr:first-child > * {
+  border-top: 0;
+}
+
+/* The table sits flush with the card's edges. With a day spanning its rows, only a day's first row starts with the day. */
+.table thead th:first-child,
+.table tbody th.day {
+  padding-left: 0;
+}
+
+.table tr > :last-child {
+  padding-right: 0;
+}
+
+.table .num {
+  text-align: right;
+}
+
+.table td.ticker {
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .card,
+  .rule,
+  .asset {
+    padding: 16px;
+  }
+  .emptyCard {
+    padding: 20px;
+  }
+  .table .wide {
+    display: none;
+  }
+}

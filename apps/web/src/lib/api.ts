@@ -1,6 +1,7 @@
 import {
   AirdropStatus, ApiError, CandleList, CreatorFeeClaimList, CreatorFees, FirstBuyQuote, HolderList, LaunchList, LaunchQuoteList,
-  LaunchSummary, PlatformInfo, PreparedAirdrop, PreparedCreatorFeeClaim, PreparedLaunch, PreparedTrade, QuoteAssetList, TradeList, TradeQuote,
+  LaunchSummary, LedgerPage, PlatformInfo, PreparedAirdrop, PreparedCreatorFeeClaim, PreparedLaunch, PreparedTrade, QuoteAssetList,
+  Revenue, TradeList, TradeQuote,
   type CandleInterval, type CurveStatus, type LaunchSort, type PrepareCreatorFeeClaimRequest, type PrepareTradeRequest,
   type QuoteCategory, type TradeQuoteQuery,
 } from "@launchpad/contract";
@@ -124,6 +125,17 @@ export async function prepareCreatorFeeClaim(body: PrepareCreatorFeeClaimRequest
     await fetch(`${API_URL}/v1/creator-fees/prepare`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
     PreparedCreatorFeeClaim,
   );
+}
+
+/** Platform revenue per asset and per day, summed from the Ledger. */
+export async function getRevenue() {
+  return read(await fetch(`${API_URL}/v1/revenue`, { cache: "no-store" }), Revenue);
+}
+
+/** A page of the Ledger, newest first; pass the previous page's `next` to go further back. */
+export async function listLedger(before?: string | null) {
+  const query = new URLSearchParams({ limit: "25", ...(before ? { before } : {}) });
+  return read(await fetch(`${API_URL}/v1/ledger?${query}`, { cache: "no-store" }), LedgerPage);
 }
 
 /** Tells the API about a confirmed launch, trade or claim so it shows up without waiting for the webhook. */
