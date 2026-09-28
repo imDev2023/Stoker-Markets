@@ -15,7 +15,7 @@ import { installTestWallet, type TestWallet } from "./wallet";
 
 export { expect };
 
-/** The Quote Assets on the local chain; the stack prices SOL at 150 USD, USDC at 1, NVDAx at 180 and JTO at 2.5, and not BULLWHALE. */
+/** The Quote Assets on the local chain; the stack prices SOL at 150 USD, USDC at 1, NVDAx at 180, JTO at 2.5 and TAXQ at 1, and not BULLWHALE. */
 export const QUOTES = { SOL: new PublicKey("So11111111111111111111111111111111111111112"), ...LOCAL_QUOTES };
 
 export const COIN_PNG = readFileSync(new URL("../fixtures/coin.png", import.meta.url));
