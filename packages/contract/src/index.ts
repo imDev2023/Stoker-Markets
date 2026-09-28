@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { LaunchMarket } from "./board";
 import { GraduationTarget, QuoteRef } from "./quotes";
-import { CurveProgress, Graduation } from "./trades";
+import { CurveProgress, Graduation, SolRouteSource } from "./trades";
 import { LaunchModeFields, LaunchModesSummary } from "./launchModes";
 
 /** The public API contract, shared by the API (which validates with it) and every client, including our web app. */
@@ -88,6 +88,8 @@ export const PlatformInfo = z.object({
   graduationTargetLamports: z.string(),
   platformFeeBps: z.number(),
   creatorFeeBps: z.number(),
+  /** Where buys paid with SOL on a Launch paired with anything else get their Quote Asset; null when this deployment has no route. */
+  solRoute: SolRouteSource.nullable(),
 });
 export type PlatformInfo = z.infer<typeof PlatformInfo>;
 
