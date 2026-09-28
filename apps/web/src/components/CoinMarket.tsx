@@ -20,10 +20,12 @@ const HOLDERS_REFRESH_MS = 12_000;
  * indexed trades and the chain. After Graduation the same page trades in the coin's Raydium pool.
  */
 export function CoinMarket({
-  initial, platform, initialTrades, initialCandles, initialHolders, renderedAt,
+  initial, platform, initialTrades, initialCandles, initialHolders, renderedAt, referrer = null,
 }: {
   initial: LaunchSummary;
   platform: PlatformInfo;
+  /** From the page's `?ref=` link: the wallet that earns the referral share fee on the visitor's curve trades. */
+  referrer?: string | null;
   initialTrades: Trade[];
   initialCandles: CandleList;
   /** Null when the chain couldn't be read at render; the card retries. */
@@ -98,7 +100,7 @@ export function CoinMarket({
           <CurveProgress launch={launch} platform={platform} />
         </div>
         <div className={styles.trade}>
-          <TradePanel launch={launch} platform={platform} onTraded={() => void Promise.all([refresh(), refreshHolders()])} />
+          <TradePanel launch={launch} platform={platform} referrer={referrer} onTraded={() => void Promise.all([refresh(), refreshHolders()])} />
         </div>
         <div className={styles.holders}>
           <Holders holders={holders} platform={platform} />

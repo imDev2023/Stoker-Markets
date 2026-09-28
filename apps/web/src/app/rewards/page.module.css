@@ -1,0 +1,144 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-block: 32px 48px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-stretch: 125%;
+  font-weight: 800;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.lead {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--ink-2);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  min-width: 0;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.lookup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lookup input {
+  flex: 1 1 280px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: inherit;
+  font: inherit;
+}
+
+.lookup button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  background: var(--cobalt);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rules {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.rules dt {
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+
+.rules dd {
+  margin: 2px 0 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.note {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--ink-3);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 16px;
+  align-items: baseline;
+  padding: 11px 0;
+  font-size: 0.875rem;
+}
+
+.list li + li {
+  border-top: 1px solid var(--line);
+}
+
+.list li:first-child {
+  padding-top: 0;
+}
+
+.list li:last-child {
+  padding-bottom: 0;
+}
+
+.list a {
+  color: var(--ink-2);
+}
+
+.list a:hover {
+  color: var(--cobalt);
+}
+
+.amount {
+  text-align: right;
+  font-weight: 500;
+  color: var(--verified);
+}
+
+.pending .amount {
+  color: var(--ink-2);
+}
+
+.back {
+  align-self: flex-start;
+  color: var(--ink-2);
+}

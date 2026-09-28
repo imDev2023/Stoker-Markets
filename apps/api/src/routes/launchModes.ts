@@ -22,8 +22,8 @@ launchModeRoutes.get("/launch-quote", async (c) => {
   if (!query.success) return c.json({ error: "invalid launch quote request", details: query.error.issues }, 400);
   const cfg = c.get("cfg");
   const quote = await launchQuoteAsset(c.get("db"), cfg, quoteMarket(c.env), query.data.quoteMint);
-  const q = await quoteLaunchFirstBuy(new Connection(cfg.rpcUrl, "confirmed"), cfg, quote, new BN(query.data.firstBuy)).catch(refuseWith(400));
-  const res: FirstBuyQuote = { firstBuy: firstBuyToContract(q, quote.decimals) };
+  const q = await quoteLaunchFirstBuy(new Connection(cfg.rpcUrl, "confirmed"), cfg, quote, new BN(query.data.firstBuy), query.data.rewardTax ?? null).catch(refuseWith(400));
+  const res: FirstBuyQuote = { firstBuy: firstBuyToContract(q, quote.decimals, q.quoteTransferFeeBps, q.rewardTaxBps) };
   return c.json(res);
 });
 
@@ -61,7 +61,7 @@ async function coinTokenProgram(connection: Connection, mint: string) {
 async function scanPayments(db: Db, cfg: Config, connection: Connection, loaded: LoadedDraft, tokenProgram: PublicKey | null) {
   if (!tokenProgram || !needsScan(loaded.recipients)) return loaded;
   const { draft } = loaded;
-  const newest = await indexAccountHistory(db, cfg, connection, airdropSource(draft, tokenProgram), draft.airdropScannedUntil);
+  const { newest } = await indexAccountHistory(db, cfg, connection, airdropSource(draft, tokenProgram), draft.airdropScannedUntil);
   if (newest !== draft.airdropScannedUntil) await db.update(launchDrafts).set({ airdropScannedUntil: newest }).where(eq(launchDrafts.mint, draft.mint));
   return (await loadDraft(db, draft.mint))!;
 }

@@ -113,6 +113,8 @@ export type RoutedBuyRequest = {
   swap: SolSwapBuilder;
   /** Lookup tables for the trade's shared accounts (the Platform Lookup Table); the swap brings its own. */
   lookupTables: PublicKey[];
+  /** The referrer and share fee rate of a referred curve buy; a pool pays none. */
+  referral?: { referrer: PublicKey; rate: BN } | null;
 };
 
 const CURVE_COMPUTE_UNITS = 200_000;
@@ -141,8 +143,16 @@ export async function prepareRoutedBuy(connection: Connection, r: RoutedBuyReque
   }
   const base = getAssociatedTokenAddressSync(baseMint, trader, false, baseTokenProgram);
   const t = { trader, side: "buy" as const, baseAccount: base, quoteAccount: quote.address, amountIn: r.quoteAmount, minAmountOut: r.minAmountOut };
-  if (market.venue === "curve") trade = curveTradeIx(market.program, market.curve, t);
-  else trade = poolTradeIx(market.cpmm, market.pool, baseMint, t);
+  const shareSetup: TransactionInstruction[] = [];
+  if (market.venue === "curve") {
+    let share: { rate: BN; receiver: PublicKey } | null = null;
+    if (r.referral && !r.referral.rate.isZero()) {
+      const receiver = getAssociatedTokenAddressSync(r.quoteMint, r.referral.referrer, true, r.quoteTokenProgram);
+      shareSetup.push(createAssociatedTokenAccountIdempotentInstruction(trader, receiver, r.referral.referrer, r.quoteMint, r.quoteTokenProgram));
+      share = { rate: r.referral.rate, receiver };
+    }
+    trade = curveTradeIx(market.program, market.curve, { ...t, share });
+  } else trade = poolTradeIx(market.cpmm, market.pool, baseMint, t);
   const units = swap.computeUnits + (market.venue === "curve" ? CURVE_COMPUTE_UNITS : POOL_COMPUTE_UNITS) + ACCOUNTS_COMPUTE_UNITS;
   return steppedTransaction(
     connection,
@@ -154,6 +164,7 @@ export async function prepareRoutedBuy(connection: Connection, r: RoutedBuyReque
           ComputeBudgetProgram.setComputeUnitLimit({ units }),
           ...quote.open,
           createAssociatedTokenAccountIdempotentInstruction(trader, base, trader, baseMint, baseTokenProgram),
+          ...shareSetup,
           ...swap.setup,
         ],
       },

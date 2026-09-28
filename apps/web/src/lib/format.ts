@@ -22,13 +22,14 @@ export function shortAddress(address: string) {
   return `${address.slice(0, 4)}…${address.slice(-4)}`;
 }
 
-/** Formats a raw amount with the given decimals, trimming trailing zeros. */
+/** Formats a raw amount with the given decimals, trimming trailing zeros. A negative amount keeps its sign in front. */
 export function formatUnits(raw: string, decimals: number, maxFraction = 4) {
-  const n = BigInt(raw);
+  const signed = BigInt(raw);
+  const n = signed < 0n ? -signed : signed;
   const base = 10n ** BigInt(decimals);
   const whole = n / base;
   const fraction = (n % base).toString().padStart(decimals, "0").slice(0, maxFraction).replace(/0+$/, "");
-  return `${whole.toLocaleString("en-US")}${fraction ? `.${fraction}` : ""}`;
+  return `${signed < 0n ? "-" : ""}${whole.toLocaleString("en-US")}${fraction ? `.${fraction}` : ""}`;
 }
 
 /** Reads a decimal amount typed by a person into raw units; null if it isn't a positive amount with at most `decimals` places. */

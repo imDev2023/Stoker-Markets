@@ -1,10 +1,11 @@
 "use client";
 
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { VersionedTransaction } from "@solana/web3.js";
-import { useState } from "react";
+import { SendTransactionError, VersionedTransaction } from "@solana/web3.js";
+import { useEffect, useState } from "react";
 import type { CreatorFeeAsset, PlatformInfo, PreparedCreatorFeeClaim } from "@launchpad/contract";
 import { listCreatorFeeClaims, prepareCreatorFeeClaim, reportTransaction } from "@/lib/api";
+import { landedError } from "@/lib/transactions";
 import { explorerUrl, formatUnits, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { QuoteLogo } from "./QuoteLogo";
 import styles from "./ClaimCard.module.css";
@@ -30,6 +31,12 @@ export function ClaimCard({
   const [step, setStep] = useState<Step>({ kind: "idle" });
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<Done | null>(null);
+
+  // A review describes one wallet's claim; another wallet, or none, starts over.
+  const owner = publicKey?.toBase58() ?? null;
+  useEffect(() => {
+    setStep((s) => (s.kind === "reviewing" ? { kind: "idle" } : s));
+  }, [owner]);
 
   const { quote } = asset;
   const symbol = quoteTicker(quote);
@@ -64,12 +71,31 @@ export function ClaimCard({
   }
 
   async function signAndSend(r: Review) {
-    if (!signTransaction) return setError("This wallet can't sign transactions. Try another wallet.");
+    if (!publicKey || !signTransaction) return setError("This wallet can't sign transactions. Try another wallet.");
+    const claimant = publicKey.toBase58();
     setStep({ kind: "signing", review: r });
+    let signed: VersionedTransaction;
     try {
-      const signed = await signTransaction(r.tx);
-      const signature = await connection.sendRawTransaction(signed.serialize());
-      setStep({ kind: "confirming", review: r });
+      signed = await signTransaction(r.tx);
+    } catch (e) {
+      const message = (e as Error).message ?? "";
+      setError(/reject|declin|cancel/i.test(message) ? "You declined the transaction in your wallet. Nothing was claimed." : message);
+      return setStep({ kind: "idle" });
+    }
+    let signature: string;
+    try {
+      signature = await connection.sendRawTransaction(signed.serialize());
+    } catch (e) {
+      // Only a transaction the node refused is known not to have gone out.
+      setError(
+        e instanceof SendTransactionError
+          ? "The network refused the claim, so nothing was claimed and nothing was charged. Try again in a moment."
+          : "We couldn't tell whether the claim was sent. Check your wallet's recent activity before trying again.",
+      );
+      return setStep({ kind: "idle" });
+    }
+    setStep({ kind: "confirming", review: r });
+    try {
       const result = await connection.confirmTransaction(
         { signature, blockhash: signed.message.recentBlockhash, lastValidBlockHeight: r.prepared.lastValidBlockHeight },
         "confirmed",
@@ -79,17 +105,19 @@ export function ClaimCard({
       } else {
         await reportTransaction(signature);
         // The claim pays whatever the vault holds when it lands, which trades since the review may have raised.
-        const claimed = (await listCreatorFeeClaims(publicKey!.toBase58()).catch(() => null))?.claims.find((c) => c.signature === signature);
+        const claimed = (await listCreatorFeeClaims(claimant).catch(() => null))?.claims.find((c) => c.signature === signature);
         setDone({ amount: claimed?.amount ?? r.prepared.amount, signature });
         onClaimed();
       }
     } catch (e) {
-      const message = (e as Error).message ?? "";
-      setError(
-        /reject|declin|cancel/i.test(message)
-          ? "You declined the transaction in your wallet. Nothing was claimed."
-          : "The claim couldn't be sent. Nothing was claimed; try again in a moment.",
-      );
+      if (landedError(e)) {
+        setError("The claim failed on-chain, so nothing moved and only the network fee was charged. Try again.");
+      } else {
+        // Sent, but its confirmation could not be followed: it may well have landed, so never say nothing was claimed.
+        setDone({ amount: r.prepared.amount, signature });
+        setError("The claim was sent, but we lost track of it before it confirmed. Check the transaction; your vault shows what is left.");
+        onClaimed();
+      }
     }
     setStep({ kind: "idle" });
   }
@@ -135,10 +163,18 @@ export function ClaimCard({
           <div className={styles.review} role="region" aria-label="Review your claim">
             <p>
               {r.prepared.unwrapped ? (
-                <>
-                  Your wallet receives about <strong className="mono">{formatUnits(r.walletLamports.toString(), SOL_DECIMALS, SOL_DECIMALS)} SOL</strong>{" "}
-                  after the network fee.
-                </>
+                r.walletLamports >= 0n ? (
+                  <>
+                    Your wallet receives about <strong className="mono">{formatUnits(r.walletLamports.toString(), SOL_DECIMALS, SOL_DECIMALS)} SOL</strong>{" "}
+                    after the network fee.
+                  </>
+                ) : (
+                  <>
+                    This claim is smaller than its network fee: your wallet ends up{" "}
+                    <strong className="mono">{formatUnits((-r.walletLamports).toString(), SOL_DECIMALS, SOL_DECIMALS)} SOL</strong> down. Let the vault
+                    fill up first, or claim anyway.
+                  </>
+                )
               ) : (
                 <>
                   Your wallet receives <strong className="mono">{units(r.prepared.amount)} {symbol}</strong> and pays a network fee of about{" "}

@@ -10,6 +10,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import BN from "bn.js";
+import postgres from "postgres";
 import { runMigrations } from "@launchpad/db/migrate";
 import { bootstrapPlatform, LOCAL_QUOTE_PRICES_USD, localnetKeys, startLocalnet, type LocalnetState } from "@launchpad/localnet";
 import { createSolRoutes, type SolRoutes } from "@launchpad/localnet/routes";
@@ -34,6 +35,10 @@ export type StackEnv = {
   sweepThresholdLamports: string;
   sweepFloatLamports: string;
   collectMinLamports: string;
+  /** What a referred trade pays its referrer, in basis points, as the API has it. */
+  referralShareBps: number;
+  /** How long before it applies a fee change must be announced; short, so a test can wait it out. */
+  feeChangeLeadSeconds: number;
   platform: LocalnetState;
   /** The Raydium CPMM pools of SOL the API routes buys paid with SOL through, standing in for Jupiter. */
   solRoutes: SolRoutes;
@@ -73,14 +78,40 @@ async function waitFor(what: string, check: () => Promise<boolean>, timeoutMs: n
   }
 }
 
-function startPostgres() {
+/**
+ * A throwaway database: with `STACK_DATABASE_URL` (a Postgres server the caller may create databases on, for machines
+ * without docker), a fresh database on that server; otherwise a Postgres container.
+ */
+async function startPostgres(): Promise<{ url: string; stop: () => Promise<void> }> {
+  const server = process.env.STACK_DATABASE_URL;
+  if (server) {
+    const name = `launchpad_test_${process.pid}_${Date.now()}`;
+    const admin = postgres(server, { max: 1, onnotice: () => {} });
+    await admin.unsafe(`create database "${name}"`);
+    await admin.end();
+    const url = new URL(server);
+    url.pathname = `/${name}`;
+    return {
+      url: url.toString(),
+      stop: async () => {
+        const drop = postgres(server, { max: 1, onnotice: () => {} });
+        await drop.unsafe(`drop database if exists "${name}" with (force)`).catch(() => undefined);
+        await drop.end();
+      },
+    };
+  }
   const name = `launchpad-test-pg-${process.pid}-${Date.now()}`;
   execFileSync("docker", [
     "run", "-d", "--rm", "--name", name, "-e", "POSTGRES_USER=test", "-e", "POSTGRES_PASSWORD=test", "-e", "POSTGRES_DB=test",
     "-p", "127.0.0.1::5432", "postgres:17-alpine",
   ]);
   const port = execFileSync("docker", ["port", name, "5432/tcp"]).toString().trim().split(":").pop();
-  return { name, url: `postgres://test:test@127.0.0.1:${port}/test` };
+  const url = `postgres://test:test@127.0.0.1:${port}/test`;
+  await waitFor("postgres", async () => {
+    execFileSync("docker", ["exec", name, "pg_isready", "-U", "test", "-h", "127.0.0.1"], { stdio: "ignore" });
+    return true;
+  }, 60_000);
+  return { url, stop: async () => void execFileSync("docker", ["rm", "-f", name], { stdio: "ignore" }) };
 }
 
 /** Runs a stack process, keeping its output; with `STACK_LOG_DIR` set, the output also streams to `<dir>/<name>.log`. */
@@ -110,6 +141,8 @@ export const WEBHOOK_SECRET = "test-webhook-secret";
 export const QUOTE_REGISTRY_CRON = "*/5 * * * *";
 export const GRADUATION_WATCH_CRON = "* * * * *";
 export const FEE_COLLECTOR_CRON = "15 * * * *";
+export const REWARD_ROUNDS_CRON = "*/10 * * * *";
+export const BURN_CRON = "45 * * * *";
 export const OPERATOR_TOKEN = "test-operator-token";
 
 /** A stand-in for the operator's chat webhook: keeps every JSON body posted to it and lists them on GET. */
@@ -172,12 +205,8 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
     for (const c of cleanups.reverse()) await c();
   };
   try {
-    const pg = startPostgres();
-    cleanups.push(() => void execFileSync("docker", ["rm", "-f", pg.name], { stdio: "ignore" }));
-    await waitFor("postgres", async () => {
-      execFileSync("docker", ["exec", pg.name, "pg_isready", "-U", "test", "-h", "127.0.0.1"], { stdio: "ignore" });
-      return true;
-    }, 60_000);
+    const pg = await startPostgres();
+    cleanups.push(pg.stop);
     await runMigrations(pg.url);
 
     const chain = await startLocalnet(opts.rpcPort === undefined ? {} : { rpcPort: opts.rpcPort });
@@ -193,6 +222,8 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
     const sink = await startAlertSink();
     cleanups.push(sink.stop);
     const graduationAlertAfterSeconds = opts.graduationAlertAfterSeconds ?? 5;
+    const referralShareBps = 50;
+    const feeChangeLeadSeconds = 3;
 
     const webPort = opts.web ? await freePort() : null;
     const webUrl = webPort ? `http://127.0.0.1:${webPort}` : null;
@@ -209,6 +240,7 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       PUBLIC_API_URL: apiUrl,
       WEB_ORIGIN: webUrl ?? "http://127.0.0.1",
       PLATFORM_CONFIG: platform.platformConfig,
+      PLATFORM_ADMIN: platform.admin,
       PLATFORM_LOOKUP_TABLE: platform.lookupTable,
       GRADUATION_TARGET_LAMPORTS: platform.graduationTargetLamports,
       PRICE_SOURCE: "static",
@@ -223,6 +255,14 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       SWEEP_THRESHOLD_LAMPORTS: fees.sweepThresholdLamports,
       SWEEP_FLOAT_LAMPORTS: fees.sweepFloatLamports,
       COLLECT_MIN_LAMPORTS: fees.collectMinLamports,
+      // Short, so a test can announce a rules change and see it refused inside the lead time, then accepted outside it.
+      REWARD_RULES_LEAD_SECONDS: "60",
+      // Three top Launches, so a test can see one picked and one left out.
+      FLYWHEEL_TOP_N: "3",
+      // Tiny, so the Flywheel buys on the little revenue a test run makes.
+      BURN_MIN_SPEND_LAMPORTS: "100000",
+      REFERRAL_SHARE_BPS: String(referralShareBps),
+      FEE_CHANGE_LEAD_SECONDS: String(feeChangeLeadSeconds),
       SOL_ROUTE_SOURCE: "raydium-cpmm",
       SOL_ROUTE_POOLS: JSON.stringify(solRoutes.pools),
     };
@@ -250,7 +290,7 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
     return {
       env: {
         apiUrl, webUrl, rpcUrl: chain.rpcUrl, databaseUrl: pg.url, webhookSecret: WEBHOOK_SECRET, operatorToken: OPERATOR_TOKEN,
-        alertSinkUrl: sink.url, graduationAlertAfterSeconds, ...fees, platform, solRoutes,
+        alertSinkUrl: sink.url, graduationAlertAfterSeconds, ...fees, referralShareBps, feeChangeLeadSeconds, platform, solRoutes,
       },
       stop,
     };

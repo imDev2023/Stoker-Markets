@@ -1,0 +1,175 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-block: 32px 48px;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-stretch: 125%;
+  font-weight: 800;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.link {
+  border: none;
+  background: none;
+  color: var(--cobalt-strong);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.signIn,
+.feeForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
+}
+
+.signIn label,
+.feeForm label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+.signIn input,
+.feeForm input {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: inherit;
+  font: inherit;
+}
+
+.signIn button,
+.feeForm button,
+.actions button,
+.list button {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--cobalt);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.actions button:disabled,
+.feeForm button:disabled,
+.list button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  min-width: 0;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.facts dt {
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+
+.facts dd {
+  margin: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.when {
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.note {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.875rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.error {
+  margin: 0;
+  color: var(--danger, #b3261e);
+}
+
+.prepared {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.875rem;
+}
+
+.code {
+  position: relative;
+}
+
+.code pre {
+  margin: 0;
+  padding: 12px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}

@@ -9,11 +9,12 @@ import {
   type PreparedTrade as ChainPreparedTrade, type RoutedMarket,
 } from "@launchpad/chain";
 import {
-  CandleInterval, PrepareTradeRequest, TradeQuoteQuery, type CandleList, type CurveProgress, type PreparedTrade, type TradeList,
+  CandleInterval, PrepareTradeRequest, TradeQuoteQuery, type CandleList, type CurveProgress, type PreparedTrade, type Referral, type TradeList,
   type TradeQuote, type TradeSide,
 } from "@launchpad/contract";
 import { curves, launches, quoteAssets, trades, type Db } from "@launchpad/db";
 import { solRoutes, type AppEnv, type Bindings, type Config } from "../env";
+import { referralShare } from "../quotes/assets";
 
 /**
  * Trading a Launch's coin: quotes and unsigned trade transactions (ADR 0003), plus the indexed trade history and candles.
@@ -58,6 +59,7 @@ tradeRoutes.get("/launches/:mint/trades", async (c) => {
       fees: { raydium: t.protocolFee, platform: t.platformFee, creator: t.creatorFee },
       price: t.priceAfter,
       time: t.blockTime.toISOString(),
+      referral: t.referrer ? { referrer: t.referrer, fee: t.shareFee } : null,
     })),
   };
   return c.json(res);
@@ -117,17 +119,36 @@ export function curveProgress(row: typeof curves.$inferSelect | null, graduated:
 /** Basis points from a rate in the 1e6 denominator LaunchLab and CPMM share. */
 const bps = (rate: BN) => (Number(rate.toString()) * 10_000) / RATE_DENOMINATOR;
 
+/** A program-side limit as the wallet would see it: scaled by what the quote's full amount lost to its transfer fee. */
+function walletSide(limit: BN, programAmount: BN, walletAmount: BN) {
+  return programAmount.isZero() || programAmount.eq(walletAmount) ? limit : limit.mul(walletAmount).div(programAmount);
+}
+
+const feeBps = (fee: { bps: number } | null) => fee?.bps ?? 0;
+
 type Market = { quote: TradeQuote; prepare: (trader: PublicKey) => Promise<ChainPreparedTrade> };
 
 /** A trade priced where the coin trades now, before any slippage limit is put on it. */
 type VenueQuote = {
   priced: Omit<TradeQuote, "minAmountOut" | "slippageBps" | "route">;
+  /** The figure the program checks the slippage limit against: what the trader actually receives, on the curve and in the pool alike. */
+  limitFrom: BN;
   /** Builds the trade on its own, paid from and to the trader's wallet. */
   prepare: (trader: PublicKey, amountIn: BN, minAmountOut: BN) => Promise<ChainPreparedTrade>;
 };
 
+/** The referral a quote was asked for with, resolved against where the coin trades: the rate the trade pays, if any. */
+type ReferralPlan = { referrer: PublicKey; rate: BN; referral: Referral };
+
 /** Where the coin trades now, able to price a trade of any size there. */
-type Venue = { market: RoutedMarket; quoteMint: PublicKey; quoteTokenProgram: PublicKey; price: (side: TradeSide, amount: BN) => VenueQuote };
+type Venue = {
+  market: RoutedMarket;
+  quoteMint: PublicKey;
+  quoteTokenProgram: PublicKey;
+  /** What a referral would pay here: the share fee applies on the curve, where the Quote Asset's GlobalConfig allows one. */
+  referral: (referrer: PublicKey) => ReferralPlan;
+  price: (side: TradeSide, amount: BN, referral: ReferralPlan | null) => VenueQuote;
+};
 
 /**
  * Prices a trade where the coin trades now, read from the chain rather than the index so a lagging webhook never sends
@@ -143,27 +164,39 @@ async function quoteMarket(env: Bindings, db: Db, cfg: Config, mint: string, r: 
     .limit(1);
   if (!launch) throw new HTTPException(404, { message: "launch not found" });
   const connection = new Connection(cfg.rpcUrl, "confirmed");
-  const venue = await venueOf(connection, cfg, mint, new PublicKey(launch.pool));
+  const symbol = launch.quoteSymbol ?? `${launch.pool.slice(0, 4)}...`;
+  const venue = await venueOf(connection, cfg, mint, new PublicKey(launch.pool), symbol);
   const amount = new BN(r.amount);
+  const referral = r.referrer ? venue.referral(new PublicKey(r.referrer)) : null;
 
   if (r.payWith === "sol" && r.side === "sell")
     throw new HTTPException(400, { message: "Only a buy can be paid with SOL; a sell pays out the coin's Quote Asset." });
-  if (r.payWith === "sol" && !venue.quoteMint.equals(WSOL_MINT)) {
-    const symbol = launch.quoteSymbol ?? `${venue.quoteMint.toBase58().slice(0, 4)}...`;
-    return routedMarket(connection, env, cfg, venue, symbol, amount, r.slippageBps);
-  }
+  if (r.payWith === "sol" && !venue.quoteMint.equals(WSOL_MINT)) return routedMarket(connection, env, cfg, venue, symbol, amount, r.slippageBps, referral);
 
-  const { priced, prepare } = venue.price(r.side, amount);
+  const { priced, limitFrom, prepare } = venue.price(r.side, amount, referral);
+  const limit = minAmountOut(limitFrom, r.slippageBps);
   const quote: TradeQuote = {
     ...priced,
-    minAmountOut: minAmountOut(new BN(priced.amountOut), r.slippageBps).toString(),
+    // Shown as what reaches the wallet at that limit, which is the limit itself less any transfer fee on it.
+    minAmountOut: walletSide(limit, limitFrom, new BN(priced.amountOut)).toString(),
     slippageBps: r.slippageBps,
     route: null,
   };
-  return { quote, prepare: (trader) => prepare(trader, new BN(quote.amountIn), new BN(quote.minAmountOut)) };
+  return { quote, prepare: (trader) => prepare(trader, new BN(quote.amountIn), limit) };
 }
 
-async function venueOf(connection: Connection, cfg: Config, mint: string, curveAddress: PublicKey): Promise<Venue> {
+/** A referral as a quote reports it, and the rate the trade pays, when it applies. */
+function referralPlan(cfg: Config, referrer: PublicKey, maxShareFeeRate: BN, reason: string | null): ReferralPlan {
+  const share = reason ? { allowed: false, bps: 0 } : referralShare(cfg, maxShareFeeRate.toNumber());
+  const rate = new BN(share.allowed ? (share.bps * RATE_DENOMINATOR) / 10_000 : 0);
+  return {
+    referrer,
+    rate,
+    referral: { referrer: referrer.toBase58(), applies: share.allowed, bps: share.bps, fee: "0", reason: share.allowed ? null : reason },
+  };
+}
+
+async function venueOf(connection: Connection, cfg: Config, mint: string, curveAddress: PublicKey, quoteSymbol: string): Promise<Venue> {
   const curve = await loadCurve(connection, curveAddress);
   if (!curve) throw new Error(`launch ${mint} has no curve account at ${curveAddress.toBase58()}`);
 
@@ -182,9 +215,11 @@ async function venueOf(connection: Connection, cfg: Config, mint: string, curveA
       market: { venue: "pool", cpmm: cfg.cpmm, pool, baseMint: curve.baseMint, baseTokenProgram: curve.baseTokenProgram },
       quoteMint: quote.mint,
       quoteTokenProgram: quote.program,
-      price: (side, amount) => {
+      referral: (referrer) => referralPlan(cfg, referrer, new BN(0), "This coin trades in its Raydium pool now, which pays no referral fee."),
+      price: (side, amount, referral) => {
         const t = quotePoolTrade(pool, curve.baseMint, side, amount);
         if (t.amountOut.isZero()) throw new HTTPException(400, { message: "amount is too small to trade" });
+        const { base } = poolSides(pool, curve.baseMint);
         return {
           priced: {
             venue: "pool",
@@ -193,10 +228,15 @@ async function venueOf(connection: Connection, cfg: Config, mint: string, curveA
             amountOut: t.amountOut.toString(),
             fees: { raydium: t.fees.protocol.toString(), platform: t.fees.platform.toString(), creator: t.fees.creator.toString() },
             feeBps: { raydium: bps(pool.rates.trade), platform: bps(pool.rates.creator), creator: 0 },
+            transferFees: { quote: t.transferFees.quote.toString(), base: t.transferFees.base.toString() },
+            transferFeeBps: { quote: feeBps(quote.transferFee), base: feeBps(base.transferFee) },
             priceBefore: t.priceBefore,
             priceAfter: t.priceAfter,
             completesCurve: false,
+            referral: referral?.referral ?? null,
           },
+          // cp-swap checks the limit against what the trader receives, transfer fee already withheld.
+          limitFrom: t.amountOut,
           prepare: (trader, amountIn, min) =>
             preparePoolTrade(connection, { cpmm: cfg.cpmm, pool, baseMint: curve.baseMint, trader, side, amountIn, minAmountOut: min }),
         };
@@ -208,9 +248,12 @@ async function venueOf(connection: Connection, cfg: Config, mint: string, curveA
     market: { venue: "curve", program: cfg.launchlab, curve },
     quoteMint: curve.quoteMint,
     quoteTokenProgram: curve.quoteTokenProgram,
-    price: (side, amount) => {
+    referral: (referrer) =>
+      referralPlan(cfg, referrer, curve.maxShareFeeRate, curve.maxShareFeeRate.isZero() ? `${quoteSymbol}'s LaunchLab config allows no referral fee.` : null),
+    price: (side, amount, referral) => {
       if (side === "sell" && amount.gt(curve.reserves.realBase)) throw new HTTPException(400, { message: "amount is more than the curve has sold" });
-      const t = quoteTrade(curve.reserves, curve.rates, side, amount);
+      const rates = { ...curve.rates, share: referral?.rate ?? new BN(0) };
+      const t = quoteTrade(curve.reserves, rates, side, amount, { quote: curve.quoteTransferFee, base: curve.baseTransferFee });
       if (t.amountOut.isZero()) throw new HTTPException(400, { message: "amount is too small to trade" });
       return {
         priced: {
@@ -220,11 +263,21 @@ async function venueOf(connection: Connection, cfg: Config, mint: string, curveA
           amountOut: t.amountOut.toString(),
           fees: { raydium: t.fees.protocol.toString(), platform: t.fees.platform.toString(), creator: t.fees.creator.toString() },
           feeBps: { raydium: bps(curve.rates.protocol), platform: bps(curve.rates.platform), creator: bps(curve.rates.creator) },
+          transferFees: { quote: t.transferFees.quote.toString(), base: t.transferFees.base.toString() },
+          transferFeeBps: { quote: feeBps(curve.quoteTransferFee), base: feeBps(curve.baseTransferFee) },
           priceBefore: curvePrice(curve.reserves, curve.baseDecimals, curve.quoteDecimals),
           priceAfter: curvePrice(t.after, curve.baseDecimals, curve.quoteDecimals),
           completesCurve: t.after.realBase.eq(t.after.totalBaseSell),
+          referral: referral ? { ...referral.referral, fee: t.fees.share.toString() } : null,
         },
-        prepare: (trader, amountIn, min) => prepareTrade(connection, { program: cfg.launchlab, curve, trader, side, amountIn, minAmountOut: min }),
+        // LaunchLab, like cp-swap, checks the limit against what reaches the wallet, the transfer fee already withheld
+        // (proven on the fork: a limit set at the pre-fee figure fails with ExceededSlippage).
+        limitFrom: t.amountOut,
+        prepare: (trader, amountIn, min) =>
+          prepareTrade(connection, {
+            program: cfg.launchlab, curve, trader, side, amountIn, minAmountOut: min,
+            referral: referral && !referral.rate.isZero() ? { referrer: referral.referrer, rate: referral.rate } : null,
+          }),
       };
     },
   };
@@ -235,7 +288,7 @@ async function venueOf(connection: Connection, cfg: Config, mint: string, curveA
  * the rest of the curve), and the route buys exactly that much. The trader's slippage is split between the two.
  */
 async function routedMarket(
-  connection: Connection, env: Bindings, cfg: Config, venue: Venue, symbol: string, lamports: BN, slippageBps: number,
+  connection: Connection, env: Bindings, cfg: Config, venue: Venue, symbol: string, lamports: BN, slippageBps: number, referral: ReferralPlan | null,
 ): Promise<Market> {
   const routes = solRoutes(env, cfg, connection);
   if (!routes) throw new HTTPException(422, { message: `Paying with SOL isn't available here. Pay in ${symbol} instead.` });
@@ -251,15 +304,15 @@ async function routedMarket(
   const bought = await routes.exactIn(venue.quoteMint, lamports).catch((e: unknown) => Promise.reject(unavailable(e)));
   if (!bought) throw noRoute();
   if (bought.isZero()) throw new HTTPException(400, { message: "amount is too small to trade" });
-  const { priced } = venue.price("buy", bought);
+  const { priced, limitFrom } = venue.price("buy", bought, referral);
   const quoteAmount = new BN(priced.amountIn);
   const split = splitSlippage(slippageBps);
   const plan = await routes.exactOut(venue.quoteMint, quoteAmount, split.route).catch((e: unknown) => Promise.reject(unavailable(e)));
   if (!plan) throw noRoute();
-  const { minCoins } = routedLimits(plan.solIn, new BN(priced.amountOut), split);
+  const { minCoins } = routedLimits(plan.solIn, limitFrom, split);
   const quote: TradeQuote = {
     ...priced,
-    minAmountOut: minCoins.toString(),
+    minAmountOut: walletSide(minCoins, limitFrom, new BN(priced.amountOut)).toString(),
     slippageBps,
     route: {
       source: plan.source,
@@ -285,6 +338,7 @@ async function routedMarket(
         swap: plan.swap,
         // Our own shared accounts are in the Platform Lookup Table; the swap brings any tables its route needs.
         lookupTables: [cfg.lookupTable],
+        referral: referral && !referral.rate.isZero() ? { referrer: referral.referrer, rate: referral.rate } : null,
       }).catch((e: unknown) => {
         if (e instanceof TransactionTooLargeError)
           throw new HTTPException(422, { message: `This SOL route doesn't fit in one transaction. Pay in ${symbol} instead.` });

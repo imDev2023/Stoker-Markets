@@ -7,7 +7,13 @@ import { launchlabPdas, metadataPda } from "./pda";
 import type { RuleConstraint } from "./shape";
 
 /** A LaunchLab GlobalConfig: Raydium's per-quote-mint config that makes a token usable as a Quote Asset. */
-export type GlobalConfigInfo = { address: PublicKey; quoteMint: PublicKey; index: number };
+export type GlobalConfigInfo = {
+  address: PublicKey;
+  quoteMint: PublicKey;
+  index: number;
+  /** The most a referred trade may pay its referrer, in the 1e6 denominator; 0 on most configs (1% on SOL's). */
+  maxShareFeeRate: BN;
+};
 
 /**
  * Every constant-product GlobalConfig of the program, one per quote mint (the lowest index where Raydium made several,
@@ -17,10 +23,11 @@ export async function listGlobalConfigs(connection: Connection, program: PublicK
   const accounts = await connection.getProgramAccounts(program, { filters: [{ memcmp: launchlabCoder.accounts.memcmp("GlobalConfig") }] });
   const byMint = new Map<string, GlobalConfigInfo>();
   for (const { pubkey, account } of accounts) {
-    const c = launchlabCoder.accounts.decode("GlobalConfig", account.data) as { curve_type: number; index: number; quote_mint: PublicKey };
+    const c = launchlabCoder.accounts.decode("GlobalConfig", account.data) as { curve_type: number; index: number; quote_mint: PublicKey; max_share_fee_rate: BN };
     if (c.curve_type !== 0) continue;
     const seen = byMint.get(c.quote_mint.toBase58());
-    if (!seen || c.index < seen.index) byMint.set(c.quote_mint.toBase58(), { address: pubkey, quoteMint: c.quote_mint, index: c.index });
+    if (!seen || c.index < seen.index)
+      byMint.set(c.quote_mint.toBase58(), { address: pubkey, quoteMint: c.quote_mint, index: c.index, maxShareFeeRate: c.max_share_fee_rate });
   }
   return [...byMint.values()];
 }
@@ -93,20 +100,28 @@ function metaplexMetadata(data: Uint8Array | undefined) {
 
 const clean = (s: string) => s.replace(/\0/g, "").trim();
 
-/** Our curve rule's first group for each GlobalConfig, or null where the rule account doesn't exist yet. */
-export async function readCurveRules(
+/** Our curve rule's groups for each GlobalConfig, by group id, or null where the rule account doesn't exist yet. */
+export async function readCurveRuleGroups(
   connection: Connection, program: PublicKey, platformConfig: PublicKey, globalConfigs: PublicKey[],
-): Promise<Map<string, RuleConstraint[] | null>> {
+): Promise<Map<string, Map<number, RuleConstraint[]> | null>> {
   const pdas = launchlabPdas(program);
   const accounts = await getAccounts(connection, globalConfigs.map((g) => pdas.curveRule(platformConfig, g)));
-  const out = new Map<string, RuleConstraint[] | null>();
+  const out = new Map<string, Map<number, RuleConstraint[]> | null>();
   globalConfigs.forEach((g, i) => {
     const account = accounts[i];
     if (!account) return out.set(g.toBase58(), null);
     const rule = launchlabCoder.accounts.decode("PlatformCurveRule", account.data) as {
       groups: { group_id: number; constraints: { field: number; op: number; value: BN }[] }[];
     };
-    out.set(g.toBase58(), rule.groups.find((x) => x.group_id === 0)?.constraints ?? []);
+    out.set(g.toBase58(), new Map(rule.groups.map((x) => [x.group_id, x.constraints])));
   });
   return out;
+}
+
+/** Our curve rule's standard group (id 0) for each GlobalConfig, or null where the rule account doesn't exist yet. */
+export async function readCurveRules(
+  connection: Connection, program: PublicKey, platformConfig: PublicKey, globalConfigs: PublicKey[],
+): Promise<Map<string, RuleConstraint[] | null>> {
+  const groups = await readCurveRuleGroups(connection, program, platformConfig, globalConfigs);
+  return new Map([...groups].map(([g, rule]) => [g, rule ? (rule.get(0) ?? []) : null]));
 }

@@ -9,7 +9,7 @@ import BN from "bn.js";
 import { cpmmCoder, launchlabPdas, lockCoder, lockPdas, programsFor, WSOL_MINT } from "@launchpad/chain";
 import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
 import { FEE_COLLECTOR_CRON } from "@launchpad/stack";
-import { HolderList, JobRun, JobRunList, LedgerPage, Revenue, type LedgerEntry } from "@launchpad/contract";
+import { BurnsPage, HolderList, JobRun, JobRunList, LedgerPage, Revenue, type LedgerEntry } from "@launchpad/contract";
 import {
   SOL, coinsOf, connection, deliverWebhook, env, fundedWallet, launch, launchedCoin, networkFee, quote, tokenBalance, trade,
 } from "./client";
@@ -272,12 +272,15 @@ describe("the sweep", () => {
     const run = await runCollector();
     const sweeps = sentBy(run).filter((s) => s.purpose === "sweep");
     expect(sweeps).toHaveLength(1);
+    // SOL the Burn and Flywheel have not spent yet stays behind with the float (ADR 0006).
+    const budgets = BurnsPage.parse(await (await fetch(`${env().apiUrl}/v1/burns`)).json()).budgets;
+    const reserved = BigInt(budgets.burn.available) + BigInt(budgets.flywheel.available);
     const [entry] = await entriesOf([sweeps[0]!.signature]);
-    expect(entry).toMatchObject({ kind: "sweep", asset: { mint: WSOL }, amount: (held - float).toString(), source: ops().toBase58(), destination: treasury().toBase58() });
-    expect((await lamportsOf(treasury())) - inTreasury).toBe(held - float);
+    expect(entry).toMatchObject({ kind: "sweep", asset: { mint: WSOL }, amount: (held - float - reserved).toString(), source: ops().toBase58(), destination: treasury().toBase58() });
+    expect((await lamportsOf(treasury())) - inTreasury).toBe(held - float - reserved);
     const left = await lamportsOf(ops());
-    expect(left).toBe(float - (await networkFee(sweeps[0]!.signature)));
-    expect(left).toBeLessThan(threshold);
+    expect(left).toBe(float + reserved - (await networkFee(sweeps[0]!.signature)));
+    expect(left - reserved).toBeLessThan(threshold);
   });
 
   it("sweeps only a token's revenue, leaving anything else the wallet holds in it", async () => {
@@ -348,7 +351,8 @@ describe("the Ledger", () => {
     const [entries, r] = [await ledger(), await revenue()];
     expect(r).toMatchObject({ operationsWallet: ops().toBase58(), treasury: treasury().toBase58(), sweepThresholdLamports: env().sweepThresholdLamports });
     const total = (mint: string, kind: string) => sum(entries.filter((e) => e.asset.mint === mint && e.kind === kind).map((e) => BigInt(e.amount)));
-    const mints = [...new Set(entries.filter((e) => e.kind !== "sweep").map((e) => e.asset.mint))];
+    // Revenue streams only: the sweep moves revenue on, the Burn and Flywheel spend it.
+    const mints = [...new Set(entries.filter((e) => !["sweep", "burn", "flywheel"].includes(e.kind)).map((e) => e.asset.mint))];
     expect(r.totals.map((t) => t.asset.mint).sort()).toEqual(mints.sort());
     expect(r.totals[0]!.asset.mint).toBe(WSOL);
     for (const t of r.totals) {

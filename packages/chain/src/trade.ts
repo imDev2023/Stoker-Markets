@@ -1,9 +1,10 @@
 import { ComputeBudgetProgram, type Connection, type PublicKey, type TransactionInstruction } from "@solana/web3.js";
-import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import type BN from "bn.js";
 import { launchlabCoder } from "./coder";
 import type { CurveReserves, FeeRates, Side } from "./curve";
 import { tradeExactInIx } from "./instructions";
+import { transferFeeOf, type TransferFee } from "./transferFee";
 import { steppedTransaction, tradeAccounts, type PreparedTrade } from "./wallet";
 
 /** Where a curve is in its life: trading, sold out and waiting for Raydium to migrate it, or migrated to a CPMM pool. */
@@ -16,6 +17,8 @@ export type Curve = {
   status: CurveStatus;
   reserves: CurveReserves;
   rates: FeeRates;
+  /** The most a referred trade may pay its referrer, in the 1e6 denominator: the GlobalConfig's `max_share_fee_rate`, 0 on most. */
+  maxShareFeeRate: BN;
   graduationTarget: BN;
   baseDecimals: number;
   quoteDecimals: number;
@@ -26,6 +29,10 @@ export type Curve = {
   quoteMint: PublicKey;
   baseTokenProgram: PublicKey;
   quoteTokenProgram: PublicKey;
+  /** The Reward Tax of a Reward Launch's coin; null for a standard coin. */
+  baseTransferFee: TransferFee | null;
+  /** The Quote Asset issuer's transfer fee; null for SPL Token and untaxed Token-2022 Quote Assets. */
+  quoteTransferFee: TransferFee | null;
 };
 
 type PoolState = {
@@ -42,18 +49,25 @@ export async function loadFeeRates(connection: Connection, globalConfig: PublicK
   const [global, platform] = await connection.getMultipleAccountsInfo([globalConfig, platformConfig], "confirmed");
   if (!global) throw new Error(`GlobalConfig ${globalConfig.toBase58()} does not exist`);
   if (!platform) throw new Error(`PlatformConfig ${platformConfig.toBase58()} does not exist`);
-  const g = launchlabCoder.accounts.decode("GlobalConfig", global.data) as { trade_fee_rate: BN; migrate_fee: BN };
+  const g = launchlabCoder.accounts.decode("GlobalConfig", global.data) as { trade_fee_rate: BN; migrate_fee: BN; max_share_fee_rate: BN };
   const p = launchlabCoder.accounts.decode("PlatformConfig", platform.data) as { fee_rate: BN; creator_fee_rate: BN };
   const rates: FeeRates = { protocol: g.trade_fee_rate, platform: p.fee_rate, creator: p.creator_fee_rate };
-  return { rates, migrateFee: g.migrate_fee };
+  return { rates, migrateFee: g.migrate_fee, maxShareFeeRate: g.max_share_fee_rate };
 }
 
-/** Reads a curve with its current fee rates: Raydium's from the GlobalConfig, ours from the PlatformConfig. Null if there is no pool. */
+/**
+ * Reads a curve with its current fee rates (Raydium's from the GlobalConfig, ours from the PlatformConfig) and the
+ * transfer fees of its two mints, which every quote must allow for. Null if there is no pool.
+ */
 export async function loadCurve(connection: Connection, pool: PublicKey): Promise<Curve | null> {
   const account = await connection.getAccountInfo(pool, "confirmed");
   if (!account) return null;
   const s = launchlabCoder.accounts.decode("PoolState", account.data) as PoolState;
-  const { rates } = await loadFeeRates(connection, s.global_config, s.platform_config);
+  const [{ rates, maxShareFeeRate }, mints, { epoch }] = await Promise.all([
+    loadFeeRates(connection, s.global_config, s.platform_config),
+    connection.getMultipleAccountsInfo([s.base_mint, s.quote_mint], "confirmed"),
+    connection.getEpochInfo("confirmed"),
+  ]);
   const tokenProgram = (bit: number) => (s.token_program_flag & bit ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID);
   return {
     pool,
@@ -63,6 +77,7 @@ export async function loadCurve(connection: Connection, pool: PublicKey): Promis
       totalBaseSell: s.total_base_sell,
     },
     rates,
+    maxShareFeeRate,
     graduationTarget: s.total_quote_fund_raising,
     baseDecimals: s.base_decimals,
     quoteDecimals: s.quote_decimals,
@@ -73,6 +88,8 @@ export async function loadCurve(connection: Connection, pool: PublicKey): Promis
     quoteMint: s.quote_mint,
     baseTokenProgram: tokenProgram(1),
     quoteTokenProgram: tokenProgram(2),
+    baseTransferFee: transferFeeOf(s.base_mint, mints[0] ?? null, epoch),
+    quoteTransferFee: transferFeeOf(s.quote_mint, mints[1] ?? null, epoch),
   };
 }
 
@@ -83,6 +100,8 @@ export type TradeRequest = {
   side: Side;
   amountIn: BN;
   minAmountOut: BN;
+  /** The referrer and the share fee rate a referred trade pays them; the trader opens the referrer's Quote Asset account if need be. */
+  referral?: { referrer: PublicKey; rate: BN } | null;
 };
 
 const TRADE_COMPUTE_UNITS = 200_000;
@@ -90,11 +109,25 @@ const TRADE_COMPUTE_UNITS = 200_000;
 /** Builds a buy or sell on the curve server-side (ADR 0003). The trader is the only signer. */
 export async function prepareTrade(connection: Connection, r: TradeRequest): Promise<PreparedTrade> {
   const accounts = await tradeAccounts(connection, { ...r.curve, trader: r.trader, side: r.side, amountIn: r.amountIn });
+  const share = shareAccounts(r.curve, r.trader, r.referral ?? null);
   return steppedTransaction(connection, r.trader, [
-    { step: "setup", instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units: TRADE_COMPUTE_UNITS }), ...accounts.setup] },
-    { step: "trade", instructions: [curveTradeIx(r.program, r.curve, { ...r, baseAccount: accounts.base, quoteAccount: accounts.quote })] },
+    { step: "setup", instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units: TRADE_COMPUTE_UNITS }), ...accounts.setup, ...share.setup] },
+    { step: "trade", instructions: [curveTradeIx(r.program, r.curve, { ...r, baseAccount: accounts.base, quoteAccount: accounts.quote, share: share.share })] },
     { step: "cleanup", instructions: accounts.cleanup },
   ]);
+}
+
+/**
+ * The referrer's account of the Quote Asset, which the program pays the share fee into, opened by the trader if it
+ * doesn't exist (a referrer paid in SOL gets it wrapped there, theirs to unwrap).
+ */
+function shareAccounts(c: CurveAccounts, trader: PublicKey, referral: { referrer: PublicKey; rate: BN } | null) {
+  if (!referral || referral.rate.isZero()) return { setup: [] as TransactionInstruction[], share: null };
+  const receiver = getAssociatedTokenAddressSync(c.quoteMint, referral.referrer, true, c.quoteTokenProgram);
+  return {
+    setup: [createAssociatedTokenAccountIdempotentInstruction(trader, receiver, referral.referrer, c.quoteMint, c.quoteTokenProgram)],
+    share: { rate: referral.rate, receiver },
+  };
 }
 
 /** The accounts a curve trade names; a First Buy names them before its curve exists. */
@@ -118,7 +151,7 @@ export async function tradeInstructions(
 /** A buy or sell on a curve from and to the given token accounts. */
 export function curveTradeIx(
   program: PublicKey, c: CurveAccounts,
-  t: { trader: PublicKey; side: Side; baseAccount: PublicKey; quoteAccount: PublicKey; amountIn: BN; minAmountOut: BN },
+  t: { trader: PublicKey; side: Side; baseAccount: PublicKey; quoteAccount: PublicKey; amountIn: BN; minAmountOut: BN; share?: { rate: BN; receiver: PublicKey } | null },
 ) {
   return tradeExactInIx(t.side, {
     program,
@@ -135,5 +168,6 @@ export function curveTradeIx(
     traderQuoteAccount: t.quoteAccount,
     amountIn: t.amountIn,
     minAmountOut: t.minAmountOut,
+    share: t.share ?? null,
   });
 }
