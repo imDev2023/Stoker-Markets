@@ -139,7 +139,7 @@ describe("the Creator Fee dashboard", () => {
     const ours = await launchedCoin(creator);
     const earnedHere = await buy(ours, 0.1);
     const { signature } = await tradeOnAnotherPlatform(creator, 0.1);
-    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 0 });
+    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 0, airdropped: 0 });
 
     const onChain = await vaultBalance(creator.publicKey);
     expect(onChain).toBeGreaterThan(earnedHere);
@@ -169,7 +169,7 @@ describe("claiming the Creator Fee", () => {
     // The wrapped-SOL account the claim opened is closed again, so nothing is left wrapped.
     expect(await connection().getAccountInfo(getAssociatedTokenAddressSync(NATIVE_MINT, creator.publicKey))).toBeNull();
 
-    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 1, graduated: 0 });
+    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 1, graduated: 0, airdropped: 0 });
     expect(await claims(creator.publicKey)).toEqual([
       { signature, quote: SOL_QUOTE, amount: inVault.toString(), time: expect.any(String) },
     ]);
@@ -217,7 +217,7 @@ describe("claiming the Creator Fee", () => {
     expect(await vaultBalance(creator.publicKey)).toBe(0n);
 
     // Helius delivers it like any other claim.
-    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 1, graduated: 0 });
+    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 1, graduated: 0, airdropped: 0 });
     expect(await claims(creator.publicKey)).toEqual([expect.objectContaining({ signature, amount: inVault.toString() })]);
 
     // As the docs say, a claim with nothing in the vault fails and moves nothing.
@@ -251,8 +251,8 @@ describe("claiming the Creator Fee", () => {
     const signature = await signAndSend(await preparedClaim(creator), creator);
     // The fast path the web app uses after a claim confirms.
     const fast = await fetch(`${env().apiUrl}/v1/transactions/${signature}`, { method: "POST" });
-    expect(await fast.json()).toEqual({ launched: 0, traded: 0, claimed: 1, graduated: 0 });
-    expect(await (await deliverWebhook([signature, signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 0 });
+    expect(await fast.json()).toEqual({ launched: 0, traded: 0, claimed: 1, graduated: 0, airdropped: 0 });
+    expect(await (await deliverWebhook([signature, signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 0, airdropped: 0 });
     expect(await claims(creator.publicKey)).toHaveLength(1);
   });
 
@@ -262,7 +262,7 @@ describe("claiming the Creator Fee", () => {
     const signature = await sendAndConfirmTransaction(connection(), new Transaction().add(claimFollowingTheDocs(outsider.publicKey)), [outsider], {
       commitment: "confirmed",
     });
-    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 0 });
+    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 0, airdropped: 0 });
     expect(await claims(outsider.publicKey)).toEqual([]);
   });
 
@@ -316,7 +316,7 @@ describe("the Creator Fee in a Quote Asset other than SOL", () => {
     // The SOL vault is a different vault and is untouched.
     expect(await vaultBalance(creator.publicKey)).toBe(earnedSol);
 
-    expect(await (await deliverWebhook([claimed])).json()).toEqual({ launched: 0, traded: 0, claimed: 1, graduated: 0 });
+    expect(await (await deliverWebhook([claimed])).json()).toEqual({ launched: 0, traded: 0, claimed: 1, graduated: 0, airdropped: 0 });
     expect(await claims(creator.publicKey)).toEqual([
       { signature: claimed, quote: usdcQuote, amount: earnedUsdc.toString(), time: expect.any(String) },
     ]);
@@ -329,7 +329,7 @@ describe("the Creator Fee in a Quote Asset other than SOL", () => {
       commitment: "confirmed",
     });
     expect(await tokenBalance(getAssociatedTokenAddressSync(USDC, creator.publicKey))).toBe(earnedUsdc + BigInt(again.quote.fees.creator));
-    expect(await (await deliverWebhook([docsClaim])).json()).toEqual({ launched: 0, traded: 0, claimed: 1, graduated: 0 });
+    expect(await (await deliverWebhook([docsClaim])).json()).toEqual({ launched: 0, traded: 0, claimed: 1, graduated: 0, airdropped: 0 });
     expect((await claims(creator.publicKey)).map((c) => [c.signature, c.amount])).toEqual([
       [docsClaim, again.quote.fees.creator],
       [claimed, earnedUsdc.toString()],

@@ -1,12 +1,13 @@
 // What every UI test gets: the running stack, the web app as base URL, a funded wallet installed in the page, and a
 // guard that fails the test on any browser error, since a console error is a bug a user would hit.
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { test as base, expect, type Page } from "@playwright/test";
 import {
-  Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction, VersionedTransaction, sendAndConfirmTransaction,
+  Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, VersionedTransaction, sendAndConfirmTransaction,
 } from "@solana/web3.js";
 import { createAssociatedTokenAccountIdempotentInstruction, createTransferInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { LaunchList, PreparedCreatorFeeClaim, PreparedLaunch, PreparedTrade, type TradeSide } from "@launchpad/contract";
+import { LaunchList, PreparedAirdrop, PreparedCreatorFeeClaim, PreparedLaunch, PreparedTrade, type TradeSide } from "@launchpad/contract";
 import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
 import type { StackEnv } from "@launchpad/stack";
 import { installTestWallet, type TestWallet } from "./wallet";
@@ -26,10 +27,14 @@ export function stackEnv(): StackEnv {
 
 const connection = () => new Connection(stackEnv().rpcUrl, "confirmed");
 
-export async function fundedKeypair(sol = 5, kp = Keypair.generate()) {
+export async function fund(to: PublicKey, sol = 5) {
   const conn = connection();
-  const signature = await conn.requestAirdrop(kp.publicKey, sol * LAMPORTS_PER_SOL);
+  const signature = await conn.requestAirdrop(to, sol * LAMPORTS_PER_SOL);
   await conn.confirmTransaction({ signature, ...(await conn.getLatestBlockhash("confirmed")) }, "confirmed");
+}
+
+export async function fundedKeypair(sol = 5, kp = Keypair.generate()) {
+  await fund(kp.publicKey, sol);
   return kp;
 }
 
@@ -38,6 +43,17 @@ export async function fundedKeypair(sol = 5, kp = Keypair.generate()) {
  * Creator Fee page as that Creator.
  */
 export const SEED_CREATOR = Keypair.fromSeed(new Uint8Array(32).fill(7));
+
+/** A key that is the same on every run, so what it owns looks the same in every screenshot. */
+export const fixedKeypair = (name: string) => Keypair.fromSeed(createHash("sha256").update(`launchpad ui tests: ${name}`).digest());
+
+/** Leaves the wallet `keepSol`, as if its owner spent the rest elsewhere. */
+export async function drain(wallet: Keypair, keepSol: number) {
+  const conn = connection();
+  const lamports = (await conn.getBalance(wallet.publicKey, "confirmed")) - keepSol * LAMPORTS_PER_SOL - 5_000;
+  const transfer = SystemProgram.transfer({ fromPubkey: wallet.publicKey, toPubkey: Keypair.generate().publicKey, lamports });
+  await sendAndConfirmTransaction(conn, new Transaction().add(transfer), [wallet], { commitment: "confirmed" });
+}
 
 export async function listLaunches() {
   return LaunchList.parse(await (await fetch(`${stackEnv().apiUrl}/v1/launches?limit=100`)).json()).launches;
@@ -52,6 +68,9 @@ export type LaunchFields = {
   website?: string;
   x?: string;
   telegram?: string;
+  /** Raw units of the Quote Asset. */
+  firstBuy?: string;
+  airdrop?: { wallet: string; amount: string }[];
 };
 
 /** What a wallet does with a transaction the API prepared: sign, send, wait for confirmation, then report it for indexing. */
@@ -70,11 +89,12 @@ async function signSendReport(prepared: { transaction: string; lastValidBlockHei
 }
 
 /** Launches a coin the way any API client would: prepare, sign, send, report. */
-export async function launchViaApi(creator: Keypair, { quote = "SOL", ...fields }: LaunchFields) {
+export async function launchViaApi(creator: Keypair, { quote = "SOL", airdrop, ...fields }: LaunchFields) {
   const form = new FormData();
   form.set("creator", creator.publicKey.toBase58());
   form.set("quoteMint", QUOTES[quote].toBase58());
   for (const [k, v] of Object.entries(fields)) if (v) form.set(k, v);
+  if (airdrop) form.set("airdrop", JSON.stringify(airdrop));
   form.set("image", new Blob([COIN_PNG], { type: "image/png" }), "coin.png");
   const res = await fetch(`${stackEnv().apiUrl}/v1/launches/prepare`, { method: "POST", body: form });
   if (!res.ok) throw new Error(`prepare failed: ${res.status} ${await res.text()}`);
@@ -100,8 +120,10 @@ export async function giveCoins(from: Keypair, to: PublicKey, mint: string, amou
   ), [from], { commitment: "confirmed" });
 }
 
-export async function coinBalance(owner: Keypair, mint: string) {
-  const accounts = await connection().getParsedTokenAccountsByOwner(owner.publicKey, { mint: new PublicKey(mint) }, "confirmed");
+/** Coins of `mint` a wallet holds, raw units. */
+export async function coinBalance(owner: Keypair | PublicKey, mint: string) {
+  const address = owner instanceof Keypair ? owner.publicKey : owner;
+  const accounts = await connection().getParsedTokenAccountsByOwner(address, { mint: new PublicKey(mint) }, "confirmed");
   return accounts.value.reduce((sum, a) => sum + BigInt(a.account.data.parsed.info.tokenAmount.amount as string), 0n);
 }
 
@@ -167,6 +189,14 @@ export function sol(lamports: bigint) {
   const whole = lamports / BigInt(LAMPORTS_PER_SOL);
   const fraction = (lamports % BigInt(LAMPORTS_PER_SOL)).toString().padStart(9, "0").replace(/0+$/, "");
   return `${whole.toLocaleString("en-US")}${fraction ? `.${fraction}` : ""}`;
+}
+
+/** Pays a launched coin's airdrop the way any API client would. */
+export async function payAirdropViaApi(creator: Keypair, mint: string) {
+  const res = await fetch(`${stackEnv().apiUrl}/v1/launches/${mint}/airdrop/prepare`, { method: "POST" });
+  if (!res.ok) throw new Error(`airdrop prepare failed: ${res.status} ${await res.text()}`);
+  const prepared = PreparedAirdrop.parse(await res.json());
+  for (const transaction of prepared.transactions) await signSendReport({ transaction, lastValidBlockHeight: prepared.lastValidBlockHeight }, creator);
 }
 
 /** Nothing on the page may be wider than the viewport: a sideways scroll on a phone is a layout bug. */

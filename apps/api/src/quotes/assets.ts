@@ -39,7 +39,9 @@ export function byPickerOrder(a: QuoteAsset, b: QuoteAsset) {
   return rank(a) - rank(b) || ticker(a).localeCompare(ticker(b), "en", { sensitivity: "base" });
 }
 
-export type LaunchQuote = { mint: PublicKey; globalConfig: PublicKey; tokenProgram: PublicKey; graduationTarget: GraduationTarget };
+export type LaunchQuote = {
+  mint: PublicKey; globalConfig: PublicKey; tokenProgram: PublicKey; decimals: number; ticker: string; graduationTarget: GraduationTarget;
+};
 
 /**
  * Fixes a Launch's Graduation Target from the Quote Asset's live price, and checks that our curve rule on-chain accepts it,
@@ -67,7 +69,30 @@ export async function priceLaunch(db: Db, cfg: Config, market: QuoteMarket, quot
     mint: new PublicKey(row.mint),
     globalConfig: new PublicKey(row.globalConfig),
     tokenProgram: new PublicKey(row.tokenProgram),
+    decimals: row.decimals,
+    ticker: ticker(row),
     // launchBlocker refuses a missing target, so there is one here.
     graduationTarget: { raw: target!.toString(), lamports: lamports.toString() },
+  };
+}
+
+/**
+ * The Quote Asset of a launch prepared earlier, with the Graduation Target it was prepared with, if our curve rule still
+ * accepts that target. Null when the rule has moved on since (the price drifted): the launch can't land as it was built.
+ */
+export async function launchQuoteAsBuilt(db: Db, cfg: Config, quoteMint: string, target: GraduationTarget): Promise<LaunchQuote | { blocked: string }> {
+  const [row] = await db.select().from(quoteAssets).where(eq(quoteAssets.mint, quoteMint)).limit(1);
+  if (!row) throw new Error(`launch pairs with ${quoteMint}, which is no longer in the Quote Registry`);
+  const connection = new Connection(cfg.rpcUrl, "confirmed");
+  const rule = (await readCurveRules(connection, cfg.launchlab, cfg.platformConfig, [new PublicKey(row.globalConfig)])).get(row.globalConfig);
+  const blocker = launchBlocker(ticker(row), BigInt(target.raw), bandOf(rule ?? null));
+  if (blocker) return { blocked: blocker };
+  return {
+    mint: new PublicKey(row.mint),
+    globalConfig: new PublicKey(row.globalConfig),
+    tokenProgram: new PublicKey(row.tokenProgram),
+    decimals: row.decimals,
+    ticker: ticker(row),
+    graduationTarget: target,
   };
 }

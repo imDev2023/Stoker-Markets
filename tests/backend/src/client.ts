@@ -32,12 +32,18 @@ export type LaunchForm = {
   x?: string;
   telegram?: string;
   image?: { bytes: Uint8Array; type: string } | null;
+  /** Quote Asset raw units. */
+  firstBuy?: string;
+  /** Sent as the JSON text the multipart form carries; a string is sent as it is. */
+  airdrop?: { wallet: string; amount: string }[] | string;
 };
 
 export async function prepare(form: LaunchForm) {
   const body = new FormData();
-  const fields = { name: "Tracer", symbol: "TRCR", description: "A tracer bullet", quoteMint: WSOL_MINT.toBase58(), ...form };
+  const { airdrop, ...rest } = form;
+  const fields = { name: "Tracer", symbol: "TRCR", description: "A tracer bullet", quoteMint: WSOL_MINT.toBase58(), ...rest };
   for (const [k, v] of Object.entries(fields)) if (typeof v === "string") body.set(k, v);
+  if (airdrop !== undefined) body.set("airdrop", typeof airdrop === "string" ? airdrop : JSON.stringify(airdrop));
   const image = form.image === undefined ? { bytes: PNG, type: "image/png" } : form.image;
   if (image) body.set("image", new Blob([image.bytes], { type: image.type }), "logo.png");
   return fetch(`${env().apiUrl}/v1/launches/prepare`, { method: "POST", body });

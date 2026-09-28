@@ -1,23 +1,26 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { desc, eq } from "drizzle-orm";
-import { prepareLaunch, type RawTransaction } from "@launchpad/chain";
+import type { RawTransaction } from "@launchpad/chain";
 import {
-  LAUNCH_IMAGE_MAX_BYTES, LAUNCH_IMAGE_TYPES, PrepareLaunchFields, type OperatorAlertList, type PlatformInfo, type PreparedLaunch,
+  LAUNCH_IMAGE_MAX_BYTES, LAUNCH_IMAGE_TYPES, PrepareLaunchFields, type OperatorAlertList, type PlatformInfo,
 } from "@launchpad/contract";
 import { createDb, launchMetadata, operatorAlerts } from "@launchpad/db";
 import { config, operationsKey, quoteMarket, type AppEnv, type Bindings } from "./env";
 import { watchGraduations } from "./graduation";
 import { fetchRawTransaction, indexTransactions } from "./indexer";
 import { sniffImageType } from "./images";
-import { priceLaunch } from "./quotes/assets";
+import {
+  buildLaunch, launchQuoteAsset, loadDraft, mintKeypair, newMintKeyNonce, refuseWith, resolveLaunchModes, saveDraft,
+} from "./launch";
 import { refreshQuoteRegistry } from "./quotes/registry";
 import { creatorFeeRoutes } from "./routes/creatorFees";
 import { quotes } from "./routes/quotes";
 import { launchRoutes } from "./routes/launches";
+import { launchModeRoutes } from "./routes/launchModes";
 import { tradeRoutes } from "./routes/trades";
 
 const app = new Hono<AppEnv>();
@@ -78,9 +81,16 @@ app.post("/v1/launches/prepare", async (c) => {
     return c.json({ error: "image must be PNG, JPEG, WebP or GIF" }, 400);
 
   const f = fields.data;
-  const quote = await priceLaunch(c.get("db"), cfg, quoteMarket(c.env), f.quoteMint);
-  const mint = Keypair.generate();
-  const mintAddress = mint.publicKey.toBase58();
+  const creator = new PublicKey(f.creator);
+  const connection = new Connection(cfg.rpcUrl, "confirmed");
+  const quote = await launchQuoteAsset(c.get("db"), cfg, quoteMarket(c.env), f.quoteMint);
+  const firstBuy = f.firstBuy ? new BN(f.firstBuy) : null;
+  const airdrop = f.airdrop ?? [];
+  const modes = await resolveLaunchModes(connection, cfg, quote, creator, firstBuy, airdrop).catch(refuseWith(400));
+
+  const nonce = newMintKeyNonce();
+  const mint = mintKeypair(cfg.mintKeySecret, nonce).publicKey;
+  const mintAddress = mint.toBase58();
   const imageKey = `images/${mintAddress}`;
   await c.env.METADATA_BUCKET.put(imageKey, bytes, { httpMetadata: { contentType } });
   await c.get("db").insert(launchMetadata).values({
@@ -95,33 +105,9 @@ app.post("/v1/launches/prepare", async (c) => {
     x: f.x ?? null,
     telegram: f.telegram ?? null,
   });
-
-  const metadataUri = `${cfg.publicApiUrl}/metadata/${mintAddress}.json`;
-  const prepared = await prepareLaunch(
-    new Connection(cfg.rpcUrl, "confirmed"),
-    {
-      program: cfg.launchlab,
-      platformConfig: cfg.platformConfig,
-      globalConfig: quote.globalConfig,
-      quoteMint: quote.mint,
-      quoteTokenProgram: quote.tokenProgram,
-      creator: new PublicKey(f.creator),
-      name: f.name,
-      symbol: f.symbol,
-      uri: metadataUri,
-      graduationTargetRaw: new BN(quote.graduationTarget.raw),
-    },
-    mint,
-  );
-  const body: PreparedLaunch = {
-    transaction: prepared.transaction,
-    mint: mintAddress,
-    pool: prepared.pool.toBase58(),
-    metadataUri,
-    lastValidBlockHeight: prepared.lastValidBlockHeight,
-    graduationTarget: quote.graduationTarget,
-  };
-  return c.json(body);
+  await saveDraft(c.get("db"), { mint, creator, nonce, quote, firstBuy, airdrop });
+  const loaded = await loadDraft(c.get("db"), mintAddress);
+  return c.json(await buildLaunch(connection, cfg, loaded!, quote, modes.firstBuy, modes.summary));
 });
 
 /** Helius raw-transaction webhook. The same transactions may arrive more than once; indexing is idempotent. */
@@ -142,6 +128,7 @@ app.post("/v1/transactions/:signature", async (c) => {
 });
 
 app.route("/v1", launchRoutes);
+app.route("/v1", launchModeRoutes);
 app.route("/v1", quotes);
 app.route("/v1", tradeRoutes);
 app.route("/v1", creatorFeeRoutes);

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { LaunchMarket } from "./board";
 import { GraduationTarget, QuoteRef } from "./quotes";
 import { CurveProgress, Graduation } from "./trades";
+import { LaunchModeFields, LaunchModesSummary } from "./launchModes";
 
 /** The public API contract, shared by the API (which validates with it) and every client, including our web app. */
 
@@ -9,6 +10,7 @@ export * from "./quotes";
 export * from "./trades";
 export * from "./creatorFees";
 export * from "./board";
+export * from "./launchModes";
 
 const base58 = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "must be a base58 address");
 const optionalUrl = z.union([z.url({ protocol: /^https?$/ }).max(200), z.literal("")]).optional().transform((v) => v || undefined);
@@ -27,7 +29,7 @@ export const PrepareLaunchFields = z.object({
   website: optionalUrl,
   x: optionalUrl,
   telegram: optionalUrl,
-});
+}).extend(LaunchModeFields.shape);
 export type PrepareLaunchFields = z.infer<typeof PrepareLaunchFields>;
 
 export const PreparedLaunch = z.object({
@@ -37,9 +39,9 @@ export const PreparedLaunch = z.object({
   pool: base58,
   metadataUri: z.string(),
   lastValidBlockHeight: z.number().int(),
-  /** Fixed in the transaction from the Quote Asset's price at the moment it was built. */
+  /** Fixed in the transaction from the Quote Asset's price at the moment it was first prepared; a retry keeps it. */
   graduationTarget: GraduationTarget,
-});
+}).extend(LaunchModesSummary.shape);
 export type PreparedLaunch = z.infer<typeof PreparedLaunch>;
 
 export const LaunchSummary = z.object({

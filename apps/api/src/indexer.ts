@@ -1,23 +1,25 @@
+import type { Connection, PublicKey } from "@solana/web3.js";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import {
   curvePrice, decodeTransaction, initialCurveReserves, poolPrice, type CreatorFeeClaimed, type Graduated, type LaunchCreated,
   type PoolSwapExecuted, type RawTransaction, type TradeExecuted,
 } from "@launchpad/chain";
 import { creatorFeeClaims, curves, graduations, launches, operatorAlerts, type Db } from "@launchpad/db";
+import { indexAirdropPayments } from "./airdrop";
 import type { Config } from "./env";
 import { insertTrade, openMarket } from "./market";
 
-export type IndexResult = { launched: number; traded: number; claimed: number; graduated: number };
+export type IndexResult = { launched: number; traded: number; claimed: number; graduated: number; airdropped: number };
 
 /**
  * Writes the Launches, curve trades, Creator Fee claims, Graduations and pool trades in a batch of confirmed transactions.
  * Launches, trades and Graduations count only on our PlatformConfig. A claim names no platform (a Creator's vault serves
  * all of them), so it counts when its Creator has launched on our platform; a pool trade, when its pool is one our
- * Launches graduated into.
+ * Launches graduated into. An airdrop payment counts when its airdrop was prepared through our API.
  * Idempotent: the same transaction delivered twice (webhook retries, the client fast path, backfills) writes one row.
  */
 export async function indexTransactions(db: Db, cfg: Config, txs: RawTransaction[]): Promise<IndexResult> {
-  const result: IndexResult = { launched: 0, traded: 0, claimed: 0, graduated: 0 };
+  const result: IndexResult = { launched: 0, traded: 0, claimed: 0, graduated: 0, airdropped: 0 };
   for (const tx of txs) {
     for (const e of decodeTransaction(tx, cfg)) {
       if (e.kind === "creator_fee_claimed") {
@@ -39,8 +41,33 @@ export async function indexTransactions(db: Db, cfg: Config, txs: RawTransaction
       } else if (e.kind === "trade") result.traded += await indexTrade(db, e);
       else result.graduated += await indexGraduation(db, e);
     }
+    result.airdropped += await indexAirdropPayments(db, tx);
   }
   return result;
+}
+
+const SIGNATURE_PAGE = 1000;
+
+/**
+ * Backfills one account: indexes each of its confirmed transactions newer than `until`, oldest first, and returns the
+ * newest signature it saw (or `until` if there was nothing new), from which the next backfill can resume.
+ */
+export async function indexAccountHistory(db: Db, cfg: Config, connection: Connection, account: PublicKey, until: string | null) {
+  const found: string[] = [];
+  let newest: string | null = null;
+  let before: string | undefined;
+  for (;;) {
+    const page = await connection.getSignaturesForAddress(account, { before, until: until ?? undefined, limit: SIGNATURE_PAGE }, "confirmed");
+    newest ??= page[0]?.signature ?? null;
+    found.push(...page.filter((s) => !s.err).map((s) => s.signature));
+    if (page.length < SIGNATURE_PAGE) break;
+    before = page.at(-1)!.signature;
+  }
+  for (const signature of found.reverse()) {
+    const raw = await fetchRawTransaction(cfg.rpcUrl, signature);
+    if (raw) await indexTransactions(db, cfg, [raw]);
+  }
+  return newest ?? until;
 }
 
 const time = (blockTime: number | null) => new Date((blockTime ?? Math.floor(Date.now() / 1000)) * 1000);
