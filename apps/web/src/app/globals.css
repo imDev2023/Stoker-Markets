@@ -55,6 +55,8 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* Anything scrolled into view (a focused field, a linked section) clears the sticky site header. */
+  scroll-padding-top: 80px;
 }
 
 body {

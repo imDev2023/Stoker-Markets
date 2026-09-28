@@ -1,0 +1,168 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 16px;
+  flex-wrap: wrap;
+}
+
+.headline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.price :global(.mono) {
+  font-size: inherit;
+}
+
+.unit {
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+}
+
+.cap {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.cap :global(.mono) {
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+.intervals {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--fog);
+}
+
+.intervals button {
+  min-width: 40px;
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+@media (hover: hover) {
+  .intervals button:hover {
+    color: var(--ink);
+  }
+}
+
+.intervals button[aria-pressed="true"] {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgb(18 24 38 / 12%);
+}
+
+.ohlc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  font-size: 0.75rem;
+}
+
+.ohlc > div {
+  display: flex;
+  gap: 5px;
+}
+
+.ohlc dt {
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+.ohlc dd {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.ohlc :global(.mono) {
+  font-size: 0.75rem;
+}
+
+.plot {
+  position: relative;
+  height: 320px;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 560px) {
+  .card {
+    padding: 16px;
+  }
+  .plot {
+    height: 240px;
+  }
+  .intervals {
+    width: 100%;
+  }
+  .intervals button {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+  }
+  /* Four prices don't fit one phone line; two rows of two keep them in step instead of wrapping one off. */
+  .ohlc {
+    display: grid;
+    grid-template-columns: repeat(2, max-content);
+    column-gap: 24px;
+  }
+}

@@ -1,41 +1,101 @@
-import { decodeTransaction, type RawTransaction } from "@launchpad/chain";
-import { launches, type Db } from "@launchpad/db";
+import { sql } from "drizzle-orm";
+import { curvePrice, decodeTransaction, type LaunchCreated, type RawTransaction, type TradeExecuted } from "@launchpad/chain";
+import { curves, launches, trades, type Db } from "@launchpad/db";
 import type { Config } from "./env";
 
 /**
- * Writes the Launches in a batch of confirmed transactions. Only launches on our PlatformConfig count.
+ * Writes the Launches and curve trades in a batch of confirmed transactions. Only events on our PlatformConfig count.
  * Idempotent: the same transaction delivered twice (webhook retries, the client fast path, backfills) writes one row.
  */
 export async function indexTransactions(db: Db, cfg: Config, txs: RawTransaction[]) {
   let launched = 0;
+  let traded = 0;
   for (const tx of txs) {
     for (const e of decodeTransaction(tx, cfg.launchlab)) {
-      if (e.kind !== "launch_created" || !e.platformConfig.equals(cfg.platformConfig)) continue;
-      const inserted = await db
-        .insert(launches)
-        .values({
-          mint: e.baseMint.toBase58(),
-          pool: e.pool.toBase58(),
-          creator: e.creator.toBase58(),
-          quoteMint: e.quoteMint.toBase58(),
-          globalConfig: e.globalConfig.toBase58(),
-          name: e.name,
-          symbol: e.symbol,
-          metadataUri: e.uri,
-          decimals: e.decimals,
-          supply: e.supply.toString(),
-          totalBaseSell: e.totalBaseSell.toString(),
-          graduationTarget: e.graduationTargetRaw.toString(),
-          createdSignature: e.signature,
-          createdSlot: e.slot,
-          createdAt: new Date((e.blockTime ?? Math.floor(Date.now() / 1000)) * 1000),
-        })
-        .onConflictDoNothing()
-        .returning({ mint: launches.mint });
-      launched += inserted.length;
+      if (!e.platformConfig.equals(cfg.platformConfig)) continue;
+      if (e.kind === "launch_created") launched += await indexLaunch(db, e);
+      else traded += await indexTrade(db, e);
     }
   }
-  return { launched };
+  return { launched, traded };
+}
+
+const time = (blockTime: number | null) => new Date((blockTime ?? Math.floor(Date.now() / 1000)) * 1000);
+
+async function indexLaunch(db: Db, e: LaunchCreated) {
+  const inserted = await db
+    .insert(launches)
+    .values({
+      mint: e.baseMint.toBase58(),
+      pool: e.pool.toBase58(),
+      creator: e.creator.toBase58(),
+      quoteMint: e.quoteMint.toBase58(),
+      globalConfig: e.globalConfig.toBase58(),
+      name: e.name,
+      symbol: e.symbol,
+      metadataUri: e.uri,
+      decimals: e.decimals,
+      supply: e.supply.toString(),
+      totalBaseSell: e.totalBaseSell.toString(),
+      graduationTarget: e.graduationTargetRaw.toString(),
+      createdSignature: e.signature,
+      createdSlot: e.slot,
+      createdAt: time(e.blockTime),
+    })
+    .onConflictDoNothing()
+    .returning({ mint: launches.mint });
+  return inserted.length;
+}
+
+async function indexTrade(db: Db, e: TradeExecuted) {
+  const mint = e.baseMint.toBase58();
+  const price = curvePrice(e.after, e.baseDecimals, e.quoteDecimals);
+  const inserted = await db
+    .insert(trades)
+    .values({
+      signature: e.signature,
+      eventIndex: e.index,
+      mint,
+      trader: e.trader.toBase58(),
+      side: e.side,
+      baseAmount: (e.side === "buy" ? e.amountOut : e.amountIn).toString(),
+      quoteAmount: (e.side === "buy" ? e.amountIn : e.amountOut).toString(),
+      protocolFee: e.fees.protocol.toString(),
+      platformFee: e.fees.platform.toString(),
+      creatorFee: e.fees.creator.toString(),
+      priceBefore: curvePrice(e.before, e.baseDecimals, e.quoteDecimals),
+      priceAfter: price,
+      slot: e.slot,
+      blockTime: time(e.blockTime),
+    })
+    .onConflictDoNothing()
+    .returning({ signature: trades.signature });
+
+  // The curve moves to a trade from a later slot, or to the next trade in the same slot, which starts where the stored
+  // state ends. Replays and late deliveries of earlier trades never move it backwards.
+  await db
+    .insert(curves)
+    .values({
+      mint,
+      realQuote: e.after.realQuote.toString(),
+      realBase: e.after.realBase.toString(),
+      price,
+      status: e.status,
+      slot: e.slot,
+    })
+    .onConflictDoUpdate({
+      target: curves.mint,
+      set: {
+        realQuote: sql`excluded.real_quote`,
+        realBase: sql`excluded.real_base`,
+        price: sql`excluded.price`,
+        status: sql`excluded.status`,
+        slot: sql`excluded.slot`,
+        updatedAt: sql`now()`,
+      },
+      setWhere: sql`excluded.slot > ${curves.slot} or (excluded.slot = ${curves.slot} and ${curves.realBase} = ${e.before.realBase.toString()} and ${curves.realQuote} = ${e.before.realQuote.toString()})`,
+    });
+  return inserted.length;
 }
 
 /** Fetches one transaction in the same JSON shape Helius raw webhooks deliver. */

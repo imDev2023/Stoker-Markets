@@ -89,10 +89,15 @@
   gap: 14px;
 }
 
+/* A website address runs longer than a handle, so it gets the full row and the two socials share the next. */
 .links {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+.links > :first-child {
+  grid-column: 1 / -1;
 }
 
 .field {

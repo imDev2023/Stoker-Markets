@@ -7,4 +7,9 @@ export {
   type PlatformSettings, type PlatformConfigUpdate,
 } from "./instructions";
 export { prepareLaunch, type LaunchRequest, type PreparedLaunch } from "./launch";
-export { decodeTransaction, type RawTransaction, type ChainEvent, type LaunchCreated } from "./decode";
+export {
+  curvePrice, minAmountOut, quoteTrade,
+  type CurveReserves, type FeeRates, type Side, type TradeFees, type TradeQuote,
+} from "./curve";
+export { loadCurve, prepareTrade, type Curve, type CurveStatus, type PreparedTrade, type TradeRequest } from "./trade";
+export { decodeTransaction, type RawTransaction, type ChainEvent, type LaunchCreated, type TradeExecuted } from "./decode";

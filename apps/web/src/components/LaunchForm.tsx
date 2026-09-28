@@ -72,9 +72,9 @@ export function LaunchForm({ platform }: { platform: PlatformInfo }) {
       });
       if (sim.value.err) throw new Error(simulationError(sim.value.err, sim.value.logs ?? []));
       const before = await connection.getBalance(publicKey, "confirmed");
+      // The simulated balance already has the network fee taken off.
       const after = sim.value.accounts?.[0]?.lamports ?? before;
-      const fee = (await connection.getFeeForMessage(tx.message, "confirmed")).value ?? 0;
-      setStep({ kind: "reviewing", review: { prepared, tx, costLamports: before - after + fee } });
+      setStep({ kind: "reviewing", review: { prepared, tx, costLamports: before - after } });
     } catch (e) {
       setError((e as Error).message);
       setStep({ kind: "editing" });

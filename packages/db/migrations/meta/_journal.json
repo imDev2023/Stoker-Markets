@@ -8,6 +8,13 @@
       "when": 1790533861802,
       "tag": "0000_military_rocket_raccoon",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790535574571,
+      "tag": "0001_trades",
+      "breakpoints": true
     }
   ]
 }

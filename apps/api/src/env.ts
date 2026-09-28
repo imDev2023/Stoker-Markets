@@ -1,6 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import type { Cluster } from "@launchpad/chain";
+import type { Db } from "@launchpad/db";
 
 export type Bindings = {
   CLUSTER: Cluster;
@@ -16,6 +17,9 @@ export type Bindings = {
   HYPERDRIVE: Hyperdrive;
   METADATA_BUCKET: R2Bucket;
 };
+
+/** The Hono environment every `/v1` route runs in: bindings plus the per-request database and parsed configuration. */
+export type AppEnv = { Bindings: Bindings; Variables: { db: Db; cfg: Config } };
 
 export type Config = {
   cluster: Cluster;
