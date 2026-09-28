@@ -1,0 +1,23 @@
+{
+  "name": "@launchpad/localnet",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "start": "tsx src/cli.ts",
+    "typecheck": "tsc -p .",
+    "refresh-fixtures": "./refresh-fixtures.sh"
+  },
+  "dependencies": {
+    "@launchpad/chain": "workspace:*",
+    "@solana/web3.js": "^1.99.0",
+    "bn.js": "^5.2.2"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.2.0",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.23.15"
+  }
+}

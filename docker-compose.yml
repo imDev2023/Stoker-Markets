@@ -1,0 +1,15 @@
+# Local development database: `docker compose up -d`. Tests start their own throwaway database.
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: launchpad-postgres
+    environment:
+      POSTGRES_USER: launchpad
+      POSTGRES_PASSWORD: launchpad
+      POSTGRES_DB: launchpad
+    ports:
+      - "127.0.0.1:5442:5432"
+    volumes:
+      - launchpad-postgres:/var/lib/postgresql/data
+volumes:
+  launchpad-postgres:

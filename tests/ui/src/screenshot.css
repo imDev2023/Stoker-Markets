@@ -1,0 +1,14 @@
+/* Applied only while a screenshot is taken. */
+
+/* Next's dev-mode indicator is not part of the product. */
+nextjs-portal {
+  display: none !important;
+}
+
+/* Times differ run to run ("2m ago", "12m ago") and are masked; a fixed box keeps the mask the same size every run. */
+time {
+  display: inline-block;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+}

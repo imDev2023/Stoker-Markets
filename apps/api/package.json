@@ -1,0 +1,24 @@
+{
+  "name": "@launchpad/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8791",
+    "typecheck": "tsc -p .",
+    "types": "wrangler types --env-interface CloudflareBindings"
+  },
+  "dependencies": {
+    "@launchpad/chain": "workspace:*",
+    "@launchpad/contract": "workspace:*",
+    "@launchpad/db": "workspace:*",
+    "@solana/web3.js": "^1.99.0",
+    "bn.js": "^5.2.2",
+    "drizzle-orm": "^0.45.3",
+    "hono": "^4.13.9"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260927.1",
+    "@types/bn.js": "^5.2.0",
+    "wrangler": "^4.142.0"
+  }
+}

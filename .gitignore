@@ -22,3 +22,18 @@ research/social/telegram-group/
 # Full Meteora DBC account dump (too large for git; the summary JSONs are kept)
 research/competitors/meteora_dbc_configs.json
 __pycache__/
+
+# App workspace
+.wrangler/
+.next*/
+.open-next/
+dist/
+test-results/
+playwright-report/
+tools/localnet/.ledger/
+*.tsbuildinfo
+.dev.vars
+next-env.d.ts
+
+# Agent worktrees
+.claude/worktrees/
