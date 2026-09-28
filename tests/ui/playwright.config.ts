@@ -16,7 +16,7 @@ const chrome = devices["Desktop Chrome"];
  */
 const projects: Project[] = [
   ...LOOKS.map((l) => ({ name: `empty-${l.name}`, testMatch: "empty.spec.ts", use: { ...chrome, ...l } })),
-  { name: "flows", testMatch: /(flows|trading|pairing|graduation|board|launchModes|pay-with-sol)\.spec\.ts/, dependencies: LOOKS.map((l) => `empty-${l.name}`), use: { ...chrome, ...LOOKS[0] } },
+  { name: "flows", testMatch: /(flows|trading|pairing|graduation|board|launchModes|pay-with-sol|operator)\.spec\.ts/, dependencies: LOOKS.map((l) => `empty-${l.name}`), use: { ...chrome, ...LOOKS[0] } },
   { name: "seed", testMatch: "seed.setup.ts", dependencies: ["flows"] },
   ...LOOKS.map((l) => ({ name: `visual-${l.name}`, testMatch: "visual.spec.ts", dependencies: ["seed"], use: { ...chrome, ...l } })),
 ];

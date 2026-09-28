@@ -1,8 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import type { FeeAnnouncement, OperatorAlert, OperatorOverview, PlatformInfo, PreparedFeeChange } from "@launchpad/contract";
-import { ApiRequestError, announceFeeChange, getOperatorOverview, listAnnouncements, listOperatorAlerts, prepareFeeChange, runOperatorJob } from "@/lib/api";
+import {
+  API_KEY_RATE_LIMIT_DEFAULT, API_KEY_RATE_LIMIT_MAX, type ApiKeyInfo, type FeeAnnouncement, type IssuedApiKey, type OperatorAlert,
+  type OperatorOverview, type PlatformInfo, type PreparedFeeChange,
+} from "@launchpad/contract";
+import {
+  ApiRequestError, announceFeeChange, createApiKey, getOperatorOverview, listAnnouncements, listApiKeys, listOperatorAlerts, prepareFeeChange,
+  revokeApiKey, runOperatorJob,
+} from "@/lib/api";
 import { formatUtc } from "@/lib/format";
 import { CopyButton } from "./CopyButton";
 import styles from "./OperatorView.module.css";
@@ -11,12 +17,12 @@ const TOKEN_KEY = "launchpad-operator-token";
 const REFRESH_MS = 10_000;
 const JOBS = ["quote-registry", "fee-collector", "reward-rounds", "burn"] as const;
 
-type Loaded = { overview: OperatorOverview; alerts: OperatorAlert[]; announcements: FeeAnnouncement[] };
+type Loaded = { overview: OperatorOverview; alerts: OperatorAlert[]; announcements: FeeAnnouncement[]; keys: ApiKeyInfo[] };
 
 /**
  * Everything the operator needs at a glance (#22): Launches by status, rounds, burns, the latest run of each job, open
- * alerts, and the fee-change announcements with the admin's transaction for one whose time has come. The operator token
- * stays in this browser session only.
+ * alerts, the fee-change announcements with the admin's transaction for one whose time has come, and the API keys (#21),
+ * each shown once when issued. The operator token stays in this browser session only.
  */
 export function OperatorView({ platform }: { platform: PlatformInfo }) {
   const [token, setToken] = useState<string | null>(null);
@@ -26,6 +32,8 @@ export function OperatorView({ platform }: { platform: PlatformInfo }) {
   const [prepared, setPrepared] = useState<PreparedFeeChange | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [form, setForm] = useState({ platformFeeBps: String(platform.platformFeeBps), creatorFeeBps: String(platform.creatorFeeBps), effectiveAt: "", note: "" });
+  const [keyForm, setKeyForm] = useState({ name: "", rateLimitPerMinute: String(API_KEY_RATE_LIMIT_DEFAULT) });
+  const [issued, setIssued] = useState<IssuedApiKey | null>(null);
 
   useEffect(() => {
     try {
@@ -38,8 +46,10 @@ export function OperatorView({ platform }: { platform: PlatformInfo }) {
   const load = useCallback(async () => {
     if (!token) return;
     try {
-      const [overview, alerts, announcements] = await Promise.all([getOperatorOverview(token), listOperatorAlerts(token), listAnnouncements()]);
-      setData({ overview, alerts: alerts.alerts, announcements: announcements.announcements });
+      const [overview, alerts, announcements, keys] = await Promise.all([
+        getOperatorOverview(token), listOperatorAlerts(token), listAnnouncements(), listApiKeys(token),
+      ]);
+      setData({ overview, alerts: alerts.alerts, announcements: announcements.announcements, keys: keys.keys });
       setError(null);
     } catch (e) {
       if (e instanceof ApiRequestError && e.status === 401) {
@@ -218,6 +228,64 @@ export function OperatorView({ platform }: { platform: PlatformInfo }) {
               <pre tabIndex={0}>{prepared.transaction}</pre>
             </div>
           </div>
+        )}
+      </section>
+
+      <section className={styles.card} aria-labelledby="keys-title">
+        <h2 id="keys-title" className={styles.cardTitle}>API keys</h2>
+        <p className={styles.note}>
+          A key identifies an integrator (a bot, a terminal) and bounds it to so many requests a minute; reads need no key. The key is
+          shown once, here, when it is issued.
+        </p>
+        <form
+          className={styles.feeForm}
+          onSubmit={(e) => {
+            e.preventDefault();
+            void act("issue-key", async () => {
+              setIssued(await createApiKey(token, { name: keyForm.name, rateLimitPerMinute: Number(keyForm.rateLimitPerMinute) }));
+              setKeyForm({ name: "", rateLimitPerMinute: String(API_KEY_RATE_LIMIT_DEFAULT) });
+            });
+          }}
+        >
+          <label>Name <input type="text" value={keyForm.name} onChange={(e) => setKeyForm({ ...keyForm, name: e.target.value })} required maxLength={80} /></label>
+          <label>
+            Requests a minute{" "}
+            <input
+              type="number"
+              min={1}
+              max={API_KEY_RATE_LIMIT_MAX}
+              value={keyForm.rateLimitPerMinute}
+              onChange={(e) => setKeyForm({ ...keyForm, rateLimitPerMinute: e.target.value })}
+              required
+            />
+          </label>
+          <button type="submit" disabled={busy !== null}>{busy === "issue-key" ? "Issuing…" : "Issue a key"}</button>
+        </form>
+        {issued && (
+          <div className={styles.prepared} role="status">
+            <p>The key for <strong>{issued.name}</strong>, shown this once. Copy it now; it can only be revoked, never shown again.</p>
+            <div className={styles.code}>
+              <CopyButton value={issued.key} label="Copy the key" />
+              <pre tabIndex={0}>{issued.key}</pre>
+            </div>
+          </div>
+        )}
+        {data && data.keys.length > 0 && (
+          <ul className={styles.list}>
+            {data.keys.map((k) => (
+              <li key={k.id}>
+                <span>
+                  <strong>{k.name}</strong> · {k.rateLimitPerMinute} a minute · issued {formatUtc(k.createdAt)}
+                  {k.revokedAt && <> · revoked {formatUtc(k.revokedAt)}</>}
+                </span>
+                {!k.revokedAt && (
+                  <button type="button" disabled={busy !== null} onClick={() => act(k.id, async () => { await revokeApiKey(token, k.id); })}>
+                    {busy === k.id ? "Revoking…" : "Revoke"}
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     </div>
