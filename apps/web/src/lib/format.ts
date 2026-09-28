@@ -5,6 +5,12 @@ export function quoteSymbol(mint: string) {
   return mint === WSOL ? "SOL" : `${mint.slice(0, 4)}…`;
 }
 
+/** Decimals of the Quote Asset's raw units; SOL's 9 until the Quote Registry lands. */
+export const QUOTE_DECIMALS = 9;
+/** Every Launch's coin has 6 decimals and a supply of 1B: the launch shape our curve rules pin on-chain. */
+export const COIN_DECIMALS = 6;
+export const COIN_SUPPLY = 1_000_000_000;
+
 export function shortAddress(address: string) {
   return `${address.slice(0, 4)}…${address.slice(-4)}`;
 }
@@ -16,6 +22,32 @@ export function formatUnits(raw: string, decimals: number, maxFraction = 4) {
   const whole = n / base;
   const fraction = (n % base).toString().padStart(decimals, "0").slice(0, maxFraction).replace(/0+$/, "");
   return `${whole.toLocaleString("en-US")}${fraction ? `.${fraction}` : ""}`;
+}
+
+/** Reads a decimal amount typed by a person into raw units; null if it isn't a positive amount with at most `decimals` places. */
+export function parseUnits(text: string, decimals: number): bigint | null {
+  const match = /^(\d*)(?:\.(\d*))?$/.exec(text.trim());
+  if (!match || (!match[1] && !match[2])) return null;
+  const fraction = match[2] ?? "";
+  if (fraction.length > decimals) return null;
+  const raw = BigInt((match[1] || "0") + fraction.padEnd(decimals, "0"));
+  return raw > 0n ? raw : null;
+}
+
+/** A price to four significant digits, written out in full: prices on a young curve are tiny fractions of a SOL. */
+export function formatPrice(price: number) {
+  return price.toLocaleString("en-US", { maximumSignificantDigits: 4 });
+}
+
+const SUBSCRIPT = "₀₁₂₃₄₅₆₇₈₉";
+
+/** The same price with its run of leading zeros counted in a subscript, 0.0₈2791 for 0.000000002791, so it fits an axis. */
+export function formatPriceCompact(price: number) {
+  const full = formatPrice(price);
+  const match = /^0\.(0{4,})(\d+)$/.exec(full);
+  if (!match) return full;
+  const zeros = String(match[1]!.length).replace(/\d/g, (d) => SUBSCRIPT[Number(d)]!);
+  return `0.0${zeros}${match[2]}`;
 }
 
 export function timeAgo(iso: string, now = Date.now()) {

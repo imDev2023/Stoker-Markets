@@ -1,4 +1,7 @@
-import { ApiError, LaunchList, LaunchSummary, PlatformInfo, PreparedLaunch } from "@launchpad/contract";
+import {
+  ApiError, CandleList, LaunchList, LaunchSummary, PlatformInfo, PreparedLaunch, PreparedTrade, TradeList, TradeQuote,
+  type CandleInterval, type PrepareTradeRequest, type TradeQuoteQuery,
+} from "@launchpad/contract";
 
 /** The web app is a client of the public API like any other; it never builds transactions itself (ADR 0003). */
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8791").replace(/\/$/, "");
@@ -30,7 +33,27 @@ export async function prepareLaunch(form: FormData) {
   return read(await fetch(`${API_URL}/v1/launches/prepare`, { method: "POST", body: form }), PreparedLaunch);
 }
 
-/** Tells the API about a confirmed launch so it shows up without waiting for the webhook. */
+export async function getQuote(mint: string, q: TradeQuoteQuery, signal?: AbortSignal) {
+  const query = new URLSearchParams({ side: q.side, amount: q.amount, slippageBps: String(q.slippageBps) });
+  return read(await fetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/quote?${query}`, { cache: "no-store", signal }), TradeQuote);
+}
+
+export async function prepareTrade(body: PrepareTradeRequest) {
+  return read(
+    await fetch(`${API_URL}/v1/trades/prepare`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
+    PreparedTrade,
+  );
+}
+
+export async function listTrades(mint: string) {
+  return read(await fetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/trades?limit=50`, { cache: "no-store" }), TradeList);
+}
+
+export async function getCandles(mint: string, interval: CandleInterval) {
+  return read(await fetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/candles?interval=${interval}`, { cache: "no-store" }), CandleList);
+}
+
+/** Tells the API about a confirmed launch or trade so it shows up without waiting for the webhook. */
 export async function reportTransaction(signature: string) {
   await fetch(`${API_URL}/v1/transactions/${signature}`, { method: "POST" }).catch(() => undefined);
 }

@@ -76,9 +76,11 @@
   overflow-wrap: anywhere;
 }
 
+/* The same columns as the market above, so the cards line up down the page. */
 .panels {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+  align-items: start;
   gap: 16px;
 }
 
@@ -142,7 +144,7 @@
   font-weight: 500;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .panels {
     grid-template-columns: minmax(0, 1fr);
   }

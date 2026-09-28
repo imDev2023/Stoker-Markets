@@ -7,13 +7,13 @@ import { prepareLaunch, WSOL_MINT, type RawTransaction } from "@launchpad/chain"
 import {
   LAUNCH_IMAGE_MAX_BYTES, LAUNCH_IMAGE_TYPES, PrepareLaunchFields, type LaunchSummary, type PlatformInfo, type PreparedLaunch,
 } from "@launchpad/contract";
-import { createDb, launches, launchMetadata, type Db } from "@launchpad/db";
-import { config, type Bindings, type Config } from "./env";
+import { createDb, curves, launches, launchMetadata } from "@launchpad/db";
+import { config, type AppEnv, type Config } from "./env";
 import { fetchRawTransaction, indexTransactions } from "./indexer";
 import { sniffImageType } from "./images";
+import { curveProgress, tradeRoutes } from "./routes/trades";
 
-type Variables = { db: Db; cfg: Config };
-const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
+const app = new Hono<AppEnv>();
 
 app.use("*", async (c, next) => cors({ origin: c.env.WEB_ORIGIN, allowMethods: ["GET", "POST"] })(c, next));
 
@@ -122,7 +122,7 @@ app.post("/v1/webhooks/helius", async (c) => {
   return c.json(await indexTransactions(c.get("db"), c.get("cfg"), body));
 });
 
-/** Fast path: the web app reports a confirmed signature so the Launch appears without waiting for the webhook. */
+/** Fast path: the web app reports a confirmed signature so a Launch or trade appears without waiting for the webhook. */
 app.post("/v1/transactions/:signature", async (c) => {
   const signature = c.req.param("signature");
   if (!/^[1-9A-HJ-NP-Za-km-z]{64,88}$/.test(signature)) return c.json({ error: "invalid signature" }, 400);
@@ -138,9 +138,10 @@ app.get("/v1/launches", async (c) => {
     .select()
     .from(launches)
     .leftJoin(launchMetadata, eq(launchMetadata.id, launches.mint))
+    .leftJoin(curves, eq(curves.mint, launches.mint))
     .orderBy(desc(launches.createdSlot))
     .limit(limit);
-  return c.json({ launches: rows.map((r) => toSummary(c.get("cfg"), r.launches, r.launch_metadata)) });
+  return c.json({ launches: rows.map((r) => toSummary(c.get("cfg"), r.launches, r.launch_metadata, r.curves)) });
 });
 
 app.get("/v1/launches/:mint", async (c) => {
@@ -149,11 +150,14 @@ app.get("/v1/launches/:mint", async (c) => {
     .select()
     .from(launches)
     .leftJoin(launchMetadata, eq(launchMetadata.id, launches.mint))
+    .leftJoin(curves, eq(curves.mint, launches.mint))
     .where(eq(launches.mint, c.req.param("mint")))
     .limit(1);
   if (!row) return c.json({ error: "launch not found" }, 404);
-  return c.json(toSummary(c.get("cfg"), row.launches, row.launch_metadata));
+  return c.json(toSummary(c.get("cfg"), row.launches, row.launch_metadata, row.curves));
 });
+
+app.route("/v1", tradeRoutes);
 
 /** Token metadata JSON in the Metaplex off-chain format, as referenced by the on-chain metadata URI. */
 app.get("/metadata/:file", async (c) => {
@@ -197,6 +201,7 @@ function toSummary(
   cfg: Config,
   l: typeof launches.$inferSelect,
   m: typeof launchMetadata.$inferSelect | null,
+  curve: typeof curves.$inferSelect | null,
 ): LaunchSummary {
   return {
     mint: l.mint,
@@ -210,6 +215,7 @@ function toSummary(
     description: m?.description ?? null,
     links: { website: m?.website ?? null, x: m?.x ?? null, telegram: m?.telegram ?? null },
     graduationTarget: l.graduationTarget,
+    curve: curveProgress(curve),
     createdSignature: l.createdSignature,
     createdAt: l.createdAt.toISOString(),
   };

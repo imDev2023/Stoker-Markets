@@ -4,9 +4,22 @@ import type { Page } from "@playwright/test";
 import { COIN_PNG, expect, expectNoHorizontalOverflow, expectNoTruncatedText, listLaunches, test } from "./fixtures";
 import { TEST_WALLET_NAME } from "./wallet";
 
-const dynamic = (page: Page) => [page.locator("time"), page.locator(".mono:not(input)")];
+// The chart's time axis and candle spacing follow the clock, so its canvases are masked like any other time.
+const dynamic = (page: Page) => [page.locator("time"), page.locator(".mono:not(input)"), page.locator("canvas")];
 
-async function snap(page: Page, name: string) {
+/**
+ * A traded coin's amounts and prices follow from the fixed seed trades, so only what really varies is masked: times, the
+ * chart, the latest candle (trades can straddle a minute), trader links and the coin's addresses.
+ */
+const tradedDynamic = (page: Page) => [
+  page.locator("time"),
+  page.locator("canvas"),
+  page.locator('dl[aria-label$="candle"] .mono'),
+  page.locator("a.mono"),
+  page.locator("dl").filter({ hasText: "Launch transaction" }).locator(".mono"),
+];
+
+async function snap(page: Page, name: string, mask = dynamic) {
   // Check the settled page: hydrated, images in and web fonts swapped.
   await page.waitForLoadState("networkidle");
   await page.evaluate(() => document.fonts.ready);
@@ -14,7 +27,7 @@ async function snap(page: Page, name: string) {
   await expectNoTruncatedText(page);
   // A full-page capture of a scrolled page stitches the sticky header into the middle.
   await page.evaluate(() => window.scrollTo(0, 0));
-  await expect(page).toHaveScreenshot(name, { fullPage: true, mask: dynamic(page) });
+  await expect(page).toHaveScreenshot(name, { fullPage: true, mask: mask(page) });
 }
 
 async function mintOf(name: string) {
@@ -40,6 +53,49 @@ test("coin page with the longest name and ticker", async ({ page }) => {
   await page.goto(`/coin/${await mintOf("Maximum Length Coin Name Here 32")}`);
   await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
   await snap(page, "coin-longest.png");
+});
+
+test("coin page with trades", async ({ page }) => {
+  await page.goto(`/coin/${await mintOf("Harbor Lights")}`);
+  await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
+  await expect(page.getByRole("region", { name: "Trades", exact: true }).getByRole("row")).toHaveCount(5);
+  await expect(page.getByText("Market cap")).toBeVisible();
+  await snap(page, "coin-traded.png", tradedDynamic);
+});
+
+test("trade panel, buy and sell, quote and review", async ({ page, wallet }) => {
+  await page.goto(`/coin/${await mintOf("Harbor Lights")}`);
+  const panel = page.getByRole("region", { name: /^Trade( |$)/ });
+  await panel.getByRole("button", { name: "Connect wallet" }).click();
+  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await panel.getByRole("button", { name: "0.5 SOL" }).click();
+  await expect(panel.getByText("You get about")).toBeVisible();
+  await expect(panel).toHaveScreenshot("trade-buy-quote.png", { mask: tradedDynamic(page) });
+
+  await panel.getByRole("button", { name: "Review buy" }).click();
+  const dialog = page.getByRole("dialog", { name: "Before you trade" });
+  await expect(dialog).toBeVisible();
+  // Masks paint over everything, the modal included, so the dialog is captured on its own.
+  await expect(dialog).toHaveScreenshot("trade-disclaimer.png");
+  await dialog.getByRole("checkbox").check();
+  await dialog.getByRole("button", { name: "Continue" }).click();
+  await expect(panel.getByRole("region", { name: "Review your trade" })).toBeVisible();
+  await expect(panel).toHaveScreenshot("trade-buy-review.png", { mask: tradedDynamic(page) });
+  expect(wallet.requests).toHaveLength(0);
+
+  await panel.getByRole("button", { name: "Edit" }).click();
+  await panel.getByRole("group", { name: "Buy or sell" }).getByRole("button", { name: "Sell" }).click();
+  // The test wallet holds none of this coin, so a sell shows the over-balance state.
+  await panel.getByLabel("You pay").fill("1000000");
+  await expect(panel.getByText(/^You have 0 HRBR\. Enter a smaller amount\.$/)).toBeVisible();
+  await expect(panel.getByText("You get about")).toBeVisible();
+  await expect(panel).toHaveScreenshot("trade-sell-over-balance.png", { mask: tradedDynamic(page) });
+});
+
+test("trade panel after the curve sold out", async ({ page }) => {
+  await page.goto(`/coin/${await mintOf("Signal Fire")}`);
+  await expect(page.getByText(/The curve sold out, so this coin no longer trades here/)).toBeVisible();
+  await snap(page, "coin-sold-out.png", tradedDynamic);
 });
 
 test("coin not found", async ({ page }) => {

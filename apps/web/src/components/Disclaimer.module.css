@@ -36,6 +36,8 @@
 }
 
 .check input {
+  /* A wrapping label would otherwise squeeze the box below its size on phones. */
+  flex: none;
   width: 18px;
   height: 18px;
   margin-top: 3px;

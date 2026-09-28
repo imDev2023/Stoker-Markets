@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getLaunch, getPlatform } from "@/lib/api";
-import { explorerUrl, formatUnits, quoteSymbol, shortAddress } from "@/lib/format";
+import { getCandles, getLaunch, getPlatform, listTrades } from "@/lib/api";
+import { explorerUrl, quoteSymbol, shortAddress } from "@/lib/format";
+import { CoinMarket } from "@/components/CoinMarket";
 import { CopyButton } from "@/components/CopyButton";
 import { PairMark } from "@/components/PairMark";
 import styles from "./page.module.css";
@@ -16,7 +17,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CoinPage({ params }: Props) {
   const { mint } = await params;
-  const [launch, platform] = await Promise.all([getLaunch(mint), getPlatform()]);
+  const [launch, platform, trades, candles] = await Promise.all([
+    getLaunch(mint), getPlatform(), listTrades(mint), getCandles(mint, "1m"),
+  ]);
   if (!launch) notFound();
   const quote = quoteSymbol(launch.quoteMint);
   const links = [
@@ -48,12 +51,10 @@ export default async function CoinPage({ params }: Props) {
 
       {launch.description && <p className={styles.description}>{launch.description}</p>}
 
+      <CoinMarket initial={launch} platform={platform} initialTrades={trades.trades} initialCandles={candles} renderedAt={Date.now()} />
+
       <section className={styles.panels}>
         <dl className={styles.facts}>
-          <div>
-            <dt>Graduates at</dt>
-            <dd>{formatUnits(launch.graduationTarget, 9)} {quote} raised</dd>
-          </div>
           <div>
             <dt>Creator fee</dt>
             <dd>
