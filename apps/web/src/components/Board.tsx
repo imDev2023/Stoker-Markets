@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LAUNCH_SORTS, QUOTE_CATEGORIES, type LaunchQuote, type LaunchSummary, type QuoteCategory } from "@launchpad/contract";
 import { listLaunchQuotes, listLaunches, type BoardQuery } from "@/lib/api";
-import { boardSearch, CATEGORY_LABELS, DEFAULT_BOARD, isDefaultBoard, SORT_LABELS } from "@/lib/board";
+import { boardSearch, CATEGORY_LABELS, DEFAULT_BOARD, SORT_LABELS } from "@/lib/board";
 import { LaunchCard } from "./LaunchCard";
 import { QuoteFilter } from "./QuoteFilter";
 import styles from "./Board.module.css";
@@ -62,7 +62,8 @@ export function Board({
   }
 
   const loading = !sameQuery(query, shown);
-  const nothingLaunched = launches.length === 0 && isDefaultBoard(shown);
+  // A sort is not a filter: with nothing launched at all, the empty state shows whatever the sort in the URL.
+  const nothingLaunched = launches.length === 0 && !shown.category && !shown.quote;
 
   return (
     <section className={`shell ${styles.section}`} aria-labelledby="board-title">

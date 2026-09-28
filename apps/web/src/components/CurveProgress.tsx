@@ -11,7 +11,7 @@ export function CurveProgress({ launch, platform }: { launch: LaunchSummary; pla
   const { status } = launch.curve;
   const done = status !== "live";
   // Rounding can leave a sold-out curve a few raw units over its target.
-  const pct = done ? 100 : Math.min(100, Number((raised * 10_000n) / target) / 100);
+  const pct = done ? 100 : target === 0n ? 0 : Math.min(100, Number((raised * 10_000n) / target) / 100);
   const left = target > raised ? target - raised : 0n;
 
   return (

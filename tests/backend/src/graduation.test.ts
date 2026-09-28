@@ -15,7 +15,7 @@ import { CPSWAP_CONFIG, LOCAL_QUOTES, SOL_GLOBAL_CONFIG, migrateCurve, mintLocal
 import { CandleList, CreatorFees, OperatorAlertList, TradeQuote } from "@launchpad/contract";
 import {
   SOL, coinsOf, connection, deliverWebhook, env, fundedWallet, getLaunch, launch, launchedCoin, networkFee, prepared, quote, signAndSend,
-  solOf, tokenBalance, trade, trades,
+  solOf, tokenBalance, trade, trades, confirmOutcome,
 } from "./client";
 
 const programs = programsFor("localnet");
@@ -189,11 +189,8 @@ describe("trading after Graduation", () => {
     tx.sign([slow]);
     const conn = connection();
     const signature = await conn.sendTransaction(tx, { skipPreflight: true });
-    const result = await conn.confirmTransaction(
-      { signature, blockhash: tx.message.recentBlockhash, lastValidBlockHeight: p.lastValidBlockHeight },
-      "confirmed",
-    );
-    expect(result.value.err).toEqual({ InstructionError: [expect.any(Number), { Custom: 6005 }] }); // CPMM ExceededSlippage
+    const { err } = await confirmOutcome(conn, signature, tx.message.recentBlockhash, p.lastValidBlockHeight);
+    expect(err).toEqual({ InstructionError: [expect.any(Number), { Custom: 6005 }] }); // CPMM ExceededSlippage
     expect(await coinsOf(mint, slow)).toBe(0n);
     expect(sol - (await solOf(slow))).toBe(await networkFee(signature));
   });

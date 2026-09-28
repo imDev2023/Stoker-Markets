@@ -41,6 +41,11 @@ export const QuoteAsset = QuoteRef.extend({
   launchable: z.boolean(),
   /** Why the asset can't be launched against right now, written for the Creator; null when it can. */
   reason: z.string().nullable(),
+  /**
+   * The referral share fee on curve trades paired with this asset: allowed where its GlobalConfig lets a trade name a
+   * share fee (SOL's does, most don't), and the rate a referred trade pays its referrer, in basis points of the trade.
+   */
+  referralShare: z.object({ allowed: z.boolean(), bps: z.number().int() }),
 });
 export type QuoteAsset = z.infer<typeof QuoteAsset>;
 

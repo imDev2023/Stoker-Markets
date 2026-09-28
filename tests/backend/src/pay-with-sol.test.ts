@@ -11,7 +11,7 @@ import { swapThroughSolRoute } from "@launchpad/localnet/routes";
 import { PlatformInfo, PreparedTrade, TradeQuote } from "@launchpad/contract";
 import {
   SOL, coinsOf, connection, deliverWebhook, env, fundedWallet, launch, launchedCoin, networkFee, prepareTrade, quote, signAndSend, solOf,
-  tokenBalance, trade, trades,
+  sendLanding, tokenBalance, trade, trades,
 } from "./client";
 
 const USDC = LOCAL_QUOTES.USDC;
@@ -35,19 +35,6 @@ async function preparedWithSol(trader: Keypair, mint: string, lamports: bigint, 
   const res = await prepareTrade({ mint, trader: trader.publicKey.toBase58(), side: "buy", amount: lamports.toString(), slippageBps, payWith: "sol" });
   if (!res.ok) throw new Error(`prepare failed: ${res.status} ${await res.text()}`);
   return PreparedTrade.parse(await res.json());
-}
-
-/** Sends a signed transaction without the RPC's preflight, so a failing one lands on-chain and charges its fee. */
-async function sendLanding(p: PreparedTrade, signer: Keypair) {
-  const tx = VersionedTransaction.deserialize(Buffer.from(p.transaction, "base64"));
-  tx.sign([signer]);
-  const conn = connection();
-  const signature = await conn.sendTransaction(tx, { skipPreflight: true });
-  const result = await conn.confirmTransaction(
-    { signature, blockhash: tx.message.recentBlockhash, lastValidBlockHeight: p.lastValidBlockHeight },
-    "confirmed",
-  );
-  return { signature, err: result.value.err as { InstructionError?: [number, unknown] } | null };
 }
 
 /** Every token account a wallet holds under the SPL Token program, with balances. */

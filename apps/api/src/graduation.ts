@@ -55,17 +55,26 @@ export async function watchGraduations(db: Db, cfg: Config, now = new Date()): P
   return result;
 }
 
-/** Sends every open alert that has not reached the alert webhook yet; one that fails is tried again next run. */
-async function notifyPending(db: Db, cfg: Config) {
+/**
+ * Sends every open alert that has not reached the alert webhook yet; one that fails is tried again next run. An alert is
+ * claimed (marked notified) before it is posted and released if the post fails, so two runs never post it twice.
+ */
+export async function notifyPending(db: Db, cfg: Config) {
   const pending = await db
     .select()
     .from(operatorAlerts)
     .where(and(isNull(operatorAlerts.notifiedAt), isNull(operatorAlerts.resolvedAt)));
   for (const a of pending) {
-    if (!(await notify(cfg, a))) continue;
-    await db
+    const claimed = await db
       .update(operatorAlerts)
       .set({ notifiedAt: sql`now()` })
+      .where(and(eq(operatorAlerts.kind, a.kind), eq(operatorAlerts.subject, a.subject), isNull(operatorAlerts.notifiedAt)))
+      .returning({ subject: operatorAlerts.subject });
+    if (claimed.length === 0) continue;
+    if (await notify(cfg, a)) continue;
+    await db
+      .update(operatorAlerts)
+      .set({ notifiedAt: null })
       .where(and(eq(operatorAlerts.kind, a.kind), eq(operatorAlerts.subject, a.subject)));
   }
 }

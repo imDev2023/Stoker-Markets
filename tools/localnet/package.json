@@ -14,11 +14,13 @@
   "dependencies": {
     "@launchpad/chain": "workspace:*",
     "@solana/spl-token": "^0.4.15",
+    "@solana/spl-token-metadata": "^0.1.6",
     "@solana/web3.js": "^1.99.0",
     "bn.js": "^5.2.2",
     "bs58": "^6.0.0"
   },
   "devDependencies": {
+    "@solana/surfpool": "1.6.0",
     "@types/bn.js": "^5.2.0",
     "@types/node": "^24.0.0",
     "tsx": "^4.23.15"

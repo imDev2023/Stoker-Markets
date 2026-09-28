@@ -1,7 +1,7 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { readCurveRules, WSOL_MINT } from "@launchpad/chain";
+import { RATE_DENOMINATOR, readCurveRules, WSOL_MINT } from "@launchpad/chain";
 import type { GraduationTarget, QuoteAsset, QuoteRef } from "@launchpad/contract";
 import { quoteAssets, type Db } from "@launchpad/db";
 import type { Config } from "../env";
@@ -30,7 +30,15 @@ export function toQuoteAsset(cfg: Config, r: Row): QuoteAsset {
     graduationTarget: target === null ? null : { raw: target.toString(), lamports: cfg.graduationTargetLamports.toString() },
     launchable: reason === null,
     reason,
+    referralShare: referralShare(cfg, r.maxShareFeeRate),
   };
+}
+
+/** The referral share fee on trades paired with an asset: our rate, capped by what its GlobalConfig allows (often nothing). */
+export function referralShare(cfg: Config, maxShareFeeRate: number) {
+  const maxBps = Math.floor((maxShareFeeRate * 10_000) / RATE_DENOMINATOR);
+  const bps = Math.min(cfg.referralShareBps, maxBps);
+  return { allowed: bps > 0, bps };
 }
 
 /** SOL first, then what can be launched against, each alphabetically by ticker. */

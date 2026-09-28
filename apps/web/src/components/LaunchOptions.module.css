@@ -156,3 +156,38 @@
 .list.invalid {
   border-color: var(--danger);
 }
+
+.reward {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.rates {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding-left: 1.75rem;
+}
+
+.rates button {
+  min-width: 3.5rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--line, currentColor);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.rates button[aria-pressed="true"] {
+  background: var(--accent, #2b45ff);
+  border-color: var(--accent, #2b45ff);
+  color: #fff;
+}
+
+.rates .hint {
+  flex-basis: 100%;
+  margin: 0;
+}

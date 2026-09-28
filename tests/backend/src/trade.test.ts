@@ -12,7 +12,7 @@ import { CPSWAP_CONFIG, SOL_GLOBAL_CONFIG } from "@launchpad/localnet";
 import { CandleList, TradeQuote } from "@launchpad/contract";
 import {
   SOL, coinsOf, connection, deliverWebhook, env, fundedWallet, getLaunch, launchedCoin, networkFee, prepareTrade, prepared, quote,
-  signAndSend, solOf, tokenBalance, trade, trades,
+  signAndSend, solOf, tokenBalance, trade, trades, confirmOutcome,
 } from "./client";
 
 async function poolState(pool: PublicKey) {
@@ -131,11 +131,8 @@ describe("slippage protection", () => {
     tx.sign([slow]);
     const conn = connection();
     const signature = await conn.sendTransaction(tx, { skipPreflight: true });
-    const result = await conn.confirmTransaction(
-      { signature, blockhash: tx.message.recentBlockhash, lastValidBlockHeight: p.lastValidBlockHeight },
-      "confirmed",
-    );
-    expect(result.value.err).toEqual({ InstructionError: [expect.any(Number), { Custom: 6004 }] }); // ExceededSlippage
+    const { err } = await confirmOutcome(conn, signature, tx.message.recentBlockhash, p.lastValidBlockHeight);
+    expect(err).toEqual({ InstructionError: [expect.any(Number), { Custom: 6004 }] }); // ExceededSlippage
     expect(await coinsOf(mint, slow)).toBe(0n);
     expect(sol - (await solOf(slow))).toBe(await networkFee(signature));
   });

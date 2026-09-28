@@ -39,11 +39,30 @@ export const TradeQuoteQuery = z.object({
    */
   slippageBps: z.coerce.number().int().min(0).max(SLIPPAGE_MAX_BPS).default(100),
   payWith: PayWith.default("quote"),
+  /** The wallet that referred the trade, which earns the share fee on it where the Quote Asset allows one. */
+  referrer: base58.optional(),
 });
 export type TradeQuoteQuery = z.infer<typeof TradeQuoteQuery>;
 
-export const PrepareTradeRequest = TradeQuoteQuery.extend({ mint: base58, trader: base58 });
+export const PrepareTradeRequest = TradeQuoteQuery.extend({ mint: base58, trader: base58 }).refine((r) => r.referrer !== r.trader, {
+  message: "a trader can't refer themselves",
+  path: ["referrer"],
+});
 export type PrepareTradeRequest = z.infer<typeof PrepareTradeRequest>;
+
+/**
+ * The referral on a trade: whether the share fee applies here (only on a curve, and only where the Quote Asset's
+ * GlobalConfig allows one), the rate and the fee the chain pays the referrer, in the Quote Asset's raw units.
+ */
+export const Referral = z.object({
+  referrer: base58,
+  applies: z.boolean(),
+  bps: z.number().int(),
+  fee: raw,
+  /** Why it doesn't apply, when it doesn't; null when it does. */
+  reason: z.string().nullable(),
+});
+export type Referral = z.infer<typeof Referral>;
 
 /**
  * Every fee a trade pays, in raw units of the Quote Asset. The one exception is a sell in the pool, where the pool takes
@@ -105,6 +124,14 @@ export const TradeQuote = z.object({
   slippageBps: z.number().int(),
   fees: TradeFees,
   feeBps: TradeFeeRates,
+  /**
+   * Token-2022 transfer fees withheld by the issuers, already taken out of `amountOut` and included in `amountIn`:
+   * `quote` in the Quote Asset's raw units (a tokenized stock's or reward-style token's fee), `base` in the coin's (a
+   * Reward Launch's Reward Tax). "0" for assets without one.
+   */
+  transferFees: z.object({ quote: raw, base: raw }),
+  /** The rates behind `transferFees`, in basis points of the amount transferred; 0 without one. */
+  transferFeeBps: z.object({ quote: z.number(), base: z.number() }),
   /** Price of one whole coin in whole Quote Asset units, before and after the trade. */
   priceBefore: z.number(),
   priceAfter: z.number(),
@@ -112,6 +139,8 @@ export const TradeQuote = z.object({
   completesCurve: z.boolean(),
   /** The SOL swap in front of a buy paid with SOL; null when the trade is paid in the Quote Asset or SOL is the Quote Asset. */
   route: SolRoute.nullable(),
+  /** The referral, when the quote was asked for with a referrer; null otherwise. */
+  referral: Referral.nullable(),
 });
 export type TradeQuote = z.infer<typeof TradeQuote>;
 
@@ -145,6 +174,8 @@ export const Trade = z.object({
   /** Price of one whole coin in whole Quote Asset units after the trade. */
   price: z.number(),
   time: z.iso.datetime(),
+  /** The referrer the chain paid a share fee to, and the fee, in the Quote Asset's raw units; null on an unreferred trade. */
+  referral: z.object({ referrer: base58, fee: raw }).nullable(),
 });
 export type Trade = z.infer<typeof Trade>;
 

@@ -1,4 +1,4 @@
-import { Connection, PublicKey, type Keypair, type TransactionInstruction } from "@solana/web3.js";
+import { Connection, PublicKey, SendTransactionError, type Keypair, type TransactionInstruction } from "@solana/web3.js";
 import { and, eq, inArray, isNotNull, ne, sql } from "drizzle-orm";
 import {
   feeKeyInstructions, findFeeKeys, platformFeeClaimInstructions, poolCreatorFeeInstructions, readPlatformFeeVaults, readPoolKeys,
@@ -8,6 +8,7 @@ import { feeKeys, graduations, jobTransactions, launches, ledgerEntries, quoteAs
 import type { Config } from "../env";
 import { fetchRawTransaction } from "../indexer";
 import { JobFailure } from "../jobs";
+import { reservedLamports } from "../burn/engine";
 import { recordRevenue, revenueContext } from "./ledger";
 
 const JOB = "fee-collector";
@@ -190,7 +191,8 @@ async function poolsTradedSinceLastFeeKeyCollection(db: Db, pools: string[]) {
 }
 
 /**
- * Sweeps the operations wallet into the treasury: its SOL down to the float once it holds more than the threshold, and
+ * Sweeps the operations wallet into the treasury: its SOL down to the float (plus the Burn's and Flywheel's unspent
+ * budgets) once it holds more than the threshold above that, and
  * of every other token, the revenue the Ledger shows it collected and has not swept yet. Anything else the wallet holds
  * in that token (a Reward Round's harvested tax, say) stays. Tokens go in batches that fit a transaction.
  */
@@ -213,8 +215,10 @@ async function sweep(
   const tokens = held
     .map((t) => ({ ...t, amount: t.amount < owed.get(t.mint.toBase58())! ? t.amount : owed.get(t.mint.toBase58())! }))
     .filter((t) => t.amount > 0n);
+  // SOL the Burn and Flywheel have not spent yet stays behind, on top of the float.
+  const keep = cfg.sweepFloatLamports + (await reservedLamports(db, cfg));
   const balance = BigInt(await connection.getBalance(ops, "confirmed"));
-  const lamports = balance > cfg.sweepThresholdLamports ? balance - cfg.sweepFloatLamports : 0n;
+  const lamports = balance > cfg.sweepThresholdLamports + keep - cfg.sweepFloatLamports ? balance - keep : 0n;
   if (lamports === 0n && tokens.length === 0) return false;
   // SOL goes with the first batch of tokens. A token takes two instructions (open the treasury's account, transfer), and
   // four of them fit a transaction with room to spare.
@@ -237,11 +241,21 @@ async function sendAndRecord(
 ): Promise<Sent> {
   const tx = await signedTransaction(connection, signer, t.instructions);
   const base = { purpose: t.purpose, subject: t.subject, signature: tx.signature };
-  await db.insert(jobTransactions).values({ ...base, job: JOB, lastValidBlockHeight: tx.lastValidBlockHeight });
+  // The same instructions on the same blockhash sign to the same signature: a run right after a failed one meets its
+  // own earlier transaction here, and settles that one instead of writing it twice.
+  const written = await db
+    .insert(jobTransactions)
+    .values({ ...base, job: JOB, lastValidBlockHeight: tx.lastValidBlockHeight })
+    .onConflictDoNothing()
+    .returning({ signature: jobTransactions.signature });
+  if (written.length === 0) await db.update(jobTransactions).set({ status: "pending", error: null, resolvedAt: null }).where(eq(jobTransactions.signature, tx.signature));
   try {
     await connection.sendRawTransaction(tx.serialized, { preflightCommitment: "confirmed" });
   } catch (e) {
-    const error = (e as Error).message;
+    // Only a transaction the node refused (its preflight failed) is known not to have gone out. Anything else, such as
+    // a dropped connection after the node took it, may still land, so it stays pending for the next run to settle.
+    if (!(e instanceof SendTransactionError)) throw e;
+    const error = e.message;
     await resolve(db, tx.signature, "failed", error);
     return { ...base, outcome: "failed", entries: 0, error };
   }

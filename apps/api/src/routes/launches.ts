@@ -117,6 +117,13 @@ function toSummary(cfg: Config, r: Row): LaunchSummary {
       graduatedAt: r.graduation.graduatedAt.toISOString(),
       price: r.graduation.price,
     },
+    rewardTax:
+      l.rewardTaxBps === null
+        ? null
+        : {
+            bps: l.rewardTaxBps,
+            locked: l.rewardTaxLockedSignature && l.rewardTaxLockedAt ? { signature: l.rewardTaxLockedSignature, at: l.rewardTaxLockedAt.toISOString() } : null,
+          },
     market: {
       price: r.market?.price ?? null,
       marketCap: cap,

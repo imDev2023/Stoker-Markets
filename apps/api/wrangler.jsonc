@@ -8,6 +8,8 @@
   "vars": {
     "CLUSTER": "localnet",
     "RPC_URL": "http://127.0.0.1:8899",
+    // The RPC browsers use; required on mainnet, where RPC_URL carries the provider key and must stay server-side.
+    "PUBLIC_RPC_URL": "",
     "PUBLIC_API_URL": "http://localhost:8791",
     "WEB_ORIGIN": "http://localhost:3100",
     "LAUNCHLAB_PROGRAM": "DRay6fNdQ5J82H7xV6uq2aV3mNrUZ1J4PgSKsWgptcm6",
@@ -20,7 +22,22 @@
     "SWEEP_THRESHOLD_LAMPORTS": "5000000000",
     "SWEEP_FLOAT_LAMPORTS": "1000000000",
     "COLLECT_MIN_LAMPORTS": "1000000",
+    // Reward Round rule changes apply no sooner than this after they are announced.
+    "REWARD_RULES_LEAD_SECONDS": "86400",
+    // Burn and Flywheel shares of revenue, in basis points, and how many top Launches the Flywheel buys.
+    "BURN_SHARE_BPS": "6000",
+    "FLYWHEEL_SHARE_BPS": "500",
+    "FLYWHEEL_TOP_N": "10",
+    // A buy-and-burn smaller than this waits for the budget to grow (0.01 SOL).
+    "BURN_MIN_SPEND_LAMPORTS": "10000000",
+    // What a referred curve trade pays its referrer, where the Quote Asset's GlobalConfig allows a share fee.
+    "REFERRAL_SHARE_BPS": "50",
+    // A Platform Fee or Creator Fee change applies no sooner than this after it is announced.
+    "FEE_CHANGE_LEAD_SECONDS": "86400",
+    // From tools/localnet/.ledger/state.json after `pnpm localnet` (see CLAUDE.md); both are required.
     "PLATFORM_CONFIG": "",
+    "PLATFORM_ADMIN": "",
+    "PLATFORM_LOOKUP_TABLE": "",
     "GRADUATION_TARGET_LAMPORTS": "85000000000",
     // Raydium's crank migrates a sold-out curve within seconds; five minutes without it means something is wrong.
     "GRADUATION_ALERT_AFTER_SECONDS": "300",
@@ -36,7 +53,7 @@
   // Scheduled jobs: the graduation watch every minute, the Quote Registry refresh (ADR 0005) every five, the Fee
   // Collector hourly. Locally, `wrangler dev --test-scheduled` runs them on GET /__scheduled?cron=<the cron>, and on a
   // bare GET all three.
-  "triggers": { "crons": ["* * * * *", "*/5 * * * *", "15 * * * *"] },
+  "triggers": { "crons": ["* * * * *", "*/5 * * * *", "15 * * * *", "*/10 * * * *", "45 * * * *"] },
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
@@ -45,4 +62,6 @@
     }
   ],
   "r2_buckets": [{ "binding": "METADATA_BUCKET", "bucket_name": "launchpad-metadata" }]
+  // Secrets, set with `wrangler secret put` and in `.dev.vars` locally: OPERATIONS_KEY, HELIUS_WEBHOOK_SECRET,
+  // MINT_KEY_SECRET, OPERATOR_TOKEN, and optionally JUPITER_API_KEY and ALERT_WEBHOOK_URL.
 }

@@ -5,6 +5,7 @@ import { VersionedTransaction } from "@solana/web3.js";
 import { useCallback, useEffect, useState } from "react";
 import type { AirdropStatus, PlatformInfo } from "@launchpad/contract";
 import { getAirdrop, prepareAirdrop, reportTransaction } from "@/lib/api";
+import { landedError } from "@/lib/transactions";
 import { COIN_DECIMALS, explorerUrl, formatUnits, shortAddress } from "@/lib/format";
 import styles from "./AirdropCard.module.css";
 
@@ -73,10 +74,12 @@ export function AirdropCard({ initial, symbol, platform }: { initial: AirdropSta
       const results = await Promise.allSettled(
         signed.map(async (tx) => {
           const signature = await connection.sendRawTransaction(tx.serialize());
-          const result = await connection.confirmTransaction(
-            { signature, blockhash: tx.message.recentBlockhash, lastValidBlockHeight: prepared.lastValidBlockHeight },
-            "confirmed",
-          );
+          const result = await connection
+            .confirmTransaction({ signature, blockhash: tx.message.recentBlockhash, lastValidBlockHeight: prepared.lastValidBlockHeight }, "confirmed")
+            .catch((e: unknown) => {
+              if (landedError(e)) return { value: { err: e } };
+              throw e;
+            });
           if (result.value.err) throw new Error("failed on-chain");
           await reportTransaction(signature);
         }),
