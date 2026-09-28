@@ -10,8 +10,8 @@ import { WSOL_MINT } from "./programs";
 
 const TOKEN_PROGRAMS = [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID];
 
-/** What one of a Creator's Creator Fee vaults holds right now. There is one vault per Creator and Quote Asset. */
-export type CreatorFeeVault = {
+/** A fee vault LaunchLab keeps per Quote Asset, and what it holds right now. */
+export type FeeVault = {
   quoteMint: PublicKey;
   vault: PublicKey;
   /** Raw units of the Quote Asset; zero when the vault has never been opened. */
@@ -19,6 +19,9 @@ export type CreatorFeeVault = {
   quoteDecimals: number;
   quoteTokenProgram: PublicKey;
 };
+
+/** What one of a Creator's Creator Fee vaults holds right now. There is one vault per Creator and Quote Asset. */
+export type CreatorFeeVault = FeeVault;
 
 /**
  * Reads the Creator's Creator Fee vaults for the given Quote Assets straight from the chain, which is the only truth about
@@ -29,17 +32,21 @@ export type CreatorFeeVault = {
 export async function readCreatorFeeVaults(
   connection: Connection, program: PublicKey, creator: PublicKey, quoteMints: PublicKey[],
 ): Promise<CreatorFeeVault[]> {
-  if (quoteMints.length === 0) return [];
   const pdas = launchlabPdas(program);
-  const vaults = quoteMints.map((m) => pdas.creatorFeeVault(creator, m));
-  const infos = await connection.getMultipleAccountsInfo([...quoteMints, ...vaults], "confirmed");
-  return quoteMints.flatMap((quoteMint, i) => {
+  return readFeeVaults(connection, quoteMints.map((m) => ({ quoteMint: m, vault: pdas.creatorFeeVault(creator, m) })));
+}
+
+/** Reads fee vaults with their Quote Assets' decimals and token programs; an address that is not a token mint is left out. */
+export async function readFeeVaults(connection: Connection, vaults: { quoteMint: PublicKey; vault: PublicKey }[]): Promise<FeeVault[]> {
+  if (vaults.length === 0) return [];
+  const infos = await connection.getMultipleAccountsInfo([...vaults.map((v) => v.quoteMint), ...vaults.map((v) => v.vault)], "confirmed");
+  return vaults.flatMap(({ quoteMint, vault }, i) => {
     const decimals = mintDecimals(quoteMint, infos[i] ?? null);
     if (decimals === null) return [];
     return [{
       quoteMint,
-      vault: vaults[i]!,
-      balance: vaultBalance(vaults[i]!, infos[quoteMints.length + i] ?? null),
+      vault,
+      balance: vaultBalance(vault, infos[vaults.length + i] ?? null),
       quoteDecimals: decimals,
       quoteTokenProgram: infos[i]!.owner,
     }];
