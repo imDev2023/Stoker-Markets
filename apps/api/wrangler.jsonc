@@ -66,5 +66,7 @@
   ],
   "r2_buckets": [{ "binding": "METADATA_BUCKET", "bucket_name": "launchpad-metadata" }]
   // Secrets, set with `wrangler secret put` and in `.dev.vars` locally: OPERATIONS_KEY, HELIUS_WEBHOOK_SECRET,
-  // MINT_KEY_SECRET, OPERATOR_TOKEN, and optionally JUPITER_API_KEY and ALERT_WEBHOOK_URL.
+  // MINT_KEY_SECRET, OPERATOR_TOKEN, and optionally JUPITER_API_KEY, ALERT_WEBHOOK_URL, and HELIUS_API_KEY together
+  // with HELIUS_WEBHOOK_ID (the Indexer then adds each graduated pool, and the Quote Registry refresh every quote
+  // mint, to the Helius webhook through its API; without them the webhook's addresses are managed by hand).
 }

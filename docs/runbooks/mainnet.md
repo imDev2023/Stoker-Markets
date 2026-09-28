@@ -95,6 +95,7 @@ Secrets, set with `wrangler secret put <NAME> --env production`, never in the co
 | `OPERATOR_TOKEN` | a long random string; whoever holds it has the operator endpoints and the `/operator` page. **owner**: who holds it |
 | `ALERT_WEBHOOK_URL` | the chat webhook (Slack, Discord, Telegram) alerts are posted to as JSON; without it alerts are only stored. **owner**: which channel |
 | `JUPITER_API_KEY` | optional; without it prices and routes use the free `lite-api.jup.ag` host with its lower limits. **owner**: whether to pay for one |
+| `HELIUS_API_KEY`, `HELIUS_WEBHOOK_ID` | optional, together: the Helius API key and the id of the raw webhook from section 7. With both, the Indexer adds each graduated pool to the webhook as it indexes the Graduation, and the Quote Registry refresh adds every quote mint, through Helius's webhook API (`PUT /v0/webhooks/<id>`, `apps/api/src/helius.ts`); one without the other fails `/health`. Without them the webhook's addresses are edited by hand |
 
 After the deploy: `GET https://api.<domain>/health` must answer `{"ok":true}`; any configuration error is its message.
 
@@ -114,11 +115,11 @@ Addresses to watch (print them with `launchlabPdas(program)` from `packages/chai
 | --- | --- |
 | Our PlatformConfig | Every launch, curve trade, Graduation (migration) and `update_platform_config` on our platform names it. Watching the whole LaunchLab program instead would deliver every other platform's traffic. |
 | `launchlabPdas(program).creatorFeeVaultAuthority` (seed `creator_fee_vault_auth_seed`) | `claim_creator_fee` names no platform, so claims made without our site only reach us through this PDA, which every claim passes (CLAUDE.md traps). |
-| Each graduated pool | Pool trades after Graduation. The Indexer backfills a pool's history when it indexes the Graduation, but the webhook needs the pool's address added to keep receiving its swaps. Not automated yet: it takes a call to Helius's webhook API (`PUT /v0/webhooks/<id>` with a `HELIUS_API_KEY`) from the Indexer when a Graduation lands; until then add pools by hand or watch the CPMM program (high volume). |
+| Each graduated pool | Pool trades after Graduation. The Indexer backfills a pool's history when it indexes the Graduation, and with `HELIUS_API_KEY` and `HELIUS_WEBHOOK_ID` set (section 5) adds the pool's address to the webhook in the same delivery, before recording the Graduation, so a failed call makes Helius deliver the migration again. Without the secrets, add pools by hand or watch the CPMM program (high volume). |
 | The operations wallet | Optional: the jobs record their own transactions, but this catches anything sent from the wallet by hand. |
-| Each quote mint | Only once #11 ships, so Quote Risk Labels update within seconds of an issuer changing a mint; otherwise the five-minute refresh re-reads them. |
+| Each quote mint (all 571) | So Quote Risk Labels (#11) update within seconds of an issuer changing a mint: the Indexer re-reads a mint any delivered transaction marked writable. With the secrets set, every Quote Registry refresh adds the quote mints that are missing (one `GET`, and a `PUT` only when something is missing); without them, add the mints by hand, or the five-minute refresh re-reads them. |
 
-A Helius webhook holds up to 100,000 addresses. The `POST /v1/transactions/:signature` fast path means the web app never waits for the webhook, but every trade made elsewhere does.
+A Helius webhook holds up to 100,000 addresses. The `POST /v1/transactions/:signature` fast path means the web app never waits for the webhook, but every trade made elsewhere does. The API keeps the webhook's URL, type and auth header as it found them when it adds addresses, so create the webhook by hand first; `tests/backend/src/helius.test.ts` proves both additions against a stand-in for Helius's API in `tools/stack`. The `POST /v1/transactions/:signature` fast path means the web app never waits for the webhook, but every trade made elsewhere does.
 
 ## 8. Metadata hosting and the permanent domain
 
@@ -157,7 +158,7 @@ Run the same deploy against real devnet (`CLUSTER=devnet`, the devnet program id
 5. [ ] Postgres migrated; Hyperdrive configured (section 4).
 6. [ ] API deployed with the checklist's values and secrets; `/health` ok (section 5).
 7. [ ] Quote Registry refreshed until 571 Quote Assets each have a curve rule (section 6).
-8. [ ] Helius raw webhook on the PlatformConfig and the creator fee vault authority, with the secret (section 7).
+8. [ ] Helius raw webhook on the PlatformConfig and the creator fee vault authority, with the secret (section 7); `HELIUS_API_KEY` and `HELIUS_WEBHOOK_ID` set so pools and quote mints join it on their own (section 5).
 9. [ ] Domain and R2 in place; Arweave decided (section 8).
 10. [ ] Web deployed on the domain (section 9).
 11. [ ] Alerts arrive in the chosen channel: `POST /v1/operator/jobs/fee-collector?fail=simulated` raises `job_failed`, the next run resolves it.

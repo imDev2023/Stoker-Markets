@@ -7,6 +7,7 @@ import {
 import { creatorFeeClaims, curves, feeAnnouncements, graduations, launches, operatorAlerts, type Db } from "@launchpad/db";
 import { indexAirdropPayments } from "./airdrop";
 import type { Config } from "./env";
+import { watchAddresses } from "./helius";
 import { insertTrade, openMarket } from "./market";
 import { relabelQuoteMints } from "./quotes/labels";
 import { recordPlatformFees } from "./routes/operator";
@@ -75,7 +76,7 @@ async function indexTransaction(db: Db, cfg: Config, tx: RawTransaction, result:
       result.launched += await indexLaunch(db, e);
     } else if (e.kind === "trade") result.traded += await indexTrade(db, e);
     else {
-      const graduated = await indexGraduation(db, e);
+      const graduated = await indexGraduation(db, cfg, e);
       result.graduated += graduated;
       // Swaps in the new pool may have been delivered before the migration (webhooks promise no order) and were
       // dropped, since the pool was not ours yet. Now that it is, its history so far is indexed and counted here.
@@ -256,9 +257,14 @@ async function indexPlatformConfigUpdate(db: Db, e: PlatformConfigUpdated) {
   return updated.length;
 }
 
-/** Raydium migrated one of our curves: the Launch has graduated, and any alert about it waiting is resolved. */
-async function indexGraduation(db: Db, e: Graduated) {
+/**
+ * Raydium migrated one of our curves: the Launch has graduated, and any alert about it waiting is resolved. The new
+ * pool joins the Helius webhook first, where one is configured, so its swaps keep arriving; if that fails the
+ * migration is not recorded, the batch fails, and Helius delivers it again.
+ */
+async function indexGraduation(db: Db, cfg: Config, e: Graduated) {
   const mint = e.baseMint.toBase58();
+  await watchAddresses(cfg, [e.pool.toBase58()]);
   const inserted = await db
     .insert(graduations)
     .values({ mint, pool: e.pool.toBase58(), signature: e.signature, slot: e.slot, graduatedAt: time(e.blockTime) })
