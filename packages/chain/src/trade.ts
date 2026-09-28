@@ -1,16 +1,10 @@
-import {
-  ComputeBudgetProgram, Keypair, PublicKey, SystemProgram, TransactionMessage, VersionedTransaction, type Connection,
-  type TransactionInstruction,
-} from "@solana/web3.js";
-import {
-  ACCOUNT_SIZE, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, createAssociatedTokenAccountIdempotentInstruction,
-  createCloseAccountInstruction, createInitializeAccount3Instruction, getAssociatedTokenAddressSync,
-} from "@solana/spl-token";
+import { ComputeBudgetProgram, type Connection, type PublicKey } from "@solana/web3.js";
+import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import type BN from "bn.js";
 import { launchlabCoder } from "./coder";
 import type { CurveReserves, FeeRates, Side } from "./curve";
 import { tradeExactInIx } from "./instructions";
-import { WSOL_MINT } from "./programs";
+import { tradeAccounts, unsignedTransaction, type UnsignedTransaction } from "./wallet";
 
 /** Where a curve is in its life: trading, sold out and waiting for Raydium to migrate it, or migrated to a CPMM pool. */
 export type CurveStatus = "live" | "graduating" | "graduated";
@@ -80,48 +74,17 @@ export type TradeRequest = {
   minAmountOut: BN;
 };
 
-export type PreparedTrade = {
-  /** Base64 of an unsigned v0 transaction; the trader's wallet signs it as fee payer. */
-  transaction: string;
-  lastValidBlockHeight: number;
-};
+export type PreparedTrade = UnsignedTransaction;
 
 const TRADE_COMPUTE_UNITS = 200_000;
 
-/**
- * Builds a buy or sell on the curve server-side (ADR 0003). The trader is the only signer.
- * SOL goes through a temporary wrapped-SOL account opened and closed inside the transaction, so the trader ends up with
- * plain SOL and any wrapped SOL they already hold is never touched.
- */
+/** Builds a buy or sell on the curve server-side (ADR 0003). The trader is the only signer. */
 export async function prepareTrade(connection: Connection, r: TradeRequest): Promise<PreparedTrade> {
   const { curve: c, trader, side } = r;
-  const traderBase = getAssociatedTokenAddressSync(c.baseMint, trader, false, c.baseTokenProgram);
-  const ixs: TransactionInstruction[] = [ComputeBudgetProgram.setComputeUnitLimit({ units: TRADE_COMPUTE_UNITS })];
-  const cleanup: TransactionInstruction[] = [];
-  let traderQuote: PublicKey;
-  if (c.quoteMint.equals(WSOL_MINT)) {
-    const seed = Keypair.generate().publicKey.toBase58().slice(0, 32);
-    traderQuote = await PublicKey.createWithSeed(trader, seed, TOKEN_PROGRAM_ID);
-    const rent = await connection.getMinimumBalanceForRentExemption(ACCOUNT_SIZE, "confirmed");
-    ixs.push(
-      SystemProgram.createAccountWithSeed({
-        fromPubkey: trader,
-        basePubkey: trader,
-        seed,
-        newAccountPubkey: traderQuote,
-        lamports: rent + (side === "buy" ? r.amountIn.toNumber() : 0),
-        space: ACCOUNT_SIZE,
-        programId: TOKEN_PROGRAM_ID,
-      }),
-      createInitializeAccount3Instruction(traderQuote, WSOL_MINT, trader),
-    );
-    cleanup.push(createCloseAccountInstruction(traderQuote, trader, trader));
-  } else {
-    traderQuote = getAssociatedTokenAddressSync(c.quoteMint, trader, false, c.quoteTokenProgram);
-    if (side === "sell") ixs.push(createAssociatedTokenAccountIdempotentInstruction(trader, traderQuote, trader, c.quoteMint, c.quoteTokenProgram));
-  }
-  if (side === "buy") ixs.push(createAssociatedTokenAccountIdempotentInstruction(trader, traderBase, trader, c.baseMint, c.baseTokenProgram));
-  ixs.push(
+  const accounts = await tradeAccounts(connection, { ...c, trader, side, amountIn: r.amountIn });
+  return unsignedTransaction(connection, trader, [
+    ComputeBudgetProgram.setComputeUnitLimit({ units: TRADE_COMPUTE_UNITS }),
+    ...accounts.setup,
     tradeExactInIx(side, {
       program: r.program,
       trader,
@@ -133,14 +96,11 @@ export async function prepareTrade(connection: Connection, r: TradeRequest): Pro
       quoteMint: c.quoteMint,
       baseTokenProgram: c.baseTokenProgram,
       quoteTokenProgram: c.quoteTokenProgram,
-      traderBaseAccount: traderBase,
-      traderQuoteAccount: traderQuote,
+      traderBaseAccount: accounts.base,
+      traderQuoteAccount: accounts.quote,
       amountIn: r.amountIn,
       minAmountOut: r.minAmountOut,
     }),
-    ...cleanup,
-  );
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-  const message = new TransactionMessage({ payerKey: trader, recentBlockhash: blockhash, instructions: ixs }).compileToV0Message();
-  return { transaction: Buffer.from(new VersionedTransaction(message).serialize()).toString("base64"), lastValidBlockHeight };
+    ...accounts.cleanup,
+  ]);
 }

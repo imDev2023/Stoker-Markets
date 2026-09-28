@@ -13,21 +13,22 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 
 ## Code map
 
-- `packages/chain` - LaunchLab PDAs, instruction builders from the IDL (Anchor coder), launch transaction, decoder. Server-only.
+- `packages/chain` - LaunchLab and CPMM PDAs, instruction builders from the IDLs (Anchor coder), launch, curve and pool trades, migration, decoder. Server-only.
 - `packages/db` - Drizzle schema and migrations (`pnpm --filter @launchpad/db generate`).
 - `packages/contract` - zod API contract shared by the API and every client.
-- `apps/api` - Hono Worker: prepare endpoints, Helius webhook indexer, read API, metadata hosting.
+- `apps/api` - Hono Worker: prepare endpoints, Helius webhook indexer, read API, metadata hosting, and a Cron Trigger (`scheduled`) that watches Graduations and raises operator alerts.
 - `apps/web` - Next.js 16 on OpenNext; a pure client of the API. Read `apps/web/AGENTS.md` (Next 16 breaking changes).
-- `tools/localnet` - `solana-test-validator` with the Raydium devnet programs from committed fixtures, plus platform bootstrap.
-- `tools/stack` - starts Postgres, local chain, API (and optionally web) for tests.
+- `tools/localnet` - `solana-test-validator` with the Raydium devnet programs from committed fixtures, plus platform bootstrap and `migrateCurve`, which plays Raydium's crank with a local stand-in migrate wallet.
+- `tools/stack` - starts Postgres, local chain, API (and optionally web) for tests, plus an alert sink standing in for the operator's chat webhook. `STACK_LOG_DIR` streams each process's output to files.
 - `tests/backend` - black-box tests: only HTTP API and chain, never internals.
 - `tests/ui` - Playwright browser E2E on the full stack with a Wallet Standard test wallet (`src/wallet.ts`: the key stays in Node, tests approve or decline each signature), plus pixel baselines at 1440 and 390, light and dark.
 
 ## Run and test
 
-- Dev: `docker compose up -d` (Postgres on 5442), `pnpm localnet` (chain on 8899, writes `tools/localnet/.ledger/state.json`), `apps/api`: `pnpm exec wrangler dev --port 8791 --test-scheduled --var PLATFORM_CONFIG:<from state.json>`, `apps/web`: `pnpm dev` (3100). Migrate the dev DB with `runMigrations` from `@launchpad/db/migrate`.
+- Dev: `docker compose up -d` (Postgres on 5442), `pnpm localnet` (chain on 8899, writes `tools/localnet/.ledger/state.json`; migrates sold-out curves within seconds like Raydium's crank, `CRANK=off` to leave them graduating), `apps/api`: `pnpm exec wrangler dev --port 8791 --test-scheduled --var PLATFORM_CONFIG:<from state.json>`, `apps/web`: `pnpm dev` (3100). Migrate the dev DB with `runMigrations` from `@launchpad/db/migrate`.
+- Scheduled jobs: `wrangler dev --test-scheduled` runs them on `GET /__scheduled?cron=<cron>`: `*+*+*+*+*` is the graduation watch, `*/5+*+*+*+*` the Quote Registry refresh, and a bare `GET /__scheduled` runs both.
 - Tests: `pnpm test:backend` and `pnpm test:ui`, each on its own throwaway stack; the chain takes a free block of ports, so checkouts and agents can run suites side by side (`TEST_RPC_PORT` pins it). `pnpm lint`, `pnpm typecheck`; CI runs both.
-- UI baselines live in `tests/ui/screenshots/<platform>/`; after an intended UI change, run `pnpm test:ui --update-snapshots=all` and look at every changed image before committing.
+- UI baselines live in `tests/ui/screenshots/<platform>/`; after an intended UI change, run `pnpm test:ui --update-snapshots=changed` (`all` rewrites matching baselines with byte-different PNGs) and look at every changed image before committing.
 - Port 8787 and 3000 belong to other projects on this machine; ours are 3100, 8791, 8899, 5442.
 
 ## Settled (do not re-litigate)
@@ -52,6 +53,12 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 - `solana account --output json` dumps `rentEpoch` as u64 max; a JSON round-trip turns it into a float the validator rejects, so write 0.
 - TypeScript is pinned to 6.0 because typescript-eslint doesn't support 7. pnpm 11 needs `allowBuilds` in `pnpm-workspace.yaml` for native deps.
 - A `container-type: inline-size` box has no width of its own: in a column flex with `align-items: flex-start` it collapses to 0 and anything sized in `cqi` vanishes. `PairMark` measures its glyphs to fit, because per-character estimates break on wide letters like W.
+- `migrate_to_cpswap` wants the CPMM `support_mint` PDAs in the pool's token order (sorted mint bytes), not quote then base; WSOL sorts first for all but about 1 in 40 mints, so the wrong order fails only now and then with 2502 `RequireKeysEqViolated`.
+- A v0 transaction through an address lookup table is dropped until the table's last extension is rooted (about 32 slots, 15 s locally); create tables ahead of use. The migration needs one (1,471 bytes as legacy); the local migrate wallet's table is made at bootstrap.
+- A migrated CPMM pool opens one second after migration by the chain's clock, which lags the wall clock on the local validator; check `Pool.chainTime` against `openTime`, never `Date.now()`.
+- CPMM's ExceededSlippage is 6005 (LaunchLab's is 6004), and CPMM emits `SwapEvent` to the log (`Program data:`), not through a self-invocation like LaunchLab's `TradeEvent`.
+- `Keypair.publicKey` returns a new `PublicKey` on every access: compare keys with `.equals`, never `===`.
+- Drizzle `sql` templates with a `Date` parameter fail under our `postgres` client settings; pass `toISOString()` and cast `::timestamptz`.
 - `grep` in this shell is aliased to ugrep with different flags; use `/usr/bin/grep` in scripts.
 - Test `next dev` runs rewrite `apps/web/next-env.d.ts` to point at their throwaway build folder; the web `typecheck` runs `next typegen` first, so ignore that file.
 - A Quote Asset with no curve rule account is unrestricted even with `restrict_curve_param` on, so the Quote Registry refresh (`/__scheduled`, run once by `tools/stack` at startup) gives every GlobalConfig a rule, a closed one when unpriced (ADR 0005). The dev API needs `OPERATIONS_KEY` (the operations key as a JSON byte array, `tools/localnet/.keys/operations.json`) in `apps/api/.dev.vars` and one `curl localhost:8791/__scheduled` before anything can launch.

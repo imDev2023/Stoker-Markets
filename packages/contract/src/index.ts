@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { GraduationTarget, QuoteRef } from "./quotes";
-import { CurveProgress } from "./trades";
+import { CurveProgress, Graduation } from "./trades";
 
 /** The public API contract, shared by the API (which validates with it) and every client, including our web app. */
 
@@ -54,6 +54,8 @@ export const LaunchSummary = z.object({
   /** Raw units of the Quote Asset, as a decimal string. */
   graduationTarget: z.string(),
   curve: CurveProgress,
+  /** Set once Raydium has moved the Launch into its CPMM pool, where it trades from then on. */
+  graduation: Graduation.nullable(),
   createdSignature: z.string(),
   createdAt: z.iso.datetime(),
 });
@@ -78,3 +80,18 @@ export const PlatformInfo = z.object({
   creatorFeeBps: z.number(),
 });
 export type PlatformInfo = z.infer<typeof PlatformInfo>;
+
+/** Something the operator must act on, such as a Launch whose curve sold out but that Raydium has not migrated. */
+export const OperatorAlert = z.object({
+  kind: z.enum(["graduation_stuck"]),
+  /** What the alert is about: a Launch's mint for `graduation_stuck`. */
+  subject: z.string(),
+  message: z.string(),
+  raisedAt: z.iso.datetime(),
+  /** When the cause went away, such as the migration finally landing; null while it still needs attention. */
+  resolvedAt: z.iso.datetime().nullable(),
+});
+export type OperatorAlert = z.infer<typeof OperatorAlert>;
+
+export const OperatorAlertList = z.object({ alerts: z.array(OperatorAlert) });
+export type OperatorAlertList = z.infer<typeof OperatorAlertList>;

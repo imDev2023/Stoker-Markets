@@ -6,10 +6,12 @@ import BN from "bn.js";
 import { desc, eq } from "drizzle-orm";
 import { prepareLaunch, type RawTransaction } from "@launchpad/chain";
 import {
-  LAUNCH_IMAGE_MAX_BYTES, LAUNCH_IMAGE_TYPES, PrepareLaunchFields, type LaunchSummary, type PlatformInfo, type PreparedLaunch,
+  LAUNCH_IMAGE_MAX_BYTES, LAUNCH_IMAGE_TYPES, PrepareLaunchFields, type LaunchSummary, type OperatorAlertList, type PlatformInfo,
+  type PreparedLaunch,
 } from "@launchpad/contract";
-import { createDb, curves, launches, launchMetadata, quoteAssets } from "@launchpad/db";
+import { createDb, curves, graduations, launches, launchMetadata, operatorAlerts, quoteAssets } from "@launchpad/db";
 import { config, operationsKey, quoteMarket, type AppEnv, type Bindings, type Config } from "./env";
+import { watchGraduations } from "./graduation";
 import { fetchRawTransaction, indexTransactions } from "./indexer";
 import { sniffImageType } from "./images";
 import { priceLaunch, toQuoteRef } from "./quotes/assets";
@@ -147,12 +149,13 @@ app.get("/v1/launches", async (c) => {
     .from(launches)
     .leftJoin(launchMetadata, eq(launchMetadata.id, launches.mint))
     .leftJoin(curves, eq(curves.mint, launches.mint))
+    .leftJoin(graduations, eq(graduations.mint, launches.mint))
     // Amounts need the Quote Asset's decimals, so a Launch shows once the registry lists its Quote Asset. Every Launch the API
     // built already is; only one sent straight to a GlobalConfig newer than the last refresh waits for the next one.
     .innerJoin(quoteAssets, eq(quoteAssets.mint, launches.quoteMint))
     .orderBy(desc(launches.createdSlot))
     .limit(limit);
-  return c.json({ launches: rows.map((r) => toSummary(c.get("cfg"), r.launches, r.launch_metadata, r.quote_assets, r.curves)) });
+  return c.json({ launches: rows.map((r) => toSummary(c.get("cfg"), r)) });
 });
 
 app.get("/v1/launches/:mint", async (c) => {
@@ -162,16 +165,34 @@ app.get("/v1/launches/:mint", async (c) => {
     .from(launches)
     .leftJoin(launchMetadata, eq(launchMetadata.id, launches.mint))
     .leftJoin(curves, eq(curves.mint, launches.mint))
+    .leftJoin(graduations, eq(graduations.mint, launches.mint))
     .innerJoin(quoteAssets, eq(quoteAssets.mint, launches.quoteMint))
     .where(eq(launches.mint, c.req.param("mint")))
     .limit(1);
   if (!row) return c.json({ error: "launch not found" }, 404);
-  return c.json(toSummary(c.get("cfg"), row.launches, row.launch_metadata, row.quote_assets, row.curves));
+  return c.json(toSummary(c.get("cfg"), row));
 });
 
 app.route("/v1", quotes);
 app.route("/v1", tradeRoutes);
 app.route("/v1", creatorFeeRoutes);
+
+/** Operator alerts, newest first: open ones and recently resolved ones. Needs the operator token. */
+app.get("/v1/operator/alerts", async (c) => {
+  const token = (c.req.header("authorization") ?? "").replace(/^Bearer /, "");
+  if (!timingSafeEqual(token, c.env.OPERATOR_TOKEN ?? "")) return c.json({ error: "unauthorized" }, 401);
+  const rows = await c.get("db").select().from(operatorAlerts).orderBy(desc(operatorAlerts.raisedAt)).limit(200);
+  const res: OperatorAlertList = {
+    alerts: rows.map((a) => ({
+      kind: a.kind,
+      subject: a.subject,
+      message: a.message,
+      raisedAt: a.raisedAt.toISOString(),
+      resolvedAt: a.resolvedAt?.toISOString() ?? null,
+    })),
+  };
+  return c.json(res);
+});
 
 /** Token metadata JSON in the Metaplex off-chain format, as referenced by the on-chain metadata URI. */
 app.get("/metadata/:file", async (c) => {
@@ -211,12 +232,17 @@ app.get("/metadata/:mint/image", async (c) => {
   });
 });
 
+type SummaryRow = {
+  launches: typeof launches.$inferSelect;
+  launch_metadata: typeof launchMetadata.$inferSelect | null;
+  quote_assets: typeof quoteAssets.$inferSelect;
+  curves: typeof curves.$inferSelect | null;
+  graduations: typeof graduations.$inferSelect | null;
+};
+
 function toSummary(
   cfg: Config,
-  l: typeof launches.$inferSelect,
-  m: typeof launchMetadata.$inferSelect | null,
-  q: typeof quoteAssets.$inferSelect,
-  curve: typeof curves.$inferSelect | null,
+  { launches: l, launch_metadata: m, quote_assets: q, curves: curve, graduations: g }: SummaryRow,
 ): LaunchSummary {
   return {
     mint: l.mint,
@@ -230,7 +256,8 @@ function toSummary(
     description: m?.description ?? null,
     links: { website: m?.website ?? null, x: m?.x ?? null, telegram: m?.telegram ?? null },
     graduationTarget: l.graduationTarget,
-    curve: curveProgress(curve),
+    curve: curveProgress(curve, g !== null),
+    graduation: g && { pool: g.pool, signature: g.signature, graduatedAt: g.graduatedAt.toISOString(), price: g.price },
     createdSignature: l.createdSignature,
     createdAt: l.createdAt.toISOString(),
   };
@@ -246,17 +273,27 @@ function timingSafeEqual(a: string, b: string) {
   return diff === 0;
 }
 
+/** The Cron Triggers in wrangler.jsonc. A run with no cron (a bare GET /__scheduled in tests) does both jobs. */
+const CRONS = { graduationWatch: "* * * * *", quoteRegistry: "*/5 * * * *" } as const;
 
 export default {
   fetch: app.fetch,
-  /** The Cron Trigger: refresh the Quote Registry and our curve rules. */
-  async scheduled(_controller, env) {
+  async scheduled(controller, env, ctx) {
     const { db, close } = createDb(env.HYPERDRIVE.connectionString);
+    const run = (cron: string) => !controller.cron || controller.cron === cron;
     try {
-      const result = await refreshQuoteRegistry({ db, cfg: config(env), market: quoteMarket(env), operations: operationsKey(env) });
-      console.log("quote registry refreshed", result);
+      // The Quote Registry refresh and our curve rules (ADR 0005).
+      if (run(CRONS.quoteRegistry)) {
+        const result = await refreshQuoteRegistry({ db, cfg: config(env), market: quoteMarket(env), operations: operationsKey(env) });
+        console.log("quote registry refreshed", result);
+      }
+      // Launches that sold out but that Raydium has not migrated.
+      if (run(CRONS.graduationWatch)) {
+        const watch = await watchGraduations(db, config(env));
+        if (watch.recovered.length > 0) console.log(`graduation watch indexed missed migrations: ${watch.recovered.join(", ")}`);
+      }
     } finally {
-      await close();
+      ctx.waitUntil(close());
     }
   },
 } satisfies ExportedHandler<Bindings>;
