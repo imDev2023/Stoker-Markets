@@ -1,7 +1,8 @@
 import {
-  ApiError, CandleList, CreatorFeeClaimList, CreatorFees, LaunchList, LaunchSummary, PlatformInfo, PreparedCreatorFeeClaim,
-  PreparedLaunch, PreparedTrade, QuoteAssetList, TradeList, TradeQuote,
-  type CandleInterval, type PrepareCreatorFeeClaimRequest, type PrepareTradeRequest, type TradeQuoteQuery,
+  ApiError, CandleList, CreatorFeeClaimList, CreatorFees, HolderList, LaunchList, LaunchQuoteList, LaunchSummary, PlatformInfo,
+  PreparedCreatorFeeClaim, PreparedLaunch, PreparedTrade, QuoteAssetList, TradeList, TradeQuote,
+  type CandleInterval, type CurveStatus, type LaunchSort, type PrepareCreatorFeeClaimRequest, type PrepareTradeRequest,
+  type QuoteCategory, type TradeQuoteQuery,
 } from "@launchpad/contract";
 
 /** The web app is a client of the public API like any other; it never builds transactions itself (ADR 0003). */
@@ -24,8 +25,29 @@ export async function listQuotes() {
   return read(await fetch(`${API_URL}/v1/quotes`, { cache: "no-store" }), QuoteAssetList);
 }
 
-export async function listLaunches() {
-  return read(await fetch(`${API_URL}/v1/launches?limit=60`, { cache: "no-store" }), LaunchList);
+/** How many coins the board shows at once. */
+export const BOARD_SIZE = 60;
+
+/** The board's sort and filters, as both the API and the page's URL take them. */
+export type BoardQuery = { sort: LaunchSort; category: QuoteCategory | null; quote: string | null };
+
+export async function listLaunches(q: Partial<BoardQuery> & { status?: CurveStatus; limit?: number } = {}, signal?: AbortSignal) {
+  const query = new URLSearchParams({ limit: String(q.limit ?? BOARD_SIZE) });
+  for (const key of ["sort", "category", "quote", "status"] as const) {
+    const value = q[key];
+    if (value) query.set(key, value);
+  }
+  return read(await fetch(`${API_URL}/v1/launches?${query}`, { cache: "no-store", signal }), LaunchList);
+}
+
+/** The Quote Assets Launches are paired with, most used first. */
+export async function listLaunchQuotes() {
+  return read(await fetch(`${API_URL}/v1/launches/quotes`, { cache: "no-store" }), LaunchQuoteList);
+}
+
+/** Top holders and the Creator's holding, read from the chain by the API. */
+export async function getHolders(mint: string) {
+  return read(await fetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/holders`, { cache: "no-store" }), HolderList);
 }
 
 export async function getLaunch(mint: string): Promise<LaunchSummary | null> {

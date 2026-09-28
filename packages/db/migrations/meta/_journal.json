@@ -36,6 +36,13 @@
       "when": 1790551118201,
       "tag": "0004_graduation",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790554279459,
+      "tag": "0005_board_discovery",
+      "breakpoints": true
     }
   ]
 }

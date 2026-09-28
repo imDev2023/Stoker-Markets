@@ -1,5 +1,5 @@
 // What a trader does on a coin page, end to end against the real chain, API and Indexer.
-import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
 import type { Page } from "@playwright/test";
 import { expect, fundedKeypair, launchViaApi, stackEnv, test, tradeViaApi } from "./fixtures";
 import { TEST_WALLET_NAME } from "./wallet";
@@ -43,7 +43,7 @@ async function coinsHeld(owner: PublicKey, mint: string) {
 test("a trader buys, then sells half, and sees both in the history and the chart", async ({ page, wallet }) => {
   const mint = await freshCoin("BUYS");
   await openConnected(page, mint);
-  await expect(page.getByText("No trades yet", { exact: true })).toBeVisible();
+  await expect(page.getByText("No trades yet. Be the first to buy.", { exact: true })).toBeVisible();
 
   // Buy: a preset fills the amount, the quote shows every fee, and the disclaimer comes before the first review.
   await panel(page).getByRole("button", { name: "0.1 SOL" }).click();
@@ -74,7 +74,7 @@ test("a trader buys, then sells half, and sees both in the history and the chart
   const history = page.getByRole("region", { name: "Trades", exact: true });
   await expect(history.getByRole("row")).toHaveCount(2);
   await expect(history.getByRole("row").nth(1)).toContainText("Buy");
-  await expect(page.getByText("No trades yet", { exact: true })).toBeHidden();
+  await expect(page.getByText("No trades yet. Be the first to buy.", { exact: true })).toBeHidden();
   await expect(page.getByText("Market cap")).toBeVisible();
 
   // Sell half: the percentage presets come from the balance the wallet holds.
@@ -151,8 +151,15 @@ test("declining in the wallet trades nothing and says so", async ({ page, wallet
 
 test("an amount over the wallet's balance is refused before any review", async ({ page, wallet }) => {
   const mint = await freshCoin("MUCH");
+  // Leave the wallet 0.3 SOL. The amount must be over the balance but under what the rest of the curve costs (about 1 SOL
+  // locally): a bigger buy is capped at the curve's remainder, and the quote rightly says it costs less than the balance.
+  const conn = new Connection(stackEnv().rpcUrl, "confirmed");
+  const spend = (await conn.getBalance(wallet.keypair.publicKey)) - 0.3 * LAMPORTS_PER_SOL;
+  const drain = SystemProgram.transfer({ fromPubkey: wallet.keypair.publicKey, toPubkey: Keypair.generate().publicKey, lamports: spend });
+  await sendAndConfirmTransaction(conn, new Transaction().add(drain), [wallet.keypair]);
   await openConnected(page, mint);
-  await panel(page).getByLabel("You pay").fill("50");
+  await panel(page).getByLabel("You pay").fill("0.5");
+  await expect(panel(page).getByText("You get about")).toBeVisible();
   await expect(panel(page).getByText(/^You have [\d.,]+ SOL\. Enter a smaller amount\.$/)).toBeVisible();
   await expect(panel(page).getByLabel("You pay")).toHaveAttribute("aria-invalid", "true");
   await expect(panel(page).getByRole("button", { name: "Review buy" })).toBeDisabled();
