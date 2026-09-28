@@ -177,7 +177,7 @@
 }
 
 .presets button,
-.slippage button {
+.option button {
   height: 32px;
   padding: 0 12px;
   border: 1px solid var(--line);
@@ -192,7 +192,7 @@
 
 @media (hover: hover) {
   .presets button:hover:not(:disabled),
-  .slippage button:hover:not(:disabled) {
+  .option button:hover:not(:disabled) {
     border-color: var(--ink-3);
     color: var(--ink);
   }
@@ -203,7 +203,8 @@
   cursor: not-allowed;
 }
 
-.slippage {
+/* A labelled row of choices: what a buy is paid with, and the slippage. */
+.option {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -213,7 +214,7 @@
   font-weight: 600;
 }
 
-.slippage > div {
+.option > div {
   display: flex;
   gap: 4px;
 }
@@ -224,7 +225,11 @@
   font-weight: 500;
 }
 
-.slippage button[aria-pressed="true"] {
+.payWith button {
+  min-width: 64px;
+}
+
+.option button[aria-pressed="true"] {
   border-color: var(--cobalt);
   background: var(--plate);
   color: var(--cobalt-strong);
@@ -283,7 +288,8 @@
   font-weight: 400;
 }
 
-.feeTotal {
+/* Starts a new group of rows in the quote: what a buy paid with SOL costs, then the fees. */
+.group {
   margin-top: 4px;
   padding-top: 8px;
   border-top: 1px solid var(--line);
@@ -305,9 +311,14 @@
 
 .quoteHint,
 .quoteError,
-.completes {
+.completes,
+.routeNote {
   margin: 0;
   color: var(--ink-3);
+}
+
+.routeNote {
+  font-size: 0.8125rem;
 }
 
 .quoteError {

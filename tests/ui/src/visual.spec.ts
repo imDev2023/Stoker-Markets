@@ -25,6 +25,12 @@ const tradedDynamic = (page: Page) => [
   page.locator("dl").filter({ hasText: "Launch transaction" }).locator(".mono"),
 ];
 
+/**
+ * A panel taller than the phone's viewport is captured while the page is scrolled, where the sticky site header would
+ * sit over its top, wallet address and all; for such a shot the header scrolls away with the page.
+ */
+const unstickHeader = (page: Page) => page.addStyleTag({ content: "body > header { position: static !important; }" });
+
 async function snap(page: Page, name: string, mask = dynamic) {
   // Check the settled page: hydrated, images in and web fonts swapped.
   await page.waitForLoadState("networkidle");
@@ -156,6 +162,40 @@ test("coin page paired with USDC, after a buy", async ({ page }) => {
   await expect(page.getByRole("region", { name: "Trades", exact: true }).getByRole("row")).toHaveCount(2);
   await expect(page.getByText("Market cap")).toBeVisible();
   await snap(page, "coin-usdc.png", tradedDynamic);
+});
+
+test("trade panel paying with SOL on a USDC-paired coin, quote and review", async ({ page, wallet }) => {
+  await page.goto(`/coin/${await mintOf("Dollar Paired")}`);
+  await unstickHeader(page);
+  const panel = page.getByRole("region", { name: /^Trade( |$)/ });
+  await panel.getByRole("button", { name: "Connect wallet" }).click();
+  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  // The test wallet holds no USDC, so the panel pays with SOL.
+  await expect(panel.getByRole("group", { name: "Pay with" }).getByRole("button", { name: "SOL" })).toHaveAttribute("aria-pressed", "true");
+  await panel.getByRole("button", { name: "0.5 SOL" }).click();
+  await expect(panel.getByText("You pay about")).toBeVisible();
+  await expect(panel).toHaveScreenshot("trade-sol-quote.png", { mask: tradedDynamic(page) });
+
+  await panel.getByRole("button", { name: "Review buy" }).click();
+  const dialog = page.getByRole("dialog", { name: "Before you trade" });
+  await dialog.getByRole("checkbox").check();
+  await dialog.getByRole("button", { name: "Continue" }).click();
+  await expect(panel.getByRole("region", { name: "Review your trade" })).toBeVisible();
+  await expect(panel).toHaveScreenshot("trade-sol-review.png", { mask: tradedDynamic(page) });
+  expect(wallet.requests).toHaveLength(0);
+});
+
+test("trade panel paying with SOL where there is no SOL route", async ({ page, wallet, expectedHttpErrors }) => {
+  expectedHttpErrors.push(/\/v1\/launches\/[^/]+\/quote\?/);
+  await page.goto(`/coin/${await mintOf("Chipmaker Pair")}`);
+  await unstickHeader(page);
+  const panel = page.getByRole("region", { name: /^Trade( |$)/ });
+  await panel.getByRole("button", { name: "Connect wallet" }).click();
+  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await panel.getByRole("button", { name: "0.1 SOL" }).click();
+  await expect(panel.getByText("There's no SOL route to NVDAx right now. Pay in NVDAx instead.")).toBeVisible();
+  await expect(panel).toHaveScreenshot("trade-sol-no-route.png", { mask: tradedDynamic(page) });
+  expect(wallet.requests).toHaveLength(0);
 });
 
 test("coin page after graduation", async ({ page }) => {
