@@ -1,9 +1,10 @@
 import { PublicKey } from "@solana/web3.js";
 import bs58 from "bs58";
 import BN from "bn.js";
-import { launchlabCoder } from "./coder";
+import { cpmmCoder, launchlabCoder } from "./coder";
 import type { CurveReserves, Side, TradeFees } from "./curve";
 import { LAUNCH_SHAPE } from "./shape";
+import type { Programs } from "./programs";
 import type { CurveStatus } from "./trade";
 
 type RawInstruction = { programIdIndex: number; accounts: number[]; data: string };
@@ -27,6 +28,7 @@ export type RawTransaction = {
     loadedAddresses?: { writable: string[]; readonly: string[] };
     innerInstructions?: { index: number; instructions: RawInstruction[] }[];
     postTokenBalances?: { mint: string; uiTokenAmount: { decimals: number } }[];
+    logMessages?: string[] | null;
   } | null;
 };
 
@@ -98,13 +100,65 @@ export type CreatorFeeClaimed = {
   quoteDecimals: number;
 };
 
-export type ChainEvent = LaunchCreated | TradeExecuted | CreatorFeeClaimed;
+
+/** Raydium's migrate wallet moved a sold-out curve into its CPMM pool: the Launch has graduated. */
+export type Graduated = {
+  kind: "graduated";
+  signature: string;
+  slot: number;
+  blockTime: number | null;
+  /** The LaunchLab curve that sold out. */
+  curve: PublicKey;
+  /** The CPMM pool the Launch now trades in. */
+  pool: PublicKey;
+  platformConfig: PublicKey;
+  baseMint: PublicKey;
+  quoteMint: PublicKey;
+};
+
+/**
+ * One swap in a CPMM pool: the program's own SwapEvent plus the accounts of the instruction that emitted it.
+ * Any CPMM pool's swaps decode; the Indexer keeps those in pools our Launches graduated into.
+ */
+export type PoolSwapExecuted = {
+  kind: "pool_swap";
+  signature: string;
+  slot: number;
+  blockTime: number | null;
+  /** Position among the pool swaps in this transaction. */
+  index: number;
+  trader: PublicKey;
+  pool: PublicKey;
+  inputMint: PublicKey;
+  outputMint: PublicKey;
+  /** What left the trader's account, including any Token-2022 transfer fee. */
+  amountIn: BN;
+  /** What reached the trader's account, after the creator fee and any transfer fee. */
+  amountOut: BN;
+  /** Raydium's trade fee, in the input token. */
+  tradeFee: BN;
+  /** The pool creator's fee, in the input token when `creatorFeeOnInput`, otherwise in the output token. */
+  creatorFee: BN;
+  creatorFeeOnInput: boolean;
+  /** The pool's constant-product position before and after, fees excluded, as [input, output] reserves. */
+  before: [BN, BN];
+  after: [BN, BN];
+  inputDecimals: number;
+  outputDecimals: number;
+};
+
+export type ChainEvent = LaunchCreated | TradeExecuted | CreatorFeeClaimed | Graduated | PoolSwapExecuted;
 
 const INITIALIZE_IXS = new Set(["initialize", "initialize_v2", "initialize_with_token_2022"]);
 // Account positions shared by all three initialize instructions.
 const IX_ACCOUNT = { creator: 1, globalConfig: 2, platformConfig: 3, pool: 5, baseMint: 6, quoteMint: 7 } as const;
 
 const TRADE_IXS = new Set(["buy_exact_in", "buy_exact_out", "sell_exact_in", "sell_exact_out"]);
+// Account positions of `migrate_to_cpswap`.
+const MIGRATE_ACCOUNT = { baseMint: 1, quoteMint: 2, platformConfig: 3, pool: 5, curve: 17 } as const;
+// Account positions shared by CPMM's two swap instructions.
+const SWAP_IXS = new Set(["swap_base_input", "swap_base_output"]);
+const SWAP_ACCOUNT = { payer: 0, pool: 3 } as const;
 // Account positions shared by all four trade instructions.
 const TRADE_ACCOUNT = { trader: 0, platformConfig: 3, pool: 4, baseMint: 9, quoteMint: 10 } as const;
 
@@ -129,10 +183,19 @@ type TradeEventData = {
   trade_direction: { Buy?: object; Sell?: object }; pool_status: Record<string, object>;
 };
 
+type SwapEventData = {
+  pool_id: PublicKey; input_vault_before: BN; output_vault_before: BN; input_amount: BN; output_amount: BN;
+  input_transfer_fee: BN; output_transfer_fee: BN; input_mint: PublicKey; output_mint: PublicKey;
+  trade_fee: BN; creator_fee: BN; creator_fee_on_input: boolean;
+};
+
 type TradeAccounts = Pick<TradeExecuted, "trader" | "platformConfig" | "pool" | "baseMint" | "quoteMint">;
 
-/** Turns one confirmed transaction into the LaunchLab events we index. Failed transactions yield nothing. */
-export function decodeTransaction(raw: RawTransaction, launchlab: PublicKey): ChainEvent[] {
+/**
+ * Turns one confirmed transaction into the LaunchLab and CPMM events we index, in execution order.
+ * Failed transactions yield nothing.
+ */
+export function decodeTransaction(raw: RawTransaction, programs: Pick<Programs, "launchlab" | "cpmm">): ChainEvent[] {
   const meta = raw.meta;
   if (!meta || meta.err) return [];
   const keys = [
@@ -140,7 +203,13 @@ export function decodeTransaction(raw: RawTransaction, launchlab: PublicKey): Ch
     ...(meta.loadedAddresses?.writable ?? []),
     ...(meta.loadedAddresses?.readonly ?? []),
   ];
-  const program = launchlab.toBase58();
+  const program = programs.launchlab.toBase58();
+  const cpmm = programs.cpmm.toBase58();
+  // CPMM writes its SwapEvent to the log rather than through a self-invocation, so swaps pair with their events in order.
+  const swapEvents = programDataLogs(meta.logMessages ?? [], cpmm)
+    .map((data) => safeDecodeCpmmEvent(data))
+    .filter((e) => e?.name === "SwapEvent")
+    .map((e) => e!.data as SwapEventData);
   const signature = raw.transaction.signatures[0]!;
   // Both mints always have a balance entry: every trade moves tokens through the curve's two vaults.
   const decimalsOf = (mint: PublicKey) => {
@@ -157,6 +226,7 @@ export function decodeTransaction(raw: RawTransaction, launchlab: PublicKey): Ch
   const events: ChainEvent[] = [];
   let tradeIndex = 0;
   let claimIndex = 0;
+  let swapIndex = 0;
   for (const group of groups) {
     let trade: TradeAccounts | null = null;
     // A claim instruction waiting for the token transfer out of its vault, which says how much it paid.
@@ -174,8 +244,37 @@ export function decodeTransaction(raw: RawTransaction, launchlab: PublicKey): Ch
         }
         continue;
       }
-      if (keys[ix.programIdIndex] !== program) continue;
       const acct = (i: number) => new PublicKey(keys[ix.accounts[i]!]!);
+      if (keys[ix.programIdIndex] === cpmm) {
+        const swap = safeDecodeCpmmIx(Buffer.from(bs58.decode(ix.data)));
+        if (!swap || !SWAP_IXS.has(swap.name)) continue;
+        const e = swapEvents[swapIndex];
+        if (!e || !e.pool_id.equals(acct(SWAP_ACCOUNT.pool))) continue;
+        const net = e.input_amount.sub(e.trade_fee).sub(e.creator_fee_on_input ? e.creator_fee : new BN(0));
+        const swapped = e.output_amount.add(e.creator_fee_on_input ? new BN(0) : e.creator_fee);
+        events.push({
+          kind: "pool_swap",
+          signature,
+          slot: raw.slot,
+          blockTime: raw.blockTime,
+          index: swapIndex++,
+          trader: acct(SWAP_ACCOUNT.payer),
+          pool: e.pool_id,
+          inputMint: e.input_mint,
+          outputMint: e.output_mint,
+          amountIn: e.input_amount.add(e.input_transfer_fee),
+          amountOut: e.output_amount.sub(e.output_transfer_fee),
+          tradeFee: e.trade_fee,
+          creatorFee: e.creator_fee,
+          creatorFeeOnInput: e.creator_fee_on_input,
+          before: [e.input_vault_before, e.output_vault_before],
+          after: [e.input_vault_before.add(net), e.output_vault_before.sub(swapped)],
+          inputDecimals: decimalsOf(e.input_mint),
+          outputDecimals: decimalsOf(e.output_mint),
+        });
+        continue;
+      }
+      if (keys[ix.programIdIndex] !== program) continue;
       const bytes = Buffer.from(bs58.decode(ix.data));
       if (bytes.subarray(0, 8).equals(EVENT_IX_TAG)) {
         const event = safeDecodeEvent(bytes.subarray(8));
@@ -219,6 +318,20 @@ export function decodeTransaction(raw: RawTransaction, launchlab: PublicKey): Ch
           baseMint: acct(TRADE_ACCOUNT.baseMint),
           quoteMint: acct(TRADE_ACCOUNT.quoteMint),
         };
+        continue;
+      }
+      if (decoded.name === "migrate_to_cpswap") {
+        events.push({
+          kind: "graduated",
+          signature,
+          slot: raw.slot,
+          blockTime: raw.blockTime,
+          curve: acct(MIGRATE_ACCOUNT.curve),
+          pool: acct(MIGRATE_ACCOUNT.pool),
+          platformConfig: acct(MIGRATE_ACCOUNT.platformConfig),
+          baseMint: acct(MIGRATE_ACCOUNT.baseMint),
+          quoteMint: acct(MIGRATE_ACCOUNT.quoteMint),
+        });
         continue;
       }
       if (!INITIALIZE_IXS.has(decoded.name)) continue;
@@ -271,6 +384,38 @@ function vaultTransfer(ix: RawInstruction, keys: string[], source: string): BN |
   if ((data[0] !== TOKEN_TRANSFER && data[0] !== TOKEN_TRANSFER_CHECKED) || data.length < 9) return null;
   if (keys[ix.accounts[0]!] !== source) return null;
   return new BN(data.subarray(1, 9), "le");
+}
+
+/**
+ * The `Program data:` payloads a program logged itself (Anchor's `emit!`), in order. Logs nest by invocation, so each
+ * payload belongs to the program on top of the invocation stack when it was written.
+ */
+function programDataLogs(logs: string[], programId: string) {
+  const stack: string[] = [];
+  const out: string[] = [];
+  for (const line of logs) {
+    const invoke = /^Program (\S+) invoke \[\d+\]$/.exec(line);
+    if (invoke) stack.push(invoke[1]!);
+    else if (/^Program \S+ (success|failed)/.test(line)) stack.pop();
+    else if (line.startsWith("Program data: ") && stack.at(-1) === programId) out.push(line.slice("Program data: ".length).split(" ")[0]!);
+  }
+  return out;
+}
+
+function safeDecodeCpmmIx(data: Buffer) {
+  try {
+    return cpmmCoder.instruction.decode(data);
+  } catch {
+    return null;
+  }
+}
+
+function safeDecodeCpmmEvent(base64: string) {
+  try {
+    return cpmmCoder.events.decode(base64);
+  } catch {
+    return null;
+  }
 }
 
 function safeDecodeIx(data: Buffer) {

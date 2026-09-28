@@ -44,11 +44,25 @@ export function PairMark({ base, quote, size = "md" }: { base: string; quote: st
       el.style.fontSize = `${Math.max(cssSize * MIN_SCALE, target)}px`;
     };
     fit();
-    const observer = new ResizeObserver(fit);
+    // Refit when the room changes, and when the glyphs do: a web font can swap in after first paint without a load
+    // event (already cached, applied on the next style pass), and only the untruncated slash and quote show it.
+    // The refit runs on the next frame, since resizing observed elements inside the callback is a ResizeObserver loop;
+    // a refit that lands on the same size changes nothing, so it settles after one round.
+    let frame = 0;
+    const refit = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(fit);
+    };
+    const observer = new ResizeObserver(refit);
     observer.observe(box);
-    // Web fonts swap in after first paint and change every glyph's width.
+    for (const part of el.querySelectorAll(`.${styles.slash}, .${styles.quote}`)) observer.observe(part);
     void document.fonts.ready.then(fit);
-    return () => observer.disconnect();
+    document.fonts.addEventListener("loadingdone", fit);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      document.fonts.removeEventListener("loadingdone", fit);
+    };
   }, [base, quote, size]);
 
   const style = size === "fit" ? ({ "--chars": base.length + quote.length + 1 } as CSSProperties) : undefined;

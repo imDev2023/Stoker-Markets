@@ -1,8 +1,9 @@
 // Starts the local chain for development and keeps it running: `pnpm localnet`.
+// Like Raydium's crank on devnet, it migrates our sold-out curves within seconds; `CRANK=off` leaves them graduating.
 import { mkdirSync, writeFileSync } from "node:fs";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import { bootstrapPlatform, startLocalnet } from "./index";
+import { bootstrapPlatform, startCrank, startLocalnet } from "./index";
 
 const graduationSol = Number(process.env.GRADUATION_TARGET_SOL ?? 85);
 const net = await startLocalnet({ rpcPort: Number(process.env.RPC_PORT ?? 8899) });
@@ -11,8 +12,11 @@ const out = new URL("../.ledger/", import.meta.url);
 mkdirSync(out, { recursive: true });
 writeFileSync(new URL("state.json", out), JSON.stringify(state, null, 2));
 console.log(JSON.stringify(state, null, 2));
-console.log(`local chain running at ${net.rpcUrl}; Ctrl+C to stop`);
+const stopCrank =
+  process.env.CRANK === "off" ? () => undefined : startCrank(net.connection, new PublicKey(state.platformConfig), { log: console.log });
+console.log(`local chain running at ${net.rpcUrl}${process.env.CRANK === "off" ? " without a crank" : " with a migration crank"}; Ctrl+C to stop`);
 const stop = async () => {
+  stopCrank();
   await net.stop();
   process.exit(0);
 };

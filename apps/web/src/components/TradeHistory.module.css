@@ -97,6 +97,22 @@
   background: var(--danger);
 }
 
+.table .milestone td {
+  padding: 7px 0;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.table .milestone a {
+  color: var(--verified);
+  border-bottom-color: transparent;
+}
+
+.table .milestone a:hover {
+  border-bottom-color: currentColor;
+}
+
 @media (max-width: 640px) {
   .card {
     padding: 16px;

@@ -1,7 +1,8 @@
 // What a client of the platform does: call the public API, sign with a wallet, send to the chain.
-import { Connection, Keypair, LAMPORTS_PER_SOL, VersionedTransaction, type PublicKey } from "@solana/web3.js";
+import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, VersionedTransaction } from "@solana/web3.js";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { inject } from "vitest";
-import { LaunchList, LaunchSummary, PreparedLaunch, PreparedTrade, QuoteAssetList, type TradeSide } from "@launchpad/contract";
+import { LaunchList, LaunchSummary, PreparedLaunch, PreparedTrade, QuoteAssetList, TradeList, type TradeSide } from "@launchpad/contract";
 import { WSOL_MINT, type RawTransaction } from "@launchpad/chain";
 
 export const env = () => inject("harness");
@@ -143,4 +144,24 @@ export const solOf = async (owner: Keypair) => BigInt(await connection().getBala
 export async function networkFee(signature: string) {
   const tx = await connection().getTransaction(signature, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
   return BigInt(tx!.meta!.fee);
+}
+
+export const SOL = (n: number) => BigInt(Math.round(n * LAMPORTS_PER_SOL));
+
+/** A coin launched through the API and indexed, ready to trade. */
+export async function launchedCoin() {
+  const creator = await fundedWallet();
+  const { prepared, signature } = await launch(creator);
+  await deliverWebhook([signature]);
+  return { creator, mint: prepared.mint, pool: new PublicKey(prepared.pool) };
+}
+
+export function quote(mint: string, query: Record<string, string>) {
+  return fetch(`${env().apiUrl}/v1/launches/${mint}/quote?${new URLSearchParams(query)}`);
+}
+
+export const coinsOf = (mint: string, owner: Keypair) => tokenBalance(getAssociatedTokenAddressSync(new PublicKey(mint), owner.publicKey));
+
+export async function trades(mint: string) {
+  return TradeList.parse(await (await fetch(`${env().apiUrl}/v1/launches/${mint}/trades`)).json()).trades;
 }
