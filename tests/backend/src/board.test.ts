@@ -1,11 +1,11 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
 import { createAssociatedTokenAccountIdempotentInstruction, createTransferInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { curvePrice, launchlabPdas, loadCurve, WSOL_MINT } from "@launchpad/chain";
+import { cpmmPdas, curvePrice, launchlabPdas, loadCurve, loadPool, programsFor, WSOL_MINT } from "@launchpad/chain";
 import {
   HolderList, LaunchList, LaunchQuoteList, LaunchSummary, PreparedTrade, TradeQuote, type LaunchListQuery, type TradeSide,
 } from "@launchpad/contract";
-import { LOCAL_QUOTES, mintLocalQuote } from "@launchpad/localnet";
+import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
 import { connection, deliverWebhook, env, fundedWallet, launch, listQuotes, signAndSend } from "./client";
 
 // Board discovery through the public read API: sorts, filters and pages over indexed Launches, market figures that
@@ -48,9 +48,10 @@ async function trade(trader: Keypair, mint: string, side: TradeSide, amount: big
     body: JSON.stringify({ mint, trader: trader.publicKey.toBase58(), side, amount: amount.toString(), slippageBps: 500 }),
   });
   if (!res.ok) throw new Error(`prepare trade failed: ${res.status} ${await res.text()}`);
-  const signature = await signAndSend(PreparedTrade.parse(await res.json()), trader);
+  const prepared = PreparedTrade.parse(await res.json());
+  const signature = await signAndSend(prepared, trader);
   await deliverWebhook([signature]);
-  return signature;
+  return { signature, quote: prepared.quote };
 }
 
 async function quote(mint: string, side: TradeSide, amount: bigint) {
@@ -61,6 +62,24 @@ async function quote(mint: string, side: TradeSide, amount: bigint) {
 async function tokenBalance(owner: PublicKey, mint: string) {
   const res = await connection().getTokenAccountBalance(getAssociatedTokenAddressSync(new PublicKey(mint), owner, true), "confirmed").catch(() => null);
   return BigInt(res?.value.amount ?? 0);
+}
+
+/** The pool vault holding a graduated coin's coins. */
+async function poolCoinVault(pool: PublicKey, mint: string) {
+  const p = (await loadPool(connection(), pool))!;
+  return (p.tokens[0].mint.toBase58() === mint ? p.tokens[0] : p.tokens[1]).vault;
+}
+
+/** Raydium's crank, played by the local migrate wallet: moves a sold-out curve into its pool, then waits for the pool to open. */
+async function graduate(mint: string, curve: string) {
+  const migration = await migrateCurve(connection(), new PublicKey(curve));
+  await deliverWebhook([migration.signature]);
+  for (let i = 0; i < 40; i++) {
+    const res = await fetch(`${env().apiUrl}/v1/launches/${mint}/quote?side=buy&amount=1000000`);
+    if (res.ok) return migration.pool;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  throw new Error(`the pool of ${mint} never opened`);
 }
 
 /** The curve's price on-chain right now, in whole Quote Asset units per whole coin. */
@@ -103,7 +122,7 @@ describe("a new Launch's market", () => {
     const creator = await fundedWallet();
     const trader = await fundedWallet();
     const mint = await launchCoin(creator, "FOLW");
-    const buy = await trade(trader, mint, "buy", SOL(0.2));
+    const { signature: buy } = await trade(trader, mint, "buy", SOL(0.2));
     await trade(trader, mint, "sell", 1_000_000n * 1_000_000n);
     const l = await detail(mint);
     const onChain = await chainPrice(l.pool);
@@ -287,5 +306,79 @@ describe("holders", () => {
   it("answers 404 for a coin that isn't a Launch", async () => {
     const res = await fetch(`${env().apiUrl}/v1/launches/${Keypair.generate().publicKey.toBase58()}/holders`);
     expect(res.status).toBe(404);
+  });
+});
+
+describe("a graduated Launch on the board", () => {
+  // One Creator's coins at each stage, so each query can be narrowed to them.
+  let creator: Keypair;
+  let trader: Keypair;
+  let pool: PublicKey;
+  const coin = { live: "", graduating: "", graduated: "" };
+  const only = (q: Partial<Record<keyof LaunchListQuery, string | number>> = {}) => board({ creator: creator.publicKey.toBase58(), ...q });
+
+  beforeAll(async () => {
+    creator = await fundedWallet(10);
+    trader = await fundedWallet(20);
+    coin.graduated = await launchCoin(creator, "GRAD");
+    coin.graduating = await launchCoin(creator, "GING");
+    coin.live = await launchCoin(creator, "GLIV");
+    await trade(trader, coin.graduated, "buy", SOL(2));
+    pool = await graduate(coin.graduated, (await detail(coin.graduated)).pool);
+    await trade(trader, coin.graduating, "buy", SOL(2));
+    await trade(trader, coin.live, "buy", SOL(0.5));
+  }, 180_000);
+
+  it("follows the coin into its pool: pool trades move its price, market cap and volume", async () => {
+    const before = await detail(coin.graduated);
+    expect(before.curve.status).toBe("graduated");
+    const buy = await trade(trader, coin.graduated, "buy", SOL(0.5));
+    expect(buy.quote.venue).toBe("pool");
+    const afterBuy = await detail(coin.graduated);
+    // The pool's price after the trade, as the pool quoted it, and as the coin page shows it.
+    const price = buy.quote.priceAfter;
+    expect(afterBuy.market.price).toBe(price);
+    expect(afterBuy.graduation!.price).toBe(price);
+    expect(afterBuy.market.price).toBeGreaterThan(before.market.price!);
+    expect(afterBuy.market.marketCap!.sol).toBeCloseTo(price * COIN_SUPPLY_WHOLE, 6);
+    // A buy's volume is what the trader paid, fees included.
+    expect(BigInt(afterBuy.market.volume24h.raw) - BigInt(before.market.volume24h.raw)).toBe(SOL(0.5));
+    expect(Date.parse(afterBuy.market.lastTradeAt!)).toBeGreaterThanOrEqual(Date.parse(before.market.lastTradeAt!));
+
+    const sell = await trade(trader, coin.graduated, "sell", (await tokenBalance(trader.publicKey, coin.graduated)) / 10n);
+    const afterSell = await detail(coin.graduated);
+    expect(afterSell.market.price).toBe(sell.quote.priceAfter);
+    expect(afterSell.market.price).toBeLessThan(afterBuy.market.price!);
+    expect(BigInt(afterSell.market.volume24h.raw)).toBeGreaterThan(BigInt(afterBuy.market.volume24h.raw));
+  });
+
+  it("sorts graduated Launches after live and graduating ones when looking for coins near Graduation", async () => {
+    const list = await only({ sort: "graduation" });
+    expect(mints(list)).toEqual([coin.live, coin.graduating, coin.graduated]);
+    expect(list.launches.map((l) => l.curve.status)).toEqual(["live", "graduating", "graduated"]);
+  });
+
+  it("filters by each status, graduated included", async () => {
+    expect(mints(await only({ status: "live" }))).toEqual([coin.live]);
+    expect(mints(await only({ status: "graduating" }))).toEqual([coin.graduating]);
+    expect(mints(await only({ status: "graduated" }))).toEqual([coin.graduated]);
+    const graduated = await board({ status: "graduated", limit: 100 });
+    expect(graduated.launches.every((l) => l.curve.status === "graduated" && l.graduation !== null)).toBe(true);
+  });
+
+  it("labels the Raydium pool among the holders once the curve's coins have moved into it", async () => {
+    const h = await holders(coin.graduated);
+    const coinVault = await poolCoinVault(pool, coin.graduated);
+    const inPool = BigInt((await connection().getTokenAccountBalance(coinVault, "confirmed")).value.amount);
+    expect(h.holders.find((x) => x.kind === "pool")).toEqual({
+      owner: cpmmPdas(programsFor("localnet").cpmm).authority.toBase58(),
+      kind: "pool",
+      amount: inPool.toString(),
+      share: Number((inPool * 1_000_000_000n) / BigInt(h.supply)) / 1_000_000_000,
+    });
+    // The curve's vault is empty after the migration, so the curve no longer holds any.
+    expect(h.holders.map((x) => x.kind)).not.toContain("curve");
+    const traderHolds = await tokenBalance(trader.publicKey, coin.graduated);
+    expect(h.holders.find((x) => x.owner === trader.publicKey.toBase58())?.amount).toBe(traderHolds.toString());
   });
 });
