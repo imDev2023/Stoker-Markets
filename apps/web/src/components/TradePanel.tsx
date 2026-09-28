@@ -2,8 +2,10 @@
 
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey, VersionedTransaction } from "@solana/web3.js";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
-import type { LaunchSummary, PlatformInfo, PreparedTrade, TradeQuote, TradeSide, TradeVenue } from "@launchpad/contract";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import type {
+  LaunchSummary, PayWith, PlatformInfo, PreparedTrade, SolRoute, TradeQuote, TradeSide, TradeStep, TradeVenue,
+} from "@launchpad/contract";
 import { getQuote, listTrades, prepareTrade, reportTransaction } from "@/lib/api";
 import { COIN_DECIMALS, explorerUrl, formatUnits, isSol, parseUnits, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
@@ -26,11 +28,6 @@ const SLIPPAGE_BPS = [50, 100, 200, 500] as const;
 const BUY_PRESETS_SOL = [0.1, 0.5, 1] as const;
 const SELL_PRESETS = [25, 50, 100] as const;
 const QUOTE_DEBOUNCE_MS = 250;
-// The ExceededSlippage error of LaunchLab (the curve) and of Raydium's CPMM (the pool after Graduation), as a
-// transaction error and as the RPC's preflight log writes it.
-const EXCEEDED_SLIPPAGE: Record<TradeVenue, number> = { curve: 6004, pool: 6005 };
-const exceededSlippage = (text: string, venue: TradeVenue) =>
-  text.includes(`"Custom":${EXCEEDED_SLIPPAGE[venue]}`) || text.includes(`0x${EXCEEDED_SLIPPAGE[venue].toString(16)}`);
 
 export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSummary; platform: PlatformInfo; onTraded: () => void }) {
   const { connection } = useConnection();
@@ -38,6 +35,9 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
   const [side, setSide] = useState<TradeSide>("buy");
   const [amountText, setAmountText] = useState("");
   const [slippageBps, setSlippageBps] = useState<number>(100);
+  const [payWith, setPayWith] = useState<PayWith>("quote");
+  /** Whether the trader picked what to pay with; until then a wallet without the Quote Asset pays with SOL. */
+  const payWithChosen = useRef(false);
   const [quote, setQuote] = useState<TradeQuote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   /** Raw units held: SOL in lamports, the Quote Asset (the same as SOL for a SOL pair) and the coin. */
@@ -50,18 +50,23 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
   const quoteSymbol = quoteTicker(launch.quote);
   const quoteDecimals = launch.quote.decimals;
   const solPair = isSol(launch.quote);
-  const payDecimals = side === "buy" ? quoteDecimals : COIN_DECIMALS;
+  // A buy of a coin paired with anything but SOL can be paid with SOL, which the API swaps for the Quote Asset.
+  const canPayWithSol = !solPair && platform.solRoute !== null;
+  const paysSol = side === "buy" && canPayWithSol && payWith === "sol";
+  const payDecimals = side === "buy" ? (paysSol ? SOL_DECIMALS : quoteDecimals) : COIN_DECIMALS;
   const getDecimals = side === "buy" ? COIN_DECIMALS : quoteDecimals;
   // After Graduation the coin trades in its Raydium pool; the API routes quotes and trades there by itself.
   const venue: TradeVenue = launch.curve.status === "graduated" ? "pool" : "curve";
-  const paySymbol = side === "buy" ? quoteSymbol : launch.symbol;
+  const paySymbol = side === "buy" ? (paysSol ? "SOL" : quoteSymbol) : launch.symbol;
   const getSymbol = side === "buy" ? launch.symbol : quoteSymbol;
   const amount = parseUnits(amountText, payDecimals);
   const invalidAmount = amountText.trim() !== "" && amount === null;
   const busy = step.kind !== "editing";
-  const held = balances ? (side === "buy" ? balances.quote : balances.coins) : null;
-  // A buy that takes the rest of the curve costs less than the amount typed, so check what the quote says it costs.
-  const cost = side === "buy" && quote && amount !== null ? BigInt(quote.amountIn) : amount;
+  const held = balances ? (side === "buy" ? (paysSol ? balances.sol : balances.quote) : balances.coins) : null;
+  // A buy that takes the rest of the curve costs less than the amount typed, so check what the quote says it costs; a
+  // buy paid with SOL may cost up to its swap's limit.
+  const cost =
+    side === "buy" && quote && amount !== null ? BigInt(quote.route ? quote.route.maxSolIn : quote.amountIn) : amount;
   const overBalance = cost !== null && held !== null && cost > held;
 
   const refreshBalances = useCallback(async () => {
@@ -84,6 +89,12 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
 
   useEffect(() => void refreshBalances(), [refreshBalances]);
 
+  // A wallet that holds none of the Quote Asset but has SOL pays with SOL, unless the trader has chosen otherwise.
+  useEffect(() => {
+    if (!canPayWithSol || !balances || payWithChosen.current) return;
+    setPayWith(balances.quote === 0n && balances.sol > 0n ? "sol" : "quote");
+  }, [canPayWithSol, balances]);
+
   // A live quote while the trader types, so the fees and what they get are visible before anything is signed. It is
   // fetched again when the coin graduates, since it then trades in its pool at another price and other fees.
   useEffect(() => {
@@ -93,7 +104,7 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
     const abort = new AbortController();
     const timer = setTimeout(async () => {
       try {
-        setQuote(await getQuote(launch.mint, { side, amount: amount.toString(), slippageBps }, abort.signal));
+        setQuote(await getQuote(launch.mint, { side, amount: amount.toString(), slippageBps, payWith: paysSol ? "sol" : "quote" }, abort.signal));
       } catch (e) {
         if (!abort.signal.aborted) setQuoteError(tradeError((e as Error).message));
       }
@@ -102,7 +113,7 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
       abort.abort();
       clearTimeout(timer);
     };
-  }, [launch.mint, side, amount, slippageBps, venue]);
+  }, [launch.mint, side, amount, slippageBps, paysSol, venue]);
 
   function edit(next: () => void) {
     setError(null);
@@ -114,14 +125,19 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
     if (!publicKey || amount === null) return;
     setStep({ kind: "preparing" });
     try {
-      const prepared = await prepareTrade({ mint: launch.mint, trader: publicKey.toBase58(), side, amount: amount.toString(), slippageBps });
+      const prepared = await prepareTrade({
+        mint: launch.mint, trader: publicKey.toBase58(), side, amount: amount.toString(), slippageBps, payWith: paysSol ? "sol" : "quote",
+      });
       const tx = VersionedTransaction.deserialize(Uint8Array.from(atob(prepared.transaction), (c) => c.charCodeAt(0)));
       // Simulate before asking for a signature, so the review shows what the wallet will actually pay or receive.
       const sim = await connection.simulateTransaction(tx, {
         sigVerify: false,
         accounts: { addresses: [publicKey.toBase58()], encoding: "base64" },
       });
-      if (sim.value.err) throw new Error(simulationError(sim.value.err, sim.value.logs ?? [], solPair ? null : quoteSymbol, prepared.quote.venue));
+      if (sim.value.err) {
+        const text = `${JSON.stringify(sim.value.err)} ${(sim.value.logs ?? []).join(" ")}`;
+        throw new Error(simulationError(text, prepared, solPair || prepared.quote.route ? null : quoteSymbol, quoteSymbol));
+      }
       const before = BigInt(await connection.getBalance(publicKey, "confirmed"));
       // The simulated balance already has the network fee taken off.
       const after = BigInt(sim.value.accounts?.[0]?.lamports ?? before);
@@ -145,11 +161,7 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
         "confirmed",
       );
       if (result.value.err) {
-        setError(
-          exceededSlippage(JSON.stringify(result.value.err), r.prepared.quote.venue)
-            ? "The price moved past your slippage before the trade landed, so nothing was traded and only the network fee was charged. Try again, or allow more slippage."
-            : "The trade failed on-chain, so nothing was traded and only the network fee was charged. Try again.",
-        );
+        setError(landedError(JSON.stringify(result.value.err), r.prepared, quoteSymbol));
       } else {
         await reportTransaction(signature);
         // The fill can differ from the quote when others trade first, so report what the chain actually did.
@@ -165,9 +177,7 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
       setError(
         /reject|declin|cancel/i.test(message)
           ? "You declined the transaction in your wallet. Nothing was traded."
-          : exceededSlippage(message, r.prepared.quote.venue)
-            ? "The price moved past your slippage before the trade was sent, so nothing was traded or charged. Check the new quote and try again, or allow more slippage."
-            : "The trade couldn't be sent. Nothing was traded; try again in a moment.",
+          : unsentError(message, r.prepared, quoteSymbol),
       );
     }
     setStep({ kind: "editing" });
@@ -205,24 +215,38 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
 
   const r = step.kind === "reviewing" || step.kind === "signing" || step.kind === "confirming" ? step.review : null;
   const shown = r?.prepared.quote ?? quote;
+  const route = shown?.route ?? null;
   const moved = shown ? ((shown.priceAfter - shown.priceBefore) / shown.priceBefore) * 100 : 0;
-  // In the pool a sell pays the pool's own fee in the coins going in; every other fee is in the Quote Asset.
+  // In the pool a sell pays the pool's own fee in the coins going in; every other fee is in the Quote Asset, except the
+  // swap's own fee in front of a buy paid with SOL.
   const poolFeeInCoins = shown?.venue === "pool" && shown.side === "sell";
   const quoteFees = shown
     ? BigInt(shown.fees.platform) + BigInt(shown.fees.creator) + (poolFeeInCoins ? 0n : BigInt(shown.fees.raydium))
     : 0n;
-  const fees: { label: string; pct: number; raw: string; coins: boolean }[] = !shown
+  type Fee = { label: string; pct: number | null; raw: string; unit: "quote" | "coin" | "sol" };
+  const fees: Fee[] = !shown
     ? []
-    : shown.venue === "pool"
-      ? [
-          { label: "Raydium pool fee", pct: shown.feeBps.raydium / 100, raw: shown.fees.raydium, coins: poolFeeInCoins },
-          { label: "Platform fee", pct: shown.feeBps.platform / 100, raw: shown.fees.platform, coins: false },
-        ]
-      : [
-          { label: "Raydium", pct: shown.feeBps.raydium / 100, raw: shown.fees.raydium, coins: false },
-          { label: "Platform fee", pct: shown.feeBps.platform / 100, raw: shown.fees.platform, coins: false },
-          { label: "Creator fee", pct: shown.feeBps.creator / 100, raw: shown.fees.creator, coins: false },
-        ];
+    : [
+        ...(route?.fee ? [{ label: `Swap to ${quoteSymbol}`, pct: route.feeBps === null ? null : route.feeBps / 100, raw: route.fee, unit: "sol" as const }] : []),
+        ...(shown.venue === "pool"
+          ? [
+              { label: "Raydium pool fee", pct: shown.feeBps.raydium / 100, raw: shown.fees.raydium, unit: poolFeeInCoins ? ("coin" as const) : ("quote" as const) },
+              { label: "Platform fee", pct: shown.feeBps.platform / 100, raw: shown.fees.platform, unit: "quote" as const },
+            ]
+          : [
+              { label: "Raydium", pct: shown.feeBps.raydium / 100, raw: shown.fees.raydium, unit: "quote" as const },
+              { label: "Platform fee", pct: shown.feeBps.platform / 100, raw: shown.fees.platform, unit: "quote" as const },
+              { label: "Creator fee", pct: shown.feeBps.creator / 100, raw: shown.fees.creator, unit: "quote" as const },
+            ]),
+      ];
+  const amountOf = (raw: string, unit: Fee["unit"]) =>
+    unit === "coin" ? (
+      <><span className="mono">{formatUnits(raw, COIN_DECIMALS, 0)}</span> {launch.symbol}</>
+    ) : unit === "sol" ? (
+      <><span className="mono">{sol(BigInt(raw))}</span> SOL</>
+    ) : (
+      <><span className="mono">{formatUnits(raw, quoteDecimals, 6)}</span> {quoteSymbol}</>
+    );
 
   return (
     <section className={styles.card} aria-labelledby="trade-title">
@@ -244,6 +268,29 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
         </div>
 
         <fieldset className={styles.fields} disabled={busy}>
+          {side === "buy" && canPayWithSol && (
+            <div className={`${styles.option} ${styles.payWith}`}>
+              <span id="pay-with-label">Pay with</span>
+              <div role="group" aria-labelledby="pay-with-label">
+                {(["quote", "sol"] as const).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    aria-pressed={payWith === p}
+                    onClick={() =>
+                      edit(() => {
+                        payWithChosen.current = true;
+                        if (p !== payWith) setAmountText("");
+                        setPayWith(p);
+                      })
+                    }
+                  >
+                    {p === "sol" ? "SOL" : quoteSymbol}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className={styles.amountHead}>
             <label htmlFor="trade-amount">You pay</label>
             {held !== null && (
@@ -274,16 +321,18 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
                   ? `Your wallet has no ${paySymbol}.`
                   : `You have ${formatUnits(held!.toString(), payDecimals)} ${paySymbol}. Enter a smaller amount.`
                 : side === "buy"
-                  ? `Paid in ${quoteSymbol}, fees included.`
+                  ? paysSol
+                    ? `Paid in SOL, swapped for ${quoteSymbol} in the same trade.`
+                    : `Paid in ${quoteSymbol}, fees included.`
                   : venue === "pool"
                     ? "The coins you sell go to the coin's Raydium pool."
                     : "The coins you sell go back to the curve."}
           </p>
           <div className={styles.presets}>
             {side === "buy"
-              ? buyPresets(launch, platform).map((p) => (
+              ? (paysSol ? BUY_PRESETS_SOL.map(String) : buyPresets(launch, platform)).map((p) => (
                   <button key={p} type="button" onClick={() => edit(() => setAmountText(p))}>
-                    {p} {quoteSymbol}
+                    {p} {paySymbol}
                   </button>
                 ))
               : SELL_PRESETS.map((pct) => (
@@ -298,7 +347,7 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
                 ))}
           </div>
 
-          <div className={styles.slippage}>
+          <div className={`${styles.option} ${styles.slippage}`}>
             <span id="slippage-label">Slippage</span>
             <div role="group" aria-labelledby="slippage-label">
               {SLIPPAGE_BPS.map((bps) => (
@@ -334,7 +383,29 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
                   <span className={styles.move}>({moved >= 0 ? "+" : ""}{moved.toFixed(moved !== 0 && Math.abs(moved) < 0.1 ? 2 : 1)}%)</span>
                 </dd>
               </div>
-              <div className={styles.feeTotal}>
+              {route && (
+                <>
+                  <div className={styles.group}>
+                    <dt>You pay about</dt>
+                    <dd>
+                      <span className="mono">{sol(roundLamports(BigInt(route.solIn), "nearest"))}</span> SOL
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>At most</dt>
+                    <dd>
+                      <span className="mono">{sol(roundLamports(BigInt(route.maxSolIn), "up"))}</span> SOL
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Swapped for</dt>
+                    <dd>
+                      <span className="mono">{formatUnits(route.quoteOut, quoteDecimals, quoteDecimals)}</span> {quoteSymbol}
+                    </dd>
+                  </div>
+                </>
+              )}
+              <div className={styles.group}>
                 <dt>Fees</dt>
                 <dd>
                   <span className="mono">{formatUnits(quoteFees.toString(), quoteDecimals, 6)}</span> {quoteSymbol}
@@ -343,20 +414,20 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
                       {" "}+ <span className="mono">{formatUnits(shown.fees.raydium, COIN_DECIMALS, 0)}</span> {launch.symbol}
                     </>
                   )}
+                  {route?.fee && (
+                    <>
+                      {" "}+ <span className="mono">{sol(BigInt(route.fee))}</span> SOL
+                    </>
+                  )}
                 </dd>
               </div>
               {fees.map((f) => (
                 <div key={f.label} className={styles.fee}>
                   <dt>
-                    {f.label} <span className="mono">{f.pct}%</span>
+                    {f.label}
+                    {f.pct !== null && <> <span className="mono">{f.pct}%</span></>}
                   </dt>
-                  <dd>
-                    {f.coins ? (
-                      <><span className="mono">{formatUnits(f.raw, COIN_DECIMALS, 0)}</span> {launch.symbol}</>
-                    ) : (
-                      <><span className="mono">{formatUnits(f.raw, quoteDecimals, 6)}</span> {quoteSymbol}</>
-                    )}
-                  </dd>
+                  <dd>{amountOf(f.raw, f.unit)}</dd>
                 </div>
               ))}
             </dl>
@@ -366,10 +437,16 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
               Enter an amount to see what you get and every fee you pay.
             </p>
           )}
+          {route && <p className={styles.routeNote}>{routeNote(route, shown!.slippageBps, quoteSymbol)}</p>}
           {shown?.completesCurve && (
             <p className={styles.completes}>
               This buy takes the last coins on the curve and starts graduation, so it costs{" "}
-              <span className="mono">{formatUnits(shown.amountIn, quoteDecimals, 6)}</span> {quoteSymbol}, not the full amount.
+              {route ? (
+                <><span className="mono">{sol(roundLamports(BigInt(route.solIn), "nearest"))}</span> SOL</>
+              ) : (
+                <><span className="mono">{formatUnits(shown.amountIn, quoteDecimals, 6)}</span> {quoteSymbol}</>
+              )}
+              , not the full amount.
             </p>
           )}
         </div>
@@ -395,6 +472,13 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
                     Your wallet receives about <strong className="mono">{sol(r.walletLamports)} SOL</strong> after network fees.
                   </>
                 )
+              ) : r.prepared.quote.route ? (
+                <>
+                  Your wallet pays <strong className="mono">{sol(-r.walletLamports)} SOL</strong> in total, including network fees
+                  and any account rent. It buys exactly{" "}
+                  <strong className="mono">{formatUnits(r.prepared.quote.route.quoteOut, quoteDecimals, quoteDecimals)} {quoteSymbol}</strong>{" "}
+                  with it and spends all of it {r.prepared.quote.venue === "pool" ? "in the pool" : "on the curve"}, so none is left over.
+                </>
               ) : r.prepared.quote.side === "buy" ? (
                 <>
                   Your wallet pays <strong className="mono">{formatUnits(r.prepared.quote.amountIn, quoteDecimals, quoteDecimals)} {quoteSymbol}</strong>{" "}
@@ -407,7 +491,9 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
                   <strong className="mono">{sol(-r.walletLamports)} SOL</strong> in network fees and any account rent.
                 </>
               )}{" "}
-              If the price moves more than {slippageBps / 100}% first, the trade fails and nothing is traded.
+              {r.prepared.quote.route
+                ? `If the prices move more than ${slippageBps / 100}% in total first, the trade fails and nothing is traded.`
+                : `If the price moves more than ${slippageBps / 100}% first, the trade fails and nothing is traded.`}
             </p>
             <div className={styles.actions}>
               <button type="button" className={styles.secondary} onClick={() => setStep({ kind: "editing" })} disabled={step.kind !== "reviewing"}>
@@ -443,6 +529,15 @@ export function TradePanel({ launch, platform, onTraded }: { launch: LaunchSumma
   );
 }
 
+/** How a buy paid with SOL is routed and how its slippage is split, in a line. */
+function routeNote(route: SolRoute, slippageBps: number, quoteSymbol: string) {
+  const { route: swap, trade } = route.slippageBps;
+  return (
+    `Swapped through ${route.via.join(", ")}. Your ${slippageBps / 100}% slippage allows up to ${swap / 100}% more SOL for the ` +
+    `${quoteSymbol} and ${trade / 100}% fewer coins.`
+  );
+}
+
 /** Turns an API or wallet error into what happened and what to do next. */
 function tradeError(message: string) {
   if (/too small/.test(message)) return "That amount is too small to trade. Enter a larger amount.";
@@ -453,6 +548,15 @@ function tradeError(message: string) {
 
 /** A SOL amount from lamports, to six decimal places. */
 const sol = (lamports: bigint) => formatUnits(lamports.toString(), SOL_DECIMALS, 6);
+
+/**
+ * Lamports rounded to the six decimals `sol` shows: a swap bought to the Quote Asset's last unit costs a few lamports
+ * under the SOL typed (0.499999997 for 0.5), which truncating would show as 0.499999. Limits round up.
+ */
+function roundLamports(lamports: bigint, how: "nearest" | "up") {
+  const step = 1_000n;
+  return ((lamports + (how === "up" ? step - 1n : step / 2n)) / step) * step;
+}
 
 /**
  * Buy presets worth about 0.1, 0.5 and 1 SOL. For any other Quote Asset they are converted at the price the Launch's
@@ -466,16 +570,68 @@ function buyPresets(launch: LaunchSummary, platform: PlatformInfo) {
   );
 }
 
-/** Turns a failed simulation into something the trader can act on; `quote` is the Quote Asset's ticker when it isn't SOL. */
-function simulationError(err: unknown, logs: string[], quote: string | null, venue: TradeVenue) {
-  const text = `${JSON.stringify(err)} ${logs.join(" ")}`;
-  if (quote && /insufficient funds|"Custom":1\b/.test(text) && !/insufficient lamports|InsufficientFundsForRent/.test(text))
-    return `Your wallet doesn't have enough ${quote} for this trade. Lower the amount or add ${quote}.`;
+// ExceededSlippage of LaunchLab (the curve), of Raydium's CPMM (the pool after Graduation, and the local SOL route) and
+// Jupiter's SlippageToleranceExceeded, as a transaction error and as the RPC's preflight log writes them.
+const SLIPPAGE_CODES: Record<TradeVenue | "raydium-cpmm" | "jupiter", number> = { curve: 6004, pool: 6005, "raydium-cpmm": 6005, jupiter: 6001 };
+const hasCode = (text: string, code: number) => text.includes(`"Custom":${code}`) || text.includes(`0x${code.toString(16)}`);
+
+/**
+ * Which step of the trade failed, from a transaction error (`"InstructionError":[3,…]`) or the RPC's preflight message
+ * ("Error processing Instruction 3: …"), and whether it failed on its slippage limit.
+ */
+function failure(text: string, prepared: PreparedTrade): { step: TradeStep | null; slippage: boolean } {
+  const match = /"InstructionError":\[(\d+)|Instruction (\d+)/.exec(text);
+  const index = match ? Number(match[1] ?? match[2]) : null;
+  const step = index === null ? null : (prepared.steps[index] ?? null);
+  const { venue, route } = prepared.quote;
+  const slippage =
+    step === "route" && route
+      ? hasCode(text, SLIPPAGE_CODES[route.source]) || /SlippageToleranceExceeded/.test(text)
+      : (step === null || step === "trade") && hasCode(text, SLIPPAGE_CODES[venue]);
+  return { step, slippage };
+}
+
+/** A trade that landed but failed: nothing moved except the network fee. */
+function landedError(text: string, prepared: PreparedTrade, quoteSymbol: string) {
+  const f = failure(text, prepared);
+  if (f.step === "route")
+    return f.slippage
+      ? `SOL bought less ${quoteSymbol} than your slippage allows before the trade landed, so nothing was swapped or traded and only the network fee was charged. Try again, or allow more slippage.`
+      : `The swap from SOL to ${quoteSymbol} failed on-chain, so nothing was traded and only the network fee was charged. Try again, or pay in ${quoteSymbol}.`;
+  return f.slippage
+    ? "The price moved past your slippage before the trade landed, so nothing was traded and only the network fee was charged. Try again, or allow more slippage."
+    : "The trade failed on-chain, so nothing was traded and only the network fee was charged. Try again.";
+}
+
+/** A trade the RPC refused to send after its own simulation: nothing moved and nothing was charged. */
+function unsentError(text: string, prepared: PreparedTrade, quoteSymbol: string) {
+  const f = failure(text, prepared);
+  if (f.step === "route")
+    return f.slippage
+      ? `SOL buys less ${quoteSymbol} now than your slippage allows, so nothing was sent, swapped or charged. Check the new quote and try again, or allow more slippage.`
+      : `The swap from SOL to ${quoteSymbol} would fail, so nothing was sent or charged. Try again in a moment, or pay in ${quoteSymbol}.`;
+  return f.slippage
+    ? "The price moved past your slippage before the trade was sent, so nothing was traded or charged. Check the new quote and try again, or allow more slippage."
+    : "The trade couldn't be sent. Nothing was traded; try again in a moment.";
+}
+
+/**
+ * Turns a failed simulation into something the trader can act on. `payingQuote` is the Quote Asset's ticker when the
+ * trade spends a Quote Asset other than SOL from the wallet.
+ */
+function simulationError(text: string, prepared: PreparedTrade, payingQuote: string | null, quoteSymbol: string) {
+  if (payingQuote && /insufficient funds|"Custom":1\b/.test(text) && !/insufficient lamports|InsufficientFundsForRent/.test(text))
+    return `Your wallet doesn't have enough ${payingQuote} for this trade. Lower the amount or add ${payingQuote}.`;
   if (/insufficient (lamports|funds)|InsufficientFundsForRent|"Custom":1\b/.test(text))
-    return quote
+    return payingQuote
       ? "Your wallet doesn't have enough SOL for this trade's network fees. Add SOL and try again."
       : "Your wallet doesn't have enough to cover this trade and its network fees. Lower the amount or add SOL.";
   if (/AccountNotFound/.test(text)) return "Your wallet has no SOL yet. Add SOL and try again.";
-  if (exceededSlippage(text, venue)) return "The price has moved past your slippage. Check the new quote and try again.";
+  const f = failure(text, prepared);
+  if (f.step === "route")
+    return f.slippage
+      ? `SOL buys less ${quoteSymbol} now than your slippage allows. Check the new quote and try again.`
+      : `The swap from SOL to ${quoteSymbol} would fail, so nothing was sent. Try again in a moment, or pay in ${quoteSymbol}.`;
+  if (f.slippage) return "The price has moved past your slippage. Check the new quote and try again.";
   return "The trade would fail on-chain, so nothing was sent. Try again in a moment.";
 }

@@ -9,6 +9,7 @@ import {
 import { createAssociatedTokenAccountIdempotentInstruction, createTransferInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { LaunchList, PreparedAirdrop, PreparedCreatorFeeClaim, PreparedLaunch, PreparedTrade, type TradeSide } from "@launchpad/contract";
 import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
+import { swapThroughSolRoute } from "@launchpad/localnet/routes";
 import { FEE_COLLECTOR_CRON, type StackEnv } from "@launchpad/stack";
 import { installTestWallet, type TestWallet } from "./wallet";
 
@@ -161,6 +162,15 @@ export async function tradeViaApi(trader: Keypair, mint: string, side: TradeSide
 /** Hands a wallet a non-SOL Quote Asset: the local chain's admin holds every cloned quote mint's authority. */
 export async function fundQuote(owner: PublicKey, quote: Exclude<keyof typeof QUOTES, "SOL">, raw: bigint) {
   await mintLocalQuote(connection(), QUOTES[quote], owner, raw);
+}
+
+/**
+ * Someone else swaps `lamports` of SOL for a Quote Asset in the local chain's SOL route pool for it, which makes the
+ * Quote Asset dearer in SOL for a buy paid with SOL.
+ */
+export async function moveSolRoute(quote: "USDC" | "JTO", lamports: bigint) {
+  const whale = await fundedKeypair(Number(lamports / BigInt(LAMPORTS_PER_SOL)) + 2);
+  await swapThroughSolRoute(connection(), whale, QUOTES[quote], lamports);
 }
 
 /** Claims a Creator's Creator Fee in one Quote Asset the way any API client would. */
