@@ -84,6 +84,13 @@
   font-size: 0.8125rem;
 }
 
+/* Wide enough for any date and time, so the column never shifts with the clock. */
+.tx time {
+  display: inline-block;
+  min-width: 14em;
+  text-align: right;
+}
+
 .error {
   margin: 0;
   padding: 12px 14px;
@@ -124,7 +131,8 @@
     grid-template-columns: minmax(0, 1fr);
   }
   .amount,
-  .tx {
+  .tx,
+  .tx time {
     justify-self: start;
     text-align: left;
   }

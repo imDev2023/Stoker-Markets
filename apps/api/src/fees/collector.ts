@@ -57,7 +57,8 @@ export async function collectFees({ db, cfg, operations }: CollectorDeps): Promi
   };
 
   // The Platform Fee: one vault per Quote Asset, shared by every Launch against it.
-  const quoteMints = (await db.selectDistinct({ mint: launches.quoteMint }).from(launches)).map((r) => new PublicKey(r.mint));
+  const quoteMints = (await db.selectDistinct({ mint: launches.quoteMint }).from(launches).orderBy(launches.quoteMint))
+    .map((r) => new PublicKey(r.mint));
   for (const v of await readPlatformFeeVaults(connection, cfg.launchlab, cfg.platformConfig, quoteMints)) {
     if (v.balance === 0n) continue;
     if (!worth(v.quoteMint.toBase58(), v.balance)) {
@@ -73,7 +74,8 @@ export async function collectFees({ db, cfg, operations }: CollectorDeps): Promi
   const graduated = await db
     .select({ pool: graduations.pool, quoteMint: launches.quoteMint })
     .from(graduations)
-    .innerJoin(launches, eq(launches.mint, graduations.mint));
+    .innerJoin(launches, eq(launches.mint, graduations.mint))
+    .orderBy(graduations.slot, graduations.pool);
   const quoteOf = new Map(graduated.map((g) => [g.pool, g.quoteMint]));
   const pools = await readPoolKeys(connection, graduated.map((g) => new PublicKey(g.pool)));
   for (const pool of pools) {
@@ -204,7 +206,8 @@ async function sweep(
     })
     .from(ledgerEntries)
     .where(and(inArray(ledgerEntries.kind, ["platform_fee", "pool_fee", "fee_key", "sweep"]), ne(ledgerEntries.assetMint, WSOL)))
-    .groupBy(ledgerEntries.assetMint);
+    .groupBy(ledgerEntries.assetMint)
+    .orderBy(ledgerEntries.assetMint);
   const owed = new Map(unswept.filter((r) => BigInt(r.amount) > 0n).map((r) => [r.mint, BigInt(r.amount)]));
   const held = await readTokenHoldings(connection, ops, [...owed.keys()].map((m) => new PublicKey(m)));
   const tokens = held
