@@ -1,6 +1,7 @@
 import {
-  ApiError, CandleList, LaunchList, LaunchSummary, PlatformInfo, PreparedLaunch, PreparedTrade, QuoteAssetList, TradeList,
-  TradeQuote, type CandleInterval, type PrepareTradeRequest, type TradeQuoteQuery,
+  ApiError, CandleList, CreatorFeeClaimList, CreatorFees, LaunchList, LaunchSummary, PlatformInfo, PreparedCreatorFeeClaim,
+  PreparedLaunch, PreparedTrade, QuoteAssetList, TradeList, TradeQuote,
+  type CandleInterval, type PrepareCreatorFeeClaimRequest, type PrepareTradeRequest, type TradeQuoteQuery,
 } from "@launchpad/contract";
 
 /** The web app is a client of the public API like any other; it never builds transactions itself (ADR 0003). */
@@ -57,7 +58,25 @@ export async function getCandles(mint: string, interval: CandleInterval) {
   return read(await fetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/candles?interval=${interval}`, { cache: "no-store" }), CandleList);
 }
 
-/** Tells the API about a confirmed launch or trade so it shows up without waiting for the webhook. */
+/** A Creator's Creator Fee per Quote Asset and per Launch; null if the address isn't a valid wallet address. */
+export async function getCreatorFees(creator: string): Promise<CreatorFees | null> {
+  const res = await fetch(`${API_URL}/v1/creators/${encodeURIComponent(creator)}/fees`, { cache: "no-store" });
+  if (res.status === 400) return null;
+  return read(res, CreatorFees);
+}
+
+export async function listCreatorFeeClaims(creator: string) {
+  return read(await fetch(`${API_URL}/v1/creators/${encodeURIComponent(creator)}/claims?limit=100`, { cache: "no-store" }), CreatorFeeClaimList);
+}
+
+export async function prepareCreatorFeeClaim(body: PrepareCreatorFeeClaimRequest) {
+  return read(
+    await fetch(`${API_URL}/v1/creator-fees/prepare`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
+    PreparedCreatorFeeClaim,
+  );
+}
+
+/** Tells the API about a confirmed launch, trade or claim so it shows up without waiting for the webhook. */
 export async function reportTransaction(signature: string) {
   await fetch(`${API_URL}/v1/transactions/${signature}`, { method: "POST" }).catch(() => undefined);
 }

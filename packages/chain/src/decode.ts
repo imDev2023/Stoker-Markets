@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import bs58 from "bs58";
-import type BN from "bn.js";
+import BN from "bn.js";
 import { launchlabCoder } from "./coder";
 import type { CurveReserves, Side, TradeFees } from "./curve";
 import { LAUNCH_SHAPE } from "./shape";
@@ -82,7 +82,23 @@ export type TradeExecuted = {
   quoteDecimals: number;
 };
 
-export type ChainEvent = LaunchCreated | TradeExecuted;
+/** A Creator moved their Creator Fee for one Quote Asset out of its vault. */
+export type CreatorFeeClaimed = {
+  kind: "creator_fee_claimed";
+  signature: string;
+  slot: number;
+  blockTime: number | null;
+  /** Position among the claims in this transaction. */
+  index: number;
+  creator: PublicKey;
+  quoteMint: PublicKey;
+  vault: PublicKey;
+  /** Raw units of the Quote Asset that left the vault. */
+  amount: BN;
+  quoteDecimals: number;
+};
+
+export type ChainEvent = LaunchCreated | TradeExecuted | CreatorFeeClaimed;
 
 const INITIALIZE_IXS = new Set(["initialize", "initialize_v2", "initialize_with_token_2022"]);
 // Account positions shared by all three initialize instructions.
@@ -91,6 +107,16 @@ const IX_ACCOUNT = { creator: 1, globalConfig: 2, platformConfig: 3, pool: 5, ba
 const TRADE_IXS = new Set(["buy_exact_in", "buy_exact_out", "sell_exact_in", "sell_exact_out"]);
 // Account positions shared by all four trade instructions.
 const TRADE_ACCOUNT = { trader: 0, platformConfig: 3, pool: 4, baseMint: 9, quoteMint: 10 } as const;
+
+// Account positions in claim_creator_fee.
+const CLAIM_ACCOUNT = { creator: 0, vault: 2, quoteMint: 4 } as const;
+// The token programs a claim pays out through, and their Transfer and TransferChecked instruction tags.
+const TOKEN_PROGRAMS = new Set([
+  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+  "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+]);
+const TOKEN_TRANSFER = 3;
+const TOKEN_TRANSFER_CHECKED = 12;
 
 // Anchor's `emit_cpi!` invokes the program itself with this tag, followed by the event's discriminator and data.
 const EVENT_IX_TAG = Buffer.from("e445a52e51cb9a1d", "hex");
@@ -130,9 +156,24 @@ export function decodeTransaction(raw: RawTransaction, launchlab: PublicKey): Ch
   ]);
   const events: ChainEvent[] = [];
   let tradeIndex = 0;
+  let claimIndex = 0;
   for (const group of groups) {
     let trade: TradeAccounts | null = null;
+    // A claim instruction waiting for the token transfer out of its vault, which says how much it paid.
+    let claim: Pick<CreatorFeeClaimed, "creator" | "quoteMint" | "vault"> | null = null;
     for (const ix of group) {
+      if (claim && TOKEN_PROGRAMS.has(keys[ix.programIdIndex]!)) {
+        const amount = vaultTransfer(ix, keys, claim.vault.toBase58());
+        if (amount) {
+          if (!amount.isZero())
+            events.push({
+              kind: "creator_fee_claimed", signature, slot: raw.slot, blockTime: raw.blockTime, index: claimIndex++, ...claim, amount,
+              quoteDecimals: decimalsOf(claim.quoteMint),
+            });
+          claim = null;
+        }
+        continue;
+      }
       if (keys[ix.programIdIndex] !== program) continue;
       const acct = (i: number) => new PublicKey(keys[ix.accounts[i]!]!);
       const bytes = Buffer.from(bs58.decode(ix.data));
@@ -166,6 +207,10 @@ export function decodeTransaction(raw: RawTransaction, launchlab: PublicKey): Ch
       }
       const decoded = safeDecodeIx(bytes);
       if (!decoded) continue;
+      if (decoded.name === "claim_creator_fee") {
+        claim = { creator: acct(CLAIM_ACCOUNT.creator), quoteMint: acct(CLAIM_ACCOUNT.quoteMint), vault: acct(CLAIM_ACCOUNT.vault) };
+        continue;
+      }
       if (TRADE_IXS.has(decoded.name)) {
         trade = {
           trader: acct(TRADE_ACCOUNT.trader),
@@ -218,6 +263,14 @@ export function decodeTransaction(raw: RawTransaction, launchlab: PublicKey): Ch
     }
   }
   return events;
+}
+
+/** The amount of a token Transfer or TransferChecked out of `source`; null for any other token instruction. */
+function vaultTransfer(ix: RawInstruction, keys: string[], source: string): BN | null {
+  const data = Buffer.from(bs58.decode(ix.data));
+  if ((data[0] !== TOKEN_TRANSFER && data[0] !== TOKEN_TRANSFER_CHECKED) || data.length < 9) return null;
+  if (keys[ix.accounts[0]!] !== source) return null;
+  return new BN(data.subarray(1, 9), "le");
 }
 
 function safeDecodeIx(data: Buffer) {

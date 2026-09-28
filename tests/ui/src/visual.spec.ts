@@ -1,8 +1,8 @@
 // Every screen at desktop and phone width, light and dark, against committed baselines. Values that change from run to
 // run (addresses, times, costs) are masked; everything else must match to the pixel.
 import type { Page } from "@playwright/test";
-import { COIN_PNG, expect, expectNoHorizontalOverflow, expectNoTruncatedText, listLaunches, test } from "./fixtures";
-import { TEST_WALLET_NAME } from "./wallet";
+import { COIN_PNG, expect, expectNoHorizontalOverflow, expectNoTruncatedText, listLaunches, SEED_CREATOR, test } from "./fixtures";
+import { installTestWallet, TEST_WALLET_NAME } from "./wallet";
 
 // The chart's time axis and candle spacing follow the clock, so its canvases are masked like any other time.
 const dynamic = (page: Page) => [page.locator("time"), page.locator(".mono:not(input)"), page.locator("canvas")];
@@ -180,4 +180,49 @@ test("header wallet menu when connected", async ({ page, wallet }) => {
   await account.click();
   await expect(page.getByRole("menuitem", { name: "Disconnect" })).toBeVisible();
   await expect(page).toHaveScreenshot("header-account-menu.png", { mask: dynamic(page) });
+});
+
+test("Creator Fee page, as its Creator", async ({ page }) => {
+  await installTestWallet(page, SEED_CREATOR);
+  await page.goto("/creator");
+  await expect(page.getByRole("heading", { name: "Your Creator Fee" })).toBeVisible();
+  await snap(page, "creator-connect.png");
+
+  await page.getByRole("main").getByRole("button", { name: "Connect wallet" }).click();
+  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await page.waitForURL(`**/creator/${SEED_CREATOR.publicKey.toBase58()}`);
+  await expect(page.getByRole("button", { name: "Claim SOL" })).toBeVisible();
+  await expect(page.locator("main img").first()).toHaveJSProperty("complete", true);
+  await snap(page, "creator.png", tradedDynamic);
+
+  await page.getByRole("button", { name: "Claim SOL" }).click();
+  await expect(page.getByRole("region", { name: "Review your claim" })).toBeVisible();
+  await snap(page, "creator-claim-review.png", tradedDynamic);
+});
+
+test("Creator Fee page, as a visitor", async ({ page }) => {
+  await page.goto(`/creator/${SEED_CREATOR.publicKey.toBase58()}`);
+  await expect(page.getByRole("heading", { name: "Creator Fee", exact: true })).toBeVisible();
+  await expect(page.getByText("Only the Creator's wallet can claim this.")).toBeVisible();
+  await expect(page.locator("main img").first()).toHaveJSProperty("complete", true);
+  await snap(page, "creator-visitor.png", tradedDynamic);
+});
+
+test("Creator Fee page of a wallet that never launched", async ({ page }) => {
+  await page.goto("/creator/11111111111111111111111111111111");
+  await expect(page.getByText("This wallet hasn't launched a coin here yet.")).toBeVisible();
+  await snap(page, "creator-empty.png");
+});
+
+test("Creator Fee page of something that isn't an address", async ({ page }) => {
+  const res = await page.goto("/creator/not-an-address");
+  expect(res?.status()).toBe(404);
+  await expect(page.getByRole("heading", { name: "Not a wallet address" })).toBeVisible();
+  await snap(page, "creator-not-found.png");
+});
+
+test("docs: claim without this website", async ({ page }) => {
+  await page.goto("/docs/claim-creator-fee");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Claim your Creator Fee without this website");
+  await snap(page, "docs-claim.png");
 });

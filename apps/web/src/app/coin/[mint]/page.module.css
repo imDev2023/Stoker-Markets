@@ -138,6 +138,13 @@
   content: "✓";
 }
 
+.factLink {
+  flex-basis: 100%;
+  color: var(--cobalt-strong);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
 .back {
   align-self: flex-start;
   color: var(--ink-2);

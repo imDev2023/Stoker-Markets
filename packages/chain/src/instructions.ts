@@ -1,5 +1,5 @@
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction, type AccountMeta } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import BN from "bn.js";
 import { launchlabCoder } from "./coder";
 import { launchlabPdas, metadataPda } from "./pda";
@@ -214,6 +214,37 @@ export function initializeV2Ix(p: InitializeParams) {
       meta(pdas.eventAuthority),
       meta(p.program),
       meta(pdas.curveRule(p.platformConfig, p.globalConfig)),
+    ],
+  });
+}
+
+export type ClaimCreatorFeeParams = {
+  program: PublicKey;
+  creator: PublicKey;
+  quoteMint: PublicKey;
+  /** The token program that owns the Quote Asset's mint: SPL Token or Token-2022. */
+  quoteTokenProgram: PublicKey;
+};
+
+/**
+ * `claim_creator_fee`: moves everything in the Creator's Creator Fee vault for one Quote Asset to the Creator's associated
+ * token account, which the program opens if needed. The vault is derived from the signing Creator, so nobody else can
+ * claim it, and there is no permissionless variant on the curve.
+ */
+export function claimCreatorFeeIx(p: ClaimCreatorFeeParams) {
+  const pdas = launchlabPdas(p.program);
+  return new TransactionInstruction({
+    programId: p.program,
+    data: launchlabCoder.instruction.encode("claim_creator_fee", {}),
+    keys: [
+      meta(p.creator, true, true),
+      meta(pdas.creatorFeeVaultAuthority),
+      meta(pdas.creatorFeeVault(p.creator, p.quoteMint), false, true),
+      meta(getAssociatedTokenAddressSync(p.quoteMint, p.creator, false, p.quoteTokenProgram), false, true),
+      meta(p.quoteMint),
+      meta(p.quoteTokenProgram),
+      meta(SystemProgram.programId),
+      meta(ASSOCIATED_TOKEN_PROGRAM_ID),
     ],
   });
 }
