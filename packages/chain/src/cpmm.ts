@@ -6,7 +6,7 @@ import { cpmmCoder, launchlabCoder } from "./coder";
 import type { Side, TradeFees } from "./curve";
 import { cpmmPdas } from "./pda";
 import { RATE_DENOMINATOR } from "./shape";
-import { tradeAccounts, unsignedTransaction, type UnsignedTransaction } from "./wallet";
+import { steppedTransaction, tradeAccounts, type PreparedTrade } from "./wallet";
 
 /**
  * Trading a graduated Launch in its Raydium CPMM pool, as the program computes it (raydium-cp-swap `swap_base_input`).
@@ -198,6 +198,46 @@ export function poolSwap(pool: Pool, inputMint: PublicKey, amountIn: BN): PoolSw
   };
 }
 
+/** Rounds up the amount that leaves `post` after a fee at `rate`: raydium-cp-swap's `Fees::calculate_pre_fee_amount`. */
+const preFeeAmount = (post: BN, rate: BN) => (rate.isZero() ? post : ceilDiv(post.mul(DENOMINATOR), DENOMINATOR.sub(rate)));
+
+/**
+ * Buying exactly `amountOut` of the other token, exactly as raydium-cp-swap's `CurveCalculator::swap_base_output` does
+ * it (mints without a Token-2022 transfer fee). `amountIn` is what the pool takes, fees included. Null when the pool
+ * holds too little of the output token.
+ */
+export function poolSwapExactOut(pool: Pool, inputMint: PublicKey, amountOut: BN): PoolSwap | null {
+  const inputIsToken0 = pool.tokens[0].mint.equals(inputMint);
+  const [input, output] = inputIsToken0 ? pool.tokens : [pool.tokens[1], pool.tokens[0]];
+  const { trade, creator } = pool.rates;
+  const onInput = isCreatorFeeOnInput(pool.creatorFeeOn, inputIsToken0);
+  const swapped = onInput ? amountOut : preFeeAmount(amountOut, creator);
+  if (swapped.gte(output.reserve)) return null;
+  const net = ceilDiv(input.reserve.mul(swapped), output.reserve.sub(swapped));
+  let creatorFee = swapped.sub(amountOut);
+  let amountIn: BN;
+  let tradeFee: BN;
+  if (onInput) {
+    const both = trade.add(creator);
+    amountIn = preFeeAmount(net, both);
+    const total = amountIn.sub(net);
+    creatorFee = both.isZero() ? new BN(0) : total.mul(creator).div(both);
+    tradeFee = total.sub(creatorFee);
+  } else {
+    amountIn = preFeeAmount(net, trade);
+    tradeFee = amountIn.sub(net);
+  }
+  return {
+    amountIn,
+    amountOut,
+    tradeFee,
+    creatorFee,
+    creatorFeeOnInput: onInput,
+    before: [input.reserve, output.reserve],
+    after: [input.reserve.add(net), output.reserve.sub(swapped)],
+  };
+}
+
 /** The price of one whole coin in whole Quote Asset units at a pair of reserves. */
 export function poolPrice(baseReserve: BN, quoteReserve: BN, baseDecimals: number, quoteDecimals: number) {
   return (Number(quoteReserve.toString()) / Number(baseReserve.toString())) * 10 ** (baseDecimals - quoteDecimals);
@@ -241,28 +281,41 @@ export function quotePoolTrade(pool: Pool, baseMint: PublicKey, side: Side, amou
 
 const meta = (pubkey: PublicKey, isSigner = false, isWritable = false): AccountMeta => ({ pubkey, isSigner, isWritable });
 
-export function swapBaseInputIx(
-  cpmm: PublicKey, pool: Pool, p: { payer: PublicKey; input: PoolToken; output: PoolToken; inputAccount: PublicKey; outputAccount: PublicKey; amountIn: BN; minAmountOut: BN },
-) {
+type SwapAccounts = { payer: PublicKey; input: PoolToken; output: PoolToken; inputAccount: PublicKey; outputAccount: PublicKey };
+
+export function swapBaseInputIx(cpmm: PublicKey, pool: Pool, p: SwapAccounts & { amountIn: BN; minAmountOut: BN }) {
   return new TransactionInstruction({
     programId: cpmm,
     data: cpmmCoder.instruction.encode("swap_base_input", { amount_in: p.amountIn, minimum_amount_out: p.minAmountOut }),
-    keys: [
-      meta(p.payer, true),
-      meta(cpmmPdas(cpmm).authority),
-      meta(pool.ammConfig),
-      meta(pool.address, false, true),
-      meta(p.inputAccount, false, true),
-      meta(p.outputAccount, false, true),
-      meta(p.input.vault, false, true),
-      meta(p.output.vault, false, true),
-      meta(p.input.program),
-      meta(p.output.program),
-      meta(p.input.mint),
-      meta(p.output.mint),
-      meta(pool.observation, false, true),
-    ],
+    keys: swapKeys(cpmm, pool, p),
   });
+}
+
+/** Buys exactly `amountOut`, taking at most `maxAmountIn`; above that it fails with ExceededSlippage (6005). */
+export function swapBaseOutputIx(cpmm: PublicKey, pool: Pool, p: SwapAccounts & { amountOut: BN; maxAmountIn: BN }) {
+  return new TransactionInstruction({
+    programId: cpmm,
+    data: cpmmCoder.instruction.encode("swap_base_output", { max_amount_in: p.maxAmountIn, amount_out: p.amountOut }),
+    keys: swapKeys(cpmm, pool, p),
+  });
+}
+
+function swapKeys(cpmm: PublicKey, pool: Pool, p: SwapAccounts): AccountMeta[] {
+  return [
+    meta(p.payer, true),
+    meta(cpmmPdas(cpmm).authority),
+    meta(pool.ammConfig),
+    meta(pool.address, false, true),
+    meta(p.inputAccount, false, true),
+    meta(p.outputAccount, false, true),
+    meta(p.input.vault, false, true),
+    meta(p.output.vault, false, true),
+    meta(p.input.program),
+    meta(p.output.program),
+    meta(p.input.mint),
+    meta(p.output.mint),
+    meta(pool.observation, false, true),
+  ];
 }
 
 export type PoolTradeRequest = {
@@ -278,7 +331,7 @@ export type PoolTradeRequest = {
 const SWAP_COMPUTE_UNITS = 150_000;
 
 /** Builds a buy or sell in a graduated Launch's CPMM pool server-side (ADR 0003). The trader is the only signer. */
-export async function preparePoolTrade(connection: Connection, r: PoolTradeRequest): Promise<UnsignedTransaction> {
+export async function preparePoolTrade(connection: Connection, r: PoolTradeRequest): Promise<PreparedTrade> {
   const { base, quote } = poolSides(r.pool, r.baseMint);
   const accounts = await tradeAccounts(connection, {
     trader: r.trader,
@@ -289,19 +342,34 @@ export async function preparePoolTrade(connection: Connection, r: PoolTradeReque
     side: r.side,
     amountIn: r.amountIn,
   });
-  const buy = r.side === "buy";
-  return unsignedTransaction(connection, r.trader, [
-    ComputeBudgetProgram.setComputeUnitLimit({ units: SWAP_COMPUTE_UNITS }),
-    ...accounts.setup,
-    swapBaseInputIx(r.cpmm, r.pool, {
-      payer: r.trader,
-      input: buy ? quote : base,
-      output: buy ? base : quote,
-      inputAccount: buy ? accounts.quote : accounts.base,
-      outputAccount: buy ? accounts.base : accounts.quote,
-      amountIn: r.amountIn,
-      minAmountOut: r.minAmountOut,
-    }),
-    ...accounts.cleanup,
+  return steppedTransaction(connection, r.trader, [
+    { step: "setup", instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units: SWAP_COMPUTE_UNITS }), ...accounts.setup] },
+    {
+      step: "trade",
+      instructions: [
+        poolTradeIx(r.cpmm, r.pool, r.baseMint, {
+          trader: r.trader, side: r.side, baseAccount: accounts.base, quoteAccount: accounts.quote, amountIn: r.amountIn, minAmountOut: r.minAmountOut,
+        }),
+      ],
+    },
+    { step: "cleanup", instructions: accounts.cleanup },
   ]);
+}
+
+/** A buy (Quote Asset in) or sell (coins in) in a graduated Launch's pool, from and to the given token accounts. */
+export function poolTradeIx(
+  cpmm: PublicKey, pool: Pool, baseMint: PublicKey,
+  t: { trader: PublicKey; side: Side; baseAccount: PublicKey; quoteAccount: PublicKey; amountIn: BN; minAmountOut: BN },
+) {
+  const { base, quote } = poolSides(pool, baseMint);
+  const buy = t.side === "buy";
+  return swapBaseInputIx(cpmm, pool, {
+    payer: t.trader,
+    input: buy ? quote : base,
+    output: buy ? base : quote,
+    inputAccount: buy ? t.quoteAccount : t.baseAccount,
+    outputAccount: buy ? t.baseAccount : t.quoteAccount,
+    amountIn: t.amountIn,
+    minAmountOut: t.minAmountOut,
+  });
 }

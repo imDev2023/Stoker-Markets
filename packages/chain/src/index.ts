@@ -34,18 +34,26 @@ export {
   type CurveReserves, type FeeRates, type Side, type TradeFees, type TradeQuote,
 } from "./curve";
 export {
-  graduationPoolAddress, loadPool, poolPrice, poolSides, poolSwap, preparePoolTrade, quotePoolTrade, readPoolKeys,
+  graduationPoolAddress, loadPool, poolPrice, poolSides, poolSwap, poolSwapExactOut, poolTradeIx, preparePoolTrade, quotePoolTrade,
+  readPoolKeys, swapBaseInputIx, swapBaseOutputIx,
   type Pool, type PoolFeeRates, type PoolKeys, type PoolSwap, type PoolToken, type PoolTokenKeys, type PoolTradeQuote,
   type PoolTradeRequest,
 } from "./cpmm";
 export { prepareMigration, sharedMigrationAccounts, type MigrationRequest, type PreparedMigration } from "./migrate";
-export type { UnsignedTransaction } from "./wallet";
+export {
+  TransactionTooLargeError, temporaryTokenAccount, unsignedTransaction,
+  type PreparedTrade, type TradeStep, type UnsignedTransaction,
+} from "./wallet";
+export {
+  cpmmSolSwap, prepareRoutedBuy, routedLimits, splitSlippage, transferFeeBps,
+  type RoutedBuyRequest, type RoutedMarket, type SolSwap, type SolSwapBuilder,
+} from "./route";
 export {
   decodeTransaction,
   type RawTransaction, type ChainEvent, type LaunchCreated, type TradeExecuted, type CreatorFeeClaimed, type Graduated,
   type PoolSwapExecuted,
 } from "./decode";
 export {
-  loadCurve, loadFeeRates, prepareTrade, tradeInstructions,
-  type Curve, type CurveAccounts, type CurveStatus, type PreparedTrade, type TradeRequest,
+  curveTradeIx, loadCurve, loadFeeRates, prepareTrade, tradeInstructions,
+  type Curve, type CurveAccounts, type CurveStatus, type TradeRequest,
 } from "./trade";
