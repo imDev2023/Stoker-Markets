@@ -8,10 +8,11 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { runMigrations } from "@launchpad/db/migrate";
 import { bootstrapPlatform, LOCAL_QUOTE_PRICES_USD, localnetKeys, startLocalnet, type LocalnetState } from "@launchpad/localnet";
+import { createSolRoutes, type SolRoutes } from "@launchpad/localnet/routes";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -34,6 +35,8 @@ export type StackEnv = {
   sweepFloatLamports: string;
   collectMinLamports: string;
   platform: LocalnetState;
+  /** The Raydium CPMM pools of SOL the API routes buys paid with SOL through, standing in for Jupiter. */
+  solRoutes: SolRoutes;
 };
 
 export type StackOptions = {
@@ -184,6 +187,8 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       chain.rpcUrl,
       new BN((opts.graduationTargetSol ?? 1) * LAMPORTS_PER_SOL),
     );
+    // The route pools' lookup table takes a while to become usable, so the API starts meanwhile.
+    const { ready: solRoutesReady, ...solRoutes } = await createSolRoutes(chain.connection, new PublicKey(platform.platformConfig));
 
     const sink = await startAlertSink();
     cleanups.push(sink.stop);
@@ -218,6 +223,9 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       SWEEP_THRESHOLD_LAMPORTS: fees.sweepThresholdLamports,
       SWEEP_FLOAT_LAMPORTS: fees.sweepFloatLamports,
       COLLECT_MIN_LAMPORTS: fees.collectMinLamports,
+      SOL_ROUTE_SOURCE: "raydium-cpmm",
+      SOL_ROUTE_POOLS: JSON.stringify(solRoutes.pools),
+      SOL_ROUTE_LOOKUP_TABLES: solRoutes.lookupTable,
     };
     const api = await startApi({ port: apiPort, vars, databaseUrl: pg.url });
     cleanups.push(api.stop);
@@ -239,10 +247,11 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       await waitFor("web", async () => (await fetch(webUrl)).ok, 180_000, web.log);
     }
 
+    await solRoutesReady;
     return {
       env: {
         apiUrl, webUrl, rpcUrl: chain.rpcUrl, databaseUrl: pg.url, webhookSecret: WEBHOOK_SECRET, operatorToken: OPERATOR_TOKEN,
-        alertSinkUrl: sink.url, graduationAlertAfterSeconds, ...fees, platform,
+        alertSinkUrl: sink.url, graduationAlertAfterSeconds, ...fees, platform, solRoutes,
       },
       stop,
     };
