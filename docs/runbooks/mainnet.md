@@ -41,17 +41,32 @@ Exactly what `bootstrapPlatform` in `tools/localnet/src/index.ts` does on the lo
    - `updatePlatformConfigIx(program, admin, { PlatformCPCreator: [operations] })`: the platform is every graduated pool's creator.
    - `updatePlatformConfigIx(program, admin, { RestrictCurveParam: [1] })`: launches must match a curve rule.
    - `updatePlatformConfigIx(program, admin, { CurveRuleManager: [operations] })`: the operations wallet writes the rules (ADR 0005).
-3. Serialise it unsigned with a recent blockhash and the admin as fee payer (the same way `POST /v1/operator/fees/prepare` hands the admin a fee change), sign it on the cold device or through Squads, and send it. A short `tsx` script in the repo can do the building; nothing in the API does, since the API never holds the admin key.
-4. Verify by decoding the account, which is the acceptance criterion in #23: `launchlabCoder.accounts.decode("PlatformConfig", data)` from `packages/chain` and check `fee_rate` 5000, `creator_fee_rate` 5000, `migrate_nft_info` `{1000000, 0, 0}`, `platform_vesting_scale` 0, `fee_wallet`, `nft_wallet`, `transfer_fee_extension_auth`, `vesting_wallet` and `platform_cp_creator` all the operations wallet, `curve_rule_manager` the operations wallet, `restrict_curve_param` on, `cpswap_config` the chosen config, `name`, `web` and `img` as decided in #7.
+3. Serialise it unsigned with a recent blockhash and the admin as fee payer (the same way `POST /v1/operator/fees/prepare` hands the admin a fee change), sign it on the cold device or through Squads, and send it. `tools/mainnet/platform-config.ts` does the building; nothing in the API does, since the API never holds the admin key. It takes the admin's address (or a keypair file, of which it reads only the public half) and prints the base64 transaction; it is valid for about a minute, so build it when the cold device is ready to sign:
+
+   ```sh
+   pnpm --filter @launchpad/mainnet platform-config build --rpc https://... --cluster mainnet \
+     --admin <admin pubkey> --operations <operations pubkey> --cpswap-config <the 1% config> \
+     --name "<name>" --web https://<domain> --img https://<domain>/icon.png
+   ```
+
+   `--platform-fee-bps` and `--creator-fee-bps` default to 50. On devnet (section 11), where the admin can be a file keypair, `--sign admin.json` signs, sends and runs the check below in one go.
+4. Verify by decoding the account, which is the acceptance criterion in #23: `pnpm --filter @launchpad/mainnet platform-config check --rpc ... --cluster mainnet --admin <admin pubkey>` prints the decoded PlatformConfig, and with the same `--operations`, `--cpswap-config`, `--name`, `--web` and `--img` as the build it names every field that differs from what was decided, or passes: `fee_rate` 5000, `creator_fee_rate` 5000, `migrate_nft_info` `{1000000, 0, 0}`, `platform_vesting_scale` 0, `fee_wallet`, `nft_wallet`, `transfer_fee_extension_auth`, `vesting_wallet` and `platform_cp_creator` all the operations wallet, `curve_rule_manager` the operations wallet, `restrict_curve_param` on, `cpswap_config` the chosen config, `name`, `web` and `img` as decided in #7. (`launchlabCoder.accounts.decode("PlatformConfig", data)` from `packages/chain` is what it decodes with.) The script is proven against the local chain in `tests/backend/src/mainnet-tools.test.ts`.
 5. `PLATFORM_CONFIG` is `launchlabPdas(program).platformConfig(admin)`; `PLATFORM_ADMIN` is the admin's address, and the API checks on mainnet that the one derives from the other.
 
 Every curve rule is written by the API's Quote Registry refresh (section 6), never by the admin.
 
 ## 3. The Platform Lookup Table (operations wallet)
 
-A launch with a First Buy only fits Solana's 1,232 bytes through an address lookup table, and a buy paid with SOL needs the same table (CLAUDE.md traps). The table is owned by the operations wallet and holds `platformLookupAddresses(program, platformConfig, quotes)` from `packages/chain/src/lookup.ts`: 11 shared accounts plus 4 per listed Quote Asset (its GlobalConfig, mint, curve rule and platform fee vault). A table holds 256 addresses, so list SOL (required: a SOL First Buy needs SOL's own accounts) and up to 61 of the busiest Quote Assets, never all 571.
+A launch with a First Buy only fits Solana's 1,232 bytes through an address lookup table, and a buy paid with SOL needs the same table (CLAUDE.md traps). The table is owned by the operations wallet and holds `platformLookupAddresses(program, platformConfig, quotes)` from `packages/chain/src/lookup.ts`: 11 shared accounts plus 4 per listed Quote Asset (its GlobalConfig, mint, curve rule and platform fee vault). A table holds 256 addresses, so list SOL (required: a SOL First Buy needs SOL's own accounts) and up to 60 of the busiest Quote Assets, never all 571.
 
-`ensureLookupTable(connection, operations, addresses)` from `tools/localnet` creates or extends it against any RPC and waits until the last extension is rooted (about 32 slots), so a `tsx` one-off script can run it against mainnet with the operations keypair. Its address is `PLATFORM_LOOKUP_TABLE`. Extending it later (a Quote Asset getting popular) is the same call; a new address is usable a minute after it is added. Jupiter routes bring their own tables.
+`tools/mainnet/lookup-table.ts` creates or extends it with the operations keypair from a list of quote mints (SOL is always included), reusing `ensureLookupTable` from `tools/localnet`, which works against any RPC and waits until the last extension is rooted (about 32 slots):
+
+```sh
+pnpm --filter @launchpad/mainnet lookup-table --rpc https://... --cluster mainnet \
+  --operations operations.json --admin <admin pubkey> --quotes <mint>,<mint>,...
+```
+
+It prints the table's address, which is `PLATFORM_LOOKUP_TABLE`, and refuses a list that would not fit. Extending it later (a Quote Asset getting popular) is the same command with the longer list; a new address is usable a minute after it is added. Jupiter routes bring their own tables. The script is proven against the local chain in `tests/backend/src/mainnet-tools.test.ts`.
 
 ## 4. Postgres and Hyperdrive
 
