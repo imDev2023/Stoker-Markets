@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCandles, getLaunch, getPlatform, listTrades } from "@/lib/api";
-import { explorerUrl, quoteSymbol, shortAddress } from "@/lib/format";
+import { explorerUrl, quoteTicker, shortAddress } from "@/lib/format";
 import { CoinMarket } from "@/components/CoinMarket";
 import { CopyButton } from "@/components/CopyButton";
 import { PairMark } from "@/components/PairMark";
@@ -12,7 +12,7 @@ type Props = { params: Promise<{ mint: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const launch = await getLaunch((await params).mint);
-  return { title: launch ? `${launch.symbol} / ${quoteSymbol(launch.quoteMint)}` : "Coin not found" };
+  return { title: launch ? `${launch.symbol} / ${quoteTicker(launch.quote)}` : "Coin not found" };
 }
 
 export default async function CoinPage({ params }: Props) {
@@ -21,7 +21,7 @@ export default async function CoinPage({ params }: Props) {
     getLaunch(mint), getPlatform(), listTrades(mint), getCandles(mint, "1m"),
   ]);
   if (!launch) notFound();
-  const quote = quoteSymbol(launch.quoteMint);
+  const quote = quoteTicker(launch.quote);
   const links = [
     ["Website", launch.links.website],
     ["X", launch.links.x],

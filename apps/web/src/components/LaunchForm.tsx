@@ -4,15 +4,16 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL, VersionedTransaction } from "@solana/web3.js";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { LAUNCH_IMAGE_MAX_BYTES, type PlatformInfo, type PreparedLaunch } from "@launchpad/contract";
+import { LAUNCH_IMAGE_MAX_BYTES, type PlatformInfo, type PreparedLaunch, type QuoteAsset } from "@launchpad/contract";
 import { prepareLaunch, reportTransaction } from "@/lib/api";
-import { formatUnits, quoteSymbol } from "@/lib/format";
+import { formatAmount, formatUnits, isSol, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
 import { PairMark } from "./PairMark";
+import { QuotePicker } from "./QuotePicker";
 import { WalletButton } from "./WalletButton";
 import styles from "./LaunchForm.module.css";
 
-type Review = { prepared: PreparedLaunch; tx: VersionedTransaction; costLamports: number };
+type Review = { prepared: PreparedLaunch; quote: QuoteAsset; tx: VersionedTransaction; costLamports: number };
 type Step =
   | { kind: "editing" }
   | { kind: "preparing" }
@@ -22,7 +23,7 @@ type Step =
 
 const DESCRIPTION_MAX = 1000;
 
-export function LaunchForm({ platform }: { platform: PlatformInfo }) {
+export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quotes: QuoteAsset[] }) {
   const router = useRouter();
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
@@ -33,6 +34,7 @@ export function LaunchForm({ platform }: { platform: PlatformInfo }) {
   const [x, setX] = useState("");
   const [telegram, setTelegram] = useState("");
   const [image, setImage] = useState<File | null>(null);
+  const [quoteMint, setQuoteMint] = useState(() => quotes.find((q) => q.launchable)?.mint ?? null);
   const [step, setStep] = useState<Step>({ kind: "editing" });
   const [error, setError] = useState<string | null>(null);
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
@@ -40,8 +42,7 @@ export function LaunchForm({ platform }: { platform: PlatformInfo }) {
   const imageUrl = useMemo(() => (image ? URL.createObjectURL(image) : null), [image]);
   useEffect(() => () => { if (imageUrl) URL.revokeObjectURL(imageUrl); }, [imageUrl]);
 
-  const quote = quoteSymbol(platform.quoteMint);
-  const target = formatUnits(platform.graduationTarget, 9);
+  const quote = quotes.find((q) => q.mint === quoteMint) ?? null;
   const busy = step.kind !== "editing";
 
   function pickImage(file: File | undefined) {
@@ -52,11 +53,12 @@ export function LaunchForm({ platform }: { platform: PlatformInfo }) {
   }
 
   async function prepare() {
-    if (!publicKey) return;
+    if (!publicKey || !quote) return;
     setStep({ kind: "preparing" });
     try {
       const form = new FormData();
       form.set("creator", publicKey.toBase58());
+      form.set("quoteMint", quote.mint);
       form.set("name", name.trim());
       form.set("symbol", symbol.trim());
       form.set("description", description.trim());
@@ -74,7 +76,7 @@ export function LaunchForm({ platform }: { platform: PlatformInfo }) {
       const before = await connection.getBalance(publicKey, "confirmed");
       // The simulated balance already has the network fee taken off.
       const after = sim.value.accounts?.[0]?.lamports ?? before;
-      setStep({ kind: "reviewing", review: { prepared, tx, costLamports: before - after } });
+      setStep({ kind: "reviewing", review: { prepared, quote, tx, costLamports: before - after } });
     } catch (e) {
       setError((e as Error).message);
       setStep({ kind: "editing" });
@@ -106,6 +108,7 @@ export function LaunchForm({ platform }: { platform: PlatformInfo }) {
     e.preventDefault();
     setError(null);
     if (!image) return setError("Add an image for your coin.");
+    if (!quote?.launchable) return setError("Choose a Quote Asset to pair your coin with.");
     if (!hasAcceptedDisclaimer()) return setDisclaimerOpen(true);
     void prepare();
   }
@@ -149,6 +152,8 @@ export function LaunchForm({ platform }: { platform: PlatformInfo }) {
             </label>
           </div>
 
+          <QuotePicker quotes={quotes} value={quoteMint} onChange={setQuoteMint} />
+
           <label className={styles.field}>
             <span>
               Description <em>optional</em>
@@ -175,12 +180,8 @@ export function LaunchForm({ platform }: { platform: PlatformInfo }) {
 
         <dl className={styles.terms}>
           <div>
-            <dt>Paired with</dt>
-            <dd>{quote}</dd>
-          </div>
-          <div>
             <dt>Graduates at</dt>
-            <dd>{target} {quote} raised, then moves to Raydium</dd>
+            <dd>{quote ? <GraduationTerms quote={quote} /> : "Choose a Quote Asset to see what your coin must raise."}</dd>
           </div>
           <div>
             <dt>You earn</dt>
@@ -197,7 +198,9 @@ export function LaunchForm({ platform }: { platform: PlatformInfo }) {
         {review ? (
           <div className={styles.review} role="region" aria-label="Review your launch">
             <p>
-              Launching <strong>{symbol}</strong> paired with {quote}. Your wallet pays about{" "}
+              Launching <strong>{symbol}</strong> paired with {quoteTicker(review.quote)}. It graduates at{" "}
+              <strong>{formatUnits(review.prepared.graduationTarget.raw, review.quote.decimals, review.quote.decimals)} {quoteTicker(review.quote)}</strong>{" "}
+              raised. Your wallet pays about{" "}
               <strong className="mono">{(review.costLamports / LAMPORTS_PER_SOL).toFixed(4)} SOL</strong> in network fees
               and account rent.
             </p>
@@ -211,7 +214,7 @@ export function LaunchForm({ platform }: { platform: PlatformInfo }) {
             </div>
           </div>
         ) : publicKey ? (
-          <button type="submit" className={styles.primary} disabled={busy}>
+          <button type="submit" className={styles.primary} disabled={busy || !quote?.launchable}>
             {step.kind === "preparing" ? "Preparing…" : "Review launch"}
           </button>
         ) : (
@@ -228,7 +231,7 @@ export function LaunchForm({ platform }: { platform: PlatformInfo }) {
           <div className={styles.previewTop}>
             {imageUrl ? <img src={imageUrl} alt="" /> : <div className={styles.previewImage} aria-hidden />}
             <div className={styles.previewTitles}>
-              <PairMark base={symbol || "TICKER"} quote={quote} size="lg" />
+              <PairMark base={symbol || "TICKER"} quote={quote ? quoteTicker(quote) : "SOL"} size="lg" />
               <p className={styles.previewName}>{name || "Coin name"}</p>
             </div>
           </div>
@@ -245,6 +248,21 @@ export function LaunchForm({ platform }: { platform: PlatformInfo }) {
         }}
       />
     </div>
+  );
+}
+
+/** The Graduation Target in the Quote Asset and, for anything but SOL, what it is worth in SOL today. */
+function GraduationTerms({ quote }: { quote: QuoteAsset }) {
+  const target = quote.graduationTarget;
+  if (!target) return <>{quote.reason}</>;
+  const amount = `${formatAmount(target.raw, quote.decimals)} ${quoteTicker(quote)}`;
+  // SOL itself: the amount already is the SOL figure.
+  if (isSol(quote)) return <>{amount} raised, then moves to Raydium</>;
+  return (
+    <>
+      {amount} raised, worth {formatAmount(target.lamports, SOL_DECIMALS)} SOL today, then moves to Raydium
+      <span className={styles.termsNote}>The amount is fixed from {quoteTicker(quote)}&apos;s price when you launch.</span>
+    </>
   );
 }
 

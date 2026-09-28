@@ -2,15 +2,19 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
 import { desc, eq } from "drizzle-orm";
-import { prepareLaunch, WSOL_MINT, type RawTransaction } from "@launchpad/chain";
+import { prepareLaunch, type RawTransaction } from "@launchpad/chain";
 import {
   LAUNCH_IMAGE_MAX_BYTES, LAUNCH_IMAGE_TYPES, PrepareLaunchFields, type LaunchSummary, type PlatformInfo, type PreparedLaunch,
 } from "@launchpad/contract";
-import { createDb, curves, launches, launchMetadata } from "@launchpad/db";
-import { config, type AppEnv, type Config } from "./env";
+import { createDb, curves, launches, launchMetadata, quoteAssets } from "@launchpad/db";
+import { config, operationsKey, quoteMarket, type AppEnv, type Bindings, type Config } from "./env";
 import { fetchRawTransaction, indexTransactions } from "./indexer";
 import { sniffImageType } from "./images";
+import { priceLaunch, toQuoteRef } from "./quotes/assets";
+import { refreshQuoteRegistry } from "./quotes/registry";
+import { quotes } from "./routes/quotes";
 import { curveProgress, tradeRoutes } from "./routes/trades";
 
 const app = new Hono<AppEnv>();
@@ -46,8 +50,7 @@ app.get("/v1/platform", (c) => {
     cluster: cfg.cluster,
     rpcUrl: cfg.rpcUrl,
     platformConfig: cfg.platformConfig.toBase58(),
-    quoteMint: WSOL_MINT.toBase58(),
-    graduationTarget: cfg.graduationTargetLamports.toString(),
+    graduationTargetLamports: cfg.graduationTargetLamports.toString(),
     platformFeeBps: 50,
     creatorFeeBps: 50,
   };
@@ -71,6 +74,7 @@ app.post("/v1/launches/prepare", async (c) => {
     return c.json({ error: "image must be PNG, JPEG, WebP or GIF" }, 400);
 
   const f = fields.data;
+  const quote = await priceLaunch(c.get("db"), cfg, quoteMarket(c.env), f.quoteMint);
   const mint = Keypair.generate();
   const mintAddress = mint.publicKey.toBase58();
   const imageKey = `images/${mintAddress}`;
@@ -94,13 +98,14 @@ app.post("/v1/launches/prepare", async (c) => {
     {
       program: cfg.launchlab,
       platformConfig: cfg.platformConfig,
-      globalConfig: cfg.solGlobalConfig,
-      quoteMint: WSOL_MINT,
+      globalConfig: quote.globalConfig,
+      quoteMint: quote.mint,
+      quoteTokenProgram: quote.tokenProgram,
       creator: new PublicKey(f.creator),
       name: f.name,
       symbol: f.symbol,
       uri: metadataUri,
-      graduationTargetRaw: cfg.graduationTargetLamports,
+      graduationTargetRaw: new BN(quote.graduationTarget.raw),
     },
     mint,
   );
@@ -110,6 +115,7 @@ app.post("/v1/launches/prepare", async (c) => {
     pool: prepared.pool.toBase58(),
     metadataUri,
     lastValidBlockHeight: prepared.lastValidBlockHeight,
+    graduationTarget: quote.graduationTarget,
   };
   return c.json(body);
 });
@@ -139,9 +145,12 @@ app.get("/v1/launches", async (c) => {
     .from(launches)
     .leftJoin(launchMetadata, eq(launchMetadata.id, launches.mint))
     .leftJoin(curves, eq(curves.mint, launches.mint))
+    // Amounts need the Quote Asset's decimals, so a Launch shows once the registry lists its Quote Asset. Every Launch the API
+    // built already is; only one sent straight to a GlobalConfig newer than the last refresh waits for the next one.
+    .innerJoin(quoteAssets, eq(quoteAssets.mint, launches.quoteMint))
     .orderBy(desc(launches.createdSlot))
     .limit(limit);
-  return c.json({ launches: rows.map((r) => toSummary(c.get("cfg"), r.launches, r.launch_metadata, r.curves)) });
+  return c.json({ launches: rows.map((r) => toSummary(c.get("cfg"), r.launches, r.launch_metadata, r.quote_assets, r.curves)) });
 });
 
 app.get("/v1/launches/:mint", async (c) => {
@@ -151,12 +160,14 @@ app.get("/v1/launches/:mint", async (c) => {
     .from(launches)
     .leftJoin(launchMetadata, eq(launchMetadata.id, launches.mint))
     .leftJoin(curves, eq(curves.mint, launches.mint))
+    .innerJoin(quoteAssets, eq(quoteAssets.mint, launches.quoteMint))
     .where(eq(launches.mint, c.req.param("mint")))
     .limit(1);
   if (!row) return c.json({ error: "launch not found" }, 404);
-  return c.json(toSummary(c.get("cfg"), row.launches, row.launch_metadata, row.curves));
+  return c.json(toSummary(c.get("cfg"), row.launches, row.launch_metadata, row.quote_assets, row.curves));
 });
 
+app.route("/v1", quotes);
 app.route("/v1", tradeRoutes);
 
 /** Token metadata JSON in the Metaplex off-chain format, as referenced by the on-chain metadata URI. */
@@ -201,13 +212,14 @@ function toSummary(
   cfg: Config,
   l: typeof launches.$inferSelect,
   m: typeof launchMetadata.$inferSelect | null,
+  q: typeof quoteAssets.$inferSelect,
   curve: typeof curves.$inferSelect | null,
 ): LaunchSummary {
   return {
     mint: l.mint,
     pool: l.pool,
     creator: l.creator,
-    quoteMint: l.quoteMint,
+    quote: toQuoteRef(q),
     name: l.name,
     symbol: l.symbol,
     metadataUri: l.metadataUri,
@@ -231,4 +243,17 @@ function timingSafeEqual(a: string, b: string) {
   return diff === 0;
 }
 
-export default app;
+
+export default {
+  fetch: app.fetch,
+  /** The Cron Trigger: refresh the Quote Registry and our curve rules. */
+  async scheduled(_controller, env) {
+    const { db, close } = createDb(env.HYPERDRIVE.connectionString);
+    try {
+      const result = await refreshQuoteRegistry({ db, cfg: config(env), market: quoteMarket(env), operations: operationsKey(env) });
+      console.log("quote registry refreshed", result);
+    } finally {
+      await close();
+    }
+  },
+} satisfies ExportedHandler<Bindings>;

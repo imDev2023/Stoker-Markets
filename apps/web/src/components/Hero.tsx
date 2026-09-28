@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { LaunchSummary } from "@launchpad/contract";
-import { quoteSymbol } from "@/lib/format";
+import { quoteTicker } from "@/lib/format";
 import { FeeSplit } from "./FeeSplit";
 import { PairMark } from "./PairMark";
 import styles from "./Hero.module.css";
@@ -18,7 +18,7 @@ export function Hero({ latest }: { latest: LaunchSummary | null }) {
       </div>
       <div className={styles.plate} aria-label="How a trade's fee is split">
         <span className={styles.plateLabel}>{latest ? "Latest coin" : "Your coin"}</span>
-        <PairMark base={latest?.symbol ?? "YOURS"} quote={latest ? quoteSymbol(latest.quoteMint) : "SOL"} size="fit" />
+        <PairMark base={latest?.symbol ?? "YOURS"} quote={latest ? quoteTicker(latest.quote) : "SOL"} size="fit" />
         <FeeSplit />
       </div>
     </section>

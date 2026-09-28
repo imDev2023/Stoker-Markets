@@ -3,6 +3,7 @@ import bs58 from "bs58";
 import type BN from "bn.js";
 import { launchlabCoder } from "./coder";
 import type { CurveReserves, Side, TradeFees } from "./curve";
+import { LAUNCH_SHAPE } from "./shape";
 import type { CurveStatus } from "./trade";
 
 type RawInstruction = { programIdIndex: number; accounts: number[]; data: string };
@@ -47,6 +48,11 @@ export type LaunchCreated = {
   supply: BN;
   totalBaseSell: BN;
   graduationTargetRaw: BN;
+  /**
+   * Whether the launch has the shape our curve rules pin on-chain (LAUNCH_SHAPE, an SPL coin, no vesting). A launch
+   * against a GlobalConfig our rules don't cover yet can have any shape (ADR 0005).
+   */
+  standardShape: boolean;
 };
 
 /** One trade on a curve: the program's own TradeEvent plus the accounts of the instruction that emitted it. */
@@ -173,10 +179,22 @@ export function decodeTransaction(raw: RawTransaction, launchlab: PublicKey): Ch
       if (!INITIALIZE_IXS.has(decoded.name)) continue;
       const data = decoded.data as {
         base_mint_param: { decimals: number; name: string; symbol: string; uri: string };
-        curve_param: { Constant?: { data: { supply: BN; total_base_sell: BN; total_quote_fund_raising: BN } } };
+        curve_param: { Constant?: { data: { supply: BN; total_base_sell: BN; total_quote_fund_raising: BN; migrate_type: number } } };
+        vesting_param: { total_locked_amount: BN; cliff_period: BN; unlock_period: BN };
+        amm_fee_on?: Record<string, object>;
       };
       const curve = data.curve_param.Constant?.data;
       if (!curve) continue; // our platform only allows the constant-product curve
+      const vesting = data.vesting_param;
+      const standardShape =
+        decoded.name !== "initialize_with_token_2022" &&
+        data.base_mint_param.decimals === LAUNCH_SHAPE.decimals &&
+        curve.supply.eq(LAUNCH_SHAPE.supply) &&
+        curve.total_base_sell.eq(LAUNCH_SHAPE.totalBaseSell) &&
+        curve.migrate_type === LAUNCH_SHAPE.migrateType &&
+        vesting.total_locked_amount.isZero() && vesting.cliff_period.isZero() && vesting.unlock_period.isZero() &&
+        // The original `initialize` has no fee-on argument, so only the rest of its shape is checked.
+        (!data.amm_fee_on || LAUNCH_SHAPE.ammFeeOn in data.amm_fee_on);
       events.push({
         kind: "launch_created",
         signature,
@@ -195,6 +213,7 @@ export function decodeTransaction(raw: RawTransaction, launchlab: PublicKey): Ch
         supply: curve.supply,
         totalBaseSell: curve.total_base_sell,
         graduationTargetRaw: curve.total_quote_fund_raising,
+        standardShape,
       });
     }
   }

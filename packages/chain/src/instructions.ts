@@ -55,6 +55,7 @@ export function createPlatformConfigIx(program: PublicKey, admin: PublicKey, s: 
 export type PlatformConfigUpdate =
   | { PlatformCPCreator: [PublicKey] }
   | { RestrictCurveParam: [BN] }
+  | { CurveRuleManager: [PublicKey] }
   | { FeeRate: [BN] };
 
 export function updatePlatformConfigIx(program: PublicKey, admin: PublicKey, param: PlatformConfigUpdate) {

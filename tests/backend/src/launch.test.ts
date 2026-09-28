@@ -47,7 +47,7 @@ describe("launching a SOL-paired coin", () => {
       mint: prepared.mint,
       pool: prepared.pool,
       creator: creator.publicKey.toBase58(),
-      quoteMint: WSOL_MINT.toBase58(),
+      quote: { mint: WSOL_MINT.toBase58(), symbol: "SOL", name: "Solana", decimals: 9 },
       name: "Tracer Bullet",
       symbol: "TRCR",
       description: "First Launch end to end",

@@ -13,7 +13,14 @@ export async function indexTransactions(db: Db, cfg: Config, txs: RawTransaction
   for (const tx of txs) {
     for (const e of decodeTransaction(tx, cfg.launchlab)) {
       if (!e.platformConfig.equals(cfg.platformConfig)) continue;
-      if (e.kind === "launch_created") launched += await indexLaunch(db, e);
+      if (e.kind === "launch_created") {
+        // Only a GlobalConfig newer than the last Quote Registry refresh lets such a launch through (ADR 0005).
+        if (!e.standardShape) {
+          console.warn("ignoring a launch outside our launch shape", e.signature);
+          continue;
+        }
+        launched += await indexLaunch(db, e);
+      }
       else traded += await indexTrade(db, e);
     }
   }

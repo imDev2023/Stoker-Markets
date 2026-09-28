@@ -1,9 +1,11 @@
 import type { LaunchSummary } from "@launchpad/contract";
-import { formatUnits, QUOTE_DECIMALS } from "@/lib/format";
+import { formatUnits, quoteTicker } from "@/lib/format";
 import styles from "./CurveProgress.module.css";
 
 /** How far a Launch's curve is toward its Graduation Target. */
-export function CurveProgress({ launch, quote }: { launch: LaunchSummary; quote: string }) {
+export function CurveProgress({ launch }: { launch: LaunchSummary }) {
+  const quote = quoteTicker(launch.quote);
+  const decimals = launch.quote.decimals;
   const raised = BigInt(launch.curve.raised);
   const target = BigInt(launch.graduationTarget);
   const done = launch.curve.status !== "live";
@@ -29,12 +31,12 @@ export function CurveProgress({ launch, quote }: { launch: LaunchSummary; quote:
         {raised > 0n && <span className={styles.fill} style={{ width: `${pct}%` }} />}
       </div>
       <p className={styles.amounts}>
-        <span className="mono">{formatUnits(raised.toString(), QUOTE_DECIMALS)}</span> of{" "}
-        <span className="mono">{formatUnits(launch.graduationTarget, QUOTE_DECIMALS)}</span> {quote} raised
+        <span className="mono">{formatUnits(raised.toString(), decimals)}</span> of{" "}
+        <span className="mono">{formatUnits(launch.graduationTarget, decimals)}</span> {quote} raised
       </p>
       <p className={styles.note}>
         {launch.curve.status === "live"
-          ? `${formatUnits(left.toString(), QUOTE_DECIMALS)} ${quote} more and the coin moves to a Raydium pool.`
+          ? `${formatUnits(left.toString(), decimals)} ${quote} more and the coin moves to a Raydium pool.`
           : launch.curve.status === "graduating"
             ? "The curve sold out. Raydium is moving the coin to its own pool."
             : "The coin has moved to a Raydium pool."}

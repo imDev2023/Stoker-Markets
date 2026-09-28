@@ -1,5 +1,4 @@
 import { ComputeBudgetProgram, Keypair, PublicKey, TransactionMessage, VersionedTransaction, type Connection } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import type BN from "bn.js";
 import { initializeV2Ix } from "./instructions";
 import { launchlabPdas } from "./pda";
@@ -9,6 +8,8 @@ export type LaunchRequest = {
   platformConfig: PublicKey;
   globalConfig: PublicKey;
   quoteMint: PublicKey;
+  /** SPL Token or Token-2022; tokenized stocks are Token-2022. */
+  quoteTokenProgram: PublicKey;
   creator: PublicKey;
   name: string;
   symbol: string;
@@ -46,7 +47,7 @@ export async function prepareLaunch(connection: Connection, r: LaunchRequest, mi
         platformConfig: r.platformConfig,
         baseMint: mint.publicKey,
         quoteMint: r.quoteMint,
-        quoteTokenProgram: TOKEN_PROGRAM_ID,
+        quoteTokenProgram: r.quoteTokenProgram,
         name: r.name,
         symbol: r.symbol,
         uri: r.uri,
