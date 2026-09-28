@@ -21,6 +21,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 - `apps/web` - Next.js 16 on OpenNext; a pure client of the API. Read `apps/web/AGENTS.md` (Next 16 breaking changes).
 - `tools/localnet` - the local chain with the Raydium devnet programs from committed fixtures: `solana-test-validator` when installed, else the embedded Surfpool runtime (`@solana/surfpool`, `LOCALNET_RUNTIME` to force one), plus platform bootstrap, the taxed Token-2022 quote `TAXQ` (1% transfer fee), and `migrateCurve`, which plays Raydium's crank with a local stand-in migrate wallet.
 - `tools/stack` - starts Postgres, local chain, API (and optionally web) for tests, plus an alert sink standing in for the operator's chat webhook and a stand-in for Helius's webhook API (`GET`/`PUT /v0/webhooks/:id`). `STACK_LOG_DIR` streams each process's output to files.
+- `tools/mainnet` - the go-live scripts the runbook names: `platform-config.ts` builds the unsigned PlatformConfig creation for the cold admin key and decodes one to check it; `lookup-table.ts` creates or extends the Platform Lookup Table from a list of quote mints. Read-only on secrets; proven against the local chain in `tests/backend/src/mainnet-tools.test.ts`.
 - `tests/backend` - black-box tests: only HTTP API and chain, never internals.
 - `tests/ui` - Playwright browser E2E on the full stack with a Wallet Standard test wallet (`src/wallet.ts`: the key stays in Node, tests approve or decline each signature), plus pixel baselines at 1440 and 390, light and dark.
 
