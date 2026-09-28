@@ -58,15 +58,21 @@
   background: color-mix(in srgb, var(--ink) 6%, transparent);
 }
 
-@media (max-width: 640px) {
-  .bar {
-    gap: 12px;
-  }
-  /* On phones the wordmark leads to the coins and the hero leads to launching, so the nav steps aside. */
+/*
+ * Below the width the wordmark, all four links and the wallet button need side by side, the nav steps aside: the
+ * wordmark leads to the coins and the hero leads to launching.
+ */
+@media (max-width: 880px) {
   .nav {
     display: none;
   }
   .wordmark {
     margin-right: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .bar {
+    gap: 12px;
   }
 }

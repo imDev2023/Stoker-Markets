@@ -8,19 +8,22 @@ import type { RawTransaction } from "@launchpad/chain";
 import {
   LAUNCH_IMAGE_MAX_BYTES, LAUNCH_IMAGE_TYPES, PrepareLaunchFields, type OperatorAlertList, type PlatformInfo,
 } from "@launchpad/contract";
-import { createDb, launchMetadata, operatorAlerts } from "@launchpad/db";
+import { createDb, jobRuns, launchMetadata, operatorAlerts } from "@launchpad/db";
 import { config, operationsKey, quoteMarket, type AppEnv, type Bindings } from "./env";
+import { collectFees } from "./fees/collector";
 import { watchGraduations } from "./graduation";
 import { fetchRawTransaction, indexTransactions } from "./indexer";
 import { sniffImageType } from "./images";
 import {
   buildLaunch, launchQuoteAsset, loadDraft, mintKeypair, newMintKeyNonce, refuseWith, resolveLaunchModes, saveDraft,
 } from "./launch";
+import { runJob, toJobRun } from "./jobs";
 import { refreshQuoteRegistry } from "./quotes/registry";
 import { creatorFeeRoutes } from "./routes/creatorFees";
 import { quotes } from "./routes/quotes";
 import { launchRoutes } from "./routes/launches";
 import { launchModeRoutes } from "./routes/launchModes";
+import { operatorJobRoutes, revenueRoutes } from "./routes/revenue";
 import { tradeRoutes } from "./routes/trades";
 
 const app = new Hono<AppEnv>();
@@ -132,11 +135,31 @@ app.route("/v1", launchModeRoutes);
 app.route("/v1", quotes);
 app.route("/v1", tradeRoutes);
 app.route("/v1", creatorFeeRoutes);
+app.route("/v1", revenueRoutes);
 
-/** Operator alerts, newest first: open ones and recently resolved ones. Needs the operator token. */
-app.get("/v1/operator/alerts", async (c) => {
+/** Every operator endpoint needs the operator token. */
+app.use("/v1/operator/*", async (c, next) => {
   const token = (c.req.header("authorization") ?? "").replace(/^Bearer /, "");
   if (!timingSafeEqual(token, c.env.OPERATOR_TOKEN ?? "")) return c.json({ error: "unauthorized" }, 401);
+  await next();
+});
+
+app.route("/v1/operator", operatorJobRoutes);
+
+/** Runs the Fee Collector now, as its Cron Trigger would, and returns the run; skipped if a run is already under way. */
+app.post("/v1/operator/jobs/fee-collector", async (c) => {
+  const run = await runJob(c.get("db"), "fee-collector", () => collectFees({ db: c.get("db"), cfg: c.get("cfg"), operations: operationsKey(c.env) }), {
+    exclusive: true,
+  }).catch((e: Error) => e);
+  if (run instanceof Error) {
+    const [failed] = await c.get("db").select().from(jobRuns).where(eq(jobRuns.job, "fee-collector")).orderBy(desc(jobRuns.startedAt)).limit(1);
+    return c.json(failed ? toJobRun(failed) : { error: run.message }, 500);
+  }
+  return c.json(run);
+});
+
+/** Operator alerts, newest first: open ones and recently resolved ones. */
+app.get("/v1/operator/alerts", async (c) => {
   const rows = await c.get("db").select().from(operatorAlerts).orderBy(desc(operatorAlerts.raisedAt)).limit(200);
   const res: OperatorAlertList = {
     alerts: rows.map((a) => ({
@@ -198,25 +221,27 @@ function timingSafeEqual(a: string, b: string) {
   return diff === 0;
 }
 
-/** The Cron Triggers in wrangler.jsonc. A run with no cron (a bare GET /__scheduled in tests) does both jobs. */
-const CRONS = { graduationWatch: "* * * * *", quoteRegistry: "*/5 * * * *" } as const;
+/** The Cron Triggers in wrangler.jsonc. A run with no cron (a bare GET /__scheduled in tests) does every job. */
+const CRONS = { graduationWatch: "* * * * *", quoteRegistry: "*/5 * * * *", feeCollector: "15 * * * *" } as const;
 
 export default {
   fetch: app.fetch,
   async scheduled(controller, env, ctx) {
     const { db, close } = createDb(env.HYPERDRIVE.connectionString);
     const run = (cron: string) => !controller.cron || controller.cron === cron;
+    // Each job runs even if one before it fails; the failures are thrown together at the end, so the run shows as failed.
+    const failures: Error[] = [];
+    const job = (p: Promise<unknown>) => p.catch((e: Error) => void failures.push(e));
     try {
       // The Quote Registry refresh and our curve rules (ADR 0005).
-      if (run(CRONS.quoteRegistry)) {
-        const result = await refreshQuoteRegistry({ db, cfg: config(env), market: quoteMarket(env), operations: operationsKey(env) });
-        console.log("quote registry refreshed", result);
-      }
+      if (run(CRONS.quoteRegistry))
+        await job(runJob(db, "quote-registry", () => refreshQuoteRegistry({ db, cfg: config(env), market: quoteMarket(env), operations: operationsKey(env) })));
       // Launches that sold out but that Raydium has not migrated.
-      if (run(CRONS.graduationWatch)) {
-        const watch = await watchGraduations(db, config(env));
-        if (watch.recovered.length > 0) console.log(`graduation watch indexed missed migrations: ${watch.recovered.join(", ")}`);
-      }
+      if (run(CRONS.graduationWatch)) await job(runJob(db, "graduation-watch", () => watchGraduations(db, config(env))));
+      // Platform revenue into the operations wallet, and on to the treasury (ADR 0004).
+      if (run(CRONS.feeCollector))
+        await job(runJob(db, "fee-collector", () => collectFees({ db, cfg: config(env), operations: operationsKey(env) }), { exclusive: true }));
+      if (failures.length) throw new AggregateError(failures, failures.map((f) => f.message).join("; "));
     } finally {
       ctx.waitUntil(close());
     }

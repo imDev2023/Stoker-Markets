@@ -50,6 +50,13 @@
       "when": 1790556904498,
       "tag": "0006_launch_modes",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790560241064,
+      "tag": "0007_fee_ledger",
+      "breakpoints": true
     }
   ]
 }
