@@ -47,8 +47,10 @@ revenueRoutes.get("/revenue", async (c) => {
   const byAsset = new Map<string, StreamSums & { sweep?: bigint }>();
   for (const r of totals) byAsset.set(r.mint, { ...byAsset.get(r.mint), [r.kind]: BigInt(r.amount) });
   const collected = (s: StreamSums) => (s.platform_fee ?? 0n) + (s.pool_fee ?? 0n) + (s.fee_key ?? 0n);
-  const order = (a: [string, StreamSums], b: [string, StreamSums]) =>
-    Number(b[0] === WSOL) - Number(a[0] === WSOL) || (collected(b[1]) > collected(a[1]) ? 1 : collected(b[1]) < collected(a[1]) ? -1 : a[0].localeCompare(b[0]));
+  // SOL first, then by ticker: amounts in different assets don't compare.
+  const label = (mint: string) => asset(mint).symbol ?? mint;
+  const order = ([a]: [string, StreamSums], [b]: [string, StreamSums]) =>
+    Number(b === WSOL) - Number(a === WSOL) || label(a).localeCompare(label(b), "en", { sensitivity: "base" }) || a.localeCompare(b);
 
   const days = new Map<string, Map<string, StreamSums>>();
   for (const r of daily) {

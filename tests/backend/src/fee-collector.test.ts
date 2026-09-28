@@ -272,6 +272,25 @@ describe("the sweep", () => {
     expect(left).toBeLessThan(threshold);
   });
 
+  it("sweeps only a token's revenue, leaving anything else the wallet holds in it", async () => {
+    // USDC the operations wallet holds for another reason, such as a Reward Round's payout float.
+    const other = usdc(7);
+    await mintLocalQuote(connection(), USDC, ops(), other);
+    const creator = await fundedWallet();
+    const { prepared, signature } = await launch(creator, { quoteMint: USDC.toBase58(), symbol: "KEEP" });
+    await deliverWebhook([signature]);
+    const trader = await fundedWallet();
+    await mintLocalQuote(connection(), USDC, trader.publicKey, usdc(20));
+    const fee = BigInt((await trade(trader, prepared.mint, "buy", usdc(20))).quote.fees.platform);
+    const inTreasury = await tokensOf(treasury(), USDC);
+
+    const run = await runCollector();
+    const sweep = sentBy(run).find((s) => s.purpose === "sweep")!;
+    expect((await entriesOf([sweep.signature])).map((e) => [e.asset.mint, e.amount])).toEqual([[USDC.toBase58(), fee.toString()]]);
+    expect((await tokensOf(treasury(), USDC)) - inTreasury).toBe(fee);
+    expect(await tokensOf(ops(), USDC)).toBe(other);
+  });
+
   it("leaves the wallet alone below the threshold", async () => {
     await runCollector();
     const run = await runCollector();

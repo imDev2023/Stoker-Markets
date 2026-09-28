@@ -189,18 +189,27 @@ async function poolsTradedSinceLastFeeKeyCollection(db: Db, pools: string[]) {
 
 /**
  * Sweeps the operations wallet into the treasury: its SOL down to the float once it holds more than the threshold, and
- * every token the Ledger shows it collected, whole. Token revenue goes in batches that fit a transaction.
+ * of every other token, the revenue the Ledger shows it collected and has not swept yet. Anything else the wallet holds
+ * in that token (a Reward Round's harvested tax, say) stays. Tokens go in batches that fit a transaction.
  */
 async function sweep(
   db: Db, connection: Connection, cfg: Config, treasury: PublicKey, operations: Keypair,
   send: (purpose: string, subject: string, ixs: TransactionInstruction[]) => Promise<boolean>,
 ) {
   const ops = operations.publicKey;
-  const collected = await db
-    .selectDistinct({ mint: ledgerEntries.assetMint })
+  const unswept = await db
+    .select({
+      mint: ledgerEntries.assetMint,
+      amount: sql<string>`sum(case when ${ledgerEntries.kind} = 'sweep' then -${ledgerEntries.amount} else ${ledgerEntries.amount} end)::text`,
+    })
     .from(ledgerEntries)
-    .where(and(ne(ledgerEntries.kind, "sweep"), ne(ledgerEntries.assetMint, WSOL)));
-  const tokens = await readTokenHoldings(connection, ops, collected.map((r) => new PublicKey(r.mint)));
+    .where(and(inArray(ledgerEntries.kind, ["platform_fee", "pool_fee", "fee_key", "sweep"]), ne(ledgerEntries.assetMint, WSOL)))
+    .groupBy(ledgerEntries.assetMint);
+  const owed = new Map(unswept.filter((r) => BigInt(r.amount) > 0n).map((r) => [r.mint, BigInt(r.amount)]));
+  const held = await readTokenHoldings(connection, ops, [...owed.keys()].map((m) => new PublicKey(m)));
+  const tokens = held
+    .map((t) => ({ ...t, amount: t.amount < owed.get(t.mint.toBase58())! ? t.amount : owed.get(t.mint.toBase58())! }))
+    .filter((t) => t.amount > 0n);
   const balance = BigInt(await connection.getBalance(ops, "confirmed"));
   const lamports = balance > cfg.sweepThresholdLamports ? balance - cfg.sweepFloatLamports : 0n;
   if (lamports === 0n && tokens.length === 0) return false;
