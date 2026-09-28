@@ -1,6 +1,6 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import type { JobName, JobRun } from "@launchpad/contract";
-import { jobLocks, jobRuns, type Db } from "@launchpad/db";
+import { jobLocks, jobRuns, operatorAlerts, type Db } from "@launchpad/db";
 
 /** A Cron Trigger runs for at most 15 minutes, so a lease that long outlives any run whose Worker is still alive. */
 const LEASE_SECONDS = 15 * 60;
@@ -35,13 +35,32 @@ export async function runJob<T>(db: Db, job: JobName, work: () => Promise<T>, op
       .set({ status: "succeeded", finishedAt: sql`now()`, summary: summary ?? null })
       .where(eq(jobRuns.id, id))
       .returning();
+    // A job that runs again is no longer failing: its alert, if any, is over.
+    await db
+      .update(operatorAlerts)
+      .set({ resolvedAt: sql`now()` })
+      .where(and(eq(operatorAlerts.kind, "job_failed"), eq(operatorAlerts.subject, job), isNull(operatorAlerts.resolvedAt)));
     return toJobRun(done!);
   } catch (e) {
     const failure = e instanceof JobFailure ? e : null;
+    const message = (e as Error).message;
     await db
       .update(jobRuns)
-      .set({ status: "failed", finishedAt: sql`now()`, error: (e as Error).message, summary: failure?.summary ?? null })
+      .set({ status: "failed", finishedAt: sql`now()`, error: message, summary: failure?.summary ?? null })
       .where(eq(jobRuns.id, id));
+    // One open alert per job, raised on the first failure and kept current with the latest one; resolved by a success.
+    await db
+      .insert(operatorAlerts)
+      .values({ kind: "job_failed", subject: job, message: `The ${job} job failed: ${message}` })
+      .onConflictDoUpdate({
+        target: [operatorAlerts.kind, operatorAlerts.subject],
+        set: {
+          message: sql`excluded.message`,
+          raisedAt: sql`case when ${operatorAlerts.resolvedAt} is null then ${operatorAlerts.raisedAt} else now() end`,
+          notifiedAt: sql`case when ${operatorAlerts.resolvedAt} is null then ${operatorAlerts.notifiedAt} else null end`,
+          resolvedAt: sql`null`,
+        },
+      });
     throw e;
   } finally {
     if (opts.exclusive) await db.delete(jobLocks).where(and(eq(jobLocks.job, job), eq(jobLocks.runId, id)));

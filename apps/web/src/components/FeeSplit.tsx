@@ -1,14 +1,16 @@
 import styles from "./FeeSplit.module.css";
 
-const PARTS = [
-  { label: "Creator", pct: 0.5, tone: "creator", note: "Paid by the chain" },
-  { label: "Platform", pct: 0.5, tone: "platform", note: null },
-  { label: "Raydium", pct: 0.25, tone: "raydium", note: null },
-] as const;
+/** Raydium's protocol fee on every LaunchLab curve trade, the same on every GlobalConfig. */
+const RAYDIUM_PCT = 0.25;
 
-/** The 1.25% every curve trade pays, and where each part goes (ADR 0001). */
-export function FeeSplit() {
-  const total = PARTS.reduce((s, p) => s + p.pct, 0);
+/** What every curve trade pays, and where each part goes (ADR 0001): the Creator Fee and Platform Fee as the chain has them now. */
+export function FeeSplit({ platformFeeBps, creatorFeeBps }: { platformFeeBps: number; creatorFeeBps: number }) {
+  const PARTS = [
+    { label: "Creator", pct: creatorFeeBps / 100, tone: "creator", note: "Paid by the chain" },
+    { label: "Platform", pct: platformFeeBps / 100, tone: "platform", note: null },
+    { label: "Raydium", pct: RAYDIUM_PCT, tone: "raydium", note: null },
+  ] as const;
+  const total = Math.round(PARTS.reduce((s, p) => s + p.pct, 0) * 100) / 100;
   return (
     <figure className={styles.split}>
       <figcaption className={styles.caption}>Every trade pays {total}%</figcaption>

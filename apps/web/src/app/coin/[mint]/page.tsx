@@ -1,23 +1,31 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAirdrop, getCandles, getHolders, getLaunch, getPlatform, listTrades } from "@/lib/api";
+import { getAirdrop, getCandles, getCoinRewards, getHolders, getLaunch, getPlatform, listTrades } from "@/lib/api";
 import { explorerUrl, formatUtc, quoteTicker, shortAddress } from "@/lib/format";
 import { AirdropCard } from "@/components/AirdropCard";
 import { CoinMarket } from "@/components/CoinMarket";
 import { CopyButton } from "@/components/CopyButton";
 import { PairMark } from "@/components/PairMark";
+import { RewardsCard } from "@/components/RewardsCard";
 import styles from "./page.module.css";
 
-type Props = { params: Promise<{ mint: string }> };
+type Props = { params: Promise<{ mint: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+/** A referral link's wallet (`?ref=`), taken only when it looks like a Solana address. */
+function referrerFrom(params: Record<string, string | string[] | undefined>) {
+  const ref = params.ref;
+  return typeof ref === "string" && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(ref) ? ref : null;
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const launch = await getLaunch((await params).mint);
   return { title: launch ? `${launch.symbol} / ${quoteTicker(launch.quote)}` : "Coin not found" };
 }
 
-export default async function CoinPage({ params }: Props) {
+export default async function CoinPage({ params, searchParams }: Props) {
   const { mint } = await params;
+  const referrer = referrerFrom(await searchParams);
   const [launch, platform, trades, candles, holders, airdrop] = await Promise.all([
     getLaunch(mint), getPlatform(), listTrades(mint), getCandles(mint, "1m"),
     // A 404 (no such coin) or an unreadable chain leaves the card to retry, rather than failing the page.
@@ -25,6 +33,7 @@ export default async function CoinPage({ params }: Props) {
     getAirdrop(mint),
   ]);
   if (!launch) notFound();
+  const rewards = launch.rewardTax ? await getCoinRewards(mint).catch(() => null) : null;
   // An Airdrop still being paid sits above the market, where its Creator sends it; a finished one joins the facts below.
   const airdropCard = airdrop && <AirdropCard initial={airdrop} symbol={launch.symbol} platform={platform} />;
   const airdropDone = airdrop?.recipients.every((r) => r.status === "paid") ?? false;
@@ -69,7 +78,10 @@ export default async function CoinPage({ params }: Props) {
 
       {!airdropDone && airdropCard}
 
-      <CoinMarket initial={launch} platform={platform} initialTrades={trades.trades} initialCandles={candles} initialHolders={holders} renderedAt={Date.now()} />
+      <CoinMarket
+        initial={launch} platform={platform} initialTrades={trades.trades} initialCandles={candles} initialHolders={holders} renderedAt={Date.now()}
+        referrer={referrer}
+      />
 
       <section className={styles.panels}>
         <dl className={styles.facts}>
@@ -81,6 +93,24 @@ export default async function CoinPage({ params }: Props) {
               <Link href={`/creator/${launch.creator}`} className={styles.factLink}>See what the Creator earned and claimed</Link>
             </dd>
           </div>
+          {launch.rewardTax && (
+            <div>
+              <dt>Reward tax</dt>
+              <dd>
+                {launch.rewardTax.bps / 100}% of every transfer, paid out to holders in {launch.symbol}
+                {launch.rewardTax.locked ? (
+                  <span className={styles.verified}>
+                    Fixed for good:{" "}
+                    <a href={explorerUrl("tx", launch.rewardTax.locked.signature, platform)} target="_blank" rel="noreferrer">
+                      authority given up
+                    </a>
+                  </span>
+                ) : (
+                  <span className={styles.verified}>Fixed: LaunchLab holds the tax authority until graduation</span>
+                )}
+              </dd>
+            </div>
+          )}
           <div>
             <dt>Launched</dt>
             <dd>
@@ -112,6 +142,7 @@ export default async function CoinPage({ params }: Props) {
             </div>
           ))}
         </dl>
+        {rewards && <div className={styles.wide}><RewardsCard rewards={rewards} symbol={launch.symbol} platform={platform} /></div>}
         {airdropDone && <div className={styles.wide}>{airdropCard}</div>}
       </section>
 

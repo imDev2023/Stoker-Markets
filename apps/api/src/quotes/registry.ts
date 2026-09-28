@@ -1,13 +1,14 @@
-import { Connection, Transaction, type Keypair, type PublicKey, type TransactionInstruction } from "@solana/web3.js";
+import { Connection, Transaction, type Keypair, type TransactionInstruction } from "@solana/web3.js";
 import { getTableColumns, sql } from "drizzle-orm";
 import {
-  createCurveRuleIx, listGlobalConfigs, readCurveRules, readQuoteMints, updateCurveRuleIx, WSOL_MINT, type RuleConstraint,
+  createCurveRuleIx, listGlobalConfigs, readCurveRuleGroups, readQuoteMints, RULE_GROUP, updateCurveRuleIx, WSOL_MINT, type RuleConstraint,
 } from "@launchpad/chain";
 import { quoteAssets, type Db } from "@launchpad/db";
 import type { Config } from "../env";
 import { divide, formatDecimal, graduationTargetRaw, type Decimal, type QuoteMarket } from "./pricing";
 import { quoteCategory } from "./categories";
 import { bandOf, ruleUpdate } from "./rules";
+import { refreshPlatformFees } from "../routes/operator";
 
 export type RefreshDeps = { db: Db; cfg: Config; market: QuoteMarket; operations: Keypair };
 
@@ -21,6 +22,8 @@ const MAX_RULE_WRITES = 120;
  */
 export async function refreshQuoteRegistry({ db, cfg, market, operations }: RefreshDeps) {
   const connection = new Connection(cfg.rpcUrl, "confirmed");
+  // The Platform Fee and Creator Fee as the chain has them, for every page that shows them.
+  await refreshPlatformFees(db, cfg, connection);
   const configs = await listGlobalConfigs(connection, cfg.launchlab);
   const mints = await readQuoteMints(connection, configs.map((c) => c.quoteMint));
   const quotes = configs.flatMap((config) => {
@@ -41,16 +44,29 @@ export async function refreshQuoteRegistry({ db, cfg, market, operations }: Refr
   });
 
   const globalConfigs = priced.map((q) => q.config.address);
-  const before = await readCurveRules(connection, cfg.launchlab, cfg.platformConfig, globalConfigs);
+  const before = await readCurveRuleGroups(connection, cfg.launchlab, cfg.platformConfig, globalConfigs);
+  // Each rule has two groups, one per kind of Launch, kept in step: a standard coin's, and a Reward Launch's taxed coin's.
   const writes = priced.flatMap((q) => {
-    const current = before.get(q.config.address.toBase58()) ?? null;
-    const next = ruleUpdate(current, q.target, q.isSol);
-    return next ? [{ missing: current === null, ixs: ruleIxs(cfg, operations, q.config.address, current === null, next) }] : [];
+    const rule = before.get(q.config.address.toBase58()) ?? null;
+    const groups: { id: number; next: RuleConstraint[] }[] = [];
+    for (const [id, kind] of [[RULE_GROUP.standard, "standard"], [RULE_GROUP.reward, "reward"]] as const) {
+      const next = ruleUpdate(rule ? (rule.get(id) ?? []) : null, q.target, q.isSol, kind);
+      if (next) groups.push({ id, next });
+    }
+    if (!groups.length) return [];
+    return [{
+      missing: rule === null,
+      ixs: [
+        ...(rule === null ? [createCurveRuleIx(cfg.launchlab, operations.publicKey, cfg.platformConfig, q.config.address)] : []),
+        ...groups.map((g) => updateCurveRuleIx(cfg.launchlab, operations.publicKey, cfg.platformConfig, q.config.address, g.id, g.next)),
+      ],
+    }];
   });
   // A Quote Asset without a rule account is unrestricted, so closing those gaps goes first.
   writes.sort((a, b) => Number(b.missing) - Number(a.missing));
   await sendInstructionGroups(connection, operations, writes.slice(0, MAX_RULE_WRITES).map((w) => w.ixs));
-  const after = writes.length ? await readCurveRules(connection, cfg.launchlab, cfg.platformConfig, globalConfigs) : before;
+  const afterGroups = writes.length ? await readCurveRuleGroups(connection, cfg.launchlab, cfg.platformConfig, globalConfigs) : before;
+  const after = new Map([...afterGroups].map(([g, rule]) => [g, rule ? (rule.get(RULE_GROUP.standard) ?? []) : null]));
 
   const known = new Map((await db.select({ mint: quoteAssets.mint, logo: quoteAssets.logo }).from(quoteAssets)).map((r) => [r.mint, r.logo]));
   const logos = await market.logos(priced.map((q) => q.mint.mint.toBase58()).filter((m) => !known.get(m)));
@@ -73,6 +89,7 @@ export async function refreshQuoteRegistry({ db, cfg, market, operations }: Refr
       graduationTarget: q.target?.toString() ?? null,
       ruleMin: band?.min.toString() ?? null,
       ruleMax: band?.max.toString() ?? null,
+      maxShareFeeRate: q.config.maxShareFeeRate.toNumber(),
       refreshedAt: pricedAt,
     };
   });
@@ -84,11 +101,6 @@ export async function refreshQuoteRegistry({ db, cfg, market, operations }: Refr
     });
   }
   return { quoteAssets: rows.length, priced: rows.filter((r) => r.priceSol).length, ruleWrites: Math.min(writes.length, MAX_RULE_WRITES) };
-}
-
-function ruleIxs(cfg: Config, operations: Keypair, globalConfig: PublicKey, create: boolean, constraints: RuleConstraint[]) {
-  const args = [cfg.launchlab, operations.publicKey, cfg.platformConfig, globalConfig] as const;
-  return [...(create ? [createCurveRuleIx(...args)] : []), updateCurveRuleIx(...args, 0, constraints)];
 }
 
 const TX_MAX_BYTES = 1232;

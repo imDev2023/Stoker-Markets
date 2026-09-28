@@ -17,6 +17,13 @@ export const LAUNCH_SHAPE = {
 /** Rates use LaunchLab's 1e6 denominator: 5_000 is 0.5%. */
 export const RATE_DENOMINATOR = 1_000_000;
 
+/** The Reward Tax rates a Reward Launch may choose, in basis points: 1%, 3% or 5% (LaunchLab allows up to 5%). */
+export const REWARD_TAX_BPS = [100, 300, 500] as const;
+export type RewardTaxBps = (typeof REWARD_TAX_BPS)[number];
+
+/** Curve rule groups: 0 pins a standard Launch, 1 a Reward Launch (a Token-2022 coin with a transfer fee). */
+export const RULE_GROUP = { standard: 0, reward: 1 } as const;
+
 // Curve rule field and operator codes, from raydium-sdk-V2 `LaunchpadCurveRuleField` / `LaunchpadCurveRuleOp`.
 export const RuleField = {
   CurveType: 0, MigrateType: 1, MigrateCpmmFeeOn: 2, Supply: 3, TotalSellA: 4, TotalFundRaisingB: 5,
@@ -31,6 +38,18 @@ export type GraduationBand = { min: BN; max: BN };
 
 /** Constraints for a standard (SPL, no transfer fee) Launch against one Quote Asset. */
 export function standardLaunchConstraints(band: GraduationBand): RuleConstraint[] {
+  return launchConstraints(band, { baseTokenProgram: 0, transferFeeEnabled: 0 });
+}
+
+/**
+ * Constraints for a Reward Launch against one Quote Asset: the same shape on a Token-2022 coin with a transfer fee (its
+ * Reward Tax). The rate itself is not a rule field; the Indexer keeps only launches at one of REWARD_TAX_BPS.
+ */
+export function rewardLaunchConstraints(band: GraduationBand): RuleConstraint[] {
+  return launchConstraints(band, { baseTokenProgram: 1, transferFeeEnabled: 1 });
+}
+
+function launchConstraints(band: GraduationBand, coin: { baseTokenProgram: 0 | 1; transferFeeEnabled: 0 | 1 }): RuleConstraint[] {
   const c = (field: number, op: number, value: BN | number) => ({ field, op, value: new BN(value.toString()) });
   const eq = (field: number, value: BN | number) => c(field, RuleOp.Eq, value);
   const target = band.min.eq(band.max)
@@ -46,8 +65,8 @@ export function standardLaunchConstraints(band: GraduationBand): RuleConstraint[
     eq(RuleField.TotalLockedAmount, 0),
     eq(RuleField.CliffPeriod, 0),
     eq(RuleField.UnlockPeriod, 0),
-    eq(RuleField.BaseTokenProgram, 0),
-    eq(RuleField.TransferFeeEnabled, 0),
+    eq(RuleField.BaseTokenProgram, coin.baseTokenProgram),
+    eq(RuleField.TransferFeeEnabled, coin.transferFeeEnabled),
   ];
 }
 

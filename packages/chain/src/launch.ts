@@ -2,10 +2,11 @@ import {
   ComputeBudgetProgram, Keypair, PACKET_DATA_SIZE, TransactionMessage, VersionedTransaction, type AddressLookupTableAccount,
   type Connection, type PublicKey,
 } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import type BN from "bn.js";
+import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import BN from "bn.js";
 import { initialCurveReserves, quoteTrade, type CurveReserves, type FeeRates, type TradeQuote } from "./curve";
-import { initializeV2Ix } from "./instructions";
+import type { TransferFee } from "./transferFee";
+import { initializeV2Ix, initializeWithToken2022Ix } from "./instructions";
 import { launchlabPdas } from "./pda";
 import { LAUNCH_SHAPE } from "./shape";
 import { loadFeeRates, tradeInstructions } from "./trade";
@@ -36,7 +37,15 @@ export type LaunchRequest = LaunchPairing & {
   firstBuy?: TradeQuote | null;
   /** The Platform Lookup Table, which keeps a launch with a first buy within one transaction. */
   lookupTable: AddressLookupTableAccount;
+  /** A Reward Launch's Reward Tax in basis points (100, 300 or 500); null for a standard Launch. */
+  rewardTaxBps?: number | null;
 };
+
+/** A Reward Tax is never capped: the maximum fee is set above the whole supply, so the rate is the whole story. */
+export const REWARD_TAX_MAXIMUM_FEE = new BN("18446744073709551615");
+
+/** The transfer fee a Reward Launch's coin carries, as a quote sees it. */
+export const rewardTaxFee = (bps: number | null | undefined): TransferFee | null => (bps ? { bps, maximumFee: REWARD_TAX_MAXIMUM_FEE } : null);
 
 export type PreparedLaunch = {
   /** Base64 of a v0 transaction, already signed by the new mint; the Creator's wallet adds the fee-payer signature. */
@@ -57,12 +66,13 @@ const FIRST_BUY_COMPUTE_UNITS = 200_000;
  */
 export async function quoteFirstBuy(
   connection: Connection, r: Pick<LaunchRequest, "globalConfig" | "platformConfig" | "graduationTargetRaw">, amountIn: BN,
+  transfer: { quote?: TransferFee | null; base?: TransferFee | null } = {},
 ): Promise<FirstBuyQuote> {
   const { rates, migrateFee } = await loadFeeRates(connection, r.globalConfig, r.platformConfig);
   const start = initialCurveReserves({
     supply: LAUNCH_SHAPE.supply, totalBaseSell: LAUNCH_SHAPE.totalBaseSell, fundRaising: r.graduationTargetRaw, migrateFee,
   });
-  return { start, rates, quote: quoteTrade(start, rates, "buy", amountIn) };
+  return { start, rates, quote: quoteTrade(start, rates, "buy", amountIn, transfer) };
 }
 
 /**
@@ -79,22 +89,24 @@ export async function prepareLaunch(connection: Connection, r: LaunchRequest, mi
   const pool = launchlabPdas(r.program).pool(mint.publicKey, r.quoteMint);
   const firstBuy = r.firstBuy ?? null;
   if (firstBuy && (firstBuy.side !== "buy" || firstBuyTakesCurve(firstBuy))) throw new Error("a first buy must be a buy that leaves coins on the curve");
+  const params = {
+    program: r.program,
+    payer: r.creator,
+    creator: r.creator,
+    globalConfig: r.globalConfig,
+    platformConfig: r.platformConfig,
+    baseMint: mint.publicKey,
+    quoteMint: r.quoteMint,
+    quoteTokenProgram: r.quoteTokenProgram,
+    name: r.name,
+    symbol: r.symbol,
+    uri: r.uri,
+    graduationTargetRaw: r.graduationTargetRaw,
+  };
+  const rewardTaxBps = r.rewardTaxBps ?? null;
   const instructions = [
     ComputeBudgetProgram.setComputeUnitLimit({ units: LAUNCH_COMPUTE_UNITS + (firstBuy ? FIRST_BUY_COMPUTE_UNITS : 0) }),
-    initializeV2Ix({
-      program: r.program,
-      payer: r.creator,
-      creator: r.creator,
-      globalConfig: r.globalConfig,
-      platformConfig: r.platformConfig,
-      baseMint: mint.publicKey,
-      quoteMint: r.quoteMint,
-      quoteTokenProgram: r.quoteTokenProgram,
-      name: r.name,
-      symbol: r.symbol,
-      uri: r.uri,
-      graduationTargetRaw: r.graduationTargetRaw,
-    }),
+    rewardTaxBps ? initializeWithToken2022Ix({ ...params, rewardTaxBps, maximumFee: REWARD_TAX_MAXIMUM_FEE }) : initializeV2Ix(params),
   ];
   if (firstBuy) {
     instructions.push(...(await tradeInstructions(connection, {
@@ -106,13 +118,14 @@ export async function prepareLaunch(connection: Connection, r: LaunchRequest, mi
         creator: r.creator,
         baseMint: mint.publicKey,
         quoteMint: r.quoteMint,
-        baseTokenProgram: TOKEN_PROGRAM_ID,
+        baseTokenProgram: rewardTaxBps ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID,
         quoteTokenProgram: r.quoteTokenProgram,
       },
       trader: r.creator,
       side: "buy",
       amountIn: firstBuy.amountIn,
-      // Exact: the first buy is the curve's first trade. If the fee rates change before it lands, it fails whole.
+      // Exact: the first buy is the curve's first trade. If the fee rates change before it lands, it fails whole. The
+      // program checks the limit against what reaches the Creator, the coin's Reward Tax (if any) already withheld.
       minAmountOut: firstBuy.amountOut,
     })));
   }

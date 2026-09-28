@@ -6,7 +6,7 @@ import { launchlabCoder, launchlabPdas, standardLaunchConstraints, updateCurveRu
 import { LOCAL_QUOTES, localnetKeys, mintLocalQuote, send } from "@launchpad/localnet";
 import { AirdropStatus, CreatorFees, FirstBuyQuote, HolderList, PreparedAirdrop, PreparedLaunch, TradeList } from "@launchpad/contract";
 import {
-  connection, deliverWebhook, env, fundedWallet, getLaunch, launch, listLaunches, prepare, refreshQuoteRegistry, signAndSend,
+  connection, deliverWebhook, env, fundedWallet, getLaunch, launch, listLaunches, prepare, refreshQuoteRegistry, signAndSend, confirmOutcome,
 } from "./client";
 
 const SOL = (n: number) => BigInt(Math.round(n * LAMPORTS_PER_SOL));
@@ -95,10 +95,8 @@ describe("a first buy", () => {
     const conn = connection();
     // Past the wallet's own preflight check, so the chain itself runs it.
     const signature = await conn.sendTransaction(tx, { skipPreflight: true });
-    const result = await conn.confirmTransaction(
-      { signature, blockhash: tx.message.recentBlockhash, lastValidBlockHeight: prepared.lastValidBlockHeight }, "confirmed",
-    );
-    expect(result.value.err).not.toBeNull();
+    const { err } = await confirmOutcome(conn, signature, tx.message.recentBlockhash, prepared.lastValidBlockHeight);
+    expect(err).not.toBeNull();
     expect(await poolState(prepared.pool)).toBeNull();
     expect(await conn.getAccountInfo(new PublicKey(prepared.mint))).toBeNull();
   });

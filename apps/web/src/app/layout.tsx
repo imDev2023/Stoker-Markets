@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, IBM_Plex_Mono, Public_Sans } from "next/font/google";
 import type { ReactNode } from "react";
+import { FeeChangeBanner } from "@/components/FeeChangeBanner";
 import { Providers } from "@/components/Providers";
 import { SiteHeader } from "@/components/SiteHeader";
-import { getPlatform } from "@/lib/api";
+import { getPlatform, listAnnouncements } from "@/lib/api";
 import "./globals.css";
 
 const archivo = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-archivo", display: "swap" });
@@ -25,12 +26,15 @@ export const viewport: Viewport = {
 export const dynamic = "force-dynamic";
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const platform = await getPlatform();
+  // A fee change everyone should see coming; the banner is left out rather than the page failing if the API is down.
+  const [platform, announcements] = await Promise.all([getPlatform(), listAnnouncements().catch(() => null)]);
+  const upcoming = announcements?.announcements.find((a) => a.appliedSignature === null && new Date(a.effectiveAt).getTime() > Date.now() - 24 * 3600_000) ?? null;
   return (
     <html lang="en" className={`${archivo.variable} ${publicSans.variable} ${plexMono.variable}`}>
       <body>
         <Providers rpcUrl={platform.rpcUrl}>
           <SiteHeader cluster={platform.cluster} />
+          {upcoming && <FeeChangeBanner announcement={upcoming} platform={platform} />}
           <main>{children}</main>
         </Providers>
       </body>

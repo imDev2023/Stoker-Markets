@@ -1,0 +1,155 @@
+// Reward Rounds (#17): the Reward Engine harvests a Reward Launch's withheld Reward Tax, snapshots its holders under the
+// published rules, and pays each one pro rata in the coin itself, never sold. Rounds resume after a crash and never pay
+// a holder twice; rule changes wait for their announced time.
+import { describe, expect, it } from "vitest";
+import { Keypair, PublicKey } from "@solana/web3.js";
+import { TOKEN_2022_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { CoinRewards, PreparedLaunch, RewardRoundDetail, RewardRulesPage, WalletRewards } from "@launchpad/contract";
+import { REWARD_ROUNDS_CRON } from "@launchpad/stack";
+import { connection, deliverWebhook, env, fundedWallet, prepare, signAndSend, tokenBalance, trade } from "./client";
+
+const api = (path: string, init?: RequestInit) => fetch(`${env().apiUrl}${path}`, init);
+const operator = () => ({ authorization: `Bearer ${env().operatorToken}` });
+
+/** Runs the Reward Engine as its Cron Trigger would; `maxPayouts` caps one run's payouts, as a crash mid-round would. */
+async function runRounds(maxPayouts?: number) {
+  const res = await api(`/v1/operator/jobs/reward-rounds${maxPayouts ? `?maxPayouts=${maxPayouts}` : ""}`, { method: "POST", headers: operator() });
+  expect(res.status, await res.clone().text()).toBe(200);
+  return (await res.json()) as { summary: { opened: { mint: string; round: string }[]; paid: { round: string; payouts: number }[]; finished: string[] } };
+}
+
+async function rewardCoin(bps: 100 | 300 | 500 = 500) {
+  const creator = await fundedWallet(10);
+  const res = await prepare({ creator: creator.publicKey.toBase58(), rewardTax: String(bps), symbol: "RWRD" });
+  const prepared = PreparedLaunch.parse(await res.json());
+  const signature = await signAndSend(prepared, creator);
+  await deliverWebhook([signature]);
+  return { creator, mint: prepared.mint, bps };
+}
+
+const rewards = async (mint: string) => CoinRewards.parse(await (await api(`/v1/launches/${mint}/rewards`)).json());
+const walletRewards = async (wallet: PublicKey) => WalletRewards.parse(await (await api(`/v1/wallets/${wallet.toBase58()}/rewards`)).json());
+const held = (mint: string, wallet: Keypair) => tokenBalance(getAssociatedTokenAddressSync(new PublicKey(mint), wallet.publicKey, false, TOKEN_2022_PROGRAM_ID));
+
+describe("Reward Rounds", () => {
+  it("publishes the rules in force", async () => {
+    const rules = RewardRulesPage.parse(await (await api("/v1/rewards/rules")).json());
+    expect(rules.inForce).toMatchObject({ version: 1 });
+    expect(BigInt(rules.inForce!.minHolding)).toBeGreaterThan(0n);
+    expect(BigInt(rules.inForce!.roundThreshold)).toBeGreaterThan(0n);
+  });
+
+  it("pays every eligible holder their pro-rata share of the collected tax, in the coin itself", async () => {
+    const { mint, bps } = await rewardCoin(500);
+    // Three holders: two well above the minimum holding, one far below it (the test curve graduates at 1 SOL).
+    const [big, mid, dust] = [await fundedWallet(10), await fundedWallet(10), await fundedWallet(10)];
+    await trade(big, mint, "buy", 100_000_000n);
+    await trade(mid, mint, "buy", 30_000_000n);
+    await trade(dust, mint, "buy", 1_000n);
+    const before = await rewards(mint);
+    expect(before.rewardTaxBps).toBe(bps);
+    // Every buy withheld 5% of the coins on the way to the wallet; it is all still waiting.
+    expect(BigInt(before.waiting.total)).toBeGreaterThan(0n);
+    expect(before.rounds).toEqual([]);
+    const rules = before.rules!;
+    const holdings = { big: await held(mint, big), mid: await held(mint, mid), dust: await held(mint, dust) };
+    expect(holdings.dust).toBeLessThan(BigInt(rules.minHolding));
+    expect(holdings.mid).toBeGreaterThanOrEqual(BigInt(rules.minHolding));
+
+    // The engine runs over every Reward Launch there is; this coin's round is the one that matters here.
+    const run = await runRounds();
+    const opened = run.summary.opened.filter((o) => o.mint === mint);
+    expect(opened).toHaveLength(1);
+    expect(run.summary.finished).toContain(opened[0]!.round);
+
+    const after = await rewards(mint);
+    const [round] = after.rounds;
+    expect(round).toMatchObject({ status: "paid", eligibleHolders: 2, rulesVersion: rules.version });
+    const detail = RewardRoundDetail.parse(await (await api(`/v1/rewards/rounds/${round!.id}`)).json());
+    const pot = BigInt(round!.pot);
+    const total = holdings.big + holdings.mid;
+    const expected = (wallet: Keypair, holding: bigint) => ({ wallet: wallet.publicKey.toBase58(), holding: holding.toString(), amount: ((pot * holding) / total).toString(), status: "paid" });
+    expect(detail.payouts.map((p) => ({ wallet: p.wallet, holding: p.holding, amount: p.amount, status: p.status }))).toEqual([
+      expected(big, holdings.big), expected(mid, holdings.mid),
+    ]);
+    // Paid in the coin: each wallet holds its share less the tax the payout itself withholds. Nothing was sold.
+    const taxed = (amount: bigint) => amount - (amount * BigInt(bps) + 9_999n) / 10_000n;
+    expect((await held(mint, big)) - holdings.big).toBe(taxed(BigInt(detail.payouts[0]!.amount)));
+    expect((await held(mint, mid)) - holdings.mid).toBe(taxed(BigInt(detail.payouts[1]!.amount)));
+    expect(await held(mint, dust)).toBe(holdings.dust);
+    for (const p of detail.payouts) {
+      const tx = await connection().getTransaction(p.signature!, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
+      expect(tx?.meta?.err).toBeNull();
+    }
+    // The holder's own lookup answers "where are my rewards?".
+    const mine = await walletRewards(big.publicKey);
+    expect(mine.rewards).toMatchObject([{ round: round!.id, mint, amount: detail.payouts[0]!.amount, status: "paid" }]);
+    expect((await walletRewards(dust.publicKey)).rewards).toEqual([]);
+  });
+
+  it("resumes a round cut short and pays the rest without paying anyone twice", async () => {
+    // Settle every other Reward Launch first, so this run's one payout is this coin's.
+    await runRounds();
+    const { mint } = await rewardCoin(500);
+    const holders = await Promise.all([1, 2, 3].map(() => fundedWallet(10)));
+    for (const h of holders) await trade(h, mint, "buy", 40_000_000n);
+    const holdings = await Promise.all(holders.map((h) => held(mint, h)));
+
+    // The first run dies after one payout.
+    const first = await runRounds(1);
+    expect(first.summary.opened.filter((o) => o.mint === mint)).toHaveLength(1);
+    expect(first.summary.paid).toEqual([{ round: expect.any(String), payouts: 1 }]);
+    expect(first.summary.finished).toEqual([]);
+    const { rounds: [round] } = await rewards(mint);
+    expect(round!.status).toBe("paying");
+
+    // The next run pays the other two and closes the round.
+    const second = await runRounds();
+    expect(second.summary.opened.filter((o) => o.mint === mint)).toEqual([]);
+    expect(second.summary.paid).toEqual([{ round: round!.id, payouts: 2 }]);
+    expect(second.summary.finished).toEqual([round!.id]);
+
+    const detail = RewardRoundDetail.parse(await (await api(`/v1/rewards/rounds/${round!.id}`)).json());
+    expect(detail.status).toBe("paid");
+    expect(detail.payouts.every((p) => p.status === "paid")).toBe(true);
+    const signatures = new Set(detail.payouts.map((p) => p.signature));
+    expect(signatures.size).toBe(2); // one transaction for the first payout, one for the other two
+    for (const [i, h] of holders.entries()) {
+      const payout = BigInt(detail.payouts.find((p) => p.wallet === h.publicKey.toBase58())!.amount);
+      expect((await held(mint, h)) - holdings[i]!).toBe(payout - (payout * 500n + 9_999n) / 10_000n);
+    }
+
+    // A further run finds nothing left to pay on this round. The payouts themselves withheld tax, so it may well open
+    // the next round on this coin; that one is a new round, not this one paid again.
+    const third = await runRounds();
+    expect(third.summary.paid.filter((p) => p.round === round!.id)).toEqual([]);
+    expect((await api(`/v1/rewards/rounds/${round!.id}`)).status).toBe(200);
+    expect(RewardRoundDetail.parse(await (await api(`/v1/rewards/rounds/${round!.id}`)).json()).payouts.map((p) => p.signature)).toEqual(detail.payouts.map((p) => p.signature));
+  });
+
+  it("only changes its rules at an announced time, never sooner", async () => {
+    const soon = new Date(Date.now() + 1_000).toISOString();
+    const tooSoon = await api("/v1/operator/rewards/rules", {
+      method: "POST", headers: { ...operator(), "content-type": "application/json" },
+      body: JSON.stringify({ minHolding: "1", roundThreshold: "1", effectiveAt: soon, note: "too soon" }),
+    });
+    expect(tooSoon.status).toBe(422);
+    const later = new Date(Date.now() + 3600_000).toISOString();
+    const announced = await api("/v1/operator/rewards/rules", {
+      method: "POST", headers: { ...operator(), "content-type": "application/json" },
+      body: JSON.stringify({ minHolding: "1", roundThreshold: "1", effectiveAt: later, note: "lower bar" }),
+    });
+    expect(announced.status).toBe(201);
+    const rules = RewardRulesPage.parse(await (await api("/v1/rewards/rules")).json());
+    expect(rules.upcoming.map((r) => r.note)).toContain("lower bar");
+    expect(rules.inForce!.note).not.toBe("lower bar");
+    // Without the operator token the announcement is refused.
+    expect((await api("/v1/operator/rewards/rules", { method: "POST", body: "{}" })).status).toBe(401);
+  });
+
+  it("runs on its Cron Trigger too", async () => {
+    const res = await api(`/__scheduled?cron=${encodeURIComponent(REWARD_ROUNDS_CRON)}`);
+    expect(res.ok).toBe(true);
+  });
+});
+

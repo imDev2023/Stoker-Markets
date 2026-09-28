@@ -16,8 +16,10 @@ const raw = z.string().regex(/^\d+$/, "must be a whole number of raw units");
  * - `pool_fee`: a graduated coin's CPMM pool creator fee, which is the platform's after Graduation (ADR 0001).
  * - `fee_key`: the LP fees of a graduated pool's locked liquidity, collected with its Fee Key, in both of the pool's tokens.
  * - `sweep`: revenue moved from the operations wallet to the treasury (ADR 0004).
+ * - `burn`: SOL spent on the Platform Token and the Platform Token destroyed, two entries of one transaction.
+ * - `flywheel`: the same for a top Launch the Flywheel rule picked.
  */
-export const LedgerKind = z.enum(["platform_fee", "pool_fee", "fee_key", "sweep"]);
+export const LedgerKind = z.enum(["platform_fee", "pool_fee", "fee_key", "sweep", "burn", "flywheel"]);
 export type LedgerKind = z.infer<typeof LedgerKind>;
 
 /**
@@ -101,7 +103,7 @@ export type Revenue = z.infer<typeof Revenue>;
 // ---------------------------------------------------------------------------------------------------------------------
 // Operator: scheduled job runs.
 
-export const JobName = z.enum(["quote-registry", "graduation-watch", "fee-collector"]);
+export const JobName = z.enum(["quote-registry", "graduation-watch", "fee-collector", "reward-tax-lock", "reward-rounds", "burn"]);
 export type JobName = z.infer<typeof JobName>;
 
 export const JobRun = z.object({

@@ -12,11 +12,15 @@ const KIND: Record<LedgerKind, string> = {
   pool_fee: "Platform Fee from a pool",
   fee_key: "Fee Key LP fees",
   sweep: "Swept to treasury",
+  burn: "Platform Token burn",
+  flywheel: "Flywheel burn",
 };
 
 /** Where an entry's money came from, in words: every curve pools its Platform Fee in one vault per Quote Asset. */
 function origin(e: LedgerEntry) {
   if (e.kind === "sweep") return "From the operations wallet";
+  if (e.kind === "burn" || e.kind === "flywheel")
+    return e.launch ? <>Bought and burned <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link></> : "Bought and burned";
   if (e.launch) return <>From <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link></>;
   return "From every curve";
 }

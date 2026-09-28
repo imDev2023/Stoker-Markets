@@ -1,13 +1,20 @@
 import { Keypair, PublicKey, type Connection } from "@solana/web3.js";
 import BN from "bn.js";
-import type { Cluster } from "@launchpad/chain";
+import { launchlabPdas, type Cluster } from "@launchpad/chain";
 import type { Db } from "@launchpad/db";
+import type { ApiKeyContext } from "./apiKeys";
 import { jupiterMarket, staticMarket, type QuoteMarket } from "./quotes/pricing";
 import { cpmmSolRoutes, jupiterSolRoutes, type SolRoutes } from "./solRoutes";
 
 export type Bindings = {
   CLUSTER: Cluster;
+  /** The Worker's own RPC, with its provider key on mainnet; never shown to a browser. */
   RPC_URL: string;
+  /**
+   * The RPC browsers use to simulate, send and confirm the transactions we build: a public endpoint or a browser key
+   * restricted to our domain. Defaults to RPC_URL off mainnet, where there is no key to leak.
+   */
+  PUBLIC_RPC_URL?: string;
   PUBLIC_API_URL: string;
   WEB_ORIGIN: string;
   LAUNCHLAB_PROGRAM: string;
@@ -59,20 +66,38 @@ export type Bindings = {
   SWEEP_FLOAT_LAMPORTS: string;
   /** A fee worth less than this many lamports is left to grow rather than collected at a loss to network fees. */
   COLLECT_MIN_LAMPORTS: string;
+  /** How long before it applies a change to the Reward Round rules must be announced, in seconds (a day on mainnet). */
+  REWARD_RULES_LEAD_SECONDS?: string;
+  /** The Burn's share of revenue, in basis points; 6000 (60%) unless set. */
+  BURN_SHARE_BPS?: string;
+  /** The Flywheel's share of revenue, in basis points; 500 (5%) unless set. */
+  FLYWHEEL_SHARE_BPS?: string;
+  /** How many top Launches the Flywheel buys; 10 unless set. */
+  FLYWHEEL_TOP_N?: string;
+  /** A buy-and-burn under this many lamports is not worth its network fee and waits; 0.01 SOL unless set. */
+  BURN_MIN_SPEND_LAMPORTS?: string;
+  /** What a referred curve trade pays its referrer, in basis points, where the Quote Asset allows a share fee; 50 unless set. */
+  REFERRAL_SHARE_BPS?: string;
+  /** How long before it applies a Platform Fee or Creator Fee change must be announced, in seconds (a day on mainnet). */
+  FEE_CHANGE_LEAD_SECONDS?: string;
+  /** The PlatformConfig's admin, the cold key that signs fee changes (ADR 0004); PLATFORM_CONFIG is derived from it. */
+  PLATFORM_ADMIN: string;
   HYPERDRIVE: Hyperdrive;
   METADATA_BUCKET: R2Bucket;
 };
 
 /** The Hono environment every route shares: bindings, plus the per-request database and parsed configuration. */
-export type AppEnv = { Bindings: Bindings; Variables: { db: Db; cfg: Config } };
+export type AppEnv = { Bindings: Bindings; Variables: { db: Db; cfg: Config; apiKey?: ApiKeyContext } };
 
 export type Config = {
   cluster: Cluster;
   rpcUrl: string;
+  publicRpcUrl: string;
   publicApiUrl: string;
   launchlab: PublicKey;
   cpmm: PublicKey;
   platformConfig: PublicKey;
+  platformAdmin: PublicKey;
   lookupTable: PublicKey;
   graduationTargetLamports: BN;
   graduationAlertAfterSeconds: number;
@@ -83,8 +108,28 @@ export type Config = {
   sweepThresholdLamports: bigint;
   sweepFloatLamports: bigint;
   collectMinLamports: bigint;
+  rewardRulesLeadSeconds: number;
+  burnShareBps: number;
+  flywheelShareBps: number;
+  flywheelTopN: number;
+  burnMinSpendLamports: bigint;
+  referralShareBps: number;
+  feeChangeLeadSeconds: number;
   solRoute: SolRouteConfig | null;
 };
+
+function bps(raw: string | undefined, name: string, fallback: number) {
+  if (raw === undefined || raw === "") return fallback;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 0 || n > 10_000) throw new Error(`${name} must be whole basis points from 0 to 10000 (got ${raw})`);
+  return n;
+}
+
+const REWARD_RULES_LEAD_DEFAULT_SECONDS = 24 * 60 * 60;
+const BURN_MIN_SPEND_DEFAULT_LAMPORTS = 10_000_000n;
+const FEE_CHANGE_LEAD_DEFAULT_SECONDS = 24 * 60 * 60;
+/** On mainnet a fee change to every live curve is announced at least this long ahead, whatever the setting says. */
+const FEE_CHANGE_LEAD_MAINNET_MIN_SECONDS = 60 * 60;
 
 export type SolRouteConfig = { source: "jupiter" } | { source: "raydium-cpmm"; pools: Map<string, PublicKey> };
 
@@ -105,6 +150,39 @@ function publicApiUrl(raw: string, cluster: Cluster) {
   return raw.replace(/\/$/, "");
 }
 
+/**
+ * On mainnet the Worker's RPC carries a provider key, so the browsers' RPC must be its own, without one; anything
+ * with a key in its URL would hand that key to every visitor. Elsewhere one RPC serves both.
+ */
+function publicRpcUrl(env: Bindings) {
+  const raw = env.PUBLIC_RPC_URL || env.RPC_URL;
+  if (env.CLUSTER !== "mainnet") return raw;
+  if (!env.PUBLIC_RPC_URL) throw new Error("PUBLIC_RPC_URL must be set on mainnet, or browsers would be handed the Worker's own RPC URL and its key");
+  const url = new URL(raw);
+  if (url.protocol !== "https:") throw new Error(`PUBLIC_RPC_URL must be https on mainnet (got ${raw})`);
+  if ([...url.searchParams.keys()].some((k) => /key|token|secret/i.test(k)) || /key|token|secret/i.test(url.username + url.password))
+    throw new Error("PUBLIC_RPC_URL must not carry a key: browsers see it. Use a public endpoint or a browser key restricted to our domain");
+  return raw;
+}
+
+/**
+ * What only works on the local chain must never reach mainnet: the static prices would write curve rules from made-up
+ * numbers, and the local route pools don't exist there.
+ */
+function refuseLocalOnlySettingsOnMainnet(env: Bindings) {
+  if (env.CLUSTER !== "mainnet") return;
+  if (env.PRICE_SOURCE !== "jupiter") throw new Error(`PRICE_SOURCE must be "jupiter" on mainnet, not "${env.PRICE_SOURCE}": static prices would set every Graduation Target wrong`);
+  if (env.SOL_ROUTE_SOURCE === "raydium-cpmm") throw new Error('SOL_ROUTE_SOURCE "raydium-cpmm" names the local chain\'s pools, which do not exist on mainnet; use "jupiter" or "none"');
+  if (!env.RPC_URL.startsWith("https://")) throw new Error(`RPC_URL must be https on mainnet (got ${env.RPC_URL})`);
+  if (env.FEE_CHANGE_LEAD_SECONDS && seconds(env.FEE_CHANGE_LEAD_SECONDS, "FEE_CHANGE_LEAD_SECONDS") < FEE_CHANGE_LEAD_MAINNET_MIN_SECONDS)
+    throw new Error(`FEE_CHANGE_LEAD_SECONDS must be at least ${FEE_CHANGE_LEAD_MAINNET_MIN_SECONDS} on mainnet: a fee change hits every live curve at once`);
+}
+
+/** The rent of a token account, which a sweep may open up to four of for the treasury in one transaction. */
+const TOKEN_ACCOUNT_RENT_LAMPORTS = 2_039_280n;
+const SWEEP_ACCOUNTS_PER_TRANSACTION = 4n;
+const SWEEP_FLOAT_MIN_LAMPORTS = TOKEN_ACCOUNT_RENT_LAMPORTS * SWEEP_ACCOUNTS_PER_TRANSACTION + 2_000_000n;
+
 function mintKeySecret(raw: string | undefined) {
   if (typeof raw !== "string" || raw.length < MINT_KEY_SECRET_MIN_LENGTH)
     throw new Error(`MINT_KEY_SECRET must be a secret of at least ${MINT_KEY_SECRET_MIN_LENGTH} characters`);
@@ -123,13 +201,24 @@ export function config(env: Bindings): Config {
   const sweepThresholdLamports = lamports(env.SWEEP_THRESHOLD_LAMPORTS, "SWEEP_THRESHOLD_LAMPORTS");
   const sweepFloatLamports = lamports(env.SWEEP_FLOAT_LAMPORTS, "SWEEP_FLOAT_LAMPORTS");
   if (sweepFloatLamports >= sweepThresholdLamports) throw new Error("SWEEP_FLOAT_LAMPORTS must be below SWEEP_THRESHOLD_LAMPORTS");
+  // A sweep pays the rent of the treasury's new token accounts from what the float leaves; too small a float and the
+  // sweep fails every run.
+  if (sweepFloatLamports < SWEEP_FLOAT_MIN_LAMPORTS)
+    throw new Error(`SWEEP_FLOAT_LAMPORTS must be at least ${SWEEP_FLOAT_MIN_LAMPORTS}, enough for the token accounts a sweep opens`);
+  refuseLocalOnlySettingsOnMainnet(env);
+  const platformConfig = key("PLATFORM_CONFIG");
+  const platformAdmin = key("PLATFORM_ADMIN");
+  if (!launchlabPdas(key("LAUNCHLAB_PROGRAM")).platformConfig(platformAdmin).equals(platformConfig))
+    throw new Error("PLATFORM_ADMIN is not the admin PLATFORM_CONFIG was created by: the PlatformConfig address derives from its admin");
   return {
     cluster: env.CLUSTER,
     rpcUrl: env.RPC_URL,
+    publicRpcUrl: publicRpcUrl(env),
     publicApiUrl: publicApiUrl(env.PUBLIC_API_URL, env.CLUSTER),
     launchlab: key("LAUNCHLAB_PROGRAM"),
     cpmm: key("CPMM_PROGRAM"),
-    platformConfig: key("PLATFORM_CONFIG"),
+    platformConfig,
+    platformAdmin,
     lookupTable: key("PLATFORM_LOOKUP_TABLE"),
     graduationTargetLamports: new BN(env.GRADUATION_TARGET_LAMPORTS),
     graduationAlertAfterSeconds: seconds(env.GRADUATION_ALERT_AFTER_SECONDS, "GRADUATION_ALERT_AFTER_SECONDS"),
@@ -140,6 +229,13 @@ export function config(env: Bindings): Config {
     sweepThresholdLamports,
     sweepFloatLamports,
     collectMinLamports: lamports(env.COLLECT_MIN_LAMPORTS, "COLLECT_MIN_LAMPORTS"),
+    rewardRulesLeadSeconds: env.REWARD_RULES_LEAD_SECONDS ? seconds(env.REWARD_RULES_LEAD_SECONDS, "REWARD_RULES_LEAD_SECONDS") : REWARD_RULES_LEAD_DEFAULT_SECONDS,
+    burnShareBps: bps(env.BURN_SHARE_BPS, "BURN_SHARE_BPS", 6_000),
+    flywheelShareBps: bps(env.FLYWHEEL_SHARE_BPS, "FLYWHEEL_SHARE_BPS", 500),
+    flywheelTopN: env.FLYWHEEL_TOP_N ? seconds(env.FLYWHEEL_TOP_N, "FLYWHEEL_TOP_N") : 10,
+    burnMinSpendLamports: env.BURN_MIN_SPEND_LAMPORTS ? lamports(env.BURN_MIN_SPEND_LAMPORTS, "BURN_MIN_SPEND_LAMPORTS") : BURN_MIN_SPEND_DEFAULT_LAMPORTS,
+    referralShareBps: bps(env.REFERRAL_SHARE_BPS, "REFERRAL_SHARE_BPS", 50),
+    feeChangeLeadSeconds: env.FEE_CHANGE_LEAD_SECONDS ? seconds(env.FEE_CHANGE_LEAD_SECONDS, "FEE_CHANGE_LEAD_SECONDS") : FEE_CHANGE_LEAD_DEFAULT_SECONDS,
     solRoute: solRouteConfig(env),
   };
 }

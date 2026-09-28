@@ -16,6 +16,14 @@ export const launches = pgTable(
     supply: numeric("supply", { precision: 40, scale: 0 }).notNull(),
     totalBaseSell: numeric("total_base_sell", { precision: 40, scale: 0 }).notNull(),
     graduationTarget: numeric("graduation_target", { precision: 40, scale: 0 }).notNull(),
+    /** A Reward Launch's Reward Tax in basis points (100, 300 or 500); null for a standard coin. */
+    rewardTaxBps: integer("reward_tax_bps"),
+    /**
+     * The transaction in which the operations wallet gave up the coin's transfer-fee-config authority for good, once
+     * Raydium's migration handed it over; from then on nobody can change the Reward Tax. Null until then.
+     */
+    rewardTaxLockedSignature: text("reward_tax_locked_signature"),
+    rewardTaxLockedAt: timestamp("reward_tax_locked_at", { withTimezone: true }),
     createdSignature: text("created_signature").notNull(),
     createdSlot: bigint("created_slot", { mode: "number" }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
@@ -81,6 +89,10 @@ export const trades = pgTable(
     protocolFee: numeric("protocol_fee", { precision: 40, scale: 0 }).notNull(),
     platformFee: numeric("platform_fee", { precision: 40, scale: 0 }).notNull(),
     creatorFee: numeric("creator_fee", { precision: 40, scale: 0 }).notNull(),
+    /** The share fee a referred curve trade paid its referrer, in the Quote Asset; 0 on an unreferred trade. */
+    shareFee: numeric("share_fee", { precision: 40, scale: 0 }).notNull().default("0"),
+    /** The wallet the share fee went to; null on an unreferred trade. */
+    referrer: text("referrer"),
     /** Price of one whole coin in whole Quote Asset units, just before and just after the trade. */
     priceBefore: doublePrecision("price_before").notNull(),
     priceAfter: doublePrecision("price_after").notNull(),
@@ -160,6 +172,8 @@ export const quoteAssets = pgTable("quote_assets", {
   /** The Graduation Targets our curve rule accepts; null while the rule is closed. */
   ruleMin: numeric("rule_min", { precision: 40, scale: 0 }),
   ruleMax: numeric("rule_max", { precision: 40, scale: 0 }),
+  /** The GlobalConfig's `max_share_fee_rate` (1e6 denominator): the most a referred trade may pay its referrer; 0 on most. */
+  maxShareFeeRate: bigint("max_share_fee_rate", { mode: "number" }).notNull().default(0),
   refreshedAt: timestamp("refreshed_at", { withTimezone: true }).notNull(),
 });
 
@@ -185,8 +199,8 @@ export const graduations = pgTable("graduations", {
 export const operatorAlerts = pgTable(
   "operator_alerts",
   {
-    kind: text("kind", { enum: ["graduation_stuck"] }).notNull(),
-    /** What the alert is about, such as a Launch's mint. */
+    kind: text("kind", { enum: ["graduation_stuck", "reward_tax_unlocked", "job_failed", "reward_round_stalled"] }).notNull(),
+    /** What the alert is about, such as a Launch's mint, a job's name or a round's id. */
     subject: text("subject").notNull(),
     message: text("message").notNull(),
     raisedAt: timestamp("raised_at", { withTimezone: true }).notNull().defaultNow(),
@@ -216,6 +230,8 @@ export const launchDrafts = pgTable(
     graduationTargetLamports: numeric("graduation_target_lamports", { precision: 40, scale: 0 }).notNull(),
     /** Quote Asset the Creator spends on the first buy, raw units; null without one. */
     firstBuy: numeric("first_buy", { precision: 40, scale: 0 }),
+    /** The Reward Tax the Creator chose, in basis points; null for a standard Launch. */
+    rewardTaxBps: integer("reward_tax_bps"),
     /** Newest transaction of the Creator's coin account already scanned for airdrop payments. */
     airdropScannedUntil: text("airdrop_scanned_until"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -320,6 +336,111 @@ export const jobLocks = pgTable("job_locks", {
   job: text("job").primaryKey(),
   runId: text("run_id").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
+
+/**
+ * The published rules Reward Rounds follow, one row per version: who counts as a holder and when a round runs. A
+ * version is announced first and takes effect later, so a change never surprises a holder; a round follows the version
+ * in force at its snapshot.
+ */
+export const rewardRules = pgTable("reward_rules", {
+  version: integer("version").primaryKey(),
+  /** The least a wallet must hold at the snapshot to be paid, raw units of the coin. */
+  minHolding: numeric("min_holding", { precision: 40, scale: 0 }).notNull(),
+  /** A round runs once at least this much tax has collected, raw units of the coin. */
+  roundThreshold: numeric("round_threshold", { precision: 40, scale: 0 }).notNull(),
+  note: text("note"),
+  announcedAt: timestamp("announced_at", { withTimezone: true }).notNull().defaultNow(),
+  effectiveAt: timestamp("effective_at", { withTimezone: true }).notNull(),
+});
+
+/** One Reward Round of one Reward Launch: its snapshot, the pot it pays out, and how far it has got. */
+export const rewardRounds = pgTable(
+  "reward_rounds",
+  {
+    id: text("id").primaryKey(),
+    mint: text("mint").notNull(),
+    rulesVersion: integer("rules_version").notNull(),
+    status: text("status", { enum: ["paying", "paid"] }).notNull(),
+    snapshotSlot: bigint("snapshot_slot", { mode: "number" }).notNull(),
+    /** The collected tax in the operations wallet's account of the coin at the snapshot, raw units. */
+    pot: numeric("pot", { precision: 40, scale: 0 }).notNull(),
+    eligibleHolders: integer("eligible_holders").notNull(),
+    /** What the payouts add up to; rounding leaves the pot's last units for the next round. */
+    distributable: numeric("distributable", { precision: 40, scale: 0 }).notNull(),
+    paid: numeric("paid", { precision: 40, scale: 0 }).notNull().default("0"),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+  },
+  (t) => [index("reward_rounds_mint_started_idx").on(t.mint, t.startedAt)],
+);
+
+/**
+ * One holder's payout in one round. Written with the round, so the snapshot is complete before anything is paid; marked
+ * `sending` with its transaction before that goes out, so a run that dies never lets the next one pay the wallet twice.
+ */
+export const rewardPayouts = pgTable(
+  "reward_payouts",
+  {
+    roundId: text("round_id").notNull(),
+    wallet: text("wallet").notNull(),
+    /** What the wallet held at the snapshot, raw units. */
+    holding: numeric("holding", { precision: 40, scale: 0 }).notNull(),
+    amount: numeric("amount", { precision: 40, scale: 0 }).notNull(),
+    status: text("status", { enum: ["unpaid", "sending", "paid"] }).notNull().default("unpaid"),
+    signature: text("signature"),
+    /** Past this block height the transaction handed out for this payout can never land. */
+    sendableUntil: bigint("sendable_until", { mode: "number" }),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+  },
+  (t) => [primaryKey({ columns: [t.roundId, t.wallet] }), index("reward_payouts_wallet_idx").on(t.wallet)],
+);
+
+/** An integrator's API key (#21): only its hash is kept; the key itself is shown once, when issued. */
+export const apiKeys = pgTable("api_keys", {
+  id: text("id").primaryKey(),
+  hash: text("hash").notNull().unique(),
+  name: text("name").notNull(),
+  rateLimitPerMinute: integer("rate_limit_per_minute").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+});
+
+/** Requests per key per minute, which the rate limit is checked against and the key's own usage view shows. */
+export const apiKeyUsage = pgTable(
+  "api_key_usage",
+  {
+    keyId: text("key_id").notNull(),
+    minute: timestamp("minute", { withTimezone: true }).notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.keyId, t.minute] })],
+);
+
+/**
+ * A Platform Fee or Creator Fee change the operator announced (#22): public from the moment it is announced, preparable
+ * for the admin to sign once its effective time has passed, and marked applied by the Indexer when the change lands.
+ */
+export const feeAnnouncements = pgTable(
+  "fee_announcements",
+  {
+    id: text("id").primaryKey(),
+    platformFeeBps: integer("platform_fee_bps").notNull(),
+    creatorFeeBps: integer("creator_fee_bps").notNull(),
+    note: text("note"),
+    announcedAt: timestamp("announced_at", { withTimezone: true }).notNull().defaultNow(),
+    effectiveAt: timestamp("effective_at", { withTimezone: true }).notNull(),
+    appliedSignature: text("applied_signature"),
+    appliedAt: timestamp("applied_at", { withTimezone: true }),
+  },
+  (t) => [index("fee_announcements_effective_idx").on(t.effectiveAt)],
+);
+
+/** Settings the operator sets at run time, such as the Platform Token once it has launched. */
+export const platformSettings = pgTable("platform_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 /** Fee Key NFTs the operations wallet holds, each found on-chain once: which pool's locked LP it collects for. */

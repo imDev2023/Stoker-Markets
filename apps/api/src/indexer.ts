@@ -1,15 +1,23 @@
-import type { Connection, PublicKey } from "@solana/web3.js";
+import { Connection, type PublicKey } from "@solana/web3.js";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import {
-  curvePrice, decodeTransaction, initialCurveReserves, poolPrice, type CreatorFeeClaimed, type Graduated, type LaunchCreated,
-  type PoolSwapExecuted, type RawTransaction, type TradeExecuted,
+  curvePrice, decodeTransaction, initialCurveReserves, poolPrice, RATE_DENOMINATOR, type CreatorFeeClaimed, type Graduated, type LaunchCreated,
+  type PlatformConfigUpdated, type PoolSwapExecuted, type RawTransaction, type TradeExecuted,
 } from "@launchpad/chain";
-import { creatorFeeClaims, curves, graduations, launches, operatorAlerts, type Db } from "@launchpad/db";
+import { creatorFeeClaims, curves, feeAnnouncements, graduations, launches, operatorAlerts, type Db } from "@launchpad/db";
 import { indexAirdropPayments } from "./airdrop";
 import type { Config } from "./env";
 import { insertTrade, openMarket } from "./market";
+import { recordPlatformFees } from "./routes/operator";
 
 export type IndexResult = { launched: number; traded: number; claimed: number; graduated: number; airdropped: number };
+
+/** A batch in which some transactions could not be indexed; the rest were, so a retry only needs to bring these back. */
+export class IndexBatchError extends Error {
+  constructor(readonly result: IndexResult, readonly failed: { signature: string; error: string }[]) {
+    super(`${failed.length} of the transactions could not be indexed: ${failed.map((f) => `${f.signature} (${f.error})`).join("; ")}`);
+  }
+}
 
 /**
  * Writes the Launches, curve trades, Creator Fee claims, Graduations and pool trades in a batch of confirmed transactions.
@@ -17,57 +25,94 @@ export type IndexResult = { launched: number; traded: number; claimed: number; g
  * all of them), so it counts when its Creator has launched on our platform; a pool trade, when its pool is one our
  * Launches graduated into. An airdrop payment counts when its airdrop was prepared through our API.
  * Idempotent: the same transaction delivered twice (webhook retries, the client fast path, backfills) writes one row.
+ * One transaction that can't be indexed never stops the others: the batch goes on, and `IndexBatchError` names what
+ * failed at the end, so a retry of the batch only has those to bring back.
  */
 export async function indexTransactions(db: Db, cfg: Config, txs: RawTransaction[]): Promise<IndexResult> {
   const result: IndexResult = { launched: 0, traded: 0, claimed: 0, graduated: 0, airdropped: 0 };
+  const failed: { signature: string; error: string }[] = [];
   for (const tx of txs) {
-    for (const e of decodeTransaction(tx, cfg)) {
-      if (e.kind === "creator_fee_claimed") {
-        result.claimed += await indexClaim(db, e);
-        continue;
-      }
-      if (e.kind === "pool_swap") {
-        result.traded += await indexPoolTrade(db, e);
-        continue;
-      }
-      if (!e.platformConfig.equals(cfg.platformConfig)) continue;
-      if (e.kind === "launch_created") {
-        // Only a GlobalConfig newer than the last Quote Registry refresh lets such a launch through (ADR 0005).
-        if (!e.standardShape) {
-          console.warn("ignoring a launch outside our launch shape", e.signature);
-          continue;
-        }
-        result.launched += await indexLaunch(db, e);
-      } else if (e.kind === "trade") result.traded += await indexTrade(db, e);
-      else result.graduated += await indexGraduation(db, e);
+    try {
+      await indexTransaction(db, cfg, tx, result);
+    } catch (e) {
+      const signature = tx?.transaction?.signatures?.[0] ?? "unknown";
+      console.error(`indexing ${signature} failed`, e);
+      failed.push({ signature, error: (e as Error).message });
     }
-    result.airdropped += await indexAirdropPayments(db, tx);
   }
+  if (failed.length) throw new IndexBatchError(result, failed);
   return result;
+}
+
+async function indexTransaction(db: Db, cfg: Config, tx: RawTransaction, result: IndexResult) {
+  for (const e of decodeTransaction(tx, cfg)) {
+    if (e.kind === "creator_fee_claimed") {
+      result.claimed += await indexClaim(db, e);
+      continue;
+    }
+    if (e.kind === "pool_swap") {
+      result.traded += await indexPoolTrade(db, e);
+      continue;
+    }
+    if (!e.platformConfig.equals(cfg.platformConfig)) continue;
+    if (e.kind === "platform_config_updated") {
+      await indexPlatformConfigUpdate(db, e);
+      continue;
+    }
+    if (e.kind === "launch_created") {
+      // Only a GlobalConfig newer than the last Quote Registry refresh lets such a launch through (ADR 0005).
+      if (!e.standardShape) {
+        console.warn("ignoring a launch outside our launch shape", e.signature);
+        continue;
+      }
+      result.launched += await indexLaunch(db, e);
+    } else if (e.kind === "trade") result.traded += await indexTrade(db, e);
+    else {
+      const graduated = await indexGraduation(db, e);
+      result.graduated += graduated;
+      // Swaps in the new pool may have been delivered before the migration (webhooks promise no order) and were
+      // dropped, since the pool was not ours yet. Now that it is, its history so far is indexed and counted here.
+      if (graduated) {
+        const backfilled = await indexAccountHistory(db, cfg, new Connection(cfg.rpcUrl, "confirmed"), e.pool, null);
+        for (const k of Object.keys(result) as (keyof IndexResult)[]) result[k] += backfilled.indexed[k];
+      }
+    }
+  }
+  result.airdropped += await indexAirdropPayments(db, tx);
 }
 
 const SIGNATURE_PAGE = 1000;
 
 /**
  * Backfills one account: indexes each of its confirmed transactions newer than `until`, oldest first, and returns the
- * newest signature it saw (or `until` if there was nothing new), from which the next backfill can resume.
+ * newest signature it indexed (or `until` if there was nothing new), from which the next backfill can resume, with
+ * what it indexed. A listed transaction that can't be fetched or indexed yet (an RPC node behind the one that listed
+ * it, say) stops the backfill there, so the cursor never moves past a transaction that was not indexed.
  */
-export async function indexAccountHistory(db: Db, cfg: Config, connection: Connection, account: PublicKey, until: string | null) {
+export async function indexAccountHistory(
+  db: Db, cfg: Config, connection: Connection, account: PublicKey, until: string | null,
+): Promise<{ newest: string | null; indexed: IndexResult }> {
   const found: string[] = [];
-  let newest: string | null = null;
   let before: string | undefined;
   for (;;) {
     const page = await connection.getSignaturesForAddress(account, { before, until: until ?? undefined, limit: SIGNATURE_PAGE }, "confirmed");
-    newest ??= page[0]?.signature ?? null;
     found.push(...page.filter((s) => !s.err).map((s) => s.signature));
     if (page.length < SIGNATURE_PAGE) break;
     before = page.at(-1)!.signature;
   }
+  let newest = until;
+  const indexed: IndexResult = { launched: 0, traded: 0, claimed: 0, graduated: 0, airdropped: 0 };
   for (const signature of found.reverse()) {
     const raw = await fetchRawTransaction(cfg.rpcUrl, signature);
-    if (raw) await indexTransactions(db, cfg, [raw]);
+    if (!raw) {
+      console.warn(`backfill of ${account.toBase58()} stopped at ${signature}, which could not be fetched yet`);
+      break;
+    }
+    const r = await indexTransactions(db, cfg, [raw]);
+    for (const k of Object.keys(indexed) as (keyof IndexResult)[]) indexed[k] += r[k];
+    newest = signature;
   }
-  return newest ?? until;
+  return { newest, indexed };
 }
 
 const time = (blockTime: number | null) => new Date((blockTime ?? Math.floor(Date.now() / 1000)) * 1000);
@@ -88,6 +133,7 @@ async function indexLaunch(db: Db, e: LaunchCreated) {
       supply: e.supply.toString(),
       totalBaseSell: e.totalBaseSell.toString(),
       graduationTarget: e.graduationTargetRaw.toString(),
+      rewardTaxBps: e.rewardTaxBps,
       createdSignature: e.signature,
       createdSlot: e.slot,
       createdAt: time(e.blockTime),
@@ -114,6 +160,8 @@ async function indexTrade(db: Db, e: TradeExecuted) {
     protocolFee: e.fees.protocol.toString(),
     platformFee: e.fees.platform.toString(),
     creatorFee: e.fees.creator.toString(),
+    shareFee: e.fees.share.toString(),
+    referrer: e.fees.share.isZero() ? null : (e.referrer?.toBase58() ?? null),
     priceBefore: curvePrice(e.before, e.baseDecimals, e.quoteDecimals),
     priceAfter: price,
     slot: e.slot,
@@ -169,6 +217,36 @@ async function indexClaim(db: Db, e: CreatorFeeClaimed) {
     .onConflictDoNothing()
     .returning({ signature: creatorFeeClaims.signature });
   return inserted.length;
+}
+
+/**
+ * The admin changed our PlatformConfig's fees: the earliest announcement that named these rates and is not yet applied
+ * records the transaction that applied it (#22). The block time is not compared with the announced time: the local
+ * chain's clock lags the wall clock, and a change the admin applied early is still that announcement applied.
+ */
+async function indexPlatformConfigUpdate(db: Db, e: PlatformConfigUpdated) {
+  if (e.feeRate === null || e.creatorFeeRate === null) return 0;
+  const toBps = (rate: { toNumber(): number }) => (rate.toNumber() * 10_000) / RATE_DENOMINATOR;
+  await recordPlatformFees(db, { platformFeeBps: toBps(e.feeRate), creatorFeeBps: toBps(e.creatorFeeRate) });
+  const [due] = await db
+    .select({ id: feeAnnouncements.id })
+    .from(feeAnnouncements)
+    .where(
+      and(
+        eq(feeAnnouncements.platformFeeBps, toBps(e.feeRate)),
+        eq(feeAnnouncements.creatorFeeBps, toBps(e.creatorFeeRate)),
+        isNull(feeAnnouncements.appliedSignature),
+      ),
+    )
+    .orderBy(feeAnnouncements.effectiveAt)
+    .limit(1);
+  if (!due) return 0;
+  const updated = await db
+    .update(feeAnnouncements)
+    .set({ appliedSignature: e.signature, appliedAt: time(e.blockTime) })
+    .where(and(eq(feeAnnouncements.id, due.id), isNull(feeAnnouncements.appliedSignature)))
+    .returning({ id: feeAnnouncements.id });
+  return updated.length;
 }
 
 /** Raydium migrated one of our curves: the Launch has graduated, and any alert about it waiting is resolved. */
