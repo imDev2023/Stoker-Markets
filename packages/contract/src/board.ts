@@ -64,9 +64,10 @@ export type LaunchQuoteList = z.infer<typeof LaunchQuoteList>;
 
 /**
  * Who holds a coin, labelled where the holder is not a person: the Launch's curve holds the coins not sold yet, and after
- * Graduation its Raydium pool holds the coins it trades against.
+ * Graduation its Raydium pool holds the coins it trades against. The platform's own wallets are labelled too: a graduated
+ * coin's Fee Key pays out in the coin, so the operations wallet and the treasury can hold some.
  */
-export const HolderKind = z.enum(["curve", "pool", "creator", "holder"]);
+export const HolderKind = z.enum(["curve", "pool", "creator", "treasury", "operations", "holder"]);
 export type HolderKind = z.infer<typeof HolderKind>;
 
 export const Holder = z.object({
