@@ -8,7 +8,7 @@ import {
   type MarketValue,
 } from "@launchpad/contract";
 import { curves, graduations, launches, launchMarkets, launchMetadata, quoteAssets, trades, type Db } from "@launchpad/db";
-import type { AppEnv, Config } from "../env";
+import { operationsKey, type AppEnv, type Config } from "../env";
 import { toQuoteRef } from "../quotes/assets";
 import { curveProgress } from "./trades";
 
@@ -204,6 +204,8 @@ launchRoutes.get("/launches/:mint/holders", async (c) => {
     [launchlabPdas(cfg.launchlab).authority.toBase58(), "curve"],
     [cpmmPdas(programsFor(cfg.cluster).cpmm).authority.toBase58(), "pool"],
     [launch.creator, "creator"],
+    [operationsKey(c.env).publicKey.toBase58(), "operations"],
+    ...(cfg.treasury ? [[cfg.treasury.toBase58(), "treasury"] as const] : []),
   ]);
   const byOwner = new Map<string, bigint>();
   accounts.forEach((a, i) => {

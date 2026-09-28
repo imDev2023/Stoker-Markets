@@ -7,6 +7,9 @@ const SHOWN = 10;
 
 const LABELS: Partial<Record<HolderKind, string>> = { curve: "Curve", pool: "Raydium pool" };
 
+/** Holders named next to their address: the Creator, and the platform's own wallets, which a Fee Key pays in the coin. */
+const BADGES: Partial<Record<HolderKind, string>> = { creator: "Creator", treasury: "Platform treasury", operations: "Platform operations" };
+
 /** A share of the supply as a percentage: two decimals below 1%, one above. */
 function percent(share: number) {
   const pct = share * 100;
@@ -45,7 +48,7 @@ export function Holders({ holders, platform }: { holders: HolderList | null; pla
                       {shortAddress(h.owner)}
                     </a>
                   )}
-                  {h.kind === "creator" && <span className={styles.badge}>Creator</span>}
+                  {BADGES[h.kind] && <span className={styles.badge}>{BADGES[h.kind]}</span>}
                 </span>
                 <span className={`mono ${styles.share}`}>{percent(h.share)}</span>
               </li>

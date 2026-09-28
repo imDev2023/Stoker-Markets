@@ -9,7 +9,7 @@ import BN from "bn.js";
 import { cpmmCoder, launchlabPdas, lockCoder, lockPdas, programsFor, WSOL_MINT } from "@launchpad/chain";
 import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
 import { FEE_COLLECTOR_CRON } from "@launchpad/stack";
-import { JobRun, JobRunList, LedgerPage, Revenue, type LedgerEntry } from "@launchpad/contract";
+import { HolderList, JobRun, JobRunList, LedgerPage, Revenue, type LedgerEntry } from "@launchpad/contract";
 import {
   SOL, coinsOf, connection, deliverWebhook, env, fundedWallet, launch, launchedCoin, networkFee, quote, tokenBalance, trade,
 } from "./client";
@@ -206,6 +206,9 @@ describe("after Graduation", () => {
     expect((await lamportsOf(ops())) - sol).toBe(solIn - (await networkFees(sent.map((s) => s.signature))) - 2n * rent);
     expect((await tokensOf(treasury(), new PublicKey(coin.mint))) - coinsInTreasury).toBe(BigInt(keyCoins.amount));
     expect(await tokensOf(ops(), new PublicKey(coin.mint))).toBe(0n);
+    // The coin's holders name the treasury as the platform's, rather than as an unknown wallet.
+    const { holders } = HolderList.parse(await (await fetch(`${env().apiUrl}/v1/launches/${coin.mint}/holders`)).json());
+    expect(holders).toContainEqual(expect.objectContaining({ owner: treasury().toBase58(), kind: "treasury", amount: keyCoins.amount }));
 
     // The lock program counts what was collected against the locked LP.
     const record = await lockedLiquidity(coin.pool);
