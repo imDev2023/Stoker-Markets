@@ -5,7 +5,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 
 ## Read first
 
-1. GitHub issue #5 (`gh issue view 5`) - the v1 PRD; slices are issues #8 to #23, each with "Blocked by". A slice's latest comment is its current status. Every v1 slice except #11 (draft PR #36) and #23 (mainnet go-live, the owner's) is merged; check `gh pr list` for open drafts before starting work, since cloud sessions also push here.
+1. GitHub issue #5 (`gh issue view 5`) - the v1 PRD; slices are issues #8 to #23, each with "Blocked by". A slice's latest comment is its current status. Every v1 slice except #11 (draft PR #36) and #23 (mainnet go-live, the owner's) is merged; check `gh pr list` for open drafts before starting work, since cloud sessions also push here. Push every working branch: a cloud session can't see a local-only branch and rebuilt #11 from scratch because of one.
 2. `CONTEXT.md` - the domain glossary; use its terms in code, issues and UI copy.
 3. `docs/adr/` - fee model (0001), Cloudflare hosting (0002), server-built transactions (0003), key custody (0004), price-banded curve rules (0005, proposed), Reward Rounds and Burn budgets (0006).
 4. `spike/launchlab-devnet/README.md` - what LaunchLab really does on devnet, with tx evidence and gotchas.
@@ -29,7 +29,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 - Scheduled jobs: `wrangler dev --test-scheduled` runs them on `GET /__scheduled?cron=<cron>`: `*+*+*+*+*` is the graduation watch, `*/5+*+*+*+*` the Quote Registry refresh, `15+*+*+*+*` the Fee Collector, `*/10+*+*+*+*` the Reward Engine, `45+*+*+*+*` the Burn, and a bare `GET /__scheduled` runs all five. The Fee Collector sweeps only with `TREASURY_WALLET` set (required on mainnet). The dev API also needs `PLATFORM_ADMIN` (the admin from `state.json`; `PLATFORM_CONFIG` must be its PDA).
 - Tests: `pnpm test:backend` and `pnpm test:ui`, each on its own throwaway stack; the chain takes a free block of ports, so checkouts and agents can run suites side by side (`TEST_RPC_PORT` pins it). `pnpm lint`, `pnpm typecheck`; CI runs both plus the backend suite. Without docker, `STACK_DATABASE_URL=postgres://user:pass@host:port/postgres` makes the stack create a throwaway database on that server instead (the Hyperdrive binding refuses a URL without a password); `STACK_LOG_DIR` keeps each process's log. The backend suite takes about eight minutes on Surfpool.
 - Never edit `apps/api`, `packages/*` or `tools/*` sources while a backend run is in progress: `wrangler dev` hot-reloads the API mid-run and the results are meaningless. Tests, web and docs are safe to edit meanwhile.
-- UI baselines live in `tests/ui/screenshots/<platform>/`; after an intended UI change, run `pnpm test:ui --update-snapshots=changed` (`all` rewrites matching baselines with byte-different PNGs) and look at every changed image before committing.
+- UI baselines live in `tests/ui/screenshots/<platform>/`, and only `darwin` exists, so cloud (Linux) sessions can't run the visual projects and a Mac session re-baselines their PRs; after an intended UI change, run `pnpm test:ui --update-snapshots=changed` (`all` rewrites matching baselines with byte-different PNGs) and look at every changed image before committing.
 - Port 8787 and 3000 belong to other projects on this machine; ours are 3100, 8791, 8899, 5442.
 
 ## Settled (do not re-litigate)
