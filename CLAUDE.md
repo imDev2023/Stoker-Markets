@@ -5,9 +5,9 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 
 ## Read first
 
-1. GitHub issue #5 (`gh issue view 5`) - the v1 PRD; slices are issues #8 to #23, each with "Blocked by". A slice's latest comment is its current status.
+1. GitHub issue #5 (`gh issue view 5`) - the v1 PRD; slices are issues #8 to #23, each with "Blocked by". A slice's latest comment is its current status. Every v1 slice except #11 (draft PR #36) and #23 (mainnet go-live, the owner's) is merged; check `gh pr list` for open drafts before starting work, since cloud sessions also push here.
 2. `CONTEXT.md` - the domain glossary; use its terms in code, issues and UI copy.
-3. `docs/adr/` - fee model (0001), Cloudflare hosting (0002), server-built transactions (0003), key custody (0004), price-banded curve rules (0005, proposed).
+3. `docs/adr/` - fee model (0001), Cloudflare hosting (0002), server-built transactions (0003), key custody (0004), price-banded curve rules (0005, proposed), Reward Rounds and Burn budgets (0006).
 4. `spike/launchlab-devnet/README.md` - what LaunchLab really does on devnet, with tx evidence and gotchas.
 5. `research/README.md` - background on StonkFun only; don't re-derive its findings.
 
