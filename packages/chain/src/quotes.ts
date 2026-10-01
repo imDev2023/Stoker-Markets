@@ -1,5 +1,8 @@
 import { PublicKey, type Connection } from "@solana/web3.js";
-import { ExtensionType, getExtensionData, getPermanentDelegate, NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, unpackMint } from "@solana/spl-token";
+import {
+  AccountState, ExtensionType, getDefaultAccountState, getExtensionData, getInterestBearingMintConfigState, getPausableConfig, getPermanentDelegate,
+  getScaledUiAmountConfig, getTransferFeeConfig, getTransferHook, NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, unpackMint,
+} from "@solana/spl-token";
 import { unpack as unpackTokenMetadata } from "@solana/spl-token-metadata";
 import type BN from "bn.js";
 import { launchlabCoder } from "./coder";
@@ -42,7 +45,54 @@ export type QuoteMintInfo = {
   /** Who can freeze token accounts of this mint, and who can move tokens out of any of them (Token-2022); issuers of real-world assets hold these. */
   freezeAuthority: PublicKey | null;
   permanentDelegate: PublicKey | null;
+  /** Who can mint more; null when minting is closed for good. */
+  mintAuthority: PublicKey | null;
+  /** The mint's other Token-2022 extensions that bear on its holders (Quote Risk Labels, #11); each null when absent. */
+  controls: MintControls;
 };
+
+export type MintControls = {
+  pausable: { authority: PublicKey; paused: boolean } | null;
+  /** `programId` null when the extension is there but no hook program is set (the issuer can set one later). */
+  transferHook: { programId: PublicKey | null; authority: PublicKey | null } | null;
+  defaultAccountState: "initialized" | "frozen" | null;
+  /** The fee in force at the epoch the mint was read, and the one scheduled to replace it, if any. */
+  transferFee: { currentBps: number; maximumFee: bigint; scheduled: { bps: number; epoch: number } | null; authority: PublicKey | null } | null;
+  scaledUiAmount: { multiplier: number; authority: PublicKey | null } | null;
+  interestBearing: { rateBps: number; authority: PublicKey | null } | null;
+};
+
+const NO_KEY = PublicKey.default;
+const optional = (k: PublicKey | null | undefined) => (k && !k.equals(NO_KEY) ? k : null);
+
+/** The Token-2022 extensions of a mint that its holders should know about; every field null for an SPL Token mint. */
+function mintControls(mint: ReturnType<typeof unpackMint>, epoch: number): MintControls {
+  if (!mint.tlvData.length) return { pausable: null, transferHook: null, defaultAccountState: null, transferFee: null, scaledUiAmount: null, interestBearing: null };
+  const pausable = getPausableConfig(mint);
+  const hook = getTransferHook(mint);
+  const state = getDefaultAccountState(mint);
+  const fee = getTransferFeeConfig(mint);
+  const scaled = getScaledUiAmountConfig(mint);
+  const interest = getInterestBearingMintConfigState(mint);
+  let transferFee: MintControls["transferFee"] = null;
+  if (fee) {
+    // Token-2022 keeps two fees: the newer applies from its epoch on, the older until then.
+    const newerLive = epoch >= Number(fee.newerTransferFee.epoch);
+    const current = newerLive ? fee.newerTransferFee : fee.olderTransferFee;
+    const scheduled = !newerLive && fee.newerTransferFee.transferFeeBasisPoints !== current.transferFeeBasisPoints
+      ? { bps: fee.newerTransferFee.transferFeeBasisPoints, epoch: Number(fee.newerTransferFee.epoch) }
+      : null;
+    transferFee = { currentBps: current.transferFeeBasisPoints, maximumFee: current.maximumFee, scheduled, authority: optional(fee.transferFeeConfigAuthority) };
+  }
+  return {
+    pausable: pausable ? { authority: pausable.authority, paused: pausable.paused } : null,
+    transferHook: hook ? { programId: optional(hook.programId), authority: optional(hook.authority) } : null,
+    defaultAccountState: state ? (state.state === AccountState.Frozen ? "frozen" : "initialized") : null,
+    transferFee,
+    scaledUiAmount: scaled ? { multiplier: scaled.multiplier, authority: optional(scaled.authority) } : null,
+    interestBearing: interest ? { rateBps: interest.currentRate, authority: optional(interest.rateAuthority) } : null,
+  };
+}
 
 const MULTIPLE_ACCOUNTS_MAX = 100;
 
@@ -53,12 +103,17 @@ async function getAccounts(connection: Connection, keys: PublicKey[]) {
   return out;
 }
 
-/** Reads each quote mint's token program, decimals and on-chain name and symbol. Mints that don't exist are left out. */
-export async function readQuoteMints(connection: Connection, mints: PublicKey[]): Promise<Map<string, QuoteMintInfo>> {
-  const [mintAccounts, metadataAccounts] = await Promise.all([getAccounts(connection, mints), getAccounts(connection, mints.map(metadataPda))]);
+/**
+ * Reads each quote mint's token program, decimals, on-chain name and symbol, authorities and extensions, with the slot
+ * the mints were read at (a later read at a lower slot is older news). Mints that don't exist are left out.
+ */
+export async function readQuoteMints(connection: Connection, mints: PublicKey[]): Promise<{ slot: number; epoch: number; mints: Map<string, QuoteMintInfo> }> {
+  const [read, metadataAccounts, epochInfo] = await Promise.all([
+    getAccountsWithContext(connection, mints), getAccounts(connection, mints.map(metadataPda)), connection.getEpochInfo("confirmed"),
+  ]);
   const out = new Map<string, QuoteMintInfo>();
   mints.forEach((address, i) => {
-    const account = mintAccounts[i];
+    const account = read.accounts[i];
     if (!account || !(account.owner.equals(TOKEN_PROGRAM_ID) || account.owner.equals(TOKEN_2022_PROGRAM_ID))) return;
     const mint = unpackMint(address, account, account.owner);
     const named = address.equals(NATIVE_MINT)
@@ -71,10 +126,24 @@ export async function readQuoteMints(connection: Connection, mints: PublicKey[])
       name: named?.name || null,
       symbol: named?.symbol || null,
       freezeAuthority: mint.freezeAuthority,
-      permanentDelegate: getPermanentDelegate(mint)?.delegate ?? null,
+      permanentDelegate: optional(getPermanentDelegate(mint)?.delegate),
+      mintAuthority: mint.mintAuthority,
+      controls: mintControls(mint, epochInfo.epoch),
     });
   });
-  return out;
+  return { slot: read.slot, epoch: epochInfo.epoch, mints: out };
+}
+
+/** Like `getAccounts`, with the slot of the read: the lowest slot among the pages, since nothing read is older than that. */
+async function getAccountsWithContext(connection: Connection, keys: PublicKey[]) {
+  const accounts = [];
+  let slot = Number.MAX_SAFE_INTEGER;
+  for (let i = 0; i < keys.length; i += MULTIPLE_ACCOUNTS_MAX) {
+    const { context, value } = await connection.getMultipleAccountsInfoAndContext(keys.slice(i, i + MULTIPLE_ACCOUNTS_MAX), "confirmed");
+    accounts.push(...value);
+    slot = Math.min(slot, context.slot);
+  }
+  return { slot: keys.length ? slot : await connection.getSlot("confirmed"), accounts };
 }
 
 function token2022Metadata(tlv: Buffer) {

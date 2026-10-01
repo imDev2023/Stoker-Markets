@@ -8,11 +8,12 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { launchlabPdas } from "@launchpad/chain";
 import BN from "bn.js";
 import postgres from "postgres";
 import { runMigrations } from "@launchpad/db/migrate";
-import { bootstrapPlatform, LOCAL_QUOTE_PRICES_USD, localnetKeys, startLocalnet, type LocalnetState } from "@launchpad/localnet";
+import { bootstrapPlatform, LOCAL_QUOTE_PRICES_USD, LOCAL_QUOTE_TOKEN_LIST, localnetKeys, startLocalnet, type LocalnetState } from "@launchpad/localnet";
 import { createSolRoutes, type SolRoutes } from "@launchpad/localnet/routes";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -27,6 +28,13 @@ export type StackEnv = {
   operatorToken: string;
   /** Stands in for the operator's chat webhook: the API posts alerts here, and a GET lists every one received. */
   alertSinkUrl: string;
+  /**
+   * Stands in for Helius's webhook API: `GET` and `PUT /v0/webhooks/:id?api-key=` on one webhook, as the API keeps its
+   * watched addresses current. The key and id the API was given, so a test can read the webhook back.
+   */
+  heliusApiUrl: string;
+  heliusApiKey: string;
+  heliusWebhookId: string;
   /** How long a sold-out curve waits for migration before the API alerts. */
   graduationAlertAfterSeconds: number;
   /** Where the Fee Collector sweeps revenue: a fresh address per stack, standing in for the cold treasury. */
@@ -169,6 +177,46 @@ async function startAlertSink() {
   return { url: `http://127.0.0.1:${port}`, stop: () => new Promise<void>((resolve) => server.close(() => resolve())) };
 }
 
+export const HELIUS_API_KEY = "test-helius-key";
+export const HELIUS_WEBHOOK_ID = "test-helius-webhook";
+
+/**
+ * A stand-in for Helius's webhook API, holding one raw webhook as Helius would have it after the owner created it
+ * (runbook, section 7): `GET /v0/webhooks/:id` reads it, `PUT` replaces it, both behind `?api-key=`. Only the fields
+ * Helius keeps are stored, so a PUT that drops one shows up as a lost field.
+ */
+async function startHeliusStandIn(webhookUrl: string, authHeader: string, addresses: string[]) {
+  let webhook = {
+    webhookID: HELIUS_WEBHOOK_ID, wallet: "stand-in", webhookURL: webhookUrl, transactionTypes: ["ANY"], accountAddresses: addresses,
+    webhookType: "raw", authHeader,
+  };
+  const server = createHttpServer((req, res) => {
+    const url = new URL(req.url ?? "/", "http://stand-in");
+    const json = (status: number, body: unknown) => res.writeHead(status, { "content-type": "application/json" }).end(JSON.stringify(body));
+    if (url.searchParams.get("api-key") !== HELIUS_API_KEY) return json(401, { error: "invalid api key" });
+    if (url.pathname !== `/v0/webhooks/${HELIUS_WEBHOOK_ID}`) return json(404, { error: "webhook not found" });
+    if (req.method === "GET") return json(200, webhook);
+    if (req.method !== "PUT") return json(405, { error: "method not allowed" });
+    let body = "";
+    req.on("data", (d) => (body += d));
+    req.on("end", () => {
+      try {
+        const next = JSON.parse(body) as Partial<typeof webhook>;
+        webhook = {
+          ...webhook, webhookURL: next.webhookURL ?? "", transactionTypes: next.transactionTypes ?? [], accountAddresses: next.accountAddresses ?? [],
+          webhookType: next.webhookType ?? "", authHeader: next.authHeader ?? "",
+        };
+        json(200, webhook);
+      } catch {
+        json(400, { error: "invalid body" });
+      }
+    });
+  });
+  const port = await freePort();
+  await new Promise<void>((resolve) => server.listen(port, "127.0.0.1", resolve));
+  return { url: `http://127.0.0.1:${port}`, stop: () => new Promise<void>((resolve) => server.close(() => resolve())) };
+}
+
 /**
  * Runs the API Worker under `wrangler dev` with the given vars. Resolves once it answers HTTP at all, so a test can
  * also start a deliberately misconfigured API and look at how it fails.
@@ -229,6 +277,11 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
     const webUrl = webPort ? `http://127.0.0.1:${webPort}` : null;
     const apiPort = await freePort();
     const apiUrl = `http://127.0.0.1:${apiPort}`;
+    // As the owner would create the webhook: on the PlatformConfig and the creator fee vault authority, nothing else yet.
+    const helius = await startHeliusStandIn(`${apiUrl}/v1/webhooks/helius`, WEBHOOK_SECRET, [
+      platform.platformConfig, launchlabPdas(new PublicKey(platform.launchlab)).creatorFeeVaultAuthority.toBase58(),
+    ]);
+    cleanups.push(helius.stop);
     const fees = {
       treasury: Keypair.generate().publicKey.toBase58(),
       sweepThresholdLamports: String(5 * LAMPORTS_PER_SOL),
@@ -245,9 +298,13 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       GRADUATION_TARGET_LAMPORTS: platform.graduationTargetLamports,
       PRICE_SOURCE: "static",
       QUOTE_PRICES_USD: JSON.stringify(LOCAL_QUOTE_PRICES_USD),
+      QUOTE_TOKEN_LIST: JSON.stringify(LOCAL_QUOTE_TOKEN_LIST),
       OPERATIONS_KEY: JSON.stringify(Array.from(localnetKeys().operations.secretKey)),
       GRADUATION_ALERT_AFTER_SECONDS: String(graduationAlertAfterSeconds),
       HELIUS_WEBHOOK_SECRET: WEBHOOK_SECRET,
+      HELIUS_API_URL: helius.url,
+      HELIUS_API_KEY,
+      HELIUS_WEBHOOK_ID,
       OPERATOR_TOKEN,
       ALERT_WEBHOOK_URL: sink.url,
       MINT_KEY_SECRET: randomBytes(32).toString("hex"),
@@ -290,7 +347,8 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
     return {
       env: {
         apiUrl, webUrl, rpcUrl: chain.rpcUrl, databaseUrl: pg.url, webhookSecret: WEBHOOK_SECRET, operatorToken: OPERATOR_TOKEN,
-        alertSinkUrl: sink.url, graduationAlertAfterSeconds, ...fees, referralShareBps, feeChangeLeadSeconds, platform, solRoutes,
+        alertSinkUrl: sink.url, heliusApiUrl: helius.url, heliusApiKey: HELIUS_API_KEY, heliusWebhookId: HELIUS_WEBHOOK_ID,
+        graduationAlertAfterSeconds, ...fees, referralShareBps, feeChangeLeadSeconds, platform, solRoutes,
       },
       stop,
     };

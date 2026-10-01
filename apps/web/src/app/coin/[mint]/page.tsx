@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAirdrop, getCandles, getCoinRewards, getHolders, getLaunch, getPlatform, listTrades } from "@/lib/api";
-import { explorerUrl, formatUtc, quoteTicker, shortAddress } from "@/lib/format";
+import { getAirdrop, getCandles, getCoinRewards, getHolders, getLaunch, getPlatform, getQuoteAsset, listTrades } from "@/lib/api";
+import { explorerUrl, formatUtc, isSol, quoteTicker, shortAddress } from "@/lib/format";
 import { AirdropCard } from "@/components/AirdropCard";
 import { CoinMarket } from "@/components/CoinMarket";
 import { CopyButton } from "@/components/CopyButton";
 import { PairMark } from "@/components/PairMark";
+import { QuoteLabelList } from "@/components/QuoteLabels";
 import { RewardsCard } from "@/components/RewardsCard";
 import styles from "./page.module.css";
 
@@ -34,6 +35,8 @@ export default async function CoinPage({ params, searchParams }: Props) {
   ]);
   if (!launch) notFound();
   const rewards = launch.rewardTax ? await getCoinRewards(mint).catch(() => null) : null;
+  // SOL needs no labels; any other Quote Asset shows what its issuer and the token list say about it (#11).
+  const quoteAsset = isSol(launch.quote) ? null : await getQuoteAsset(launch.quote.mint).catch(() => null);
   // An Airdrop still being paid sits above the market, where its Creator sends it; a finished one joins the facts below.
   const airdropCard = airdrop && <AirdropCard initial={airdrop} symbol={launch.symbol} platform={platform} />;
   const airdropDone = airdrop?.recipients.every((r) => r.status === "paid") ?? false;
@@ -142,6 +145,16 @@ export default async function CoinPage({ params, searchParams }: Props) {
             </div>
           ))}
         </dl>
+        {quoteAsset && (
+          <section className={`${styles.wide} ${styles.quoteLabels}`} aria-labelledby="quote-labels-title">
+            <h2 id="quote-labels-title" className={styles.quoteLabelsTitle}>Paired with {quote}</h2>
+            <p className={styles.quoteLabelsNote}>
+              Every trade of {launch.symbol} is paid in {quote}. What its mint and the token list say about {quote}; each label informs
+              and none stops a trade.
+            </p>
+            <QuoteLabelList quote={quoteAsset} />
+          </section>
+        )}
         {rewards && <div className={styles.wide}><RewardsCard rewards={rewards} symbol={launch.symbol} platform={platform} /></div>}
         {airdropDone && <div className={styles.wide}>{airdropCard}</div>}
       </section>

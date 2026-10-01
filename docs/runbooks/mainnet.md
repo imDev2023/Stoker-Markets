@@ -41,17 +41,32 @@ Exactly what `bootstrapPlatform` in `tools/localnet/src/index.ts` does on the lo
    - `updatePlatformConfigIx(program, admin, { PlatformCPCreator: [operations] })`: the platform is every graduated pool's creator.
    - `updatePlatformConfigIx(program, admin, { RestrictCurveParam: [1] })`: launches must match a curve rule.
    - `updatePlatformConfigIx(program, admin, { CurveRuleManager: [operations] })`: the operations wallet writes the rules (ADR 0005).
-3. Serialise it unsigned with a recent blockhash and the admin as fee payer (the same way `POST /v1/operator/fees/prepare` hands the admin a fee change), sign it on the cold device or through Squads, and send it. A short `tsx` script in the repo can do the building; nothing in the API does, since the API never holds the admin key.
-4. Verify by decoding the account, which is the acceptance criterion in #23: `launchlabCoder.accounts.decode("PlatformConfig", data)` from `packages/chain` and check `fee_rate` 5000, `creator_fee_rate` 5000, `migrate_nft_info` `{1000000, 0, 0}`, `platform_vesting_scale` 0, `fee_wallet`, `nft_wallet`, `transfer_fee_extension_auth`, `vesting_wallet` and `platform_cp_creator` all the operations wallet, `curve_rule_manager` the operations wallet, `restrict_curve_param` on, `cpswap_config` the chosen config, `name`, `web` and `img` as decided in #7.
+3. Serialise it unsigned with a recent blockhash and the admin as fee payer (the same way `POST /v1/operator/fees/prepare` hands the admin a fee change), sign it on the cold device or through Squads, and send it. `tools/mainnet/platform-config.ts` does the building; nothing in the API does, since the API never holds the admin key. It takes the admin's address (or a keypair file, of which it reads only the public half) and prints the base64 transaction; it is valid for about a minute, so build it when the cold device is ready to sign:
+
+   ```sh
+   pnpm --filter @launchpad/mainnet platform-config build --rpc https://... --cluster mainnet \
+     --admin <admin pubkey> --operations <operations pubkey> --cpswap-config <the 1% config> \
+     --name "<name>" --web https://<domain> --img https://<domain>/icon.png
+   ```
+
+   `--platform-fee-bps` and `--creator-fee-bps` default to 50. On devnet (section 11), where the admin can be a file keypair, `--sign admin.json` signs, sends and runs the check below in one go.
+4. Verify by decoding the account, which is the acceptance criterion in #23: `pnpm --filter @launchpad/mainnet platform-config check --rpc ... --cluster mainnet --admin <admin pubkey>` prints the decoded PlatformConfig, and with the same `--operations`, `--cpswap-config`, `--name`, `--web` and `--img` as the build it names every field that differs from what was decided, or passes: `fee_rate` 5000, `creator_fee_rate` 5000, `migrate_nft_info` `{1000000, 0, 0}`, `platform_vesting_scale` 0, `fee_wallet`, `nft_wallet`, `transfer_fee_extension_auth`, `vesting_wallet` and `platform_cp_creator` all the operations wallet, `curve_rule_manager` the operations wallet, `restrict_curve_param` on, `cpswap_config` the chosen config, `name`, `web` and `img` as decided in #7. (`launchlabCoder.accounts.decode("PlatformConfig", data)` from `packages/chain` is what it decodes with.) The script is proven against the local chain in `tests/backend/src/mainnet-tools.test.ts`.
 5. `PLATFORM_CONFIG` is `launchlabPdas(program).platformConfig(admin)`; `PLATFORM_ADMIN` is the admin's address, and the API checks on mainnet that the one derives from the other.
 
 Every curve rule is written by the API's Quote Registry refresh (section 6), never by the admin.
 
 ## 3. The Platform Lookup Table (operations wallet)
 
-A launch with a First Buy only fits Solana's 1,232 bytes through an address lookup table, and a buy paid with SOL needs the same table (CLAUDE.md traps). The table is owned by the operations wallet and holds `platformLookupAddresses(program, platformConfig, quotes)` from `packages/chain/src/lookup.ts`: 11 shared accounts plus 4 per listed Quote Asset (its GlobalConfig, mint, curve rule and platform fee vault). A table holds 256 addresses, so list SOL (required: a SOL First Buy needs SOL's own accounts) and up to 61 of the busiest Quote Assets, never all 571.
+A launch with a First Buy only fits Solana's 1,232 bytes through an address lookup table, and a buy paid with SOL needs the same table (CLAUDE.md traps). The table is owned by the operations wallet and holds `platformLookupAddresses(program, platformConfig, quotes)` from `packages/chain/src/lookup.ts`: 11 shared accounts plus 4 per listed Quote Asset (its GlobalConfig, mint, curve rule and platform fee vault). A table holds 256 addresses, so list SOL (required: a SOL First Buy needs SOL's own accounts) and up to 60 of the busiest Quote Assets, never all 571.
 
-`ensureLookupTable(connection, operations, addresses)` from `tools/localnet` creates or extends it against any RPC and waits until the last extension is rooted (about 32 slots), so a `tsx` one-off script can run it against mainnet with the operations keypair. Its address is `PLATFORM_LOOKUP_TABLE`. Extending it later (a Quote Asset getting popular) is the same call; a new address is usable a minute after it is added. Jupiter routes bring their own tables.
+`tools/mainnet/lookup-table.ts` creates or extends it with the operations keypair from a list of quote mints (SOL is always included), reusing `ensureLookupTable` from `tools/localnet`, which works against any RPC and waits until the last extension is rooted (about 32 slots):
+
+```sh
+pnpm --filter @launchpad/mainnet lookup-table --rpc https://... --cluster mainnet \
+  --operations operations.json --admin <admin pubkey> --quotes <mint>,<mint>,...
+```
+
+It prints the table's address, which is `PLATFORM_LOOKUP_TABLE`, and refuses a list that would not fit. Extending it later (a Quote Asset getting popular) is the same command with the longer list; a new address is usable a minute after it is added. Jupiter routes bring their own tables. The script is proven against the local chain in `tests/backend/src/mainnet-tools.test.ts`.
 
 ## 4. Postgres and Hyperdrive
 
@@ -95,6 +110,7 @@ Secrets, set with `wrangler secret put <NAME> --env production`, never in the co
 | `OPERATOR_TOKEN` | a long random string; whoever holds it has the operator endpoints and the `/operator` page. **owner**: who holds it |
 | `ALERT_WEBHOOK_URL` | the chat webhook (Slack, Discord, Telegram) alerts are posted to as JSON; without it alerts are only stored. **owner**: which channel |
 | `JUPITER_API_KEY` | optional; without it prices and routes use the free `lite-api.jup.ag` host with its lower limits. **owner**: whether to pay for one |
+| `HELIUS_API_KEY`, `HELIUS_WEBHOOK_ID` | optional, together: the Helius API key and the id of the raw webhook from section 7. With both, the Indexer adds each graduated pool to the webhook as it indexes the Graduation, and the Quote Registry refresh adds every quote mint, through Helius's webhook API (`PUT /v0/webhooks/<id>`, `apps/api/src/helius.ts`); one without the other fails `/health`. Without them the webhook's addresses are edited by hand |
 
 After the deploy: `GET https://api.<domain>/health` must answer `{"ok":true}`; any configuration error is its message.
 
@@ -114,11 +130,11 @@ Addresses to watch (print them with `launchlabPdas(program)` from `packages/chai
 | --- | --- |
 | Our PlatformConfig | Every launch, curve trade, Graduation (migration) and `update_platform_config` on our platform names it. Watching the whole LaunchLab program instead would deliver every other platform's traffic. |
 | `launchlabPdas(program).creatorFeeVaultAuthority` (seed `creator_fee_vault_auth_seed`) | `claim_creator_fee` names no platform, so claims made without our site only reach us through this PDA, which every claim passes (CLAUDE.md traps). |
-| Each graduated pool | Pool trades after Graduation. The Indexer backfills a pool's history when it indexes the Graduation, but the webhook needs the pool's address added to keep receiving its swaps. Not automated yet: it takes a call to Helius's webhook API (`PUT /v0/webhooks/<id>` with a `HELIUS_API_KEY`) from the Indexer when a Graduation lands; until then add pools by hand or watch the CPMM program (high volume). |
+| Each graduated pool | Pool trades after Graduation. The Indexer backfills a pool's history when it indexes the Graduation, and with `HELIUS_API_KEY` and `HELIUS_WEBHOOK_ID` set (section 5) adds the pool's address to the webhook in the same delivery, before recording the Graduation, so a failed call makes Helius deliver the migration again. Without the secrets, add pools by hand or watch the CPMM program (high volume). |
 | The operations wallet | Optional: the jobs record their own transactions, but this catches anything sent from the wallet by hand. |
-| Each quote mint | Only once #11 ships, so Quote Risk Labels update within seconds of an issuer changing a mint; otherwise the five-minute refresh re-reads them. |
+| Each quote mint (all 571) | So Quote Risk Labels (#11) update within seconds of an issuer changing a mint: the Indexer re-reads a mint any delivered transaction marked writable. With the secrets set, every Quote Registry refresh adds the quote mints that are missing (one `GET`, and a `PUT` only when something is missing); without them, add the mints by hand, or the five-minute refresh re-reads them. |
 
-A Helius webhook holds up to 100,000 addresses. The `POST /v1/transactions/:signature` fast path means the web app never waits for the webhook, but every trade made elsewhere does.
+A Helius webhook holds up to 100,000 addresses. The `POST /v1/transactions/:signature` fast path means the web app never waits for the webhook, but every trade made elsewhere does. The API keeps the webhook's URL, type and auth header as it found them when it adds addresses, so create the webhook by hand first; `tests/backend/src/helius.test.ts` proves both additions against a stand-in for Helius's API in `tools/stack`. The `POST /v1/transactions/:signature` fast path means the web app never waits for the webhook, but every trade made elsewhere does.
 
 ## 8. Metadata hosting and the permanent domain
 
@@ -157,7 +173,7 @@ Run the same deploy against real devnet (`CLUSTER=devnet`, the devnet program id
 5. [ ] Postgres migrated; Hyperdrive configured (section 4).
 6. [ ] API deployed with the checklist's values and secrets; `/health` ok (section 5).
 7. [ ] Quote Registry refreshed until 571 Quote Assets each have a curve rule (section 6).
-8. [ ] Helius raw webhook on the PlatformConfig and the creator fee vault authority, with the secret (section 7).
+8. [ ] Helius raw webhook on the PlatformConfig and the creator fee vault authority, with the secret (section 7); `HELIUS_API_KEY` and `HELIUS_WEBHOOK_ID` set so pools and quote mints join it on their own (section 5).
 9. [ ] Domain and R2 in place; Arweave decided (section 8).
 10. [ ] Web deployed on the domain (section 9).
 11. [ ] Alerts arrive in the chosen channel: `POST /v1/operator/jobs/fee-collector?fail=simulated` raises `job_failed`, the next run resolves it.
