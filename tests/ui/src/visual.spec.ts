@@ -35,6 +35,9 @@ async function snap(page: Page, name: string, mask = dynamic) {
   // Check the settled page: hydrated, images in and web fonts swapped.
   await page.waitForLoadState("networkidle");
   await page.evaluate(() => document.fonts.ready);
+  // The page scrolls under a resting pointer below, and whatever passes beneath it is hovered: an open picker makes the
+  // hovered option active and scrolls its list to it. Park the pointer over the header first.
+  await page.mouse.move(0, 0);
   // A full-page capture doesn't scroll, so lazy images far below the fold (a long board) would load or not depending on
   // timing. Scroll past every one, as a reader would, and wait for them all; the page's own markup is left alone.
   await page.evaluate(async () => {
@@ -248,6 +251,9 @@ test("launch form, step by step", async ({ page, wallet }) => {
 
   await page.getByRole("button", { name: /^Pair with/ }).click();
   await expect(page.getByRole("listbox", { name: "Quote Assets" }).getByRole("option")).toHaveCount(6);
+  // A mask paints an element's whole box even where its scrolling list clips it, so the masks of rows scrolled out of
+  // the list would land on the form around it. The list's balances are hidden for this shot instead of masked.
+  await page.addStyleTag({ content: '[role="listbox"] .mono { visibility: hidden !important; }' });
   await snap(page, "launch-quote-picker.png");
   await page.keyboard.press("Escape");
 
