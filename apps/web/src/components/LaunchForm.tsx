@@ -13,6 +13,7 @@ import { COIN_DECIMALS, formatAmount, formatUnits, isSol, quoteTicker, SOL_DECIM
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
 import { LaunchOptions, supplyShare, useLaunchOptions } from "./LaunchOptions";
 import { PairMark } from "./PairMark";
+import { QuoteLabelList } from "./QuoteLabels";
 import { QuotePicker } from "./QuotePicker";
 import { WalletButton } from "./WalletButton";
 import styles from "./LaunchForm.module.css";
@@ -234,6 +235,15 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
             <dd>{platform.creatorFeeBps / 100}% of every trade until graduation, claimable on-chain</dd>
           </div>
         </dl>
+
+        {quote && quote.labels !== null && quote.labels.length > 0 && (
+          <details className={styles.labels}>
+            <summary>
+              {quoteTicker(quote)} has {quote.labels.length} {quote.labels.length === 1 ? "risk label" : "risk labels"}. They inform; none stops a launch.
+            </summary>
+            <QuoteLabelList quote={quote} />
+          </details>
+        )}
 
         {error && (
           <p className={styles.error} role="alert">

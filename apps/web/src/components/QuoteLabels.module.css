@@ -1,0 +1,67 @@
+.chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.caution {
+  background: var(--caution-bg);
+  color: var(--caution);
+}
+
+.info {
+  background: var(--plate);
+  color: var(--cobalt-strong);
+}
+
+.more {
+  background: var(--fog);
+  color: var(--ink-2);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.detail {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.source {
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+
+.empty {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--ink-2);
+}

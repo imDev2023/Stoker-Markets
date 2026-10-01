@@ -1,4 +1,5 @@
 import { bigint, doublePrecision, index, integer, jsonb, numeric, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
+import type { QuoteLabel } from "@launchpad/contract";
 
 /** One row per Launch on our platform, written by the Indexer from the launch transaction. */
 export const launches = pgTable(
@@ -174,6 +175,13 @@ export const quoteAssets = pgTable("quote_assets", {
   ruleMax: numeric("rule_max", { precision: 40, scale: 0 }),
   /** The GlobalConfig's `max_share_fee_rate` (1e6 denominator): the most a referred trade may pay its referrer; 0 on most. */
   maxShareFeeRate: bigint("max_share_fee_rate", { mode: "number" }).notNull().default(0),
+  /**
+   * Quote Risk Labels (#11), as the API shows them; null until the mint has been checked. `labelsSlot` is the slot the
+   * mint was read at, so a read from an older slot never overwrites a newer one.
+   */
+  labels: jsonb("labels").$type<QuoteLabel[]>(),
+  labelsSlot: bigint("labels_slot", { mode: "number" }),
+  labelsCheckedAt: timestamp("labels_checked_at", { withTimezone: true }),
   refreshedAt: timestamp("refreshed_at", { withTimezone: true }).notNull(),
 });
 

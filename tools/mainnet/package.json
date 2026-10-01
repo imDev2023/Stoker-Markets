@@ -1,0 +1,25 @@
+{
+  "name": "@launchpad/mainnet",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./platform-config": "./platform-config.ts",
+    "./lookup-table": "./lookup-table.ts"
+  },
+  "scripts": {
+    "platform-config": "tsx platform-config.ts",
+    "lookup-table": "tsx lookup-table.ts",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@launchpad/chain": "workspace:*",
+    "@launchpad/localnet": "workspace:*",
+    "@solana/web3.js": "^1.99.0",
+    "bn.js": "^5.2.2"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.2.0",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.23.15"
+  }
+}

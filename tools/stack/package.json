@@ -9,6 +9,7 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
+    "@launchpad/chain": "workspace:*",
     "@launchpad/db": "workspace:*",
     "@launchpad/localnet": "workspace:*",
     "@solana/web3.js": "^1.99.0",

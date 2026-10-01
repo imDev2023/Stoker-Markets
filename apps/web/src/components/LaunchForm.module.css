@@ -204,6 +204,23 @@
   color: var(--ink-2);
 }
 
+.labels {
+  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+
+.labels summary {
+  cursor: pointer;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.labels[open] summary {
+  margin-bottom: 12px;
+}
+
 .error {
   margin: 0;
   padding: 12px 14px;

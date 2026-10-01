@@ -20,6 +20,8 @@ export type RawTransaction = {
     signatures: string[];
     message: {
       accountKeys: string[];
+      /** Which of the static keys are signers and which read-only; the rest are writable. */
+      header?: { numRequiredSignatures: number; numReadonlySignedAccounts: number; numReadonlyUnsignedAccounts: number };
       instructions: RawInstruction[];
     };
   };
@@ -219,6 +221,22 @@ type SwapEventData = {
 };
 
 type TradeAccounts = Pick<TradeExecuted, "trader" | "platformConfig" | "pool" | "baseMint" | "quoteMint" | "shareFeeReceiver" | "referrer">;
+
+/**
+ * The accounts a confirmed transaction may have written: the static keys its header marks writable, and the writable
+ * ones it loaded through lookup tables. What only changes a mint's settings (an authority, a fee, a pause) names the
+ * mint writable, while a transfer or trade names it read-only, so this tells the Indexer which Quote Assets to re-read.
+ */
+export function writableAccounts(raw: RawTransaction): string[] {
+  const { accountKeys, header } = raw.transaction.message;
+  const loaded = raw.meta?.loadedAddresses?.writable ?? [];
+  if (!header) return [...accountKeys, ...loaded];
+  const signers = header.numRequiredSignatures;
+  const writable = accountKeys.filter((_, i) =>
+    i < signers ? i < signers - header.numReadonlySignedAccounts : i < accountKeys.length - header.numReadonlyUnsignedAccounts,
+  );
+  return [...writable, ...loaded];
+}
 
 /**
  * Turns one confirmed transaction into the LaunchLab and CPMM events we index, in execution order.

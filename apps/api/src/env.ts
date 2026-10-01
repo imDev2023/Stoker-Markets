@@ -3,6 +3,7 @@ import BN from "bn.js";
 import { launchlabPdas, type Cluster } from "@launchpad/chain";
 import type { Db } from "@launchpad/db";
 import type { ApiKeyContext } from "./apiKeys";
+import type { HeliusConfig } from "./helius";
 import { jupiterMarket, staticMarket, type QuoteMarket } from "./quotes/pricing";
 import { cpmmSolRoutes, jupiterSolRoutes, type SolRoutes } from "./solRoutes";
 
@@ -27,6 +28,11 @@ export type Bindings = {
   PRICE_SOURCE: "jupiter" | "static";
   /** JSON object of USD prices by mint, for the static price source. */
   QUOTE_PRICES_USD: string;
+  /**
+   * The static price source's token list, for Quote Risk Labels (#11): JSON of `{ "<mint>": { "verified": bool,
+   * "liquidityUsd": number } }`; a mint left out is unverified with unknown liquidity. Mainnet reads Jupiter's list.
+   */
+  QUOTE_TOKEN_LIST?: string;
   /** Optional; without it the free Jupiter host is used, for prices and for SOL routes. */
   JUPITER_API_KEY?: string;
   /**
@@ -45,6 +51,15 @@ export type Bindings = {
   GRADUATION_ALERT_AFTER_SECONDS: string;
   /** The Authorization header value Helius sends with every webhook delivery. */
   HELIUS_WEBHOOK_SECRET: string;
+  /**
+   * Optional, together: Helius's API key and the id of our raw webhook. With both, the Indexer adds each graduated
+   * pool's address to the webhook and the Quote Registry refresh adds every quote mint (`PUT /v0/webhooks/:id`), so
+   * their transactions keep arriving without anyone editing the webhook by hand; without them nothing is called.
+   */
+  HELIUS_API_KEY?: string;
+  HELIUS_WEBHOOK_ID?: string;
+  /** Where Helius's webhook API is; only tests point it at a stand-in. */
+  HELIUS_API_URL?: string;
   /** Where operator alerts are posted as JSON (a chat webhook, for example); alerts are only recorded and logged without it. */
   ALERT_WEBHOOK_URL?: string;
   /** Bearer token for the operator endpoints; they refuse every request without it. */
@@ -102,6 +117,7 @@ export type Config = {
   graduationTargetLamports: BN;
   graduationAlertAfterSeconds: number;
   alertWebhookUrl: string | null;
+  helius: HeliusConfig | null;
   mintKeySecret: string;
   lock: PublicKey;
   treasury: PublicKey | null;
@@ -223,6 +239,7 @@ export function config(env: Bindings): Config {
     graduationTargetLamports: new BN(env.GRADUATION_TARGET_LAMPORTS),
     graduationAlertAfterSeconds: seconds(env.GRADUATION_ALERT_AFTER_SECONDS, "GRADUATION_ALERT_AFTER_SECONDS"),
     alertWebhookUrl: env.ALERT_WEBHOOK_URL ? new URL(env.ALERT_WEBHOOK_URL).toString() : null,
+    helius: heliusConfig(env),
     mintKeySecret: mintKeySecret(env.MINT_KEY_SECRET),
     lock: key("LOCK_PROGRAM"),
     treasury,
@@ -238,6 +255,17 @@ export function config(env: Bindings): Config {
     feeChangeLeadSeconds: env.FEE_CHANGE_LEAD_SECONDS ? seconds(env.FEE_CHANGE_LEAD_SECONDS, "FEE_CHANGE_LEAD_SECONDS") : FEE_CHANGE_LEAD_DEFAULT_SECONDS,
     solRoute: solRouteConfig(env),
   };
+}
+
+const HELIUS_API_URL = "https://api.helius.xyz";
+
+/** Both secrets or neither: one without the other is a deploy mistake, not a webhook to leave alone. */
+function heliusConfig(env: Bindings): HeliusConfig | null {
+  const apiKey = env.HELIUS_API_KEY || "";
+  const webhookId = env.HELIUS_WEBHOOK_ID || "";
+  if (!apiKey && !webhookId) return null;
+  if (!apiKey || !webhookId) throw new Error("HELIUS_API_KEY and HELIUS_WEBHOOK_ID go together: set both to keep the webhook's addresses current, or neither");
+  return { apiUrl: (env.HELIUS_API_URL || HELIUS_API_URL).replace(/\/$/, ""), apiKey, webhookId };
 }
 
 function lamports(raw: string, name: string) {
@@ -267,7 +295,7 @@ export function solRoutes(env: Bindings, cfg: Config, connection: Connection): S
 
 export function quoteMarket(env: Bindings): QuoteMarket {
   if (env.PRICE_SOURCE === "jupiter") return jupiterMarket(env.JUPITER_API_KEY || undefined);
-  if (env.PRICE_SOURCE === "static") return staticMarket(env.QUOTE_PRICES_USD);
+  if (env.PRICE_SOURCE === "static") return staticMarket(env.QUOTE_PRICES_USD, env.QUOTE_TOKEN_LIST);
   throw new Error(`unknown PRICE_SOURCE: ${env.PRICE_SOURCE}`);
 }
 

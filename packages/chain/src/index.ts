@@ -6,7 +6,7 @@ export {
   sameConstraints, standardLaunchConstraints,
   type GraduationBand, type RewardTaxBps, type RuleConstraint,
 } from "./shape";
-export { listGlobalConfigs, readCurveRuleGroups, readCurveRules, readQuoteMints, type GlobalConfigInfo, type QuoteMintInfo } from "./quotes";
+export { listGlobalConfigs, readCurveRuleGroups, readCurveRules, readQuoteMints, type GlobalConfigInfo, type MintControls, type QuoteMintInfo } from "./quotes";
 export {
   createPlatformConfigIx, updatePlatformConfigIx, createCurveRuleIx, updateCurveRuleIx, initializeV2Ix, initializeWithToken2022Ix, claimCreatorFeeIx,
   type InitializeParams, type PlatformSettings, type PlatformConfigUpdate, type PlatformConfigInfo, type ClaimCreatorFeeParams,
@@ -51,7 +51,7 @@ export {
   type RoutedBuyRequest, type RoutedMarket, type SolSwap, type SolSwapBuilder,
 } from "./route";
 export {
-  decodeTransaction,
+  decodeTransaction, writableAccounts,
   type RawTransaction, type ChainEvent, type LaunchCreated, type TradeExecuted, type CreatorFeeClaimed, type Graduated,
   type PoolSwapExecuted, type PlatformConfigUpdated,
 } from "./decode";

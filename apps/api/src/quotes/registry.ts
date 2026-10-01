@@ -7,7 +7,9 @@ import { quoteAssets, type Db } from "@launchpad/db";
 import type { Config } from "../env";
 import { divide, formatDecimal, graduationTargetRaw, type Decimal, type QuoteMarket } from "./pricing";
 import { quoteCategory } from "./categories";
+import { listLabels, mintLabels, sortLabels, tickerOf } from "./labels";
 import { bandOf, ruleUpdate } from "./rules";
+import { watchAddresses } from "../helius";
 import { refreshPlatformFees } from "../routes/operator";
 
 export type RefreshDeps = { db: Db; cfg: Config; market: QuoteMarket; operations: Keypair };
@@ -25,7 +27,7 @@ export async function refreshQuoteRegistry({ db, cfg, market, operations }: Refr
   // The Platform Fee and Creator Fee as the chain has them, for every page that shows them.
   await refreshPlatformFees(db, cfg, connection);
   const configs = await listGlobalConfigs(connection, cfg.launchlab);
-  const mints = await readQuoteMints(connection, configs.map((c) => c.quoteMint));
+  const { slot: mintsSlot, mints } = await readQuoteMints(connection, configs.map((c) => c.quoteMint));
   const quotes = configs.flatMap((config) => {
     const mint = mints.get(config.quoteMint.toBase58());
     return mint ? [{ config, mint, isSol: config.quoteMint.equals(WSOL_MINT) }] : [];
@@ -70,10 +72,13 @@ export async function refreshQuoteRegistry({ db, cfg, market, operations }: Refr
 
   const known = new Map((await db.select({ mint: quoteAssets.mint, logo: quoteAssets.logo }).from(quoteAssets)).map((r) => [r.mint, r.logo]));
   const logos = await market.logos(priced.map((q) => q.mint.mint.toBase58()).filter((m) => !known.get(m)));
+  // Quote Risk Labels (#11): what each mint's authorities and extensions say, and what the token list says.
+  const listings = await market.listings(priced.map((q) => q.mint.mint.toBase58()));
 
   const rows = priced.map((q) => {
     const mint = q.mint.mint.toBase58();
     const band = bandOf(after.get(q.config.address.toBase58()) ?? null);
+    const ticker = tickerOf(q.mint);
     return {
       mint,
       globalConfig: q.config.address.toBase58(),
@@ -90,17 +95,31 @@ export async function refreshQuoteRegistry({ db, cfg, market, operations }: Refr
       ruleMin: band?.min.toString() ?? null,
       ruleMax: band?.max.toString() ?? null,
       maxShareFeeRate: q.config.maxShareFeeRate.toNumber(),
+      labels: sortLabels([...mintLabels(q.mint, ticker), ...listLabels(listings.get(mint), ticker, market.listName)]),
+      labelsSlot: mintsSlot,
+      labelsCheckedAt: pricedAt,
       refreshedAt: pricedAt,
     };
   });
   if (rows.length) {
-    const columns = Object.entries(getTableColumns(quoteAssets)).filter(([key]) => key !== "mint");
+    const labelColumns = new Set(["labels", "labelsSlot", "labelsCheckedAt"]);
+    const columns = Object.entries(getTableColumns(quoteAssets)).filter(([key]) => key !== "mint" && !labelColumns.has(key));
+    // The Indexer may have re-read a mint at a later slot than this refresh did; the newer read wins.
+    const newer = sql`coalesce(${quoteAssets.labelsSlot}, 0) <= excluded.labels_slot`;
     await db.insert(quoteAssets).values(rows).onConflictDoUpdate({
       target: quoteAssets.mint,
-      set: Object.fromEntries(columns.map(([key, column]) => [key, sql.raw(`excluded.${column.name}`)])),
+      set: {
+        ...Object.fromEntries(columns.map(([key, column]) => [key, sql.raw(`excluded.${column.name}`)])),
+        labels: sql`case when ${newer} then excluded.labels else ${quoteAssets.labels} end`,
+        labelsSlot: sql`case when ${newer} then excluded.labels_slot else ${quoteAssets.labelsSlot} end`,
+        labelsCheckedAt: sql`case when ${newer} then excluded.labels_checked_at else ${quoteAssets.labelsCheckedAt} end`,
+      },
     });
   }
-  return { quoteAssets: rows.length, priced: rows.filter((r) => r.priceSol).length, ruleWrites: Math.min(writes.length, MAX_RULE_WRITES) };
+  // Every quote mint joins the Helius webhook, where one is configured, so Quote Risk Labels follow an issuer's change
+  // within seconds rather than at the next refresh (runbook, section 7).
+  const heliusWatch = await watchAddresses(cfg, rows.map((r) => r.mint));
+  return { quoteAssets: rows.length, priced: rows.filter((r) => r.priceSol).length, ruleWrites: Math.min(writes.length, MAX_RULE_WRITES), heliusWatch };
 }
 
 const TX_MAX_BYTES = 1232;
