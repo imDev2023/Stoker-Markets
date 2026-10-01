@@ -1,6 +1,6 @@
 # stonk-fun-solana
 
-An "open + trustless" asset-paired Solana launchpad on Raydium LaunchLab (working name "Launchpad"), built after researching StonkFun.
+An "open + trustless" asset-paired Solana launchpad on Raydium LaunchLab named Stoker (ticker STOKER, domain `stoker.markets`; the packages keep their `@launchpad/` scope), built after researching StonkFun.
 No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare backend and a Next.js app.
 
 ## Read first
