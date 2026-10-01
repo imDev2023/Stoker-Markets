@@ -22,6 +22,12 @@ async function openConnected(page: Page, mint: string) {
   await expect(panel(page).getByRole("button", { name: "Review buy" })).toBeVisible();
 }
 
+/** Waits for the panel to switch to SOL: it only does so once the balances load, and never under an amount already typed. */
+async function openConnectedPayingSol(page: Page, mint: string) {
+  await openConnected(page, mint);
+  await expect(payWith(page).getByRole("button", { name: "SOL" })).toHaveAttribute("aria-pressed", "true");
+}
+
 async function reviewBuy(page: Page) {
   const prepared = page.waitForResponse((r) => r.url().endsWith("/v1/trades/prepare"));
   await panel(page).getByRole("button", { name: "Review buy" }).click();
@@ -92,7 +98,7 @@ test("a trader holding only SOL buys a JTO-paired coin, and ends up with the coi
 
 test("declining in the wallet swaps and buys nothing, and says so", async ({ page, wallet }) => {
   const mint = await jtoCoin("SOLN");
-  await openConnected(page, mint);
+  await openConnectedPayingSol(page, mint);
   await panel(page).getByLabel("You pay").fill("0.1");
   await expect(panel(page).getByText("You pay about")).toBeVisible();
   await reviewBuy(page);
@@ -109,7 +115,7 @@ test("declining in the wallet swaps and buys nothing, and says so", async ({ pag
 
 test("SOL getting dearer than the slippage allows before signing swaps nothing and says so", async ({ page, wallet }) => {
   const mint = await jtoCoin("SOLS");
-  await openConnected(page, mint);
+  await openConnectedPayingSol(page, mint);
   await panel(page).getByLabel("You pay").fill("0.1");
   await expect(panel(page).getByText("You pay about")).toBeVisible();
   await reviewBuy(page);
@@ -129,7 +135,7 @@ test("SOL getting dearer than the slippage allows before signing swaps nothing a
 
 test("the coin moving more than the slippage allows before signing buys nothing and says so", async ({ page, wallet }) => {
   const mint = await jtoCoin("SOLM");
-  await openConnected(page, mint);
+  await openConnectedPayingSol(page, mint);
   await panel(page).getByLabel("You pay").fill("0.1");
   await expect(panel(page).getByText("You pay about")).toBeVisible();
   await reviewBuy(page);
