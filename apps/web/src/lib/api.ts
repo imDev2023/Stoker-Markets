@@ -1,9 +1,9 @@
 import {
-  AirdropStatus, ApiError, BurnsPage, CandleList, CoinRewards, CreatorFeeClaimList, CreatorFees, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote,
-  HolderList, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PreparedAirdrop,
+  AirdropStatus, ApiError, ApiKeyList, BurnsPage, CandleList, CoinRewards, CreatorFeeClaimList, CreatorFees, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote,
+  HolderList, IssuedApiKey, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PreparedAirdrop,
   PreparedCreatorFeeClaim, PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, TradeList,
   TradeQuote, WalletRewards,
-  type AnnounceFeeChange, type CandleInterval, type CurveStatus, type LaunchSort, type PrepareCreatorFeeClaimRequest, type PrepareTradeRequest,
+  type AnnounceFeeChange, type CandleInterval, type CreateApiKey, type CurveStatus, type LaunchSort, type PrepareCreatorFeeClaimRequest, type PrepareTradeRequest,
   type QuoteCategory, type TradeQuoteQuery,
 } from "@launchpad/contract";
 
@@ -181,8 +181,8 @@ export async function listAnnouncements() {
 }
 
 // The operator view, behind the operator token, which the operator's browser keeps for the session only.
-const operator = (token: string, body?: unknown) => ({
-  method: body === undefined ? "GET" : "POST",
+const operator = (token: string, body?: unknown, method = body === undefined ? "GET" : "POST") => ({
+  method,
   headers: { authorization: `Bearer ${token}`, ...(body === undefined ? {} : { "content-type": "application/json" }) },
   body: body === undefined ? undefined : JSON.stringify(body),
   cache: "no-store" as const,
@@ -202,6 +202,20 @@ export async function announceFeeChange(token: string, body: AnnounceFeeChange) 
 
 export async function prepareFeeChange(token: string, id: string) {
   return read(await fetch(`${API_URL}/v1/operator/fees/prepare`, operator(token, { id })), PreparedFeeChange);
+}
+
+/** API keys (#21): the operator issues, lists and revokes them; a key is answered once, when issued. */
+export async function listApiKeys(token: string) {
+  return read(await fetch(`${API_URL}/v1/operator/api-keys`, operator(token)), ApiKeyList);
+}
+
+export async function createApiKey(token: string, body: CreateApiKey) {
+  return read(await fetch(`${API_URL}/v1/operator/api-keys`, operator(token, body)), IssuedApiKey);
+}
+
+export async function revokeApiKey(token: string, id: string) {
+  const res = await fetch(`${API_URL}/v1/operator/api-keys/${id}`, operator(token, undefined, "DELETE"));
+  if (!res.ok) throw new ApiRequestError(res.status === 401 ? "unauthorized" : `revoking the key failed (${res.status})`, res.status);
 }
 
 export async function runOperatorJob(token: string, job: "quote-registry" | "fee-collector" | "reward-rounds" | "burn") {

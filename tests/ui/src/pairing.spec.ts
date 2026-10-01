@@ -42,10 +42,14 @@ test("the Quote Asset picker finds assets by ticker, name or mint, and shows unp
   // SOL first, then what can be launched against, then the rest, each with what it must raise.
   await picker(page).click();
   await expect(search(page)).toBeFocused();
-  await expect(options(page)).toHaveCount(5);
+  await expect(options(page)).toHaveCount(6);
   await expect(options(page).first()).toContainText("SOL");
   await expect(options(page).filter({ hasText: "USDC" })).toContainText("150 USDC");
   await expect(options(page).filter({ hasText: "JTO" })).toContainText("60 JTO");
+  // The Token-2022 quote with a 1% transfer fee is launchable like any other, at 150 USD of it (1 USD each).
+  const taxq = options(page).filter({ hasText: "TAXQ" });
+  await expect(taxq).not.toHaveAttribute("aria-disabled", "true");
+  await expect(taxq).toContainText("150 TAXQ");
   const bullwhale = options(page).filter({ hasText: "BULLWHALE" });
   await expect(bullwhale).toHaveAttribute("aria-disabled", "true");
   await expect(bullwhale).toContainText("No reliable price for BULLWHALE yet, so its Graduation Target can't be set.");
