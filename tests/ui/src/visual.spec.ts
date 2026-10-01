@@ -247,7 +247,7 @@ test("launch form, step by step", async ({ page, wallet }) => {
   await snap(page, "launch-filled.png");
 
   await page.getByRole("button", { name: /^Pair with/ }).click();
-  await expect(page.getByRole("listbox", { name: "Quote Assets" }).getByRole("option")).toHaveCount(5);
+  await expect(page.getByRole("listbox", { name: "Quote Assets" }).getByRole("option")).toHaveCount(6);
   await snap(page, "launch-quote-picker.png");
   await page.keyboard.press("Escape");
 

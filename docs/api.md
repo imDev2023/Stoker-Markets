@@ -43,7 +43,7 @@ A trade prepared with `referrer` pays that wallet LaunchLab's share fee, on-chai
 
 Reads are open. A key identifies an integrator, meters its usage and bounds it: send it in `x-api-key` on every request. Past the key's per-minute limit the API answers 429 with `retry-after`; an unknown or revoked key is refused with 401. `GET /keys/me` shows the key's limit and its last hour of usage by minute, and stays reachable past the limit.
 
-The operator issues keys: `POST /operator/api-keys` (`name`, `rateLimitPerMinute`, 60 by default) answers with the key once and never again; `GET /operator/api-keys` lists them without the key; `DELETE /operator/api-keys/:id` revokes one.
+The operator issues keys, from the `/operator` page or directly: `POST /operator/api-keys` (`name`, `rateLimitPerMinute`, 60 by default) answers with the key once and never again; `GET /operator/api-keys` lists them without the key; `DELETE /operator/api-keys/:id` revokes one.
 
 ## The operator's endpoints
 
@@ -54,7 +54,7 @@ Behind `Authorization: Bearer <OPERATOR_TOKEN>`.
 | `GET /operator/overview` | Launches by status, rounds, burns, the latest run of each job, open alerts, the fees on-chain. |
 | `GET /operator/alerts` | Alerts: a stuck Graduation, a Reward Tax left unlocked, a failed job, a stalled Reward Round; each resolved when its cause goes away. |
 | `GET /operator/jobs?job=` | Job runs and unsettled job transactions. |
-| `POST /operator/jobs/{fee-collector,reward-rounds,burn}` | Runs a job now; `?fail=simulated` makes it fail on purpose to see the alert path. |
+| `POST /operator/jobs/{quote-registry,fee-collector,reward-rounds,burn}` | Runs a job now; `?fail=simulated` makes it fail on purpose to see the alert path. |
 | `POST /operator/rewards/rules` | Announces a Reward Round rules change, effective no sooner than `REWARD_RULES_LEAD_SECONDS` ahead. |
 | `PUT /operator/platform-token` | Names the Platform Token the Burn buys. |
 | `POST /operator/fees/announce`, `POST /operator/fees/prepare` | Announces a Platform Fee or Creator Fee change, effective no sooner than `FEE_CHANGE_LEAD_SECONDS` ahead (a day on mainnet), and once due prepares the `update_platform_config` transaction for the cold admin key (ADR 0004). The Indexer marks the announcement applied when the change lands. |
