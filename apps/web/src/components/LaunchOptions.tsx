@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AIRDROP_MAX_RECIPIENTS, REWARD_TAX_RATES, type RewardTaxBps, type TradeQuote } from "@launchpad/contract";
-import { getLaunchQuote } from "@/lib/api";
+import { getLaunchPermissions, getLaunchQuote } from "@/lib/api";
 import { parseAirdropList } from "@/lib/airdrop";
 import { COIN_DECIMALS, COIN_SUPPLY, formatUnits, parseUnits } from "@/lib/format";
 import styles from "./LaunchOptions.module.css";
@@ -27,8 +27,10 @@ export function supplyShare(raw: bigint) {
 export function useLaunchOptions(quote: OptionsQuote | null, creator: string | null) {
   const [rewardTax, setRewardTax] = useState<RewardTaxBps | null>(null);
   const [firstBuyText, setFirstBuyText] = useState("");
-  const [airdropOn, setAirdropOn] = useState(false);
+  const [airdropChosen, setAirdropOn] = useState(false);
   const [airdropText, setAirdropText] = useState("");
+  // An airdrop at launch is only offered to wallets the operator has allowed; until the answer is in, to nobody.
+  const [airdropAllowedFor, setAirdropAllowedFor] = useState<string | null>(null);
   const [firstBuyQuote, setFirstBuyQuote] = useState<TradeQuote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
 
@@ -36,6 +38,17 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
   const firstBuy = quote ? parseUnits(firstBuyText, quote.decimals) : null;
   const firstBuyInvalid = quote !== null && firstBuyText.trim() !== "" && firstBuy === null;
   const airdrop = useMemo(() => parseAirdropList(airdropText, COIN_DECIMALS, creator), [airdropText, creator]);
+
+  useEffect(() => {
+    if (creator === null) return;
+    const abort = new AbortController();
+    getLaunchPermissions(creator, abort.signal)
+      .then((p) => setAirdropAllowedFor(p.airdrop ? creator : null))
+      .catch(() => undefined);
+    return () => abort.abort();
+  }, [creator]);
+  const airdropAllowed = creator !== null && airdropAllowedFor === creator;
+  const airdropOn = airdropAllowed && airdropChosen;
 
   // A live quote while the Creator types, so they see the coins they get before preparing anything. On a Reward Launch
   // the Reward Tax comes off the first buy's coins too, so the quote follows the chosen rate.
@@ -81,7 +94,7 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
     quote,
     rewardTax, setRewardTax,
     firstBuyText, setFirstBuyText, firstBuyInvalid, firstBuyQuote, firstBuyProblem,
-    airdropOn, setAirdropOn, airdropText, setAirdropText, airdrop, airdropProblem, airdropMissing, bought,
+    airdropAllowed, airdropOn, setAirdropOn, airdropText, setAirdropText, airdrop, airdropProblem, airdropMissing, bought,
     /** What stops the launch from being prepared, if anything. */
     problem: firstBuyProblem ?? airdropProblem ?? airdropMissing,
     /** The form fields these options add to the prepare request. */
@@ -157,52 +170,54 @@ export function LaunchOptions({ options: o, coin }: { options: LaunchOptionsStat
         </p>
       </div>
 
-      <div className={styles.airdrop}>
-        <label className={styles.toggle}>
-          <input type="checkbox" checked={o.airdropOn} onChange={(e) => o.setAirdropOn(e.target.checked)} />
-          <span>Airdrop part of your first buy to other wallets</span>
-        </label>
-        {o.airdropOn && (
-          <div className={styles.field}>
-            <label htmlFor="airdrop-list">Wallets and amounts</label>
-            <textarea
-              id="airdrop-list"
-              className={`${styles.list} ${o.airdropProblem ? styles.invalid : ""}`}
-              // One wallet per line; on a phone its amount wraps under the address, which the type is sized to keep whole.
-              // The box grows with the list up to a point, then scrolls (by wrapped lines where CSS `field-sizing` works).
-              rows={Math.min(Math.max(o.airdropText.split("\n").length, LIST_MIN_ROWS), LIST_MAX_ROWS)}
-              spellCheck={false}
-              autoComplete="off"
-              placeholder={"Wallet address, coins\nOne wallet per line"}
-              value={o.airdropText}
-              onChange={(e) => o.setAirdropText(e.target.value)}
-              aria-invalid={Boolean(o.airdropProblem)}
-              aria-describedby="airdrop-hint"
-            />
-            <p id="airdrop-hint" className={o.airdropProblem ? styles.hintError : styles.hint}>
-              {o.airdropProblem ? (
-                o.airdropProblem
-              ) : o.airdrop.recipients.length === 0 ? (
-                `One wallet per line: its address, then the coins it gets. Up to ${AIRDROP_MAX_RECIPIENTS} wallets.`
-              ) : o.airdropMissing ? (
-                o.airdropMissing
-              ) : (
-                <>
-                  {o.airdrop.recipients.length} {o.airdrop.recipients.length === 1 ? "wallet gets" : "wallets get"}{" "}
-                  <span className="mono">{formatUnits(o.airdrop.total.toString(), COIN_DECIMALS, COIN_DECIMALS)}</span> {coinLabel},{" "}
-                  {supplyShare(o.airdrop.total)} of the supply
-                  {kept !== null && (
-                    <>
-                      . You keep <span className="mono">{formatUnits(kept.toString(), COIN_DECIMALS, 0)}</span>
-                    </>
-                  )}
-                  . Sent from your wallet right after the launch.
-                </>
-              )}
-            </p>
-          </div>
-        )}
-      </div>
+      {o.airdropAllowed && (
+        <div className={styles.airdrop}>
+          <label className={styles.toggle}>
+            <input type="checkbox" checked={o.airdropOn} onChange={(e) => o.setAirdropOn(e.target.checked)} />
+            <span>Airdrop part of your first buy to other wallets</span>
+          </label>
+          {o.airdropOn && (
+            <div className={styles.field}>
+              <label htmlFor="airdrop-list">Wallets and amounts</label>
+              <textarea
+                id="airdrop-list"
+                className={`${styles.list} ${o.airdropProblem ? styles.invalid : ""}`}
+                // One wallet per line; on a phone its amount wraps under the address, which the type is sized to keep whole.
+                // The box grows with the list up to a point, then scrolls (by wrapped lines where CSS `field-sizing` works).
+                rows={Math.min(Math.max(o.airdropText.split("\n").length, LIST_MIN_ROWS), LIST_MAX_ROWS)}
+                spellCheck={false}
+                autoComplete="off"
+                placeholder={"Wallet address, coins\nOne wallet per line"}
+                value={o.airdropText}
+                onChange={(e) => o.setAirdropText(e.target.value)}
+                aria-invalid={Boolean(o.airdropProblem)}
+                aria-describedby="airdrop-hint"
+              />
+              <p id="airdrop-hint" className={o.airdropProblem ? styles.hintError : styles.hint}>
+                {o.airdropProblem ? (
+                  o.airdropProblem
+                ) : o.airdrop.recipients.length === 0 ? (
+                  `One wallet per line: its address, then the coins it gets. Up to ${AIRDROP_MAX_RECIPIENTS} wallets.`
+                ) : o.airdropMissing ? (
+                  o.airdropMissing
+                ) : (
+                  <>
+                    {o.airdrop.recipients.length} {o.airdrop.recipients.length === 1 ? "wallet gets" : "wallets get"}{" "}
+                    <span className="mono">{formatUnits(o.airdrop.total.toString(), COIN_DECIMALS, COIN_DECIMALS)}</span> {coinLabel},{" "}
+                    {supplyShare(o.airdrop.total)} of the supply
+                    {kept !== null && (
+                      <>
+                        . You keep <span className="mono">{formatUnits(kept.toString(), COIN_DECIMALS, 0)}</span>
+                      </>
+                    )}
+                    . Sent from your wallet right after the launch.
+                  </>
+                )}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

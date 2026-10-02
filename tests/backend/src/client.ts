@@ -41,11 +41,24 @@ export type LaunchForm = {
   rewardTax?: string;
   /** Sent as the JSON text the multipart form carries; a string is sent as it is. */
   airdrop?: { wallet: string; amount: string }[] | string;
+  /** Leaves the Creator off the operator's airdrop list, to see the API refuse; otherwise `prepare` allows a Creator who sends an airdrop. */
+  unlisted?: boolean;
 };
+
+/** Operator: allows a Creator wallet an airdrop at launch; nobody may have one until then. */
+export async function allowAirdrops(wallet: string) {
+  const res = await fetch(`${env().apiUrl}/v1/operator/airdrop-creators`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${env().operatorToken}`, "content-type": "application/json" },
+    body: JSON.stringify({ wallet }),
+  });
+  if (!res.ok) throw new Error(`allowing ${wallet} an airdrop failed: ${res.status} ${await res.text()}`);
+}
 
 export async function prepare(form: LaunchForm) {
   const body = new FormData();
-  const { airdrop, ...rest } = form;
+  const { airdrop, unlisted, ...rest } = form;
+  if (airdrop !== undefined && !unlisted) await allowAirdrops(form.creator);
   const fields = { name: "Tracer", symbol: "TRCR", description: "A tracer bullet", quoteMint: WSOL_MINT.toBase58(), ...rest };
   for (const [k, v] of Object.entries(fields)) if (typeof v === "string") body.set(k, v);
   if (airdrop !== undefined) body.set("airdrop", typeof airdrop === "string" ? airdrop : JSON.stringify(airdrop));

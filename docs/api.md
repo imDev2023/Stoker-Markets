@@ -18,6 +18,7 @@ Base URL: `PUBLIC_API_URL` (locally `http://localhost:8791`). Everything below i
 | `GET /launches/:mint/airdrop` | An Airdrop's recipients and which are paid. |
 | `GET /launches/:mint/rewards`, `GET /rewards/rules`, `GET /rewards/rounds/:id`, `GET /wallets/:address/rewards` | Holder Rewards: tax waiting, the rules in force and announced, every round, a wallet's payouts. |
 | `GET /creators/:address/fees`, `/claims` | A Creator's fee vaults and claims. |
+| `GET /creators/:address/launch-permissions` | What the launch form offers this wallet: `airdrop` is true only for wallets the operator has allowed. |
 | `GET /revenue`, `GET /ledger` | Platform revenue per asset and per day, and the Ledger page by page (`kind`, `limit`, `before`). |
 | `GET /burns` | Burn and Flywheel: shares, rule, budgets, picks, every buy and burn. |
 | `GET /announcements` | Every announced Platform Fee or Creator Fee change, with the transaction that applied it once it has. |
@@ -28,7 +29,7 @@ Each returns an unsigned transaction (base64) for the user's wallet to sign and 
 
 | Endpoint | What it prepares |
 | --- | --- |
-| `POST /launches/prepare` (multipart) | A launch: `creator`, `quoteMint`, `name`, `symbol`, `description`, `website`, `x`, `telegram`, `image`, and the launch modes `firstBuy`, `airdrop`, `rewardTax`. The mint address is fixed at first prepare; `POST /launches/:mint/prepare` rebuilds the same launch for a retry. |
+| `POST /launches/prepare` (multipart) | A launch: `creator`, `quoteMint`, `name`, `symbol`, `description`, `website`, `x`, `telegram`, `image`, and the launch modes `firstBuy`, `airdrop`, `rewardTax`. An `airdrop` from a wallet the operator has not allowed is refused with 403. The mint address is fixed at first prepare; `POST /launches/:mint/prepare` rebuilds the same launch for a retry. |
 | `GET /launch-quote` | What a First Buy would get before anything is prepared. |
 | `POST /launches/:mint/airdrop/prepare` | The Creator's airdrop payments, however many transactions they take. |
 | `POST /trades/prepare` | A buy or sell, on the curve or in the pool: `mint`, `trader`, `side`, `amount`, `slippageBps`, `payWith`, `referrer`. |
@@ -57,5 +58,6 @@ Behind `Authorization: Bearer <OPERATOR_TOKEN>`.
 | `POST /operator/jobs/{quote-registry,fee-collector,reward-rounds,burn}` | Runs a job now; `?fail=simulated` makes it fail on purpose to see the alert path. |
 | `POST /operator/rewards/rules` | Announces a Reward Round rules change, effective no sooner than `REWARD_RULES_LEAD_SECONDS` ahead. |
 | `PUT /operator/platform-token` | Names the Platform Token the Burn buys. |
+| `GET /operator/airdrop-creators`, `POST` (`wallet`), `DELETE /operator/airdrop-creators/:wallet` | The Creator wallets allowed an airdrop at launch. The list starts empty, so nobody is offered one until the operator names a wallet. |
 | `POST /operator/fees/announce`, `POST /operator/fees/prepare` | Announces a Platform Fee or Creator Fee change, effective no sooner than `FEE_CHANGE_LEAD_SECONDS` ahead (a day on mainnet), and once due prepares the `update_platform_config` transaction for the cold admin key (ADR 0004). The Indexer marks the announcement applied when the change lands. |
 | `POST /operator/api-keys` and the rest | See API keys. |

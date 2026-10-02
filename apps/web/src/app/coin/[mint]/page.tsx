@@ -91,7 +91,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
           <div>
             <dt>Creator fee</dt>
             <dd>
-              {platform.creatorFeeBps / 100}% of every trade until graduation
+              ~{platform.creatorFeeBps / 100}% of every trade until graduation
               <span className={styles.verified}>Paid by the chain</span>
               <Link href={`/creator/${launch.creator}`} className={styles.factLink}>See what the Creator earned and claimed</Link>
             </dd>

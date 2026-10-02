@@ -232,7 +232,7 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
           </div>
           <div>
             <dt>You earn</dt>
-            <dd>{platform.creatorFeeBps / 100}% of every trade until graduation, claimable on-chain</dd>
+            <dd>~{platform.creatorFeeBps / 100}% of every trade until graduation, claimable on-chain</dd>
           </div>
         </dl>
 
@@ -291,6 +291,11 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
             <WalletButton variant="inline" />
           </div>
         )}
+
+        <p className={styles.disclaimer}>
+          What you earn is approximate and depends on trading that may never happen. A coin can lose all of its value, and nothing
+          here is investment advice.
+        </p>
       </form>
 
       <aside className={styles.preview} aria-label="Preview">

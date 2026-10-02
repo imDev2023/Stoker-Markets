@@ -3,7 +3,7 @@
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import type { Page } from "@playwright/test";
 import { PreparedAirdrop, PreparedLaunch } from "@launchpad/contract";
-import { coinBalance, drain, expect, fund, fundQuote, launchViaApi, listLaunches, sol, test } from "./fixtures";
+import { allowAirdrops, coinBalance, drain, expect, fund, fundQuote, launchViaApi, listLaunches, sol, test } from "./fixtures";
 import { acceptDisclaimer, connectWallet, fillForm, fillOptions, formAlert, notConfirmed, review } from "./launchPage";
 import { connectTestWallet } from "./wallet";
 
@@ -24,7 +24,20 @@ async function launchesNamed(name: string) {
   return (await listLaunches()).filter((l) => l.name === name);
 }
 
+const airdropOption = (page: Page) => page.getByRole("checkbox", { name: "Airdrop part of your first buy to other wallets" });
+
+test("the form offers an airdrop only to a wallet the operator has allowed", async ({ page, wallet }) => {
+  const answered = page.waitForResponse((r) => /\/launch-permissions$/.test(r.url()));
+  await page.goto("/launch");
+  await connectWallet(page);
+  expect(await (await answered).json()).toEqual({ airdrop: false });
+  await expect(page.getByLabel(/^First buy/)).toBeVisible();
+  await expect(airdropOption(page)).toHaveCount(0);
+  expect(wallet.requests).toHaveLength(0);
+});
+
 test("a Creator launches with a first buy and an airdrop, then sends the airdrop from the coin page", async ({ page, wallet }) => {
+  await allowAirdrops(wallet.keypair.publicKey);
   const recipients = wallets(3);
   await page.goto("/launch");
   await connectWallet(page);
@@ -113,6 +126,7 @@ test("a First Buy in USDC is quoted, reviewed and paid in USDC", async ({ page, 
 });
 
 test("launch options explain what is wrong before anything is prepared", async ({ page, wallet }) => {
+  await allowAirdrops(wallet.keypair.publicKey);
   await page.goto("/launch");
   await connectWallet(page);
   await fillForm(page, { name: "Wrong Lists", symbol: "WRONG" });

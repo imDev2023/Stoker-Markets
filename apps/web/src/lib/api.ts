@@ -1,5 +1,5 @@
 import {
-  AirdropStatus, ApiError, ApiKeyList, BurnsPage, CandleList, CoinRewards, CreatorFeeClaimList, CreatorFees, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote,
+  AirdropStatus, ApiError, ApiKeyList, BurnsPage, CandleList, CoinRewards, CreatorFeeClaimList, CreatorFees, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
   HolderList, IssuedApiKey, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PreparedAirdrop,
   PreparedCreatorFeeClaim, PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAsset, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, TradeList,
   TradeQuote, WalletRewards,
@@ -85,6 +85,11 @@ export async function retryLaunch(mint: string) {
 export async function getLaunchQuote(quoteMint: string, firstBuy: string, rewardTax: number | null, signal?: AbortSignal) {
   const query = new URLSearchParams({ quoteMint, firstBuy, ...(rewardTax ? { rewardTax: String(rewardTax) } : {}) });
   return read(await fetch(`${API_URL}/v1/launch-quote?${query}`, { cache: "no-store", signal }), FirstBuyQuote);
+}
+
+/** What the launch form offers this Creator wallet. */
+export async function getLaunchPermissions(wallet: string, signal?: AbortSignal) {
+  return read(await fetch(`${API_URL}/v1/creators/${encodeURIComponent(wallet)}/launch-permissions`, { cache: "no-store", signal }), LaunchPermissions);
 }
 
 /** A coin's airdrop and which wallets it has paid; null if the coin has none. */

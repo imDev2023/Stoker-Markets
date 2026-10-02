@@ -4,7 +4,9 @@ import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import BN from "bn.js";
 import { launchlabCoder, launchlabPdas, standardLaunchConstraints, updateCurveRuleIx, WSOL_MINT } from "@launchpad/chain";
 import { LOCAL_QUOTES, localnetKeys, mintLocalQuote, send } from "@launchpad/localnet";
-import { AirdropStatus, CreatorFees, FirstBuyQuote, HolderList, PreparedAirdrop, PreparedLaunch, TradeList } from "@launchpad/contract";
+import {
+  AirdropCreators, AirdropStatus, CreatorFees, FirstBuyQuote, HolderList, LaunchPermissions, PreparedAirdrop, PreparedLaunch, TradeList,
+} from "@launchpad/contract";
 import {
   connection, deliverWebhook, env, fundedWallet, getLaunch, launch, listLaunches, prepare, refreshQuoteRegistry, signAndSend, confirmOutcome,
 } from "./client";
@@ -305,3 +307,49 @@ describe("an airdrop", () => {
     for (const [label, form] of cases) expect((await prepare(form)).status, label).toBe(400);
   });
 });
+
+describe("who may airdrop at launch", () => {
+  const operator = (token = env().operatorToken) => ({ authorization: `Bearer ${token}`, "content-type": "application/json" });
+  const permissions = async (wallet: string) => LaunchPermissions.parse(await (await api(`/v1/creators/${wallet}/launch-permissions`)).json());
+  const REFUSAL = { error: "Airdrops at launch aren't open to this wallet. Launch without one." };
+
+  it("is nobody until the operator allows the Creator's wallet, and nobody again once it is removed", async () => {
+    const creator = (await fundedWallet()).publicKey.toBase58();
+    const firstBuy = SOL(0.1).toString();
+    const withAirdrop = { creator, firstBuy, airdrop: [{ wallet: wallets(1)[0]!.toBase58(), amount: "1000000" }], unlisted: true };
+
+    expect(await permissions(creator)).toEqual({ airdrop: false });
+    const refused = await prepare(withAirdrop);
+    expect(refused.status).toBe(403);
+    expect(await refused.json()).toEqual(REFUSAL);
+    // The same launch without the airdrop is as open as ever.
+    expect((await prepare({ creator, firstBuy })).status).toBe(200);
+
+    const allowed = await api("/v1/operator/airdrop-creators", { method: "POST", headers: operator(), body: JSON.stringify({ wallet: creator }) });
+    expect(AirdropCreators.parse(await allowed.json()).wallets).toContain(creator);
+    expect(await permissions(creator)).toEqual({ airdrop: true });
+    const prepared = PreparedLaunch.parse(await (await prepare(withAirdrop)).json());
+    expect(prepared.airdrop).toMatchObject({ recipients: 1, amount: "1000000" });
+    // Another wallet is still not on the list.
+    expect(await permissions(Keypair.generate().publicKey.toBase58())).toEqual({ airdrop: false });
+
+    const removed = await api(`/v1/operator/airdrop-creators/${creator}`, { method: "DELETE", headers: operator() });
+    expect(AirdropCreators.parse(await removed.json()).wallets).not.toContain(creator);
+    expect(AirdropCreators.parse(await (await api("/v1/operator/airdrop-creators", { headers: operator() })).json()).wallets).not.toContain(creator);
+    expect(await permissions(creator)).toEqual({ airdrop: false });
+    expect((await prepare(withAirdrop)).status).toBe(403);
+    // A launch prepared while the wallet was allowed can still be retried: it is the same coin.
+    expect((await retry(prepared.mint)).status).toBe(200);
+  });
+
+  it("only the operator changes the list, and only with real wallets", async () => {
+    const wallet = Keypair.generate().publicKey.toBase58();
+    for (const init of [{ method: "POST", body: JSON.stringify({ wallet }) }, { method: "GET" }])
+      expect((await api("/v1/operator/airdrop-creators", { ...init, headers: operator("wrong") })).status).toBe(401);
+    expect((await api(`/v1/operator/airdrop-creators/${wallet}`, { method: "DELETE", headers: operator("wrong") })).status).toBe(401);
+    expect((await api("/v1/operator/airdrop-creators", { method: "POST", headers: operator(), body: JSON.stringify({ wallet: "not a wallet" }) })).status).toBe(400);
+    expect((await api("/v1/creators/not-a-wallet/launch-permissions")).status).toBe(400);
+    expect(await permissions(wallet)).toEqual({ airdrop: false });
+  });
+});
+
