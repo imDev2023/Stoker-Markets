@@ -11,7 +11,7 @@ export function Hero({ latest, platform }: { latest: LaunchSummary | null; platf
       <div className={styles.copy}>
         <h1 className={styles.title}>Launch a coin. Earn from every trade.</h1>
         <p className={styles.lede}>
-          Creators get {platform.creatorFeeBps / 100}% of every trade on their coin&apos;s curve. The chain pays it into a vault only the creator
+          Creators get ~{platform.creatorFeeBps / 100}% of every trade on their coin&apos;s curve. The chain pays it into a vault only the creator
           can claim, so nobody, including us, can hold it back.
         </p>
         <Link href="/launch" className={styles.cta}>Launch a coin</Link>

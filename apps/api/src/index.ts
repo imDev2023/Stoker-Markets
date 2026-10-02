@@ -24,7 +24,8 @@ import { lockRewardTaxes } from "./rewardTax";
 import { creatorFeeRoutes } from "./routes/creatorFees";
 import { quotes } from "./routes/quotes";
 import { launchRoutes } from "./routes/launches";
-import { launchModeRoutes } from "./routes/launchModes";
+import { launchModeRoutes, operatorAirdropRoutes } from "./routes/launchModes";
+import { mayAirdrop } from "./airdropAccess";
 import { operatorJobRoutes, revenueRoutes } from "./routes/revenue";
 import { operatorRewardRoutes, rewardRoutes } from "./routes/rewards";
 import { burnRoutes, operatorBurnRoutes } from "./routes/burns";
@@ -104,6 +105,8 @@ app.post("/v1/launches/prepare", async (c) => {
   const quote = await launchQuoteAsset(c.get("db"), cfg, quoteMarket(c.env), f.quoteMint);
   const firstBuy = f.firstBuy ? new BN(f.firstBuy) : null;
   const airdrop = f.airdrop ?? [];
+  if (airdrop.length > 0 && !(await mayAirdrop(c.get("db"), creator.toBase58())))
+    return c.json({ error: "Airdrops at launch aren't open to this wallet. Launch without one." }, 403);
   const rewardTaxBps = f.rewardTax ?? null;
   const modes = await resolveLaunchModes(connection, cfg, quote, creator, firstBuy, airdrop, rewardTaxBps).catch(refuseWith(400));
 
@@ -179,6 +182,7 @@ app.route("/v1/operator", operatorBurnRoutes);
 app.route("/v1/operator", operatorKeyRoutes);
 app.route("/v1/operator", operatorViewRoutes);
 app.route("/v1/operator", operatorFeeRoutes);
+app.route("/v1/operator", operatorAirdropRoutes);
 
 /**
  * Runs one scheduled job now, as its Cron Trigger would, and answers with the run: 500 with the failed run when it
