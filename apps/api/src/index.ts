@@ -9,7 +9,7 @@ import {
   LAUNCH_IMAGE_MAX_BYTES, LAUNCH_IMAGE_TYPES, PrepareLaunchFields, type JobName, type OperatorAlertList, type PlatformInfo,
 } from "@launchpad/contract";
 import { createDb, jobRuns, launchMetadata, operatorAlerts } from "@launchpad/db";
-import { apiKeyMiddleware, keyRoutes, operatorKeyRoutes } from "./apiKeys";
+import { apiKeyMiddleware, keyRoutes, operatorKeyRoutes, pruneUsage } from "./apiKeys";
 import { config, operationsKey, quoteMarket, solRoutes, type AppEnv, type Bindings } from "./env";
 import { collectFees } from "./fees/collector";
 import { notifyPending, watchGraduations } from "./graduation";
@@ -304,8 +304,10 @@ export default {
     try {
       // The Quote Registry refresh and our curve rules (ADR 0005).
       // Every job takes its lease: a slow run overlapping the next Cron Trigger, or a manual run, must never act twice.
-      if (run(CRONS.quoteRegistry))
+      if (run(CRONS.quoteRegistry)) {
         await job(runJob(db, "quote-registry", () => refreshQuoteRegistry({ db, cfg: config(env), market: quoteMarket(env), operations: operationsKey(env) }), { exclusive: true }));
+        await job(pruneUsage(db));
+      }
       // Launches that sold out but that Raydium has not migrated, and graduated Reward Launches whose tax is not locked yet.
       if (run(CRONS.graduationWatch)) {
         await job(runJob(db, "graduation-watch", () => watchGraduations(db, config(env)), { exclusive: true }));

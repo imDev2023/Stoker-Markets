@@ -32,6 +32,9 @@
     "BURN_MIN_SPEND_LAMPORTS": "10000000",
     // What a referred curve trade pays its referrer, where the Quote Asset's GlobalConfig allows a share fee.
     "REFERRAL_SHARE_BPS": "50",
+    // What one IP may do each minute without an API key: any requests, and prepare requests (transactions built for a wallet).
+    "ANON_RATE_LIMIT_PER_MINUTE": "300",
+    "ANON_PREPARE_RATE_LIMIT_PER_MINUTE": "25",
     // A Platform Fee or Creator Fee change applies no sooner than this after it is announced.
     "FEE_CHANGE_LEAD_SECONDS": "86400",
     // From tools/localnet/.ledger/state.json after `pnpm localnet` (see CLAUDE.md); both are required.
