@@ -5,11 +5,11 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 
 ## Read first
 
-1. GitHub issue #5 (`gh issue view 5`) - the v1 PRD; slices are issues #8 to #23, each with "Blocked by". A slice's latest comment is its current status. Every v1 slice is merged except #23 (mainnet go-live, the owner's, with `docs/runbooks/mainnet.md`); #37 (motion and analytics) waits until after launch; check `gh pr list` for open drafts before starting work, since cloud sessions also push here. Push every working branch: a cloud session can't see a local-only branch and rebuilt #11 from scratch because of one.
+1. GitHub issue #5 (`gh issue view 5`) - the v1 PRD; slices are issues #8 to #23, each with "Blocked by". A slice's latest comment is its current status. Every v1 slice is merged except #23 (mainnet go-live, the owner's, with `docs/runbooks/mainnet.md`); since 2026-10-02 the work in hand is feature parity with StonkFun (issue #41, the owner's decision): before mainnet #53 with #42 (fee split and Creator forwarding), #43 (Holder Reward payout asset), #44 (Arweave) and #45 (per-IP rate limits, PR #54); after mainnet #47, #48, #50, and #37 (motion and analytics); #49 (Airdrop Mode) later; check `gh pr list` for open drafts before starting work, since cloud sessions also push here. Push every working branch: a cloud session can't see a local-only branch and rebuilt #11 from scratch because of one.
 2. `CONTEXT.md` - the domain glossary; use its terms in code, issues and UI copy.
-3. `docs/adr/` - fee model (0001), Cloudflare hosting (0002), server-built transactions (0003), key custody (0004), price-banded curve rules (0005, proposed), Reward Rounds and Burn budgets (0006).
+3. `docs/adr/` - fee model (0001, to be superseded by #53 and #42: the owner decided 0.75% Platform Fee and 0.25% Creator Fee on-chain, with the Creator's earnings topped up to about 0.5% on the curve and after Graduation by a forwarding job; until that lands the code and ADR still say 0.5% and 0.5%, and ADR 0006 is to be amended by #43), Cloudflare hosting (0002), server-built transactions (0003), key custody (0004), price-banded curve rules (0005, proposed), Reward Rounds and Burn budgets (0006).
 4. `spike/launchlab-devnet/README.md` - what LaunchLab really does on devnet, with tx evidence and gotchas.
-5. `research/README.md` - background on StonkFun only; don't re-derive its findings.
+5. `research/README.md` - background on StonkFun only; don't re-derive its findings. `research/social/x-gap-analysis.md` compares us with its full X timeline (1,121 posts) and is the evidence behind #41; `research/onchain/README.md` has its on-chain setup (1.00% to the platform and 0% to the creator on the curve, the creator's share forwarded off-chain).
 6. `docs/runbooks/mainnet.md` - the go-live runbook (#23): what an agent prepared, and what only the owner can do.
 
 ## Code map
@@ -49,6 +49,12 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 - Metadata stays on R2 plus Postgres for v1, on a domain we keep for good; a coin's metadata URL can never change after launch, and the API refuses a temporary address on mainnet. Arweave only via ArDrive Turbo, since Irys retires its Arweave endpoints on 2026-11-01 (#23).
 
 ## Traps
+
+- An airdrop at launch is only for Creator wallets the operator has allowed (`/v1/operator/airdrop-creators`, one `platform_settings` row; empty by default, so the form shows no airdrop and `prepare` answers 403). Tests allow a wallet first: `allowAirdrops` in both suites' helpers, and the backend `prepare` helper does it unless `unlisted` is set.
+- The owner wants StonkFun's features matched but in our own words: never paste its copy, and never fetch stonkfun.xyz (the saved pages are under `research/website/`).
+- Text on the launch form, coin page or home page is in nearly every pixel baseline: a wording change re-baselines about 100 images, and a header change 136.
+- A test that types into the trade panel right after connecting must first wait for the panel's "Pay with" choice to settle: the panel never switches under a typed amount.
+- Fill the launch form's airdrop only after the wallet is allowed and connected: the option appears once `launch-permissions` answers.
 
 - `apps/web` never imports `@launchpad/chain`, the Raydium SDK or Anchor (GPL, ADR 0003); ESLint and a UI test enforce it.
 - The `PlatformConfig` address is derived from the admin key and the admin can never change (ADR 0004).
