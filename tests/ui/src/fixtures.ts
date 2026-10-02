@@ -89,13 +89,27 @@ async function signSendReport(prepared: { transaction: string; lastValidBlockHei
   return signature;
 }
 
+/** Operator: allows a Creator wallet an airdrop at launch. Nobody may have one, or sees the option on the form, until then. */
+export async function allowAirdrops(wallet: PublicKey) {
+  const { apiUrl, operatorToken } = stackEnv();
+  const res = await fetch(`${apiUrl}/v1/operator/airdrop-creators`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${operatorToken}`, "content-type": "application/json" },
+    body: JSON.stringify({ wallet: wallet.toBase58() }),
+  });
+  if (!res.ok) throw new Error(`allowing ${wallet.toBase58()} an airdrop failed: ${res.status} ${await res.text()}`);
+}
+
 /** Launches a coin the way any API client would: prepare, sign, send, report. */
 export async function launchViaApi(creator: Keypair, { quote = "SOL", airdrop, ...fields }: LaunchFields) {
   const form = new FormData();
   form.set("creator", creator.publicKey.toBase58());
   form.set("quoteMint", QUOTES[quote].toBase58());
   for (const [k, v] of Object.entries(fields)) if (v) form.set(k, v);
-  if (airdrop) form.set("airdrop", JSON.stringify(airdrop));
+  if (airdrop) {
+    await allowAirdrops(creator.publicKey);
+    form.set("airdrop", JSON.stringify(airdrop));
+  }
   form.set("image", new Blob([COIN_PNG], { type: "image/png" }), "coin.png");
   const res = await fetch(`${stackEnv().apiUrl}/v1/launches/prepare`, { method: "POST", body: form });
   if (!res.ok) throw new Error(`prepare failed: ${res.status} ${await res.text()}`);

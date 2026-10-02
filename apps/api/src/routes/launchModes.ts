@@ -4,9 +4,12 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { eq } from "drizzle-orm";
 import { LAUNCH_SHAPE, launchlabPdas, loadLookupTable, prepareAirdrop } from "@launchpad/chain";
-import { FirstBuyQuoteQuery, type AirdropStatus, type FirstBuyQuote, type PreparedAirdrop } from "@launchpad/contract";
+import {
+  AllowAirdropCreator, FirstBuyQuoteQuery, type AirdropCreators, type AirdropStatus, type FirstBuyQuote, type LaunchPermissions, type PreparedAirdrop,
+} from "@launchpad/contract";
 import { launchDrafts, type Db } from "@launchpad/db";
 import { airdropSource, claimForSending, needsScan, paymentStatus } from "../airdrop";
+import { airdropCreators, allowAirdropCreator, disallowAirdropCreator, mayAirdrop } from "../airdropAccess";
 import { quoteMarket, type AppEnv, type Config } from "../env";
 import { indexAccountHistory } from "../indexer";
 import {
@@ -142,5 +145,39 @@ launchModeRoutes.post("/launches/:mint/airdrop/prepare", async (c) => {
     lastValidBlockHeight: prepared.lastValidBlockHeight,
     recipients: wallets.length,
   };
+  return c.json(res);
+});
+
+const walletParam = (value: string) => {
+  try {
+    return new PublicKey(value).toBase58();
+  } catch {
+    throw new HTTPException(400, { message: "not a wallet address" });
+  }
+};
+
+/** What the launch form offers this Creator: today, whether the operator has allowed it an airdrop at launch. */
+launchModeRoutes.get("/creators/:wallet/launch-permissions", async (c) => {
+  const res: LaunchPermissions = { airdrop: await mayAirdrop(c.get("db"), walletParam(c.req.param("wallet"))) };
+  return c.json(res);
+});
+
+/** Operator: the Creator wallets allowed an airdrop at launch. Nobody is until the operator names them. */
+export const operatorAirdropRoutes = new Hono<AppEnv>();
+
+operatorAirdropRoutes.get("/airdrop-creators", async (c) => {
+  const res: AirdropCreators = { wallets: await airdropCreators(c.get("db")) };
+  return c.json(res);
+});
+
+operatorAirdropRoutes.post("/airdrop-creators", async (c) => {
+  const body = AllowAirdropCreator.safeParse(await c.req.json().catch(() => null));
+  if (!body.success) return c.json({ error: "invalid wallet", details: body.error.issues }, 400);
+  const res: AirdropCreators = { wallets: await allowAirdropCreator(c.get("db"), walletParam(body.data.wallet)) };
+  return c.json(res);
+});
+
+operatorAirdropRoutes.delete("/airdrop-creators/:wallet", async (c) => {
+  const res: AirdropCreators = { wallets: await disallowAirdropCreator(c.get("db"), walletParam(c.req.param("wallet"))) };
   return c.json(res);
 });

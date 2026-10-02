@@ -136,3 +136,15 @@ export const PreparedAirdrop = z.object({
   recipients: z.number().int(),
 });
 export type PreparedAirdrop = z.infer<typeof PreparedAirdrop>;
+
+/** What the launch form offers one Creator: an airdrop at launch is only for wallets the operator has allowed. */
+export const LaunchPermissions = z.object({ airdrop: z.boolean() });
+export type LaunchPermissions = z.infer<typeof LaunchPermissions>;
+
+/** Operator: a Creator wallet to allow an airdrop at launch. */
+export const AllowAirdropCreator = z.object({ wallet: base58 });
+export type AllowAirdropCreator = z.infer<typeof AllowAirdropCreator>;
+
+/** Operator: the Creator wallets allowed an airdrop at launch. */
+export const AirdropCreators = z.object({ wallets: z.array(base58) });
+export type AirdropCreators = z.infer<typeof AirdropCreators>;
