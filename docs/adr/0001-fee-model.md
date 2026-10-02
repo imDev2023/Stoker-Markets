@@ -1,5 +1,9 @@
 # Creator Fees are on-chain and end at Graduation
 
+Status: superseded by ADR 0007 on 2026-10-02.
+The on-chain split is now 0.75% Platform Fee and 0.25% Creator Fee, and the platform forwards the rest of the Creator's about 0.5%, on the curve and after Graduation.
+What this ADR says about who owns a graduated pool's fees on-chain still holds.
+
 Our wedge against StonkFun is trust: its ~0.5% creator share is forwarded off-chain by a cron job, which broke for about three weeks in September 2026 (see `research/social/telegram-group-insights.md`).
 So on the curve traders pay what they pay at StonkFun (1.25%: 0.25% Raydium, 0.5% Platform Fee, 0.5% Creator Fee), but the Creator Fee is set in our LaunchLab PlatformConfig and claimed by the Creator on-chain, with nothing forwarded by us.
 After Graduation we copy StonkFun: the platform is the CPMM pool's creator (`platform_cp_creator`) and holds 100% of the locked-LP Fee Keys, so Creators earn nothing post-graduation.

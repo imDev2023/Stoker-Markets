@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import type { LedgerPage, PlatformInfo, Revenue, RevenueAsset } from "@launchpad/contract";
+import { creatorEarnings } from "@/lib/fees";
 import { explorerUrl, formatUnits, formatUtcDay, quoteTicker, shortAddress, SOL_DECIMALS } from "@/lib/format";
 import { CopyButton } from "./CopyButton";
 import { LedgerList } from "./LedgerList";
@@ -11,20 +12,21 @@ const TOTAL_DECIMALS = 6;
 const total = (raw: string, asset: RevenueAsset) => formatUnits(raw, asset.decimals, Math.min(asset.decimals, TOTAL_DECIMALS));
 
 /**
- * The public revenue page: what the platform has collected in each asset, all time and per day, where it went, and the
- * Ledger entry by entry. Every figure is a sum of Ledger entries, each one a transaction anyone can look up.
+ * The public revenue page: what the platform has collected in each asset, all time and per day, where it went (to
+ * Creators as their share, and to the treasury), and the Ledger entry by entry. Every figure is a sum of Ledger entries, each one a transaction anyone can look up.
  */
 export function RevenueDashboard({ revenue, ledger, platform }: { revenue: Revenue; ledger: LedgerPage; platform: PlatformInfo }) {
   const sol = (lamports: string) => formatUnits(lamports, SOL_DECIMALS);
   // A sweep moves everything above the float, not only revenue, so what was swept is shown apart from what was earned.
   const swept = revenue.totals.filter((t) => t.swept !== "0");
+  const earns = creatorEarnings(platform);
   return (
     <article className={`shell ${styles.page}`}>
       <header className={styles.head}>
         <h1 className={styles.title}>Platform revenue</h1>
         <p className={styles.lede}>
-          Every fee the platform collects, and every move to its treasury, is a Solana transaction on the Ledger below.
-          Anyone can check these totals against it.
+          Every fee the platform collects, every payment of a Creator&apos;s share and every move to its treasury is a
+          Solana transaction on the Ledger below. Anyone can check these totals against it.
         </p>
       </header>
 
@@ -66,6 +68,19 @@ export function RevenueDashboard({ revenue, ledger, platform }: { revenue: Reven
                         <dd className="mono">{total(t.feeKey, t.asset)}</dd>
                       </div>
                     </dl>
+                    {/* Creators are paid in Quote Assets only; a coin a Fee Key paid out has no such share. */}
+                    {(t.creatorForwarded !== "0" || t.creatorPending !== "0") && (
+                      <dl className={styles.streams}>
+                        <div>
+                          <dt>Sent to Creators</dt>
+                          <dd className="mono">{total(t.creatorForwarded, t.asset)}</dd>
+                        </div>
+                        <div>
+                          <dt>Still to be sent to Creators</dt>
+                          <dd className="mono">{total(t.creatorPending, t.asset)}</dd>
+                        </div>
+                      </dl>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -123,7 +138,7 @@ export function RevenueDashboard({ revenue, ledger, platform }: { revenue: Reven
               </div>
               <div>
                 <dt>Pools</dt>
-                <dd>After graduation, the platform&apos;s share of every trade in the coin&apos;s Raydium pool.</dd>
+                <dd>After graduation, the creator fee of every trade in the coin&apos;s Raydium pool, which the platform collects.</dd>
               </div>
               <div>
                 <dt>Fee Keys</dt>
@@ -134,6 +149,10 @@ export function RevenueDashboard({ revenue, ledger, platform }: { revenue: Reven
 
           <section className={styles.card} aria-labelledby="wallets-title">
             <h2 id="wallets-title" className={styles.cardTitle}>Where it goes</h2>
+            <p className={styles.muted}>
+              Part of it is the Creators&apos;: {earns.forward}% of every curve trade and {earns.poolShare}% of what a pool pays.
+              It is sent to each Creator&apos;s wallet within the hour of being collected and never goes to the treasury.
+            </p>
             <dl className={styles.wallets}>
               <div>
                 <dt>Operations wallet</dt>

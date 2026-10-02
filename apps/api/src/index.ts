@@ -12,6 +12,8 @@ import { createDb, jobRuns, launchMetadata, operatorAlerts } from "@launchpad/db
 import { apiKeyMiddleware, keyRoutes, operatorKeyRoutes, pruneUsage } from "./apiKeys";
 import { config, operationsKey, quoteMarket, solRoutes, type AppEnv, type Bindings } from "./env";
 import { collectFees } from "./fees/collector";
+import { POOL_FORWARD_SHARE_BPS } from "./fees/creatorShares";
+import { forwardCreatorShares } from "./fees/forward";
 import { notifyPending, watchGraduations } from "./graduation";
 import { fetchRawTransaction, IndexBatchError, indexTransactions } from "./indexer";
 import { sniffImageType } from "./images";
@@ -77,6 +79,13 @@ app.get("/v1/platform", async (c) => {
     graduationTargetLamports: cfg.graduationTargetLamports.toString(),
     platformFeeBps: fees.platformFeeBps,
     creatorFeeBps: fees.creatorFeeBps,
+    creatorForward: {
+      // The curve match follows the on-chain Creator Fee and is capped by the Platform Fee it comes out of.
+      curveBps: Math.min(fees.creatorFeeBps, fees.platformFeeBps),
+      poolShareBps: POOL_FORWARD_SHARE_BPS,
+      poolBps: (fees.poolCreatorFeeBps * POOL_FORWARD_SHARE_BPS) / 10_000,
+      minLamports: cfg.creatorForwardMinLamports.toString(),
+    },
     referralShareBps: cfg.referralShareBps,
     solRoute: cfg.solRoute?.source ?? null,
   };
@@ -227,6 +236,11 @@ app.post("/v1/operator/jobs/fee-collector", (c) =>
   manualJob(c, "fee-collector", () => collectFees({ db: c.get("db"), cfg: c.get("cfg"), operations: operationsKey(c.env) })),
 );
 
+/** The Creator Forward (ADR 0007). */
+app.post("/v1/operator/jobs/creator-forward", (c) =>
+  manualJob(c, "creator-forward", () => forwardCreatorShares({ db: c.get("db"), cfg: c.get("cfg"), operations: operationsKey(c.env) })),
+);
+
 /** Operator alerts, newest first: open ones and recently resolved ones. */
 app.get("/v1/operator/alerts", async (c) => {
   const rows = await c.get("db").select().from(operatorAlerts).orderBy(desc(operatorAlerts.raisedAt)).limit(200);
@@ -314,8 +328,11 @@ export default {
         await job(runJob(db, "reward-tax-lock", () => lockRewardTaxes(db, config(env), operationsKey(env)), { exclusive: true }));
       }
       // Platform revenue into the operations wallet, and on to the treasury (ADR 0004).
-      if (run(CRONS.feeCollector))
+      // Then the Creators' share of what was collected goes on to them (ADR 0007).
+      if (run(CRONS.feeCollector)) {
         await job(runJob(db, "fee-collector", () => collectFees({ db, cfg: config(env), operations: operationsKey(env) }), { exclusive: true }));
+        await job(runJob(db, "creator-forward", () => forwardCreatorShares({ db, cfg: config(env), operations: operationsKey(env) }), { exclusive: true }));
+      }
       // The Burn and Flywheel, on the hour's revenue, half an hour after the Fee Collector has claimed it.
       if (run(CRONS.burn)) {
         const cfg = config(env);

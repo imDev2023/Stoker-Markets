@@ -22,6 +22,8 @@
     "SWEEP_THRESHOLD_LAMPORTS": "5000000000",
     "SWEEP_FLOAT_LAMPORTS": "1000000000",
     "COLLECT_MIN_LAMPORTS": "1000000",
+    // The Creator Forward (ADR 0007) pays a Creator once what they are owed in one Quote Asset is worth 0.01 SOL.
+    "CREATOR_FORWARD_MIN_LAMPORTS": "10000000",
     // Reward Round rule changes apply no sooner than this after they are announced.
     "REWARD_RULES_LEAD_SECONDS": "86400",
     // Burn and Flywheel shares of revenue, in basis points, and how many top Launches the Flywheel buys.

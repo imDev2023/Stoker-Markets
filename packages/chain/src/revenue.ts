@@ -284,6 +284,20 @@ export function sweepInstructions(from: PublicKey, treasury: PublicKey, lamports
   return ixs;
 }
 
+/**
+ * A Creator Forward (ADR 0007): pays a Creator their share of platform revenue in one Quote Asset. SOL goes as plain SOL;
+ * anything else into the Creator's associated token account, opened if needed and paid for by the sender.
+ */
+export function creatorForwardInstructions(from: PublicKey, creator: PublicKey, asset: SweepToken) {
+  if (asset.mint.equals(WSOL_MINT)) return [SystemProgram.transfer({ fromPubkey: from, toPubkey: creator, lamports: asset.amount })];
+  const source = getAssociatedTokenAddressSync(asset.mint, from, true, asset.tokenProgram);
+  const destination = getAssociatedTokenAddressSync(asset.mint, creator, true, asset.tokenProgram);
+  return [
+    createAssociatedTokenAccountIdempotentInstruction(from, destination, creator, asset.mint, asset.tokenProgram),
+    createTransferCheckedInstruction(source, asset.mint, destination, from, asset.amount, asset.decimals, [], asset.tokenProgram),
+  ];
+}
+
 /** The owner's associated token accounts for both of a pool's tokens, opened if needed. */
 function openTokenAccounts(owner: PublicKey, pool: PoolKeys) {
   return pool.tokens.map((t) =>

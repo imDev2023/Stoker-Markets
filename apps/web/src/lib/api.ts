@@ -1,5 +1,5 @@
 import {
-  API_KEY_HEADER, AirdropStatus, ApiError, ApiKeyList, BurnsPage, CandleList, CoinRewards, CreatorFeeClaimList, CreatorFees, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
+  API_KEY_HEADER, AirdropStatus, ApiError, ApiKeyList, BurnsPage, CandleList, CoinRewards, CreatorFeeClaimList, CreatorFees, CreatorForwardList, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
   HolderList, IssuedApiKey, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PreparedAirdrop,
   PreparedCreatorFeeClaim, PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAsset, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, TradeList,
   TradeQuote, WalletRewards,
@@ -146,6 +146,11 @@ export async function getCreatorFees(creator: string): Promise<CreatorFees | nul
 
 export async function listCreatorFeeClaims(creator: string) {
   return read(await apiFetch(`${API_URL}/v1/creators/${encodeURIComponent(creator)}/claims?limit=100`, { cache: "no-store" }), CreatorFeeClaimList);
+}
+
+/** What the platform has sent a Creator from its own revenue (ADR 0007), newest first. */
+export async function listCreatorForwards(creator: string) {
+  return read(await apiFetch(`${API_URL}/v1/creators/${encodeURIComponent(creator)}/forwards?limit=100`, { cache: "no-store" }), CreatorForwardList);
 }
 
 export async function prepareCreatorFeeClaim(body: PrepareCreatorFeeClaimRequest) {

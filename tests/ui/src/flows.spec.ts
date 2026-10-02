@@ -1,7 +1,7 @@
 // What a Creator does in the web app, end to end against the real chain and API.
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
-  COIN_PNG, creatorFeeVault, drain, expect, fundedKeypair, launchViaApi, listLaunches, sol, solBalance, test, tradeViaApi,
+  COIN_PNG, creatorFeeVault, drain, expect, fundedKeypair, launchViaApi, listLaunches, runFeeCollector, sol, solBalance, test, tradeViaApi,
 } from "./fixtures";
 import { acceptDisclaimer, COIN, connectWallet, disclaimer, fillForm, formAlert, review } from "./launchPage";
 import { connectTestWallet } from "./wallet";
@@ -122,7 +122,7 @@ test("a wallet without enough SOL is told so before signing", async ({ page, wal
   expect(wallet.requests).toHaveLength(0);
 });
 
-test("a Creator finds their Creator Fee from their coin, claims it, and sees it land in their wallet and the history", async ({ page, wallet, stack }) => {
+test("a Creator finds their Creator Fee from their coin, claims it, and is sent the rest of what they earned by the platform", async ({ page, wallet, stack }) => {
   const creator = wallet.keypair.publicKey;
   const mint = await launchViaApi(wallet.keypair, { name: "Fee Earner", symbol: "EARN" });
   await tradeViaApi(await fundedKeypair(), mint, "buy", BigInt(0.4 * LAMPORTS_PER_SOL));
@@ -131,13 +131,21 @@ test("a Creator finds their Creator Fee from their coin, claims it, and sees it 
 
   // Anyone can follow a coin to its Creator's public page, but only the Creator's wallet can claim.
   await page.goto(`/coin/${mint}`);
-  await page.getByRole("link", { name: "See what the Creator earned and claimed" }).click();
+  // The coin's page says what its Creator earns and how: part from the chain, the rest sent by the platform.
+  const earns = page.getByRole("definition").filter({ hasText: "paid by the chain" });
+  await expect(earns).toContainText("0.25% on the curve, paid by the chain");
+  await expect(earns).toContainText("The platform sends the rest to the Creator's wallet.");
+  await page.getByRole("link", { name: "See what the Creator earned and was paid" }).click();
   await page.waitForURL(`**/creator/${creator.toBase58()}`);
   const card = page.getByRole("region", { name: "SOL" });
   await expect(card).toContainText(`${sol(inVault)} SOL`);
   await expect(page.getByRole("button", { name: "Claim SOL" })).toBeHidden();
-  await expect(page.getByRole("link", { name: /EARN\s*Fee Earner/ })).toContainText("Earning");
+  // The coin has earned twice what the chain paid into the vault: the platform matches it, and has yet to send it.
+  await expect(page.getByRole("link", { name: /EARN\s*Fee Earner/ })).toContainText(`${sol(inVault * 2n)} SOL`);
+  await expect(page.getByRole("link", { name: /EARN\s*Fee Earner/ })).toContainText("Earning on its curve");
+  await expect(card.getByText("Still to be sent").locator("xpath=following-sibling::dd")).toHaveText(`${sol(inVault)} SOL`);
   await expect(page.getByText("No claims yet.")).toBeVisible();
+  await expect(page.getByText("Nothing sent yet.")).toBeVisible();
 
   // Connecting the Creator's wallet turns it into their own page.
   await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
@@ -170,6 +178,17 @@ test("a Creator finds their Creator Fee from their coin, claims it, and sees it 
   const tx = new URL((await history.getByRole("link", { name: "View transaction" }).getAttribute("href"))!);
   expect(tx.pathname).toMatch(/^\/tx\/[1-9A-HJ-NP-Za-km-z]{64,88}$/);
   expect(tx.searchParams.get("customUrl")).toBe(stack.rpcUrl);
+
+  // The platform's hourly run collects its fee and sends the Creator their share of it: no claim, nothing to sign.
+  const held = await solBalance(creator);
+  await runFeeCollector();
+  expect((await solBalance(creator)) - held).toBe(inVault);
+  const sent = page.getByRole("region", { name: "Sent by the platform" });
+  await expect(sent.getByRole("listitem")).toHaveCount(1);
+  await expect(sent.getByRole("listitem")).toContainText(`${sol(inVault)} SOL`);
+  await expect(card.getByText("Sent by the platform").locator("xpath=following-sibling::dd")).toHaveText(`${sol(inVault)} SOL`);
+  await expect(card.getByText("Still to be sent").locator("xpath=following-sibling::dd")).toHaveText("0 SOL");
+  expect(wallet.requests).toHaveLength(2);
 
   // The account menu leads back to this page from anywhere.
   await page.goto("/");

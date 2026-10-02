@@ -1,3 +1,4 @@
+import { creatorEarnings } from "@/lib/fees";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -38,6 +39,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
   // SOL needs no labels; any other Quote Asset shows what its issuer and the token list say about it (#11).
   const quoteAsset = isSol(launch.quote) ? null : await getQuoteAsset(launch.quote.mint).catch(() => null);
   // An Airdrop still being paid sits above the market, where its Creator sends it; a finished one joins the facts below.
+  const earns = creatorEarnings(platform);
   const airdropCard = airdrop && <AirdropCard initial={airdrop} symbol={launch.symbol} platform={platform} />;
   const airdropDone = airdrop?.recipients.every((r) => r.status === "paid") ?? false;
   const quote = quoteTicker(launch.quote);
@@ -89,11 +91,12 @@ export default async function CoinPage({ params, searchParams }: Props) {
       <section className={styles.panels}>
         <dl className={styles.facts}>
           <div>
-            <dt>Creator fee</dt>
+            <dt>Creator earns</dt>
             <dd>
-              ~{platform.creatorFeeBps / 100}% of every trade until graduation
-              <span className={styles.verified}>Paid by the chain</span>
-              <Link href={`/creator/${launch.creator}`} className={styles.factLink}>See what the Creator earned and claimed</Link>
+              {earns.summary}
+              <span className={styles.verified}>{earns.chain}% on the curve, paid by the chain</span>
+              <span>The platform sends the rest to the Creator&apos;s wallet.</span>
+              <Link href={`/creator/${launch.creator}`} className={styles.factLink}>See what the Creator earned and was paid</Link>
             </dd>
           </div>
           {launch.rewardTax && (

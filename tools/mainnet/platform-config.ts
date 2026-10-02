@@ -4,9 +4,9 @@
 //
 //   pnpm --filter @launchpad/mainnet platform-config build --rpc <url> --cluster mainnet --admin <pubkey or keypair.json> \
 //     --operations <pubkey or keypair.json> --cpswap-config <pubkey> --name "..." --web https://... --img https://... \
-//     [--platform-fee-bps 50] [--creator-fee-bps 50] [--sign admin.json]
+//     [--platform-fee-bps 75] [--creator-fee-bps 25] [--sign admin.json]
 //   pnpm --filter @launchpad/mainnet platform-config check --rpc <url> --cluster mainnet --admin <pubkey or keypair.json> \
-//     [--operations ... --cpswap-config ... --name ... --web ... --img ... --platform-fee-bps 50 --creator-fee-bps 50]
+//     [--operations ... --cpswap-config ... --name ... --web ... --img ... --platform-fee-bps 75 --creator-fee-bps 25]
 import { readFileSync } from "node:fs";
 import { Connection, Keypair, PublicKey, Transaction, type TransactionInstruction } from "@solana/web3.js";
 import BN from "bn.js";
@@ -21,17 +21,18 @@ export type PlatformConfigArgs = {
   admin: PublicKey;
   /** The hot operations wallet, in every day-to-day role. */
   operations: PublicKey;
-  /** The CPMM config graduated pools use; it fixes the post-Graduation Platform Fee for good (ADR 0001). */
+  /** The CPMM config graduated pools use; it fixes the post-Graduation Platform Fee for good (ADR 0007). */
   cpswapConfig: PublicKey;
   name: string;
   web: string;
   img: string;
-  /** The Platform Fee and Creator Fee on curve trades, in basis points (50 each: ADR 0001). */
+  /** The Platform Fee and Creator Fee on curve trades, in basis points (75 and 25: ADR 0007). */
   platformFeeBps: number;
   creatorFeeBps: number;
 };
 
-export const DEFAULT_FEE_BPS = 50;
+export const DEFAULT_PLATFORM_FEE_BPS = 75;
+export const DEFAULT_CREATOR_FEE_BPS = 25;
 
 const toRate = (bps: number) => new BN((bps * RATE_DENOMINATOR) / 10_000);
 
@@ -210,8 +211,8 @@ async function main() {
     name: need("name"),
     web: need("web"),
     img: need("img"),
-    platformFeeBps: Number(f.get("platform-fee-bps") ?? DEFAULT_FEE_BPS),
-    creatorFeeBps: Number(f.get("creator-fee-bps") ?? DEFAULT_FEE_BPS),
+    platformFeeBps: Number(f.get("platform-fee-bps") ?? DEFAULT_PLATFORM_FEE_BPS),
+    creatorFeeBps: Number(f.get("creator-fee-bps") ?? DEFAULT_CREATOR_FEE_BPS),
   });
   if (command === "build") {
     const args: PlatformConfigArgs = { cluster, admin, ...expected() };

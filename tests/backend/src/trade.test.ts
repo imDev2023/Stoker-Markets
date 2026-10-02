@@ -11,7 +11,7 @@ import {
 import { CPSWAP_CONFIG, SOL_GLOBAL_CONFIG } from "@launchpad/localnet";
 import { CandleList, TradeQuote } from "@launchpad/contract";
 import {
-  SOL, coinsOf, connection, deliverWebhook, env, fundedWallet, getLaunch, launchedCoin, networkFee, prepareTrade, prepared, quote,
+  SOL, coinsOf, connection, deliverWebhook, env, feeAt, feeRates, fundedWallet, getLaunch, launchedCoin, networkFee, prepareTrade, prepared, quote,
   signAndSend, solOf, tokenBalance, trade, trades, confirmOutcome,
 } from "./client";
 
@@ -43,13 +43,16 @@ const diff = (after: Record<string, bigint>, before: Record<string, bigint>) =>
 const quotedFees = (q: TradeQuote) => ({ raydium: BigInt(q.fees.raydium), platform: BigInt(q.fees.platform), creator: BigInt(q.fees.creator) });
 
 describe("buying on the curve", () => {
-  it("charges exactly the fees shown before signing: 0.25% to Raydium, 0.5% Platform Fee, 0.5% Creator Fee", async () => {
+  it("charges exactly the fees shown before signing: 0.25% to Raydium, and the Platform Fee and Creator Fee the chain has", async () => {
     const { creator, mint, pool } = await launchedCoin();
     const trader = await fundedWallet();
     const shown = TradeQuote.parse(await (await quote(mint, { side: "buy", amount: SOL(0.1).toString() })).json());
     expect(shown.venue).toBe("curve");
-    expect(shown.feeBps).toEqual({ raydium: 25, platform: 50, creator: 50 });
-    expect(shown.fees).toEqual({ raydium: "250000", platform: "500000", creator: "500000" });
+    const rates = await feeRates();
+    expect(shown.feeBps).toEqual({ raydium: 25, ...rates });
+    expect(shown.fees).toEqual({ raydium: "250000", platform: feeAt(SOL(0.1), rates.platform).toString(), creator: feeAt(SOL(0.1), rates.creator).toString() });
+    // A trader pays 1.25% in all, whatever the split between the platform and the Creator.
+    expect(25 + rates.platform + rates.creator).toBe(125);
 
     const fees = await feesOnChain(pool, creator);
     const newVaults = (await Promise.all(feeVaults(creator).map((v) => connection().getAccountInfo(v)))).filter((a) => !a).length;

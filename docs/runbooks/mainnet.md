@@ -35,9 +35,9 @@ The admin key needs about 0.01 SOL: the PlatformConfig's rent (0.0075) and four 
 
 Exactly what `bootstrapPlatform` in `tools/localnet/src/index.ts` does on the local chain, signed by the cold key instead. Mainnet program ids are in `packages/chain/src/programs.ts` (`programsFor("mainnet")`): LaunchLab `LanMV9sAd7wArD4vJFi2qDdfnVhFxYSUg6eADduJ3uj`, CPMM `CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C`, lock `LockrWmn6K5twhz3y9w1dQERbmgSaRkfnTeTKbpofwE`.
 
-1. **owner** Pick the CPMM config graduated pools use: list mainnet's CPMM configs (the spike's `list_cpmm_configs.ts` against a mainnet RPC) and take the one with a 1% creator fee, which is what the PRD and StonkFun use; the config fixes the post-Graduation Platform Fee for every pool for good (ADR 0001).
+1. **owner** Pick the CPMM config graduated pools use: list mainnet's CPMM configs (the spike's `list_cpmm_configs.ts` against a mainnet RPC) and take the one with a 1% creator fee, which is what the PRD and StonkFun use; the config fixes the post-Graduation Platform Fee for every pool for good, and half of what it collects is forwarded to the Creator (ADR 0007).
 2. Build the four instructions, in one transaction, with `packages/chain`:
-   - `createPlatformConfigIx(program, admin, { feeRate: 5000, creatorFeeRate: 5000, name, web, img, operationsWallet, cpswapConfig })`: Platform Fee 0.5% and Creator Fee 0.5% (rates use LaunchLab's 1e6 denominator), all locked-LP Fee Key rights to the platform (`migrate_nft_info.platform_scale` 1e6), no platform vesting, and the operations wallet as fee wallet, NFT wallet, transfer-fee-extension authority and vesting wallet.
+   - `createPlatformConfigIx(program, admin, { feeRate: 7500, creatorFeeRate: 2500, name, web, img, operationsWallet, cpswapConfig })`: Platform Fee 0.75% and Creator Fee 0.25% (ADR 0007; rates use LaunchLab's 1e6 denominator), all locked-LP Fee Key rights to the platform (`migrate_nft_info.platform_scale` 1e6), no platform vesting, and the operations wallet as fee wallet, NFT wallet, transfer-fee-extension authority and vesting wallet.
    - `updatePlatformConfigIx(program, admin, { PlatformCPCreator: [operations] })`: the platform is every graduated pool's creator.
    - `updatePlatformConfigIx(program, admin, { RestrictCurveParam: [1] })`: launches must match a curve rule.
    - `updatePlatformConfigIx(program, admin, { CurveRuleManager: [operations] })`: the operations wallet writes the rules (ADR 0005).
@@ -49,8 +49,8 @@ Exactly what `bootstrapPlatform` in `tools/localnet/src/index.ts` does on the lo
      --name "<name>" --web https://<domain> --img https://<domain>/icon.png
    ```
 
-   `--platform-fee-bps` and `--creator-fee-bps` default to 50. On devnet (section 11), where the admin can be a file keypair, `--sign admin.json` signs, sends and runs the check below in one go.
-4. Verify by decoding the account, which is the acceptance criterion in #23: `pnpm --filter @launchpad/mainnet platform-config check --rpc ... --cluster mainnet --admin <admin pubkey>` prints the decoded PlatformConfig, and with the same `--operations`, `--cpswap-config`, `--name`, `--web` and `--img` as the build it names every field that differs from what was decided, or passes: `fee_rate` 5000, `creator_fee_rate` 5000, `migrate_nft_info` `{1000000, 0, 0}`, `platform_vesting_scale` 0, `fee_wallet`, `nft_wallet`, `transfer_fee_extension_auth`, `vesting_wallet` and `platform_cp_creator` all the operations wallet, `curve_rule_manager` the operations wallet, `restrict_curve_param` on, `cpswap_config` the chosen config, `name`, `web` and `img` as decided in #7. (`launchlabCoder.accounts.decode("PlatformConfig", data)` from `packages/chain` is what it decodes with.) The script is proven against the local chain in `tests/backend/src/mainnet-tools.test.ts`.
+   `--platform-fee-bps` defaults to 75 and `--creator-fee-bps` to 25 (ADR 0007). On devnet (section 11), where the admin can be a file keypair, `--sign admin.json` signs, sends and runs the check below in one go.
+4. Verify by decoding the account, which is the acceptance criterion in #23: `pnpm --filter @launchpad/mainnet platform-config check --rpc ... --cluster mainnet --admin <admin pubkey>` prints the decoded PlatformConfig, and with the same `--operations`, `--cpswap-config`, `--name`, `--web` and `--img` as the build it names every field that differs from what was decided, or passes: `fee_rate` 7500, `creator_fee_rate` 2500, `migrate_nft_info` `{1000000, 0, 0}`, `platform_vesting_scale` 0, `fee_wallet`, `nft_wallet`, `transfer_fee_extension_auth`, `vesting_wallet` and `platform_cp_creator` all the operations wallet, `curve_rule_manager` the operations wallet, `restrict_curve_param` on, `cpswap_config` the chosen config, `name`, `web` and `img` as decided in #7. (`launchlabCoder.accounts.decode("PlatformConfig", data)` from `packages/chain` is what it decodes with.) The script is proven against the local chain in `tests/backend/src/mainnet-tools.test.ts`.
 5. `PLATFORM_CONFIG` is `launchlabPdas(program).platformConfig(admin)`; `PLATFORM_ADMIN` is the admin's address, and the API checks on mainnet that the one derives from the other.
 
 Every curve rule is written by the API's Quote Registry refresh (section 6), never by the admin.
@@ -94,11 +94,12 @@ Put the mainnet values in an `env.production` block of `apps/api/wrangler.jsonc`
 | `SOL_ROUTE_SOURCE` | `jupiter` (or `none` to offer no SOL payment on non-SOL Launches) | `raydium-cpmm` is refused; drop `SOL_ROUTE_POOLS` |
 | `TREASURY_WALLET` | the Treasury address | required on mainnet |
 | `SWEEP_THRESHOLD_LAMPORTS`, `SWEEP_FLOAT_LAMPORTS`, `COLLECT_MIN_LAMPORTS` | `5000000000`, `1000000000`, `1000000` unless the owner decides otherwise (#14's open question) | float below threshold and above the rent a sweep may pay |
+| `CREATOR_FORWARD_MIN_LAMPORTS` | `10000000` (0.01 SOL): what a Creator must be owed in one Quote Asset, at the Quote Registry's price, before the Creator Forward pays it (ADR 0007) | the job runs hourly, right after the Fee Collector |
 | `FEE_CHANGE_LEAD_SECONDS`, `REWARD_RULES_LEAD_SECONDS` | `86400` | the fee lead is refused under an hour on mainnet |
 | `BURN_SHARE_BPS`, `FLYWHEEL_SHARE_BPS`, `FLYWHEEL_TOP_N`, `BURN_MIN_SPEND_LAMPORTS` | `6000`, `500`, `10`, `10000000` (PRD) | whole basis points |
 | `REFERRAL_SHARE_BPS` | `50` | capped per Quote Asset by its GlobalConfig |
 | `ANON_RATE_LIMIT_PER_MINUTE`, `ANON_PREPARE_RATE_LIMIT_PER_MINUTE` | `300`, `25` | what one IP may do each minute without an API key |
-| `triggers.crons` | the five in `wrangler.jsonc` as they are | graduation watch, Quote Registry, Fee Collector, Reward Engine, Burn |
+| `triggers.crons` | the five in `wrangler.jsonc` as they are | graduation watch, Quote Registry, Fee Collector (and the Creator Forward after it), Reward Engine, Burn |
 | `hyperdrive[0].id`, `r2_buckets[0].bucket_name` | from section 4 and 8 | |
 
 Secrets, set with `wrangler secret put <NAME> --env production`, never in the config file:
@@ -164,7 +165,8 @@ Run the same deploy against real devnet (`CLUSTER=devnet`, the devnet program id
 - Raydium's crank migrates our pools (proven once on 2026-09-27 in the spike; prove it on the production code path), including a coin whose mint sorts before SOL (about 1 in 40, error 2502 when the account order is wrong).
 - Graduation, pool fees and Fee Keys for a Token-2022 Quote Asset (devnet has no stock GlobalConfig, so this may only be provable on mainnet with a small amount).
 - The Helius webhook end to end: a trade made from another wallet appears on the board without the fast path.
-- The Fee Collector sweeps to the treasury, the Reward Engine pays a round, the Burn buys and burns (a SOL route is needed for the Burn: on devnet use `raydium-cpmm` pools you seed, as the local chain does).
+- The Fee Collector sweeps to the treasury and the Creator Forward then pays the Creator their share (ADR 0007): the Creator's wallet receives it with nothing to sign, and the forward is on the Ledger and the Creator Fee page.
+- The Reward Engine pays a round, the Burn buys and burns (a SOL route is needed for the Burn: on devnet use `raydium-cpmm` pools you seed, as the local chain does).
 - The Jupiter route source and `PRICE_SOURCE=jupiter` can only be exercised on mainnet: exercise them with a tiny Launch before opening the site.
 
 ## 12. Go-live checklist

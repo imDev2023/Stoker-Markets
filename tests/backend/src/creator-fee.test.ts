@@ -14,7 +14,7 @@ import {
 import { CPSWAP_CONFIG, LOCAL_QUOTES, mintLocalQuote, SOL_GLOBAL_CONFIG } from "@launchpad/localnet";
 import { CreatorFeeClaimList, CreatorFees, PreparedCreatorFeeClaim } from "@launchpad/contract";
 import {
-  connection, deliverWebhook, env, fundedWallet, launch, networkFee, signAndSend, solOf, tokenBalance, trade,
+  connection, deliverWebhook, env, feeAt, feeRates, fundedWallet, launch, networkFee, signAndSend, solOf, tokenBalance, trade,
 } from "./client";
 
 const SOL = (n: number) => BigInt(Math.round(n * LAMPORTS_PER_SOL));
@@ -108,7 +108,11 @@ describe("the Creator Fee dashboard", () => {
     const f = await fees(creator.publicKey);
     expect(f.creator).toBe(creator.publicKey.toBase58());
     expect(f.assets).toEqual([
-      { quote: SOL_QUOTE, vault: vault.toBase58(), claimable: onChain.toString(), earned: onChain.toString(), claimed: "0" },
+      {
+        quote: SOL_QUOTE, vault: vault.toBase58(), claimable: onChain.toString(), earned: onChain.toString(), claimed: "0",
+        // The platform matches the on-chain Creator Fee (ADR 0007); nothing is forwarded before the Fee Collector has run.
+        forward: { earned: onChain.toString(), forwarded: "0", pending: onChain.toString() },
+      },
     ]);
     // Newest Launch first, each with the Creator Fee its own trades paid.
     expect(f.launches.map((l) => [l.mint, l.earned, l.status])).toEqual([
@@ -291,7 +295,7 @@ describe("the Creator Fee in a Quote Asset other than SOL", () => {
     const t = await trade(trader, prepared.mint, "buy", usdc(20));
     await deliverWebhook([t.signature]);
     const earnedUsdc = BigInt(t.quote.fees.creator);
-    expect(earnedUsdc).toBe(usdc(0.1)); // 0.5% of 20 USDC
+    expect(earnedUsdc).toBe(feeAt(usdc(20), (await feeRates()).creator));
 
     const usdcVault = creatorFeeVault(creator.publicKey, USDC);
     expect(await tokenBalance(usdcVault)).toBe(earnedUsdc);
@@ -299,7 +303,10 @@ describe("the Creator Fee in a Quote Asset other than SOL", () => {
     const f = await fees(creator.publicKey);
     expect(f.assets).toEqual([
       expect.objectContaining({ quote: SOL_QUOTE, claimable: earnedSol.toString() }),
-      { quote: usdcQuote, vault: usdcVault.toBase58(), claimable: earnedUsdc.toString(), earned: earnedUsdc.toString(), claimed: "0" },
+      {
+        quote: usdcQuote, vault: usdcVault.toBase58(), claimable: earnedUsdc.toString(), earned: earnedUsdc.toString(), claimed: "0",
+        forward: { earned: earnedUsdc.toString(), forwarded: "0", pending: earnedUsdc.toString() },
+      },
     ]);
     expect(f.launches.map((l) => [l.symbol, l.quote.mint, l.earned])).toEqual([
       ["USDP", USDC.toBase58(), earnedUsdc.toString()],

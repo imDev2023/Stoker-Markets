@@ -151,7 +151,10 @@ export default async function ClaimDocsPage() {
             </li>
             <li>Your vault&apos;s balance is zero, and it fills up again as your coins trade.</li>
             <li>A claim with nothing in the vault fails, and nothing moves.</li>
-            <li>The Creator Fee is paid only until graduation. After that, a coin&apos;s trading fees go to the platform.</li>
+            <li>
+              The chain pays the Creator Fee only until graduation. The rest of what a Creator earns, on the curve and
+              after graduation, is sent to the Creator&apos;s wallet by the platform and needs no claim.
+            </li>
           </ul>
           <p>
             <Link href="/creator">See your Creator Fee and claim it here</Link>

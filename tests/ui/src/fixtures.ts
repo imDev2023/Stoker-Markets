@@ -206,14 +206,19 @@ export async function creatorFeeVault(creator: PublicKey, quote: keyof typeof QU
   return { vault, balance: BigInt(balance?.value.amount ?? 0) };
 }
 
-/** Runs the Fee Collector's Cron Trigger, as its hourly schedule would, and fails unless the run succeeded. */
+/**
+ * Runs the Fee Collector's Cron Trigger, as its hourly schedule would: the Fee Collector, then the Creator Forward, which
+ * sends Creators their share of what was collected. Fails unless both runs succeeded.
+ */
 export async function runFeeCollector() {
   const { apiUrl, operatorToken } = stackEnv();
   const res = await fetch(`${apiUrl}/__scheduled?cron=${encodeURIComponent(FEE_COLLECTOR_CRON)}`);
-  const runs = (await (await fetch(`${apiUrl}/v1/operator/jobs?job=fee-collector`, { headers: { authorization: `Bearer ${operatorToken}` } })).json()) as {
-    runs: { status: string; error: string | null }[];
-  };
-  if (!res.ok || runs.runs[0]?.status !== "succeeded") throw new Error(`the Fee Collector failed: ${res.status} ${JSON.stringify(runs.runs[0])}`);
+  for (const job of ["fee-collector", "creator-forward"]) {
+    const runs = (await (await fetch(`${apiUrl}/v1/operator/jobs?job=${job}`, { headers: { authorization: `Bearer ${operatorToken}` } })).json()) as {
+      runs: { status: string; error: string | null }[];
+    };
+    if (!res.ok || runs.runs[0]?.status !== "succeeded") throw new Error(`the ${job} job failed: ${res.status} ${JSON.stringify(runs.runs[0])}`);
+  }
 }
 
 export const solBalance = async (owner: PublicKey) => BigInt(await connection().getBalance(owner, "confirmed"));

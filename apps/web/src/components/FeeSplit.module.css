@@ -70,3 +70,8 @@
 .note::before {
   content: "✓";
 }
+
+.aside {
+  color: var(--ink-3);
+  font-size: 0.75rem;
+}

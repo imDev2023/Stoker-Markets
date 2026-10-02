@@ -22,6 +22,7 @@ type Done = { amount: string; signature: string };
 /**
  * One Quote Asset's Creator Fee: what its vault holds, what the Creator's coins earned and what they have claimed, and,
  * for the Creator's own wallet, the claim. The claim is prepared by the API, simulated, then signed in the wallet.
+ * Under it, the part the platform pays (ADR 0007): what it has sent to the Creator's wallet and what is still to come.
  */
 export function ClaimCard({
   asset, platform, canClaim, onClaimed,
@@ -138,12 +139,20 @@ export function ClaimCard({
       </p>
       <dl className={styles.facts}>
         <div>
-          <dt>Earned by these coins</dt>
+          <dt>Paid by the chain</dt>
           <dd><span className="mono">{units(asset.earned)}</span> {symbol}</dd>
         </div>
         <div>
           <dt>Claimed so far</dt>
           <dd><span className="mono">{units(asset.claimed)}</span> {symbol}</dd>
+        </div>
+        <div>
+          <dt>Sent by the platform</dt>
+          <dd><span className="mono">{units(asset.forward.forwarded)}</span> {symbol}</dd>
+        </div>
+        <div>
+          <dt>Still to be sent</dt>
+          <dd><span className="mono">{units(asset.forward.pending)}</span> {symbol}</dd>
         </div>
       </dl>
       {fromElsewhere && (

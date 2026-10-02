@@ -43,6 +43,8 @@ export type StackEnv = {
   sweepThresholdLamports: string;
   sweepFloatLamports: string;
   collectMinLamports: string;
+  /** What a Creator must be owed, in lamports' worth, before the Creator Forward pays it. */
+  creatorForwardMinLamports: string;
   /** What a referred trade pays its referrer, in basis points, as the API has it. */
   referralShareBps: number;
   /** How long before it applies a fee change must be announced; short, so a test can wait it out. */
@@ -291,6 +293,7 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       sweepThresholdLamports: String(5 * LAMPORTS_PER_SOL),
       sweepFloatLamports: String(2 * LAMPORTS_PER_SOL),
       collectMinLamports: "100000",
+      creatorForwardMinLamports: "100000",
     };
     const vars = {
       RPC_URL: chain.rpcUrl,
@@ -316,6 +319,8 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       SWEEP_THRESHOLD_LAMPORTS: fees.sweepThresholdLamports,
       SWEEP_FLOAT_LAMPORTS: fees.sweepFloatLamports,
       COLLECT_MIN_LAMPORTS: fees.collectMinLamports,
+      // Small, so the Creator Forward pays on the little a test trades; a test that wants to see a share wait trades less.
+      CREATOR_FORWARD_MIN_LAMPORTS: fees.creatorForwardMinLamports,
       // Short, so a test can announce a rules change and see it refused inside the lead time, then accepted outside it.
       REWARD_RULES_LEAD_SECONDS: "60",
       // Three top Launches, so a test can see one picked and one left out.

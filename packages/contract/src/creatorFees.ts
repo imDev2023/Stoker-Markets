@@ -4,7 +4,7 @@ import { CurveStatus } from "./trades";
 
 /**
  * The Creator Fee: what a Creator has earned and can claim, per Quote Asset, the claim transaction, and the public
- * history of claims. Amounts are raw units of the Quote Asset named next to them.
+ * history of claims; and the Creator Forward, the part of a Creator's earnings the platform pays (ADR 0007). Amounts are raw units of the Quote Asset named next to them.
  */
 
 const base58 = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "must be a base58 address");
@@ -25,10 +25,17 @@ export const CreatorFeeAsset = z.object({
   earned: raw,
   /** Everything this Creator has claimed from the vault, per the claim history. */
   claimed: raw,
+  /**
+   * The Creator Forward in this Quote Asset (ADR 0007): what the platform pays the Creator from its own revenue, with
+   * nothing to claim. `earned` counts every indexed curve trade and every pool fee the platform has collected;
+   * `forwarded` is what has been sent to the Creator's wallet; `pending` is the rest, paid once the platform has
+   * collected it and it is worth the minimum.
+   */
+  forward: z.object({ earned: raw, forwarded: raw, pending: raw }),
 });
 export type CreatorFeeAsset = z.infer<typeof CreatorFeeAsset>;
 
-/** One of the Creator's Launches and the Creator Fee its trades have paid; it earns only while its curve is live. */
+/** One of the Creator's Launches and what it has earned its Creator, from the chain and from the Creator Forward. */
 export const CreatorLaunchEarnings = z.object({
   mint: base58,
   name: z.string(),
@@ -36,7 +43,10 @@ export const CreatorLaunchEarnings = z.object({
   image: z.string().nullable(),
   quote: QuoteRef,
   status: CurveStatus,
+  /** Creator Fee the chain paid on this Launch's curve trades. */
   earned: raw,
+  /** The Creator Forward this Launch earned: the match on its curve trades, and its share of collected pool fees. */
+  forward: z.object({ curve: raw, pool: raw }),
 });
 export type CreatorLaunchEarnings = z.infer<typeof CreatorLaunchEarnings>;
 
@@ -59,6 +69,21 @@ export type CreatorFeeClaim = z.infer<typeof CreatorFeeClaim>;
 /** Newest first. */
 export const CreatorFeeClaimList = z.object({ claims: z.array(CreatorFeeClaim) });
 export type CreatorFeeClaimList = z.infer<typeof CreatorFeeClaimList>;
+
+/** One Creator Forward: a payment of the Creator's share from the operations wallet, landed or on its way. */
+export const CreatorForward = z.object({
+  signature: z.string(),
+  quote: QuoteRef,
+  amount: raw,
+  status: z.enum(["sending", "paid"]),
+  /** When it landed; when it was sent, while it is on its way. */
+  time: z.iso.datetime(),
+});
+export type CreatorForward = z.infer<typeof CreatorForward>;
+
+/** Newest first. */
+export const CreatorForwardList = z.object({ forwards: z.array(CreatorForward) });
+export type CreatorForwardList = z.infer<typeof CreatorForwardList>;
 
 export const PrepareCreatorFeeClaimRequest = z.object({ creator: base58, quoteMint: base58 });
 export type PrepareCreatorFeeClaimRequest = z.infer<typeof PrepareCreatorFeeClaimRequest>;

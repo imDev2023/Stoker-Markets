@@ -94,6 +94,13 @@ export const PlatformInfo = z.object({
   graduationTargetLamports: z.string(),
   platformFeeBps: z.number(),
   creatorFeeBps: z.number(),
+  /**
+   * The Creator Forward (ADR 0007): what the platform pays a Creator from its own revenue, on top of the Creator Fee
+   * the chain pays. On the curve it is `curveBps` of every trade; after Graduation, `poolShareBps` of the pool creator
+   * fee the platform collects, which is `poolBps` of every pool trade at the rate of the CPMM config graduated pools
+   * use. Paid in the Quote Asset once the amount owed is worth `minLamports`.
+   */
+  creatorForward: z.object({ curveBps: z.number(), poolShareBps: z.number().int(), poolBps: z.number(), minLamports: z.string() }),
   /** What a referred curve trade pays its referrer, in basis points, where the Quote Asset allows a share fee. */
   referralShareBps: z.number().int(),
   /** Where buys paid with SOL on a Launch paired with anything else get their Quote Asset; null when this deployment has no route. */
