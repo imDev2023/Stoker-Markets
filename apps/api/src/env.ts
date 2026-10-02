@@ -95,6 +95,10 @@ export type Bindings = {
   REFERRAL_SHARE_BPS?: string;
   /** How long before it applies a Platform Fee or Creator Fee change must be announced, in seconds (a day on mainnet). */
   FEE_CHANGE_LEAD_SECONDS?: string;
+  /** Requests a minute one IP may make without an API key; 300 unless set. */
+  ANON_RATE_LIMIT_PER_MINUTE?: string;
+  /** Prepare requests (transactions built for a wallet) a minute one IP may make without an API key; 25 unless set. */
+  ANON_PREPARE_RATE_LIMIT_PER_MINUTE?: string;
   /** The PlatformConfig's admin, the cold key that signs fee changes (ADR 0004); PLATFORM_CONFIG is derived from it. */
   PLATFORM_ADMIN: string;
   HYPERDRIVE: Hyperdrive;
@@ -131,6 +135,8 @@ export type Config = {
   burnMinSpendLamports: bigint;
   referralShareBps: number;
   feeChangeLeadSeconds: number;
+  anonRateLimitPerMinute: number;
+  anonPrepareRateLimitPerMinute: number;
   solRoute: SolRouteConfig | null;
 };
 
@@ -252,6 +258,8 @@ export function config(env: Bindings): Config {
     flywheelTopN: env.FLYWHEEL_TOP_N ? seconds(env.FLYWHEEL_TOP_N, "FLYWHEEL_TOP_N") : 10,
     burnMinSpendLamports: env.BURN_MIN_SPEND_LAMPORTS ? lamports(env.BURN_MIN_SPEND_LAMPORTS, "BURN_MIN_SPEND_LAMPORTS") : BURN_MIN_SPEND_DEFAULT_LAMPORTS,
     referralShareBps: bps(env.REFERRAL_SHARE_BPS, "REFERRAL_SHARE_BPS", 50),
+    anonRateLimitPerMinute: perMinute(env.ANON_RATE_LIMIT_PER_MINUTE, "ANON_RATE_LIMIT_PER_MINUTE", 300),
+    anonPrepareRateLimitPerMinute: perMinute(env.ANON_PREPARE_RATE_LIMIT_PER_MINUTE, "ANON_PREPARE_RATE_LIMIT_PER_MINUTE", 25),
     feeChangeLeadSeconds: env.FEE_CHANGE_LEAD_SECONDS ? seconds(env.FEE_CHANGE_LEAD_SECONDS, "FEE_CHANGE_LEAD_SECONDS") : FEE_CHANGE_LEAD_DEFAULT_SECONDS,
     solRoute: solRouteConfig(env),
   };
@@ -302,6 +310,13 @@ export function quoteMarket(env: Bindings): QuoteMarket {
 export function operationsKey(env: Bindings) {
   if (!env.OPERATIONS_KEY) throw new Error("missing configuration: OPERATIONS_KEY");
   return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(env.OPERATIONS_KEY) as number[]));
+}
+
+function perMinute(raw: string | undefined, name: string, fallback: number) {
+  if (raw === undefined || raw === "") return fallback;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n <= 0) throw new Error(`${name} must be a whole number of requests above zero (got ${raw})`);
+  return n;
 }
 
 function seconds(raw: string, name: string) {

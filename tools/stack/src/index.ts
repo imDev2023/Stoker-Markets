@@ -50,6 +50,10 @@ export type StackEnv = {
   platform: LocalnetState;
   /** The Raydium CPMM pools of SOL the API routes buys paid with SOL through, standing in for Jupiter. */
   solRoutes: SolRoutes;
+  /** The API key the web server names itself with, so its server-side requests are not counted as one anonymous IP; null without the web app. */
+  webApiKey: string | null;
+  /** Every variable the API was started with, so a test can start a second API that differs in one setting. */
+  apiVars: Record<string, string>;
 };
 
 export type StackOptions = {
@@ -320,6 +324,10 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       BURN_MIN_SPEND_LAMPORTS: "100000",
       REFERRAL_SHARE_BPS: String(referralShareBps),
       FEE_CHANGE_LEAD_SECONDS: String(feeChangeLeadSeconds),
+      // Every test calls from one address, so the per-IP limits are far out of reach; a test that wants to meet them
+      // starts a second API with `startApi` and its own limits.
+      ANON_RATE_LIMIT_PER_MINUTE: "1000000",
+      ANON_PREPARE_RATE_LIMIT_PER_MINUTE: "1000000",
       SOL_ROUTE_SOURCE: "raydium-cpmm",
       SOL_ROUTE_POOLS: JSON.stringify(solRoutes.pools),
     };
@@ -330,14 +338,23 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
     const refresh = await fetch(`${apiUrl}/__scheduled?cron=${encodeURIComponent(QUOTE_REGISTRY_CRON)}`);
     if (!refresh.ok) throw new Error(`first Quote Registry refresh failed: ${refresh.status}\n${api.log()}`);
 
+    let webApiKey: string | null = null;
     if (webPort && webUrl) {
+      // As the runbook has the operator do: the web server gets a key of its own.
+      const issued = await fetch(`${apiUrl}/v1/operator/api-keys`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${OPERATOR_TOKEN}`, "content-type": "application/json" },
+        body: JSON.stringify({ name: "Web server", rateLimitPerMinute: 6000 }),
+      });
+      if (!issued.ok) throw new Error(`issuing the web server's API key failed: ${issued.status}\n${api.log()}`);
+      webApiKey = ((await issued.json()) as { key: string }).key;
       const web = run(
         `web-${webPort}`,
         "pnpm",
         ["exec", "next", "dev", "--port", String(webPort), "--hostname", "127.0.0.1"],
         join(REPO, "apps", "web"),
         // A separate build directory, so tests never fight a developer's running `next dev` for its lock.
-        { NEXT_PUBLIC_API_URL: apiUrl, NEXT_DIST_DIR: `.next-test-${webPort}`, NEXT_TELEMETRY_DISABLED: "1" },
+        { NEXT_PUBLIC_API_URL: apiUrl, API_KEY: webApiKey, NEXT_DIST_DIR: `.next-test-${webPort}`, NEXT_TELEMETRY_DISABLED: "1" },
       );
       cleanups.push(web.stop, () => rmSync(join(REPO, "apps", "web", `.next-test-${webPort}`), { recursive: true, force: true }));
       await waitFor("web", async () => (await fetch(webUrl)).ok, 180_000, web.log);
@@ -348,7 +365,7 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       env: {
         apiUrl, webUrl, rpcUrl: chain.rpcUrl, databaseUrl: pg.url, webhookSecret: WEBHOOK_SECRET, operatorToken: OPERATOR_TOKEN,
         alertSinkUrl: sink.url, heliusApiUrl: helius.url, heliusApiKey: HELIUS_API_KEY, heliusWebhookId: HELIUS_WEBHOOK_ID,
-        graduationAlertAfterSeconds, ...fees, referralShareBps, feeChangeLeadSeconds, platform, solRoutes,
+        graduationAlertAfterSeconds, ...fees, referralShareBps, feeChangeLeadSeconds, platform, solRoutes, webApiKey, apiVars: vars,
       },
       stop,
     };

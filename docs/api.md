@@ -42,7 +42,7 @@ A trade prepared with `referrer` pays that wallet LaunchLab's share fee, on-chai
 
 ## API keys
 
-Reads are open. A key identifies an integrator, meters its usage and bounds it: send it in `x-api-key` on every request. Past the key's per-minute limit the API answers 429 with `retry-after`; an unknown or revoked key is refused with 401. `GET /keys/me` shows the key's limit and its last hour of usage by minute, and stays reachable past the limit.
+Reads are open, and a caller without a key is bounded per IP address: 300 requests a minute, and 25 prepare requests a minute (`ANON_RATE_LIMIT_PER_MINUTE`, `ANON_PREPARE_RATE_LIMIT_PER_MINUTE`), answered past the limit with 429 and `retry-after`. The Helius webhook and the operator's endpoints are not counted. A key identifies an integrator, meters its usage and bounds it: send it in `x-api-key` on every request. Past the key's per-minute limit the API answers 429 with `retry-after`; an unknown or revoked key is refused with 401. `GET /keys/me` shows the key's limit and its last hour of usage by minute, and stays reachable past the limit.
 
 The operator issues keys, from the `/operator` page or directly: `POST /operator/api-keys` (`name`, `rateLimitPerMinute`, 60 by default) answers with the key once and never again; `GET /operator/api-keys` lists them without the key; `DELETE /operator/api-keys/:id` revokes one.
 
