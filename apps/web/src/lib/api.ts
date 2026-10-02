@@ -1,5 +1,5 @@
 import {
-  AirdropStatus, ApiError, ApiKeyList, BurnsPage, CandleList, CoinRewards, CreatorFeeClaimList, CreatorFees, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
+  API_KEY_HEADER, AirdropStatus, ApiError, ApiKeyList, BurnsPage, CandleList, CoinRewards, CreatorFeeClaimList, CreatorFees, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
   HolderList, IssuedApiKey, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PreparedAirdrop,
   PreparedCreatorFeeClaim, PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAsset, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, TradeList,
   TradeQuote, WalletRewards,
@@ -17,6 +17,19 @@ export class ApiRequestError extends Error {
   }
 }
 
+/**
+ * Pages rendered on the server all reach the API from the web Worker's own address, so there the web app names itself
+ * with an API key (`API_KEY`, a server-only secret that never reaches a browser) and is not counted as one anonymous
+ * IP. In a browser the visitor's own address is counted, like any other caller's.
+ */
+function apiFetch(url: string, init: RequestInit = {}) {
+  const key = typeof window === "undefined" ? process.env.API_KEY : undefined;
+  if (!key) return fetch(url, init);
+  const headers = new Headers(init.headers);
+  headers.set(API_KEY_HEADER, key);
+  return fetch(url, { ...init, headers });
+}
+
 async function read<T>(res: Response, schema: { parse: (v: unknown) => T }): Promise<T> {
   const body: unknown = await res.json().catch(() => null);
   if (!res.ok) {
@@ -27,16 +40,16 @@ async function read<T>(res: Response, schema: { parse: (v: unknown) => T }): Pro
 }
 
 export async function getPlatform() {
-  return read(await fetch(`${API_URL}/v1/platform`, { cache: "no-store" }), PlatformInfo);
+  return read(await apiFetch(`${API_URL}/v1/platform`, { cache: "no-store" }), PlatformInfo);
 }
 
 export async function listQuotes() {
-  return read(await fetch(`${API_URL}/v1/quotes`, { cache: "no-store" }), QuoteAssetList);
+  return read(await apiFetch(`${API_URL}/v1/quotes`, { cache: "no-store" }), QuoteAssetList);
 }
 
 /** One Quote Asset as the Quote Registry has it, its Quote Risk Labels included; null when the mint is no Quote Asset. */
 export async function getQuoteAsset(mint: string): Promise<QuoteAsset | null> {
-  const res = await fetch(`${API_URL}/v1/quotes/${encodeURIComponent(mint)}`, { cache: "no-store" });
+  const res = await apiFetch(`${API_URL}/v1/quotes/${encodeURIComponent(mint)}`, { cache: "no-store" });
   if (res.status === 404) return null;
   return read(res, QuoteAsset);
 }
@@ -53,143 +66,143 @@ export async function listLaunches(q: Partial<BoardQuery> & { status?: CurveStat
     const value = q[key];
     if (value) query.set(key, value);
   }
-  return read(await fetch(`${API_URL}/v1/launches?${query}`, { cache: "no-store", signal }), LaunchList);
+  return read(await apiFetch(`${API_URL}/v1/launches?${query}`, { cache: "no-store", signal }), LaunchList);
 }
 
 /** The Quote Assets Launches are paired with, most used first. */
 export async function listLaunchQuotes() {
-  return read(await fetch(`${API_URL}/v1/launches/quotes`, { cache: "no-store" }), LaunchQuoteList);
+  return read(await apiFetch(`${API_URL}/v1/launches/quotes`, { cache: "no-store" }), LaunchQuoteList);
 }
 
 /** Top holders and the Creator's holding, read from the chain by the API. */
 export async function getHolders(mint: string) {
-  return read(await fetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/holders`, { cache: "no-store" }), HolderList);
+  return read(await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/holders`, { cache: "no-store" }), HolderList);
 }
 
 export async function getLaunch(mint: string): Promise<LaunchSummary | null> {
-  const res = await fetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}`, { cache: "no-store" });
+  const res = await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}`, { cache: "no-store" });
   if (res.status === 404) return null;
   return read(res, LaunchSummary);
 }
 
 export async function prepareLaunch(form: FormData) {
-  return read(await fetch(`${API_URL}/v1/launches/prepare`, { method: "POST", body: form }), PreparedLaunch);
+  return read(await apiFetch(`${API_URL}/v1/launches/prepare`, { method: "POST", body: form }), PreparedLaunch);
 }
 
 /** Prepares an earlier launch again, for the same coin address; a 409 means that coin has already launched. */
 export async function retryLaunch(mint: string) {
-  return read(await fetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/prepare`, { method: "POST" }), PreparedLaunch);
+  return read(await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/prepare`, { method: "POST" }), PreparedLaunch);
 }
 
 /** What a first buy of `firstBuy` raw Quote Asset units gets on a new coin, less its Reward Tax on a Reward Launch. */
 export async function getLaunchQuote(quoteMint: string, firstBuy: string, rewardTax: number | null, signal?: AbortSignal) {
   const query = new URLSearchParams({ quoteMint, firstBuy, ...(rewardTax ? { rewardTax: String(rewardTax) } : {}) });
-  return read(await fetch(`${API_URL}/v1/launch-quote?${query}`, { cache: "no-store", signal }), FirstBuyQuote);
+  return read(await apiFetch(`${API_URL}/v1/launch-quote?${query}`, { cache: "no-store", signal }), FirstBuyQuote);
 }
 
 /** What the launch form offers this Creator wallet. */
 export async function getLaunchPermissions(wallet: string, signal?: AbortSignal) {
-  return read(await fetch(`${API_URL}/v1/creators/${encodeURIComponent(wallet)}/launch-permissions`, { cache: "no-store", signal }), LaunchPermissions);
+  return read(await apiFetch(`${API_URL}/v1/creators/${encodeURIComponent(wallet)}/launch-permissions`, { cache: "no-store", signal }), LaunchPermissions);
 }
 
 /** A coin's airdrop and which wallets it has paid; null if the coin has none. */
 export async function getAirdrop(mint: string): Promise<AirdropStatus | null> {
-  const res = await fetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/airdrop`, { cache: "no-store" });
+  const res = await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/airdrop`, { cache: "no-store" });
   if (res.status === 404) return null;
   return read(res, AirdropStatus);
 }
 
 export async function prepareAirdrop(mint: string) {
-  return read(await fetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/airdrop/prepare`, { method: "POST" }), PreparedAirdrop);
+  return read(await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/airdrop/prepare`, { method: "POST" }), PreparedAirdrop);
 }
 
 export async function getQuote(mint: string, q: TradeQuoteQuery, signal?: AbortSignal) {
   const query = new URLSearchParams({ side: q.side, amount: q.amount, slippageBps: String(q.slippageBps), payWith: q.payWith });
   if (q.referrer) query.set("referrer", q.referrer);
-  return read(await fetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/quote?${query}`, { cache: "no-store", signal }), TradeQuote);
+  return read(await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/quote?${query}`, { cache: "no-store", signal }), TradeQuote);
 }
 
 export async function prepareTrade(body: PrepareTradeRequest) {
   return read(
-    await fetch(`${API_URL}/v1/trades/prepare`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
+    await apiFetch(`${API_URL}/v1/trades/prepare`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
     PreparedTrade,
   );
 }
 
 export async function listTrades(mint: string) {
-  return read(await fetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/trades?limit=50`, { cache: "no-store" }), TradeList);
+  return read(await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/trades?limit=50`, { cache: "no-store" }), TradeList);
 }
 
 export async function getCandles(mint: string, interval: CandleInterval) {
-  return read(await fetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/candles?interval=${interval}`, { cache: "no-store" }), CandleList);
+  return read(await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/candles?interval=${interval}`, { cache: "no-store" }), CandleList);
 }
 
 /** A Creator's Creator Fee per Quote Asset and per Launch; null if the address isn't a valid wallet address. */
 export async function getCreatorFees(creator: string): Promise<CreatorFees | null> {
-  const res = await fetch(`${API_URL}/v1/creators/${encodeURIComponent(creator)}/fees`, { cache: "no-store" });
+  const res = await apiFetch(`${API_URL}/v1/creators/${encodeURIComponent(creator)}/fees`, { cache: "no-store" });
   if (res.status === 400) return null;
   return read(res, CreatorFees);
 }
 
 export async function listCreatorFeeClaims(creator: string) {
-  return read(await fetch(`${API_URL}/v1/creators/${encodeURIComponent(creator)}/claims?limit=100`, { cache: "no-store" }), CreatorFeeClaimList);
+  return read(await apiFetch(`${API_URL}/v1/creators/${encodeURIComponent(creator)}/claims?limit=100`, { cache: "no-store" }), CreatorFeeClaimList);
 }
 
 export async function prepareCreatorFeeClaim(body: PrepareCreatorFeeClaimRequest) {
   return read(
-    await fetch(`${API_URL}/v1/creator-fees/prepare`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
+    await apiFetch(`${API_URL}/v1/creator-fees/prepare`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
     PreparedCreatorFeeClaim,
   );
 }
 
 /** Platform revenue per asset and per day, summed from the Ledger. */
 export async function getRevenue() {
-  return read(await fetch(`${API_URL}/v1/revenue`, { cache: "no-store" }), Revenue);
+  return read(await apiFetch(`${API_URL}/v1/revenue`, { cache: "no-store" }), Revenue);
 }
 
 /** A page of the Ledger, newest first; pass the previous page's `next` to go further back. */
 export async function listLedger(before?: string | null) {
   const query = new URLSearchParams({ limit: "25", ...(before ? { before } : {}) });
-  return read(await fetch(`${API_URL}/v1/ledger?${query}`, { cache: "no-store" }), LedgerPage);
+  return read(await apiFetch(`${API_URL}/v1/ledger?${query}`, { cache: "no-store" }), LedgerPage);
 }
 
 /** A Reward Launch's Holder Rewards: tax waiting, rules and rounds; null for a standard coin. */
 export async function getCoinRewards(mint: string): Promise<CoinRewards | null> {
-  const res = await fetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/rewards`, { cache: "no-store" });
+  const res = await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/rewards`, { cache: "no-store" });
   if (res.status === 404) return null;
   return read(res, CoinRewards);
 }
 
 /** Burn and Flywheel: shares, rule, budgets and every buy and burn so far. */
 export async function getBurns() {
-  return read(await fetch(`${API_URL}/v1/burns`, { cache: "no-store" }), BurnsPage);
+  return read(await apiFetch(`${API_URL}/v1/burns`, { cache: "no-store" }), BurnsPage);
 }
 
 export async function getRewardRules() {
-  return read(await fetch(`${API_URL}/v1/rewards/rules`, { cache: "no-store" }), RewardRulesPage);
+  return read(await apiFetch(`${API_URL}/v1/rewards/rules`, { cache: "no-store" }), RewardRulesPage);
 }
 
 export async function getRewardRound(id: string): Promise<RewardRoundDetail | null> {
-  const res = await fetch(`${API_URL}/v1/rewards/rounds/${encodeURIComponent(id)}`, { cache: "no-store" });
+  const res = await apiFetch(`${API_URL}/v1/rewards/rounds/${encodeURIComponent(id)}`, { cache: "no-store" });
   if (res.status === 404) return null;
   return read(res, RewardRoundDetail);
 }
 
 /** A wallet's Holder Rewards across every Reward Launch; null if the address isn't a valid wallet address. */
 export async function getWalletRewards(wallet: string): Promise<WalletRewards | null> {
-  const res = await fetch(`${API_URL}/v1/wallets/${encodeURIComponent(wallet)}/rewards`, { cache: "no-store" });
+  const res = await apiFetch(`${API_URL}/v1/wallets/${encodeURIComponent(wallet)}/rewards`, { cache: "no-store" });
   if (res.status === 400) return null;
   return read(res, WalletRewards);
 }
 
 /** Tells the API about a confirmed launch, trade or claim so it shows up without waiting for the webhook. */
 export async function reportTransaction(signature: string) {
-  await fetch(`${API_URL}/v1/transactions/${signature}`, { method: "POST" }).catch(() => undefined);
+  await apiFetch(`${API_URL}/v1/transactions/${signature}`, { method: "POST" }).catch(() => undefined);
 }
 
 /** Every announced Platform Fee or Creator Fee change, newest effective time first; public, so none comes as a surprise. */
 export async function listAnnouncements() {
-  return read(await fetch(`${API_URL}/v1/announcements`, { cache: "no-store" }), FeeAnnouncementList);
+  return read(await apiFetch(`${API_URL}/v1/announcements`, { cache: "no-store" }), FeeAnnouncementList);
 }
 
 // The operator view, behind the operator token, which the operator's browser keeps for the session only.
@@ -201,37 +214,37 @@ const operator = (token: string, body?: unknown, method = body === undefined ? "
 });
 
 export async function getOperatorOverview(token: string) {
-  return read(await fetch(`${API_URL}/v1/operator/overview`, operator(token)), OperatorOverview);
+  return read(await apiFetch(`${API_URL}/v1/operator/overview`, operator(token)), OperatorOverview);
 }
 
 export async function listOperatorAlerts(token: string) {
-  return read(await fetch(`${API_URL}/v1/operator/alerts`, operator(token)), OperatorAlertList);
+  return read(await apiFetch(`${API_URL}/v1/operator/alerts`, operator(token)), OperatorAlertList);
 }
 
 export async function announceFeeChange(token: string, body: AnnounceFeeChange) {
-  return read(await fetch(`${API_URL}/v1/operator/fees/announce`, operator(token, body)), FeeAnnouncement);
+  return read(await apiFetch(`${API_URL}/v1/operator/fees/announce`, operator(token, body)), FeeAnnouncement);
 }
 
 export async function prepareFeeChange(token: string, id: string) {
-  return read(await fetch(`${API_URL}/v1/operator/fees/prepare`, operator(token, { id })), PreparedFeeChange);
+  return read(await apiFetch(`${API_URL}/v1/operator/fees/prepare`, operator(token, { id })), PreparedFeeChange);
 }
 
 /** API keys (#21): the operator issues, lists and revokes them; a key is answered once, when issued. */
 export async function listApiKeys(token: string) {
-  return read(await fetch(`${API_URL}/v1/operator/api-keys`, operator(token)), ApiKeyList);
+  return read(await apiFetch(`${API_URL}/v1/operator/api-keys`, operator(token)), ApiKeyList);
 }
 
 export async function createApiKey(token: string, body: CreateApiKey) {
-  return read(await fetch(`${API_URL}/v1/operator/api-keys`, operator(token, body)), IssuedApiKey);
+  return read(await apiFetch(`${API_URL}/v1/operator/api-keys`, operator(token, body)), IssuedApiKey);
 }
 
 export async function revokeApiKey(token: string, id: string) {
-  const res = await fetch(`${API_URL}/v1/operator/api-keys/${id}`, operator(token, undefined, "DELETE"));
+  const res = await apiFetch(`${API_URL}/v1/operator/api-keys/${id}`, operator(token, undefined, "DELETE"));
   if (!res.ok) throw new ApiRequestError(res.status === 401 ? "unauthorized" : `revoking the key failed (${res.status})`, res.status);
 }
 
 export async function runOperatorJob(token: string, job: "quote-registry" | "fee-collector" | "reward-rounds" | "burn") {
-  const res = await fetch(`${API_URL}/v1/operator/jobs/${job}`, operator(token, {}));
+  const res = await apiFetch(`${API_URL}/v1/operator/jobs/${job}`, operator(token, {}));
   const body: unknown = await res.json().catch(() => null);
   if (!res.ok && res.status === 401) throw new ApiRequestError("unauthorized", 401);
   return body as { status: string; error: string | null };
