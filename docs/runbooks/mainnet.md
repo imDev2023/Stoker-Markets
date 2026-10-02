@@ -97,6 +97,7 @@ Put the mainnet values in an `env.production` block of `apps/api/wrangler.jsonc`
 | `FEE_CHANGE_LEAD_SECONDS`, `REWARD_RULES_LEAD_SECONDS` | `86400` | the fee lead is refused under an hour on mainnet |
 | `BURN_SHARE_BPS`, `FLYWHEEL_SHARE_BPS`, `FLYWHEEL_TOP_N`, `BURN_MIN_SPEND_LAMPORTS` | `6000`, `500`, `10`, `10000000` (PRD) | whole basis points |
 | `REFERRAL_SHARE_BPS` | `50` | capped per Quote Asset by its GlobalConfig |
+| `ANON_RATE_LIMIT_PER_MINUTE`, `ANON_PREPARE_RATE_LIMIT_PER_MINUTE` | `300`, `25` | what one IP may do each minute without an API key |
 | `triggers.crons` | the five in `wrangler.jsonc` as they are | graduation watch, Quote Registry, Fee Collector, Reward Engine, Burn |
 | `hyperdrive[0].id`, `r2_buckets[0].bucket_name` | from section 4 and 8 | |
 
@@ -146,6 +147,8 @@ Every coin's metadata URI is `PUBLIC_API_URL/metadata/<file>` and its image `PUB
 ## 9. The web Worker
 
 `NEXT_PUBLIC_API_URL=https://api.<domain>` at build time, then `pnpm --filter web deploy` (OpenNext build and `opennextjs-cloudflare deploy`; `apps/web/wrangler.jsonc`), with `<domain>` as its custom domain. Confirm the `/launch` page shows the 571 Quote Assets and `/operator` opens with the token. The public site needs no secret.
+
+The web Worker renders pages on the server, and all of those requests reach the API from the Worker's own address, which the per-IP limit would count as one caller. Issue it an API key with a high limit (`POST /v1/operator/api-keys` with `name` and `rateLimitPerMinute`; 6000, the most a key can have, is 100 requests a second) and set it as the web Worker's secret `API_KEY` (`wrangler secret put API_KEY` in `apps/web`); it is only ever sent from the server. Requests made in a visitor's browser carry no key and count against the visitor's own IP.
 
 ## 10. Launch #1: the Platform Token (owner)
 
