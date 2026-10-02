@@ -58,7 +58,10 @@ export async function forwardCreatorShares({ db, cfg, operations }: ForwardDeps)
   ]);
   const owed = shares
     .map((s) => ({ creator: s.creator, mint: s.mint, amount: s.curve + s.pool - (committed.get(`${s.creator} ${s.mint}`) ?? 0n) }))
-    .filter((o) => o.amount > 0n && !busy.has(`${o.creator} ${o.mint}`));
+    .filter((o) => o.amount > 0n && !busy.has(`${o.creator} ${o.mint}`))
+    // Asset by asset, the largest share first: the Ledger lists a run's forwards in the order they were paid, and a
+    // Creator's address says nothing to a reader.
+    .sort((a, b) => a.mint.localeCompare(b.mint) || (a.amount < b.amount ? 1 : a.amount > b.amount ? -1 : 0) || a.creator.localeCompare(b.creator));
   const tokenMints = [...new Set(owed.map((o) => o.mint).filter((m) => m !== WSOL))];
   const held = new Map((await readTokenHoldings(connection, ops, tokenMints.map((m) => new PublicKey(m)))).map((t) => [t.mint.toBase58(), t]));
   const revenue = await revenueHeld(db, tokenMints);
