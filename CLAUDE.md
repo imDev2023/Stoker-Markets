@@ -5,7 +5,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 
 ## Read first
 
-1. GitHub issue #5 (`gh issue view 5`) - the v1 PRD; slices are issues #8 to #23, each with "Blocked by". A slice's latest comment is its current status. Every v1 slice except #11 (draft PR #36) and #23 (mainnet go-live, the owner's) is merged; check `gh pr list` for open drafts before starting work, since cloud sessions also push here. Push every working branch: a cloud session can't see a local-only branch and rebuilt #11 from scratch because of one.
+1. GitHub issue #5 (`gh issue view 5`) - the v1 PRD; slices are issues #8 to #23, each with "Blocked by". A slice's latest comment is its current status. Every v1 slice is merged except #23 (mainnet go-live, the owner's, with `docs/runbooks/mainnet.md`); #37 (motion and analytics) waits until after launch; check `gh pr list` for open drafts before starting work, since cloud sessions also push here. Push every working branch: a cloud session can't see a local-only branch and rebuilt #11 from scratch because of one.
 2. `CONTEXT.md` - the domain glossary; use its terms in code, issues and UI copy.
 3. `docs/adr/` - fee model (0001), Cloudflare hosting (0002), server-built transactions (0003), key custody (0004), price-banded curve rules (0005, proposed), Reward Rounds and Burn budgets (0006).
 4. `spike/launchlab-devnet/README.md` - what LaunchLab really does on devnet, with tx evidence and gotchas.
@@ -86,6 +86,9 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 - Never classify a Quote Asset by its name: a pump.fun coin on mainnet calls itself "GoPro - Backpack Securities". Categories come from the mint address (SOL, stablecoins) or the issuer's freeze authority or permanent delegate (tokenized stocks), in `apps/api/src/quotes/categories.ts`.
 - A curve's coins sit in `launchlabPdas.vault(pool, mint)`, owned by the LaunchLab vault authority PDA, not in an associated token account; after Graduation the CPMM authority PDA owns the pool's.
 - On a cold `next dev` load, hydration can land after `networkidle`, so a UI check that needs client script (a fitted `PairMark`, anything set in an effect) must poll, as `expectNoTruncatedText` does.
+- A Playwright mask paints an element's whole box even where a scrolling list clips it, and `snap` scrolls the page under a resting pointer, which hovers whatever passes beneath (an open picker then scrolls its list): `visual.spec.ts` parks the pointer first and hides the picker's balances instead of masking them.
+- Running a second `playwright test` in `tests/ui` while a suite runs wipes its `test-results` and fails it; pass `--output` elsewhere.
+- A squash-merged PR conflicts with a branch stacked on it; when main equals a commit the branch already contains, `git merge -s ours origin/main` records it without touching files. Force pushes are blocked for agents here, so merge main in rather than rebasing a pushed branch.
 - A Playwright full-page screenshot doesn't scroll, so `loading="lazy"` images far down a long page load or not by timing; `snap` in `visual.spec.ts` scrolls through the page first. Never force `loading="eager"` from a test: it causes a hydration mismatch. Masks paint even over elements hidden inside a closed `<details>`, so mask only visible ones.
 - lightweight-charts lays out its chart with a `<table>`, so in UI tests scope table queries to the Trades region. Playwright won't click an `aria-disabled` option without `force: true`.
 - `agent-browser screenshot` needs absolute paths. Firecrawl is out of credits.
