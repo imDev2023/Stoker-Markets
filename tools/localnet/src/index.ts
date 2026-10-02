@@ -490,7 +490,7 @@ export async function bootstrapPlatform(connection: Connection, rpcUrl: string, 
       createPlatformConfigIx(program, admin.publicKey, {
         feeRate: new BN(5_000),
         creatorFeeRate: new BN(5_000),
-        name: "Launchpad (localnet)",
+        name: "Stoker (localnet)",
         web: "http://localhost:3000",
         img: "http://localhost:3000/icon.png",
         operationsWallet: operations.publicKey,
