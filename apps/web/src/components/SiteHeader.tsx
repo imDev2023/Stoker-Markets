@@ -7,7 +7,7 @@ export function SiteHeader({ cluster }: { cluster: string }) {
     <header className={styles.header}>
       <div className={`shell ${styles.bar}`}>
         <Link href="/" className={styles.wordmark}>
-          Launchpad
+          Stoker
           {cluster !== "mainnet" && <span className={styles.cluster}>{cluster}</span>}
         </Link>
         <nav className={styles.nav} aria-label="Main">

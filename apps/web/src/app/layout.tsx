@@ -12,7 +12,7 @@ const publicSans = Public_Sans({ subsets: ["latin"], variable: "--font-public-sa
 const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-plex-mono", display: "swap" });
 
 export const metadata: Metadata = {
-  title: { default: "Launchpad", template: "%s · Launchpad" },
+  title: { default: "Stoker", template: "%s · Stoker" },
   description: "Launch a coin on Solana. Creators earn 0.5% of every trade, paid by the chain.",
 };
 

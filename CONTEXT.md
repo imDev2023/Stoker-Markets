@@ -1,4 +1,4 @@
-# Launchpad
+# Stoker
 
 A Solana launchpad where anyone launches a coin paired with any Quote Asset, with no gatekeeper choosing which assets are allowed, and every fee a Creator earns is paid by the chain rather than promised by us.
 
