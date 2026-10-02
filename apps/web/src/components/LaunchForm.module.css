@@ -204,6 +204,13 @@
   color: var(--ink-2);
 }
 
+.disclaimer {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
 .labels {
   padding: 14px 18px;
   border: 1px solid var(--line);
