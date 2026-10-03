@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AIRDROP_MAX_RECIPIENTS, REWARD_TAX_RATES, type RewardTaxBps, type TradeQuote } from "@launchpad/contract";
+import {
+  AIRDROP_MAX_RECIPIENTS, REWARD_SALE_MAX_RESERVE_BPS, REWARD_TAX_RATES, type RewardPayoutAsset, type RewardTaxBps, type TradeQuote,
+} from "@launchpad/contract";
 import { getLaunchPermissions, getLaunchQuote } from "@/lib/api";
 import { parseAirdropList } from "@/lib/airdrop";
 import { COIN_DECIMALS, COIN_SUPPLY, formatUnits, parseUnits } from "@/lib/format";
@@ -26,6 +28,8 @@ export function supplyShare(raw: bigint) {
  */
 export function useLaunchOptions(quote: OptionsQuote | null, creator: string | null) {
   const [rewardTax, setRewardTax] = useState<RewardTaxBps | null>(null);
+  // What a Reward Launch pays its holders in: the coin itself, or the Quote Asset bought with the tax (ADR 0006).
+  const [rewardPayout, setRewardPayout] = useState<RewardPayoutAsset>("coin");
   const [firstBuyText, setFirstBuyText] = useState("");
   const [airdropChosen, setAirdropOn] = useState(false);
   const [airdropText, setAirdropText] = useState("");
@@ -92,7 +96,7 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
 
   return {
     quote,
-    rewardTax, setRewardTax,
+    rewardTax, setRewardTax, rewardPayout, setRewardPayout,
     firstBuyText, setFirstBuyText, firstBuyInvalid, firstBuyQuote, firstBuyProblem,
     airdropAllowed, airdropOn, setAirdropOn, airdropText, setAirdropText, airdrop, airdropProblem, airdropMissing, bought,
     /** What stops the launch from being prepared, if anything. */
@@ -100,7 +104,7 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
     /** The form fields these options add to the prepare request. */
     fields(): [string, string][] {
       const out: [string, string][] = [];
-      if (rewardTax !== null) out.push(["rewardTax", String(rewardTax)]);
+      if (rewardTax !== null) out.push(["rewardTax", String(rewardTax)], ["rewardPayout", rewardPayout]);
       if (firstBuy !== null) out.push(["firstBuy", firstBuy.toString()]);
       if (airdropOn && airdrop.recipients.length > 0)
         out.push(["airdrop", JSON.stringify(airdrop.recipients.map((r) => ({ wallet: r.wallet, amount: r.amount.toString() })))]);
@@ -113,6 +117,7 @@ export type LaunchOptionsState = ReturnType<typeof useLaunchOptions>;
 
 export function LaunchOptions({ options: o, coin }: { options: LaunchOptionsState; coin: string }) {
   const coinLabel = coin || "coins";
+  const quoteLabel = o.quote?.symbol ?? null;
   const kept = o.bought !== null && o.airdropOn && !o.airdrop.problem ? o.bought - o.airdrop.total : null;
 
   return (
@@ -123,17 +128,37 @@ export function LaunchOptions({ options: o, coin }: { options: LaunchOptionsStat
           <span>Reward Launch: every transfer of {coinLabel} withholds a Reward Tax for its holders</span>
         </label>
         {o.rewardTax !== null && (
-          <div className={styles.rates} role="group" aria-label="Reward Tax">
-            {REWARD_TAX_RATES.map((bps) => (
-              <button key={bps} type="button" aria-pressed={o.rewardTax === bps} onClick={() => o.setRewardTax(bps)}>
-                {bps / 100}%
+          <>
+            <div className={styles.rates} role="group" aria-label="Reward Tax">
+              {REWARD_TAX_RATES.map((bps) => (
+                <button key={bps} type="button" aria-pressed={o.rewardTax === bps} onClick={() => o.setRewardTax(bps)}>
+                  {bps / 100}%
+                </button>
+              ))}
+              <p className={styles.hint}>
+                Fixed for good: LaunchLab holds the tax authority until graduation, then the platform gives it up on-chain.
+              </p>
+            </div>
+            <div className={styles.rates} role="group" aria-label="Paid out in">
+              <span className={styles.payoutLabel}>Paid out in</span>
+              <button type="button" aria-pressed={o.rewardPayout === "coin"} onClick={() => o.setRewardPayout("coin")}>
+                {coinLabel}
               </button>
-            ))}
-            <p className={styles.hint}>
-              Fixed for good: LaunchLab holds the tax authority until graduation, then the platform gives it up on-chain. The
-              tax is paid out to holders in {coinLabel} itself, never sold.
-            </p>
-          </div>
+              <button type="button" aria-pressed={o.rewardPayout === "quote"} onClick={() => o.setRewardPayout("quote")} disabled={!quoteLabel}>
+                {quoteLabel ?? "Quote Asset"}
+              </button>
+              <p className={styles.hint}>
+                {o.rewardPayout === "coin" ? (
+                  <>Holders are paid in {coinLabel} itself, never sold. Fixed at launch, like the rate.</>
+                ) : (
+                  <>
+                    The tax is sold for {quoteLabel} in small slices, at most {REWARD_SALE_MAX_RESERVE_BPS / 100}% of the coins in the market
+                    per run, and holders are paid in {quoteLabel}. Fixed at launch, like the rate.
+                  </>
+                )}
+              </p>
+            </div>
+          </>
         )}
       </div>
 

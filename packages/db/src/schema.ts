@@ -20,6 +20,12 @@ export const launches = pgTable(
     /** A Reward Launch's Reward Tax in basis points (100, 300 or 500); null for a standard coin. */
     rewardTaxBps: integer("reward_tax_bps"),
     /**
+     * A Reward Launch's Payout Asset (ADR 0006, #43): its Holder Rewards are paid in the coin itself, or in its Quote
+     * Asset, bought with the tax through Reward Sales. Copied from the launch draft when the launch is indexed and never
+     * changed; a Reward Launch made without our API pays in the coin. Null for a standard coin.
+     */
+    rewardPayout: text("reward_payout", { enum: ["coin", "quote"] }),
+    /**
      * The transaction in which the operations wallet gave up the coin's transfer-fee-config authority for good, once
      * Raydium's migration handed it over; from then on nobody can change the Reward Tax. Null until then.
      */
@@ -240,6 +246,8 @@ export const launchDrafts = pgTable(
     firstBuy: numeric("first_buy", { precision: 40, scale: 0 }),
     /** The Reward Tax the Creator chose, in basis points; null for a standard Launch. */
     rewardTaxBps: integer("reward_tax_bps"),
+    /** The Payout Asset the Creator chose for a Reward Launch; null for a standard Launch. */
+    rewardPayout: text("reward_payout", { enum: ["coin", "quote"] }),
     /** Newest transaction of the Creator's coin account already scanned for airdrop payments. */
     airdropScannedUntil: text("airdrop_scanned_until"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -399,8 +407,17 @@ export const rewardRounds = pgTable(
     rulesVersion: integer("rules_version").notNull(),
     status: text("status", { enum: ["paying", "paid"] }).notNull(),
     snapshotSlot: bigint("snapshot_slot", { mode: "number" }).notNull(),
-    /** The collected tax in the operations wallet's account of the coin at the snapshot, raw units. */
+    /** The Payout Asset the round pays in: the coin's mint, or the Quote Asset's (SOL as the wrapped-SOL mint, paid as plain SOL). */
+    payoutMint: text("payout_mint").notNull(),
+    payoutDecimals: integer("payout_decimals").notNull(),
+    /**
+     * What the round pays out, raw units of the Payout Asset: for a coin payout the collected tax in the operations
+     * wallet's account of the coin at the snapshot; for a Quote Asset payout what the Reward Sales brought in and no
+     * earlier round paid.
+     */
     pot: numeric("pot", { precision: 40, scale: 0 }).notNull(),
+    /** For a Quote Asset payout, the coins of tax sold for this pot (the threshold is measured in coins); null for a coin payout. */
+    sold: numeric("sold", { precision: 40, scale: 0 }),
     eligibleHolders: integer("eligible_holders").notNull(),
     /** What the payouts add up to; rounding leaves the pot's last units for the next round. */
     distributable: numeric("distributable", { precision: 40, scale: 0 }).notNull(),
@@ -423,13 +440,50 @@ export const rewardPayouts = pgTable(
     /** What the wallet held at the snapshot, raw units. */
     holding: numeric("holding", { precision: 40, scale: 0 }).notNull(),
     amount: numeric("amount", { precision: 40, scale: 0 }).notNull(),
-    status: text("status", { enum: ["unpaid", "sending", "paid"] }).notNull().default("unpaid"),
+    /**
+     * `returned`: a SOL payout under the rent-exempt minimum to a wallet holding no SOL, which no transaction can land;
+     * its amount stays in the pot for the next round and the round finishes without it.
+     */
+    status: text("status", { enum: ["unpaid", "sending", "paid", "returned"] }).notNull().default("unpaid"),
     signature: text("signature"),
     /** Past this block height the transaction handed out for this payout can never land. */
     sendableUntil: bigint("sendable_until", { mode: "number" }),
     paidAt: timestamp("paid_at", { withTimezone: true }),
   },
   (t) => [primaryKey({ columns: [t.roundId, t.wallet] }), index("reward_payouts_wallet_idx").on(t.wallet)],
+);
+
+/**
+ * Reward Sales (ADR 0006, #43): one row per sale of a Quote Asset payout Reward Launch's collected tax into the coin's
+ * own market, written with its signature before the transaction is sent and settled by it, so a run that dies never
+ * sells the same coins twice or loses what a sale brought in. A round takes every landed sale not yet in one when it
+ * opens; the pot is what the landed sales brought in less what earlier rounds paid.
+ */
+export const rewardSales = pgTable(
+  "reward_sales",
+  {
+    signature: text("signature").primaryKey(),
+    mint: text("mint").notNull(),
+    /** Where the slice was sold: the coin's curve, or its CPMM pool after Graduation. */
+    venue: text("venue", { enum: ["curve", "pool"] }).notNull(),
+    status: text("status", { enum: ["sending", "landed", "failed", "expired"] }).notNull().default("sending"),
+    /** Coins sold, raw units, as the transaction was built. */
+    coins: numeric("coins", { precision: 40, scale: 0 }).notNull(),
+    quoteMint: text("quote_mint").notNull(),
+    quoteDecimals: integer("quote_decimals").notNull(),
+    /** Quote Asset that reached the operations wallet, raw units; null until the sale has landed. */
+    proceeds: numeric("proceeds", { precision: 40, scale: 0 }),
+    /** The round whose pot this sale went into; null until a round opens. */
+    roundId: text("round_id"),
+    /** Past this block height an unconfirmed transaction can never land. */
+    lastValidBlockHeight: bigint("last_valid_block_height", { mode: "number" }).notNull(),
+    slot: bigint("slot", { mode: "number" }),
+    blockTime: timestamp("block_time", { withTimezone: true }),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    settledAt: timestamp("settled_at", { withTimezone: true }),
+  },
+  (t) => [index("reward_sales_mint_idx").on(t.mint, t.status), index("reward_sales_round_idx").on(t.roundId)],
 );
 
 /** An integrator's API key (#21): only its hash is kept; the key itself is shown once, when issued. */

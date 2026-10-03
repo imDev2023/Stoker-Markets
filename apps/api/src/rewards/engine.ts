@@ -1,32 +1,40 @@
-// The Reward Engine (#17): Reward Rounds that collect a Reward Launch's withheld Reward Tax and pay it to holders in the
-// coin itself, pro rata, never sold. A round is public from its snapshot to its last payout, resumable at any point,
-// and never pays a holder twice: every payout is written down before it is sent, and a run that finds a payout in
-// flight waits for its transaction to land or expire before sending another.
-import { Connection, PublicKey, type Keypair, type TransactionInstruction } from "@solana/web3.js";
+// The Reward Engine (#17, amended by #43): Reward Rounds that collect a Reward Launch's withheld Reward Tax and pay it
+// to holders pro rata in the Launch's Payout Asset: the coin itself, never sold, or its Quote Asset, bought with the
+// tax through bounded Reward Sales (ADR 0006). A round is public from its snapshot to its last payout, resumable at
+// any point, and never pays a holder twice: every payout is written down before it is sent, and a run that finds a
+// payout in flight waits for its transaction to land or expire before sending another.
+import { Connection, PublicKey, SystemProgram, type Keypair, type TransactionInstruction } from "@solana/web3.js";
 import {
   createAssociatedTokenAccountIdempotentInstruction, createHarvestWithheldTokensToMintInstruction, createTransferCheckedInstruction,
   createWithdrawWithheldTokensFromMintInstruction, getAssociatedTokenAddressSync, getMint, getTransferFeeConfig, TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
 import { and, asc, desc, eq, inArray, isNotNull, isNull, lte, sql } from "drizzle-orm";
-import { signedTransaction } from "@launchpad/chain";
-import { launches, operatorAlerts, rewardPayouts, rewardRounds, rewardRules, type Db } from "@launchpad/db";
+import { signedTransaction, WSOL_MINT } from "@launchpad/chain";
+import { launches, operatorAlerts, rewardPayouts, rewardRounds, rewardRules, rewardSales, type Db } from "@launchpad/db";
 import type { Config } from "../env";
 import { JobFailure } from "../jobs";
 import { eligibleHolders, readCoinAccounts } from "./holders";
+import { quotePot, sellSlice, settlePendingSales, unassignedSales, type SaleReport } from "./sales";
 
 export type RewardEngineDeps = { db: Db; cfg: Config; operations: Keypair; now?: Date };
 
 export type RewardRoundsSummary = {
   /** Coins whose withheld tax was harvested and withdrawn, with how much. */
   collected: { mint: string; amount: string }[];
+  /** Reward Sales this run made, one slice per Quote Asset payout coin at most. */
+  sold: SaleReport[];
+  /** Coins whose slice was not sold this run, and why. */
+  unsold: { mint: string; reason: string }[];
   /** Rounds opened this run, with their snapshot. */
   opened: { mint: string; round: string; holders: number; amount: string }[];
   /** Payouts sent this run, per round. */
   paid: { round: string; payouts: number }[];
+  /** SOL payouts no transaction could land (under the rent minimum, to a wallet holding no SOL), back in the pot. */
+  returned: { round: string; payouts: number }[];
   /** Rounds that finished this run. */
   finished: string[];
-  /** Payouts of earlier runs found landed or expired, now settled. */
-  settled: { landed: number; expired: number };
+  /** Payouts and sales of earlier runs found landed or expired, now settled. */
+  settled: { landed: number; expired: number; sales: { landed: number; failed: number; expired: number } };
   problems: string[];
 };
 
@@ -37,8 +45,13 @@ const HARVEST_BATCH = 20;
 /** Holders paid per transaction: a transfer and an idempotent account creation each. */
 const PAYOUT_BATCH = 6;
 const POLL_MS = 400;
+const WSOL = WSOL_MINT.toBase58();
 
 export type RewardRule = typeof rewardRules.$inferSelect;
+type Round = typeof rewardRounds.$inferSelect;
+
+/** A Reward Launch as the engine works on it. */
+type Coin = { mint: string; symbol: string; decimals: number; pool: string; quoteMint: string; payout: "coin" | "quote" };
 
 /** The rules version in force at `now`: the newest whose effective time has passed. Announced ones wait their turn. */
 export async function rulesInForce(db: Db, now = new Date()): Promise<RewardRule> {
@@ -53,15 +66,25 @@ export async function rulesInForce(db: Db, now = new Date()): Promise<RewardRule
 }
 
 /**
- * One run of the Reward Engine over every Reward Launch: settle payouts in flight, harvest and withdraw withheld tax,
- * open a round where enough has collected, and pay the open rounds, at most `maxPayouts` payouts in all so a run stays
- * within a Cron Trigger's time.
+ * One run of the Reward Engine over every Reward Launch: settle payouts and sales in flight, harvest and withdraw
+ * withheld tax, sell one slice of it where the Payout Asset is the Quote Asset, open a round where enough has
+ * collected (or been sold), and pay the open rounds, at most `maxPayouts` payouts in all so a run stays within a Cron
+ * Trigger's time.
  */
 export async function runRewardRounds({ db, cfg, operations, now = new Date() }: RewardEngineDeps, maxPayouts = 200): Promise<RewardRoundsSummary> {
   const connection = new Connection(cfg.rpcUrl, "confirmed");
-  const summary: RewardRoundsSummary = { collected: [], opened: [], paid: [], finished: [], settled: { landed: 0, expired: 0 }, problems: [] };
+  const summary: RewardRoundsSummary = {
+    collected: [], sold: [], unsold: [], opened: [], paid: [], returned: [], finished: [],
+    settled: { landed: 0, expired: 0, sales: { landed: 0, failed: 0, expired: 0 } }, problems: [],
+  };
   const rules = await rulesInForce(db, now);
-  const coins = await db.select({ mint: launches.mint, symbol: launches.symbol }).from(launches).where(isNotNull(launches.rewardTaxBps)).orderBy(asc(launches.createdSlot));
+  const coins: Coin[] = (
+    await db
+      .select({ mint: launches.mint, symbol: launches.symbol, decimals: launches.decimals, pool: launches.pool, quoteMint: launches.quoteMint, payout: launches.rewardPayout })
+      .from(launches)
+      .where(isNotNull(launches.rewardTaxBps))
+      .orderBy(asc(launches.createdSlot))
+  ).map((c) => ({ ...c, payout: c.payout ?? "coin" }));
   let budget = maxPayouts;
   for (const coin of coins) {
     try {
@@ -69,19 +92,31 @@ export async function runRewardRounds({ db, cfg, operations, now = new Date() }:
       const settled = await settlePayouts(db, connection, mint);
       summary.settled.landed += settled.landed;
       summary.settled.expired += settled.expired;
+      if (coin.payout === "quote") {
+        const sales = await settlePendingSales(db, cfg, connection, operations.publicKey, coin);
+        summary.settled.sales.landed += sales.landed;
+        summary.settled.sales.failed += sales.failed;
+        summary.settled.sales.expired += sales.expired;
+      }
 
       const [open] = await db.select().from(rewardRounds).where(and(eq(rewardRounds.mint, coin.mint), eq(rewardRounds.status, "paying"))).limit(1);
       if (!open) {
         const collected = await collectTax(connection, operations, mint);
         if (collected > 0n) summary.collected.push({ mint: coin.mint, amount: collected.toString() });
-        const opened = await openRound(db, connection, operations, mint, rules, now);
+        if (coin.payout === "quote") {
+          const { sale, skipped } = await sellSlice(db, cfg, connection, operations, coin);
+          if (sale) summary.sold.push(sale);
+          if (skipped) summary.unsold.push({ mint: coin.mint, reason: skipped });
+        }
+        const opened = await openRound(db, connection, operations, coin, rules, now);
         if (opened) summary.opened.push({ mint: coin.mint, round: opened.id, holders: opened.holders, amount: opened.amount });
       }
       const [round] = await db.select().from(rewardRounds).where(and(eq(rewardRounds.mint, coin.mint), eq(rewardRounds.status, "paying"))).limit(1);
       if (!round || budget <= 0) continue;
-      const paid = await payRound(db, connection, operations, round, budget);
+      const { paid, returned } = await payRound(db, connection, operations, round, budget);
       budget -= paid;
       if (paid > 0) summary.paid.push({ round: round.id, payouts: paid });
+      if (returned > 0) summary.returned.push({ round: round.id, payouts: returned });
       if (await finishIfPaid(db, round.id, now)) summary.finished.push(round.id);
     } catch (e) {
       summary.problems.push(`${coin.symbol} (${coin.mint}): ${(e as Error).message}`);
@@ -141,14 +176,29 @@ async function collectTax(connection: Connection, operations: Keypair, mint: Pub
 }
 
 /**
- * Opens a round when the operations wallet holds at least the rules' threshold of the coin: snapshots every eligible
- * holder and writes each one's pro-rata payout, all in one transaction so a round is never half written.
+ * Opens a round when enough tax has collected under the rules' threshold, in coins either way: for a coin payout the
+ * operations wallet holds at least that much of the coin, for a Quote Asset payout at least that many coins were sold
+ * since the last round. Snapshots every eligible holder and writes each one's pro-rata share of the pot (the collected
+ * coins, or what the sales brought in and no round has paid), all in one transaction so a round is never half written.
  */
-async function openRound(db: Db, connection: Connection, operations: Keypair, mint: PublicKey, rules: RewardRule, now: Date) {
+async function openRound(db: Db, connection: Connection, operations: Keypair, coin: Coin, rules: RewardRule, now: Date) {
   const ops = operations.publicKey;
-  const source = getAssociatedTokenAddressSync(mint, ops, false, TOKEN_2022_PROGRAM_ID);
-  const pot = BigInt((await connection.getTokenAccountBalance(source, "confirmed").catch(() => null))?.value.amount ?? 0);
-  if (pot < BigInt(rules.roundThreshold)) return null;
+  const mint = new PublicKey(coin.mint);
+  let pot: bigint;
+  let payout: { mint: string; decimals: number; sold: string | null };
+  if (coin.payout === "coin") {
+    const source = getAssociatedTokenAddressSync(mint, ops, false, TOKEN_2022_PROGRAM_ID);
+    pot = BigInt((await connection.getTokenAccountBalance(source, "confirmed").catch(() => null))?.value.amount ?? 0);
+    if (pot < BigInt(rules.roundThreshold)) return null;
+    payout = { mint: coin.mint, decimals: coin.decimals, sold: null };
+  } else {
+    const sales = await unassignedSales(db, coin.mint);
+    if (sales.count === 0 || sales.coins < BigInt(rules.roundThreshold)) return null;
+    pot = await quotePot(db, coin.mint);
+    if (pot === 0n) return null;
+    const [sale] = await db.select({ decimals: rewardSales.quoteDecimals }).from(rewardSales).where(and(eq(rewardSales.mint, coin.mint), eq(rewardSales.status, "landed"))).limit(1);
+    payout = { mint: coin.quoteMint, decimals: sale!.decimals, sold: sales.coins.toString() };
+  }
   const slot = await connection.getSlot("confirmed");
   const holders = eligibleHolders(await readCoinAccounts(connection, mint), ops, BigInt(rules.minHolding));
   const total = holders.reduce((s, h) => s + h.amount, 0n);
@@ -158,40 +208,67 @@ async function openRound(db: Db, connection: Connection, operations: Keypair, mi
   const distributable = payouts.reduce((s, p) => s + BigInt(p.amount), 0n);
   await db.transaction(async (tx) => {
     await tx.insert(rewardRounds).values({
-      id, mint: mint.toBase58(), rulesVersion: rules.version, status: "paying", snapshotSlot: slot, pot: pot.toString(),
-      eligibleHolders: payouts.length, distributable: distributable.toString(), startedAt: now,
+      id, mint: coin.mint, rulesVersion: rules.version, status: "paying", snapshotSlot: slot, payoutMint: payout.mint, payoutDecimals: payout.decimals,
+      pot: pot.toString(), sold: payout.sold, eligibleHolders: payouts.length, distributable: distributable.toString(), startedAt: now,
     });
     if (payouts.length) await tx.insert(rewardPayouts).values(payouts);
+    // The sales this round pays out are its own from here; the next round counts from the next sale.
+    if (coin.payout === "quote")
+      await tx.update(rewardSales).set({ roundId: id }).where(and(eq(rewardSales.mint, coin.mint), eq(rewardSales.status, "landed"), isNull(rewardSales.roundId)));
   });
   return { id, holders: payouts.length, amount: distributable.toString() };
 }
 
 /**
- * Pays a round's unpaid holders, at most `budget` of them, a few per transaction. Each payout is marked as sent with
- * its transaction and the block height it can still land at before the transaction goes out, so a run that dies here
- * leaves nothing that the next run could pay twice.
+ * Pays a round's unpaid holders, at most `budget` of them, a few per transaction, in the round's Payout Asset: the coin
+ * or any other token into the holder's account (opened by the operations wallet if need be), SOL as plain SOL. Each
+ * payout is marked as sent with its transaction and the block height it can still land at before the transaction goes
+ * out, so a run that dies here leaves nothing that the next run could pay twice. A SOL payout under the rent-exempt
+ * minimum to a wallet holding no SOL can never land: it is returned to the pot instead of failing the whole batch.
  */
-async function payRound(db: Db, connection: Connection, operations: Keypair, round: typeof rewardRounds.$inferSelect, budget: number) {
+async function payRound(db: Db, connection: Connection, operations: Keypair, round: Round, budget: number) {
   const ops = operations.publicKey;
-  const mint = new PublicKey(round.mint);
-  const { decimals } = await getMint(connection, mint, "confirmed", TOKEN_2022_PROGRAM_ID);
-  const source = getAssociatedTokenAddressSync(mint, ops, false, TOKEN_2022_PROGRAM_ID);
-  const unpaid = await db
+  const payoutMint = new PublicKey(round.payoutMint);
+  const inSol = round.payoutMint === WSOL;
+  const tokenProgram = inSol ? null : (await connection.getAccountInfo(payoutMint, "confirmed"))?.owner ?? null;
+  if (!inSol && !tokenProgram) throw new Error(`payout mint ${round.payoutMint} does not exist`);
+  const source = inSol ? null : getAssociatedTokenAddressSync(payoutMint, ops, false, tokenProgram!);
+  let unpaid = await db
     .select()
     .from(rewardPayouts)
     .where(and(eq(rewardPayouts.roundId, round.id), eq(rewardPayouts.status, "unpaid")))
     .orderBy(asc(rewardPayouts.wallet))
     .limit(budget);
+  let returned = 0;
+  if (inSol && unpaid.length) {
+    const rentMinimum = BigInt(await connection.getMinimumBalanceForRentExemption(0, "confirmed"));
+    const infos = await connection.getMultipleAccountsInfo(unpaid.map((p) => new PublicKey(p.wallet)), "confirmed");
+    const unpayable = unpaid.filter((p, i) => BigInt(infos[i]?.lamports ?? 0) + BigInt(p.amount) < rentMinimum).map((p) => p.wallet);
+    if (unpayable.length) {
+      returned = (
+        await db
+          .update(rewardPayouts)
+          .set({ status: "returned" })
+          .where(and(eq(rewardPayouts.roundId, round.id), eq(rewardPayouts.status, "unpaid"), inArray(rewardPayouts.wallet, unpayable)))
+          .returning({ wallet: rewardPayouts.wallet })
+      ).length;
+      unpaid = unpaid.filter((p) => !unpayable.includes(p.wallet));
+    }
+  }
   let paid = 0;
   for (let i = 0; i < unpaid.length; i += PAYOUT_BATCH) {
     const batch = unpaid.slice(i, i + PAYOUT_BATCH);
     const instructions: TransactionInstruction[] = [];
     for (const p of batch) {
       const wallet = new PublicKey(p.wallet);
-      const destination = getAssociatedTokenAddressSync(mint, wallet, false, TOKEN_2022_PROGRAM_ID);
+      if (inSol) {
+        instructions.push(SystemProgram.transfer({ fromPubkey: ops, toPubkey: wallet, lamports: BigInt(p.amount) }));
+        continue;
+      }
+      const destination = getAssociatedTokenAddressSync(payoutMint, wallet, false, tokenProgram!);
       instructions.push(
-        createAssociatedTokenAccountIdempotentInstruction(ops, destination, wallet, mint, TOKEN_2022_PROGRAM_ID),
-        createTransferCheckedInstruction(source, mint, destination, ops, BigInt(p.amount), decimals, [], TOKEN_2022_PROGRAM_ID),
+        createAssociatedTokenAccountIdempotentInstruction(ops, destination, wallet, payoutMint, tokenProgram!),
+        createTransferCheckedInstruction(source!, payoutMint, destination, ops, BigInt(p.amount), round.payoutDecimals, [], tokenProgram!),
       );
     }
     const tx = await signedTransaction(connection, operations, instructions);
@@ -214,14 +291,20 @@ async function payRound(db: Db, connection: Connection, operations: Keypair, rou
     }
     // Still in flight: the next run settles it.
   }
-  return paid;
+  return { paid, returned };
 }
 
-/** Marks a round paid once every payout is, with the total that reached holders. */
+/** Marks a round paid once every payout is paid or returned, with the total that reached holders. */
 async function finishIfPaid(db: Db, roundId: string, now: Date) {
-  const [left] = await db.select({ n: sql<number>`count(*)::int` }).from(rewardPayouts).where(and(eq(rewardPayouts.roundId, roundId), sql`${rewardPayouts.status} <> 'paid'`));
+  const [left] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(rewardPayouts)
+    .where(and(eq(rewardPayouts.roundId, roundId), sql`${rewardPayouts.status} not in ('paid', 'returned')`));
   if (left!.n > 0) return false;
-  const [sum] = await db.select({ paid: sql<string>`coalesce(sum(${rewardPayouts.amount}), 0)::text` }).from(rewardPayouts).where(eq(rewardPayouts.roundId, roundId));
+  const [sum] = await db
+    .select({ paid: sql<string>`coalesce(sum(${rewardPayouts.amount}), 0)::text` })
+    .from(rewardPayouts)
+    .where(and(eq(rewardPayouts.roundId, roundId), eq(rewardPayouts.status, "paid")));
   const updated = await db
     .update(rewardRounds)
     .set({ status: "paid", paid: sum!.paid, finishedAt: now })

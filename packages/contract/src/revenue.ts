@@ -23,8 +23,11 @@ const raw = z.string().regex(/^\d+$/, "must be a whole number of raw units");
  * - `metadata_upload`: what one Launch's permanent metadata cost in those credits, in lamports at the SOL price Turbo
  *   quoted when it was uploaded; keyed by the launch transaction, one entry per item (image, metadata JSON) that was
  *   not free. No SOL moves: the credits bought by a top-up are spent.
+ * - `reward_sale`: a Reward Sale (ADR 0006, #43): a Reward Launch's collected tax sold into its own market for its
+ *   Quote Asset, two entries of one transaction: the coins sold out of the operations wallet, and the Quote Asset it
+ *   received, which is the holders' pot, not revenue.
  */
-export const LedgerKind = z.enum(["platform_fee", "pool_fee", "fee_key", "sweep", "creator_forward", "burn", "flywheel", "arweave_top_up", "metadata_upload"]);
+export const LedgerKind = z.enum(["platform_fee", "pool_fee", "fee_key", "sweep", "creator_forward", "burn", "flywheel", "arweave_top_up", "metadata_upload", "reward_sale"]);
 export type LedgerKind = z.infer<typeof LedgerKind>;
 
 /**

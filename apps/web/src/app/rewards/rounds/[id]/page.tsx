@@ -16,6 +16,8 @@ export default async function RewardRoundPage({ params }: Props) {
   const [launch, platform] = await Promise.all([getLaunch(round.mint), getPlatform()]);
   const symbol = launch?.symbol ?? shortAddress(round.mint);
   const coins = (raw: string) => formatUnits(raw, COIN_DECIMALS, 2);
+  // Holdings are in the coin; the pot and every payout in the round's Payout Asset.
+  const paid = (raw: string) => `${formatUnits(raw, round.payout.decimals, Math.min(round.payout.decimals, 4))} ${round.payout.symbol}`;
   return (
     <div className={`shell ${styles.page}`}>
       <h1 className={styles.title}>
@@ -24,9 +26,26 @@ export default async function RewardRoundPage({ params }: Props) {
       <section className={styles.card} aria-labelledby="round-title">
         <h2 id="round-title" className={styles.cardTitle}>{round.status === "paid" ? "Paid in full" : "Paying out"}</h2>
         <dl className={styles.rules}>
+          {round.sold !== null ? (
+            <>
+              <div>
+                <dt>Pot</dt>
+                <dd><span className="mono">{paid(round.pot)}</span></dd>
+              </div>
+              <div>
+                <dt>Tax sold for it</dt>
+                <dd><span className="mono">{coins(round.sold)}</span> {symbol}</dd>
+              </div>
+            </>
+          ) : (
+            <div>
+              <dt>Collected tax</dt>
+              <dd><span className="mono">{coins(round.pot)}</span> {symbol}</dd>
+            </div>
+          )}
           <div>
-            <dt>Collected tax</dt>
-            <dd><span className="mono">{coins(round.pot)}</span> {symbol}</dd>
+            <dt>Paid in</dt>
+            <dd>{round.payout.symbol}</dd>
           </div>
           <div>
             <dt>Eligible holders</dt>
@@ -61,11 +80,13 @@ export default async function RewardRoundPage({ params }: Props) {
                     {" "}·{" "}
                     <a href={explorerUrl("tx", p.signature, platform)} target="_blank" rel="noreferrer">paid</a>
                   </>
+                ) : p.status === "returned" ? (
+                  " · returned to the pot: too little SOL for an empty wallet to hold"
                 ) : (
                   " · paying"
                 )}
               </span>
-              <span className={`mono ${styles.amount}`}>{coins(p.amount)} {symbol}</span>
+              <span className={`mono ${styles.amount}`}>{paid(p.amount)}</span>
             </li>
           ))}
         </ul>

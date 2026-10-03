@@ -191,3 +191,13 @@
   flex-basis: 100%;
   margin: 0;
 }
+
+.payoutLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.rates button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
