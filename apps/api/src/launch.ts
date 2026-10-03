@@ -10,7 +10,7 @@ import {
   curvePrice, firstBuyTakesCurve, LAUNCH_SHAPE, loadLookupTable, RATE_DENOMINATOR, planAirdrop, prepareLaunch, quoteFirstBuy, readTransferFees,
   rewardTaxFee, WSOL_MINT, type FirstBuyQuote, type LaunchPairing,
 } from "@launchpad/chain";
-import type { AirdropRecipients, GraduationTarget, LaunchModesSummary, PreparedLaunch, RewardTaxBps, TradeQuote } from "@launchpad/contract";
+import type { AirdropRecipients, GraduationTarget, LaunchModesSummary, PreparedLaunch, RewardPayoutAsset, RewardTaxBps, TradeQuote } from "@launchpad/contract";
 import { airdropRecipients, launchDrafts, launchMetadata, type Db } from "@launchpad/db";
 import type { Config } from "./env";
 import { arweaveUrl, signedItems } from "./metadata";
@@ -125,9 +125,10 @@ async function checkQuoteBalance(connection: Connection, quote: QuoteAsset, crea
  */
 export async function resolveLaunchModes(
   connection: Connection, cfg: Config, quote: QuoteAsset, creator: PublicKey, firstBuy: BN | null, airdrop: AirdropRecipients,
-  rewardTaxBps: RewardTaxBps | null = null,
+  rewardTaxBps: RewardTaxBps | null = null, rewardPayout: RewardPayoutAsset | null = null,
 ): Promise<{ firstBuy: LaunchFirstBuy | null; summary: LaunchModesSummary }> {
-  const rewardTax = rewardTaxBps ? { bps: rewardTaxBps } : null;
+  if (rewardPayout && !rewardTaxBps) throw new LaunchModeError("A payout asset is only for a Reward Launch. Choose a Reward Tax, or leave the payout asset out.");
+  const rewardTax = rewardTaxBps ? { bps: rewardTaxBps, payout: rewardPayout ?? ("coin" as const) } : null;
   const bought = firstBuy ? await quoteLaunchFirstBuy(connection, cfg, quote, firstBuy, rewardTaxBps) : null;
   const toContract = (b: LaunchFirstBuy) => firstBuyToContract(b, quote.decimals, b.quoteTransferFeeBps, b.rewardTaxBps);
   if (bought) await checkQuoteBalance(connection, quote, creator, bought.quote.amountIn);
@@ -164,7 +165,10 @@ export async function resolveLaunchModes(
 /** Keeps what the Creator asked for, so a retry rebuilds the same launch. */
 export async function saveDraft(
   db: Db,
-  d: { mint: PublicKey; creator: PublicKey; nonce: string; quote: QuoteAsset; firstBuy: BN | null; airdrop: AirdropRecipients; rewardTaxBps: RewardTaxBps | null },
+  d: {
+    mint: PublicKey; creator: PublicKey; nonce: string; quote: QuoteAsset; firstBuy: BN | null; airdrop: AirdropRecipients; rewardTaxBps: RewardTaxBps | null;
+    rewardPayout: RewardPayoutAsset | null;
+  },
 ) {
   await db.transaction(async (tx) => {
     await tx.insert(launchDrafts).values({
@@ -177,6 +181,8 @@ export async function saveDraft(
       graduationTargetLamports: d.quote.graduationTarget.lamports,
       firstBuy: d.firstBuy?.toString() ?? null,
       rewardTaxBps: d.rewardTaxBps,
+      // The Payout Asset is fixed here, with the coin's address: a retry and the Indexer read it back from this row.
+      rewardPayout: d.rewardTaxBps ? (d.rewardPayout ?? "coin") : null,
     });
     if (d.airdrop.length > 0)
       await tx.insert(airdropRecipients).values(
@@ -252,6 +258,7 @@ export async function resolveDraftModes(db: Db, connection: Connection, cfg: Con
     draft.firstBuy ? new BN(draft.firstBuy) : null,
     recipients.map((r) => ({ wallet: r.wallet, amount: r.amount })),
     (draft.rewardTaxBps as RewardTaxBps | null) ?? null,
+    draft.rewardPayout,
   );
   return { quote, ...modes };
 }

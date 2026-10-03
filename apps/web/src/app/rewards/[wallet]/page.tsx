@@ -39,11 +39,13 @@ export default async function WalletRewardsPage({ params }: Props) {
                       {" "}·{" "}
                       <a href={explorerUrl("tx", r.signature, platform)} target="_blank" rel="noreferrer">paid</a>
                     </>
+                  ) : r.status === "returned" ? (
+                    " · returned to the pot"
                   ) : (
                     " · paying"
                   )}
                 </span>
-                <span className={`mono ${styles.amount}`}>{formatUnits(r.amount, r.decimals, 2)} {r.symbol}</span>
+                <span className={`mono ${styles.amount}`}>{formatUnits(r.amount, r.payout.decimals, Math.min(r.payout.decimals, 4))} {r.payout.symbol}</span>
               </li>
             ))}
           </ul>

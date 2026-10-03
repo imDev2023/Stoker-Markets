@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { REWARD_SALE_MAX_RESERVE_BPS, REWARD_SALE_SLIPPAGE_BPS } from "@launchpad/contract";
 import { getRewardRules } from "@/lib/api";
 import { COIN_DECIMALS, formatUnits, formatUtc } from "@/lib/format";
 import { WalletLookup } from "@/components/WalletLookup";
@@ -16,8 +17,9 @@ export default async function RewardsPage() {
     <div className={`shell ${styles.page}`}>
       <h1 className={styles.title}>Holder rewards</h1>
       <p className={styles.lead}>
-        A Reward Launch&apos;s coin withholds its Reward Tax on every transfer. Reward Rounds collect it and pay it to holders in the
-        coin itself, pro rata, never sold. Every round&apos;s snapshot, rules and payout transactions are public.
+        A Reward Launch&apos;s coin withholds its Reward Tax on every transfer. Reward Rounds collect it and pay it to holders pro rata
+        in the asset its Creator fixed at launch: the coin itself, never sold, or the coin&apos;s Quote Asset, bought with the tax in
+        small, published sales. Every round&apos;s snapshot, rules, sales and payout transactions are public.
       </p>
 
       <section className={styles.card} aria-labelledby="lookup-title">
@@ -52,6 +54,11 @@ export default async function RewardsPage() {
         <p className={styles.note}>
           Each wallet&apos;s share is its holding over every eligible holding at the round&apos;s snapshot. The curve&apos;s and pool&apos;s own
           accounts and the platform&apos;s wallet never count as holders.
+        </p>
+        <p className={styles.note}>
+          Where a coin pays in its Quote Asset, the tax is sold into the coin&apos;s own market one slice per run, about every ten minutes:
+          at most {REWARD_SALE_MAX_RESERVE_BPS / 100}% of the coins the market holds, with a {REWARD_SALE_SLIPPAGE_BPS / 100}% slippage limit, and a
+          round opens once the coins sold reach the threshold. Each sale is on the coin&apos;s page with its transaction.
         </p>
       </section>
 

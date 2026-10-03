@@ -9,6 +9,7 @@ import type { Config } from "../env";
 import { fetchRawTransaction } from "../indexer";
 import { JobFailure } from "../jobs";
 import { reservedLamports } from "../burn/engine";
+import { rewardPotLamports } from "../rewards/sales";
 import { creatorMoney, unforwarded } from "./creatorShares";
 import { recordRevenue, revenueContext } from "./ledger";
 import { valuer } from "./value";
@@ -173,8 +174,9 @@ async function poolsTradedSinceLastFeeKeyCollection(db: Db, pools: string[]) {
  * Sweeps the operations wallet into the treasury: its SOL down to the float (plus the Burn's and Flywheel's unspent
  * budgets) once it holds more than the threshold above that, and
  * of every other token, the revenue the Ledger shows it collected and has not swept yet. Anything else the wallet holds
- * in that token (a Reward Round's harvested tax, say) stays, and so does what Creators are owed and have not been
- * forwarded yet (ADR 0007), in SOL or any token. Tokens go in batches that fit a transaction.
+ * in that token (a Reward Round's harvested tax, or a Quote Asset payout's pot, say) stays, and so does what Creators
+ * are owed and have not been forwarded yet (ADR 0007), in SOL or any token, and the SOL that Reward Sales brought in
+ * for holders (ADR 0006). Tokens go in batches that fit a transaction.
  */
 async function sweep(
   db: Db, connection: Connection, cfg: Config, treasury: PublicKey, operations: Keypair,
@@ -199,8 +201,9 @@ async function sweep(
   const tokens = held
     .map((t) => ({ ...t, amount: t.amount < owed.get(t.mint.toBase58())! ? t.amount : owed.get(t.mint.toBase58())! }))
     .filter((t) => t.amount > 0n);
-  // SOL the Burn and Flywheel have not spent yet stays behind, on top of the float, and so does SOL owed to Creators.
-  const keep = cfg.sweepFloatLamports + (await reservedLamports(db, cfg)) + unforwarded(creators, WSOL);
+  // SOL the Burn and Flywheel have not spent yet stays behind, on top of the float, and so do SOL owed to Creators and
+  // the SOL that Reward Sales brought in for holders.
+  const keep = cfg.sweepFloatLamports + (await reservedLamports(db, cfg)) + unforwarded(creators, WSOL) + (await rewardPotLamports(db));
   const balance = BigInt(await connection.getBalance(ops, "confirmed"));
   const lamports = balance > cfg.sweepThresholdLamports + keep - cfg.sweepFloatLamports ? balance - keep : 0n;
   if (lamports === 0n && tokens.length === 0) return false;

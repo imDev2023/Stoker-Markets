@@ -365,7 +365,13 @@ function ReviewText({ review, symbol }: { review: Review; symbol: string }) {
       {prepared.rewardTax && (
         <p>
           A Reward Launch: every transfer of {symbol} withholds <strong>{prepared.rewardTax.bps / 100}%</strong> for its holders,
-          the first buy&apos;s coins included. Nobody can change the rate, now or later.
+          the first buy&apos;s coins included.{" "}
+          {prepared.rewardTax.payout === "coin" ? (
+            <>It is paid out in <strong>{symbol}</strong> itself, never sold.</>
+          ) : (
+            <>It is sold for {ticker} in small slices and paid out in <strong>{ticker}</strong>.</>
+          )}{" "}
+          Nobody can change the rate or the payout asset, now or later.
         </p>
       )}
       {prepared.airdrop && (

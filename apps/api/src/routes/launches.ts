@@ -122,6 +122,7 @@ function toSummary(cfg: Config, r: Row): LaunchSummary {
         ? null
         : {
             bps: l.rewardTaxBps,
+            payout: l.rewardPayout ?? "coin",
             locked: l.rewardTaxLockedSignature && l.rewardTaxLockedAt ? { signature: l.rewardTaxLockedSignature, at: l.rewardTaxLockedAt.toISOString() } : null,
           },
     market: {
