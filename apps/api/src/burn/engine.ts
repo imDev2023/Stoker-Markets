@@ -8,7 +8,8 @@ import {
 import BN from "bn.js";
 import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import {
-  cpmmSolSwap, graduationPoolAddress, loadCurve, loadPool, poolSides, poolSwap, poolSwapExactOut, signedTransaction, WSOL_MINT, type SolSwap,
+  cpmmSolSwap, graduationPoolAddress, loadCurve, loadPool, poolSides, poolSwap, poolSwapExactOut, signedTransaction, transferFeeBps, WSOL_MINT,
+  type SolSwap,
 } from "@launchpad/chain";
 import { graduations, launches, ledgerEntries, platformSettings, quoteAssets, trades, type Db } from "@launchpad/db";
 import type { Config } from "../env";
@@ -194,13 +195,16 @@ async function buyAndBurn(
   const { amount, decimals, tokenProgram, build } = swap;
   const account = getAssociatedTokenAddressSync(mint, ops, false, tokenProgram);
   const s: SolSwap = await build(ops, account);
+  // A Reward Launch's coin account stays open: the buy's own Reward Tax is withheld in it, which stops it closing, and
+  // it is where the Reward Engine keeps the tax it has harvested for the holders. The burn takes only what was bought.
+  const taxed = (await transferFeeBps(connection, mint, tokenProgram)) > 0;
   const instructions: TransactionInstruction[] = [
     ...s.setup,
     createAssociatedTokenAccountIdempotentInstruction(ops, account, ops, mint, tokenProgram),
     ...s.swap,
     createBurnCheckedInstruction(account, mint, ops, BigInt(amount.toString()), decimals, [], tokenProgram),
-    // The wallet never keeps any of the coin: an empty account closes, giving its rent back.
-    createCloseAccountInstruction(account, ops, ops, [], tokenProgram),
+    // Otherwise the wallet never keeps any of the coin: an empty account closes, giving its rent back.
+    ...(taxed ? [] : [createCloseAccountInstruction(account, ops, ops, [], tokenProgram)]),
     ...s.cleanup,
   ];
   const tx = await signedTransaction(connection, operations, instructions, s.lookupTables.length ? await lookupTables(connection, s.lookupTables) : []);
