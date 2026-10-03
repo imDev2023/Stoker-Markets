@@ -98,9 +98,10 @@
         "PLATFORM_ADMIN": "FGLT7WLZNxwYFn9JJ6M11PjYsmQUwcShgX6zmhTa2eCn",
         "PLATFORM_LOOKUP_TABLE": "3caF92CXJm4WstFrfC1DDzboJDkzvdDJ3BJXM4ymzJvr",
         "TREASURY_WALLET": "CJbQFc5YZBNmhWNKKfXgVNvkmRqWs5Jcdk8XTrbyqcwt",
-        // Devnet SOL is scarce (faucets are rate-limited), so the amounts are small enough for one wallet to prove a
-        // Graduation, a sweep and a Creator Forward: a 0.5 SOL Graduation Target, a sweep above 2.1 SOL down to 1.9.
-        "GRADUATION_TARGET_LAMPORTS": "500000000",
+        // The Graduation Target is mainnet's 85 SOL, so the site reads as it will on mainnet; a Graduation through
+        // Raydium's crank was proven on 2026-10-03 with it at 0.5 SOL ("500000000"), which is the value to set again to
+        // rehearse one. Devnet SOL is scarce, so the sweep is small: above 2.1 SOL down to 1.9.
+        "GRADUATION_TARGET_LAMPORTS": "85000000000",
         "GRADUATION_ALERT_AFTER_SECONDS": "300",
         "SWEEP_THRESHOLD_LAMPORTS": "2100000000",
         "SWEEP_FLOAT_LAMPORTS": "1900000000",
