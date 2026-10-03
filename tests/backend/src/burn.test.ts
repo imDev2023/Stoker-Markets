@@ -107,10 +107,11 @@ describe("Burn and Flywheel", () => {
   it("burns a graduated Reward Launch too, and leaves the coin account that holds its harvested Reward Tax open", async () => {
     // Named as the Platform Token here; the Flywheel buys a graduated Reward Launch it picks in the same way.
     const creator = await fundedWallet();
-    const { prepared, signature } = await launch(creator, { rewardTax: "300", symbol: "RWB" });
+    // Paid out in SOL: the tax harvested for the holders waits in the wallet's coin account, sold a slice per run.
+    const { prepared, signature } = await launch(creator, { rewardTax: "300", rewardPayout: "quote", symbol: "RWB" });
     await deliverWebhook([signature]);
     const mint = new PublicKey(prepared.mint);
-    const trader = await fundedWallet(10);
+    const trader = await fundedWallet(20);
     const buyout = await trade(trader, prepared.mint, "buy", SOL(2));
     expect(buyout.quote.completesCurve).toBe(true);
     const migration = await migrateCurve(connection(), new PublicKey(prepared.pool));
@@ -119,33 +120,59 @@ describe("Burn and Flywheel", () => {
       if ((await quote(prepared.mint, { side: "buy", amount: SOL(0.01).toString() })).ok) break;
       await new Promise((r) => setTimeout(r, 250));
     }
-    // The Reward Engine harvests the buy-out's tax into the operations wallet's own coin account: the holders' coins.
-    await runJob("reward-rounds");
+    expect((await api("/v1/operator/platform-token", { method: "PUT", headers: operator(), body: JSON.stringify({ mint: prepared.mint }) })).status).toBe(200);
     const account = getAssociatedTokenAddressSync(mint, new PublicKey(env().platform.operationsWallet), false, TOKEN_2022_PROGRAM_ID);
+    const supplyNow = async () => (await getMint(connection(), mint, "confirmed", TOKEN_2022_PROGRAM_ID)).supply;
+
+    /** Revenue enough for one buy: the burn waits until its budget is worth a transaction. */
+    const fund = async () => {
+      for (let i = 0; i < 6 && BigInt((await burns()).budgets.burn.available) < SOL(0.012); i++) {
+        const coin = await launchedCoin();
+        await deliverWebhook([(await trade(trader, coin.mint, "buy", SOL(1.2))).signature]);
+        await runJob("fee-collector");
+      }
+      const budget = BigInt((await burns()).budgets.burn.available);
+      expect(budget).toBeGreaterThanOrEqual(SOL(0.012));
+      return budget;
+    };
+    /** One Burn run: what was bought is gone from the supply, and the Ledger's spend is the buy alone. */
+    const burnOnce = async (budget: bigint) => {
+      const supply = await supplyNow();
+      const run = await runJob("burn");
+      const summary = run.summary as {
+        burned: { signature: string; lamports: string; amount: string } | null;
+        flywheel: { mint: string; amount: string }[];
+        problems: string[];
+      };
+      expect(summary.problems).toEqual([]);
+      expect(summary.burned).not.toBeNull();
+      // The Flywheel may pick the coin in the same run, as one of the busiest graduated Launches.
+      const picked = summary.flywheel.filter((f) => f.mint === prepared.mint).reduce((sum, f) => sum + BigInt(f.amount), 0n);
+      expect(supply - (await supplyNow())).toBe(BigInt(summary.burned!.amount) + picked);
+      expect(BigInt(summary.burned!.lamports)).toBeLessThanOrEqual(budget);
+      expect(BigInt(summary.burned!.lamports)).toBeGreaterThan((budget * 98n) / 100n);
+    };
+
+    // The wallet has no account for the coin yet. The burn opens one and can't close it again, since the buy's own
+    // Reward Tax is withheld in it: it stays, empty, and its rent is no part of what the buy cost.
+    const budget = await fund();
+    expect(await connection().getAccountInfo(account, "confirmed")).toBeNull();
+    await burnOnce(budget);
+    expect(await connection().getAccountInfo(account, "confirmed")).not.toBeNull();
+    expect(await tokenBalance(account)).toBe(0n);
+
+    // The holder sells out into the pool, which charges its fees on a sale in the coin: revenue in the coin, for the Fee
+    // Collector to collect into that same account and sweep on.
+    const holding = await tokenBalance(getAssociatedTokenAddressSync(mint, trader.publicKey, false, TOKEN_2022_PROGRAM_ID));
+    await deliverWebhook([(await trade(trader, prepared.mint, "sell", holding)).signature]);
+    // The Reward Engine harvests the tax into the account and sells one bounded slice of it; the rest stays there, the
+    // holders' coins. Neither the Fee Collector's sweeps nor the next burn take any of them: a sweep counts what left
+    // the wallet, not the less that reached the treasury after the coin's own tax, so it never finds revenue missing.
+    await runJob("reward-rounds");
     const harvested = await tokenBalance(account);
     expect(harvested).toBeGreaterThan(0n);
-    expect((await api("/v1/operator/platform-token", { method: "PUT", headers: operator(), body: JSON.stringify({ mint: prepared.mint }) })).status).toBe(200);
-
-    // Enough revenue for one buy: the burn waits until its budget is worth a transaction.
-    for (let i = 0; i < 6 && BigInt((await burns()).budgets.burn.available) < SOL(0.012); i++) {
-      const coin = await launchedCoin();
-      await deliverWebhook([(await trade(trader, coin.mint, "buy", SOL(1.2))).signature]);
-      await runJob("fee-collector");
-    }
-    const budget = BigInt((await burns()).budgets.burn.available);
-    expect(budget).toBeGreaterThanOrEqual(SOL(0.012));
-    const supply = (await getMint(connection(), mint, "confirmed", TOKEN_2022_PROGRAM_ID)).supply;
-
-    const run = await runJob("burn");
-    const summary = run.summary as { burned: { signature: string; lamports: string; amount: string } | null; problems: string[] };
-    expect(summary.problems).toEqual([]);
-    expect(summary.burned).not.toBeNull();
-    // Exactly what was bought is gone from the supply, the holders' harvested coins are untouched, and the Ledger's
-    // spend is the buy alone.
-    expect(supply - (await getMint(connection(), mint, "confirmed", TOKEN_2022_PROGRAM_ID)).supply).toBe(BigInt(summary.burned!.amount));
+    await burnOnce(await fund());
     expect(await tokenBalance(account)).toBe(harvested);
-    expect(BigInt(summary.burned!.lamports)).toBeLessThanOrEqual(budget);
-    expect(BigInt(summary.burned!.lamports)).toBeGreaterThan((budget * 98n) / 100n);
   });
 
   it("runs on its Cron Trigger too, and the Fee Collector's sweep leaves the unspent budgets behind", async () => {
