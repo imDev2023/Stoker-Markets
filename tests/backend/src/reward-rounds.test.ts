@@ -9,7 +9,7 @@ import {
 } from "@solana/spl-token";
 import { loadCurve } from "@launchpad/chain";
 import {
-  CoinRewards, LedgerPage, PreparedLaunch, REWARD_SALE_MAX_RESERVE_BPS, RewardRoundDetail, RewardRulesPage, WalletRewards, type RewardPayoutAsset,
+  CoinRewards, LedgerPage, PreparedLaunch, REWARD_SALE_MAX_RESERVE_BPS, Revenue, RewardRoundDetail, RewardRulesPage, WalletRewards, type RewardPayoutAsset,
 } from "@launchpad/contract";
 import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
 import { REWARD_ROUNDS_CRON } from "@launchpad/stack";
@@ -220,6 +220,11 @@ describe("Reward Rounds", () => {
     expect(entries.map((e) => [e.asset.mint === mint ? "coin" : e.asset.symbol, e.amount, e.launch?.mint])).toEqual([
       ["coin", sale!.coins, mint], ["SOL", sale!.proceeds, mint],
     ]);
+
+    // The holders' pot is not platform revenue: the coin sold appears in no revenue total or day.
+    const revenue = Revenue.parse(await (await api("/v1/revenue")).json());
+    expect(revenue.totals.map((t) => t.asset.mint)).not.toContain(mint);
+    expect(revenue.days.flatMap((d) => d.assets.map((a) => a.asset.mint))).not.toContain(mint);
 
     // Far more than the threshold was sold, so a round opened on the sale's proceeds and paid out in SOL, pro rata.
     const opened = run.summary.opened.filter((o) => o.mint === mint);
