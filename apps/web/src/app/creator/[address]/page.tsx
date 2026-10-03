@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getCreatorFees, getPlatform, listCreatorFeeClaims } from "@/lib/api";
+import { getCreatorFees, getPlatform, listCreatorFeeClaims, listCreatorForwards } from "@/lib/api";
 import { shortAddress } from "@/lib/format";
 import { CreatorDashboard } from "@/components/CreatorDashboard";
 
@@ -15,6 +15,6 @@ export default async function CreatorPage({ params }: Props) {
   const { address } = await params;
   const [fees, platform] = await Promise.all([getCreatorFees(address), getPlatform()]);
   if (!fees) notFound();
-  const { claims } = await listCreatorFeeClaims(fees.creator);
-  return <CreatorDashboard initialFees={fees} initialClaims={claims} platform={platform} />;
+  const [{ claims }, { forwards }] = await Promise.all([listCreatorFeeClaims(fees.creator), listCreatorForwards(fees.creator)]);
+  return <CreatorDashboard initialFees={fees} initialClaims={claims} initialForwards={forwards} platform={platform} />;
 }

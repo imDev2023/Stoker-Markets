@@ -280,7 +280,7 @@ export const ledgerEntries = pgTable(
     signature: text("signature").notNull(),
     /** Position among the movements in the transaction. */
     eventIndex: integer("event_index").notNull(),
-    /** platform_fee, pool_fee, fee_key or sweep so far. */
+    /** platform_fee, pool_fee, fee_key, sweep, creator_forward, burn or flywheel so far. */
     kind: text("kind").notNull(),
     /** What moved: a Quote Asset or a coin; SOL as the wrapped-SOL mint. */
     assetMint: text("asset_mint").notNull(),
@@ -289,7 +289,7 @@ export const ledgerEntries = pgTable(
     amount: numeric("amount", { precision: 40, scale: 0 }).notNull(),
     /** Where it came from: a Platform Fee vault, a CPMM pool, or the operations wallet. */
     source: text("source").notNull(),
-    /** Where it went: the operations wallet, or the treasury for a sweep. */
+    /** Where it went: the operations wallet, the treasury for a sweep, or the Creator for a Creator Forward. */
     destination: text("destination").notNull(),
     /** The Launch it came from, when one did: a graduated coin's pool fees and Fee Key. A Platform Fee vault pools every Launch. */
     launchMint: text("launch_mint"),
@@ -322,6 +322,34 @@ export const jobTransactions = pgTable("job_transactions", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   resolvedAt: timestamp("resolved_at", { withTimezone: true }),
 });
+
+/**
+ * The Creator Forward (ADR 0007): one row per payment of a Creator's share of platform revenue in one Quote Asset,
+ * written with its transaction's signature before the transaction is sent. What a Creator is owed is what they earned
+ * less every row that is `sending` or `paid`, so a run that dies, or a retry, never pays the same share twice; only a
+ * `failed` or `expired` row frees its amount to be paid again.
+ */
+export const creatorForwards = pgTable(
+  "creator_forwards",
+  {
+    signature: text("signature").primaryKey(),
+    creator: text("creator").notNull(),
+    /** The Quote Asset paid; SOL as the wrapped-SOL mint, though it is paid as plain SOL. */
+    assetMint: text("asset_mint").notNull(),
+    assetDecimals: integer("asset_decimals").notNull(),
+    /** Raw units sent. A Token-2022 transfer fee, if the asset has one, is withheld from it on the way. */
+    amount: numeric("amount", { precision: 40, scale: 0 }).notNull(),
+    status: text("status", { enum: ["sending", "paid", "failed", "expired"] }).notNull().default("sending"),
+    /** Past this block height an unconfirmed transaction can never land. */
+    lastValidBlockHeight: bigint("last_valid_block_height", { mode: "number" }).notNull(),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** When the transaction landed, by the chain's clock; null until it has. */
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    settledAt: timestamp("settled_at", { withTimezone: true }),
+  },
+  (t) => [index("creator_forwards_creator_idx").on(t.creator, t.assetMint), index("creator_forwards_status_idx").on(t.status)],
+);
 
 /** One row per run of a scheduled job: when it ran, how it ended, and what it did, for the operator. */
 export const jobRuns = pgTable(

@@ -25,7 +25,8 @@ export {
 } from "./airdrop";
 export { loadLookupTable, platformLookupAddresses, type LookupQuote } from "./lookup";
 export {
-  claimPlatformFeeIx, collectCreatorFeeIx, collectFeeKeyIx, decodeRevenue, feeKeyInstructions, findFeeKeys, platformFeeClaimInstructions,
+  claimPlatformFeeIx, collectCreatorFeeIx, collectFeeKeyIx, creatorForwardInstructions, decodeRevenue, feeKeyInstructions, findFeeKeys,
+  platformFeeClaimInstructions,
   poolCreatorFeeInstructions, readPlatformFeeVaults, readTokenHoldings, signedTransaction, simulateFeeKeyCollection, sweepInstructions,
   MEMO_PROGRAM,
   type FeeKey, type PlatformFeeClaimParams, type RevenueContext, type RevenueKind, type RevenueMovement, type SweepToken,

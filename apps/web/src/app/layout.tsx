@@ -13,7 +13,7 @@ const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], var
 
 export const metadata: Metadata = {
   title: { default: "Stoker", template: "%s · Stoker" },
-  description: "Launch a coin on Solana. Creators earn 0.5% of every trade, paid by the chain.",
+  description: "Launch a coin on Solana, paired with any asset. Creators earn from every trade, on the curve and after graduation.",
 };
 
 export const viewport: Viewport = {

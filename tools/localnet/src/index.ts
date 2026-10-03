@@ -471,7 +471,7 @@ export async function mintLocalQuote(connection: Connection, mint: PublicKey, ow
 }
 
 /**
- * Creates our PlatformConfig with the ADR 0001 fee rates and the operations wallet in every day-to-day role (ADR 0004),
+ * Creates our PlatformConfig with the ADR 0007 fee rates and the operations wallet in every day-to-day role (ADR 0004),
  * turns on curve-rule enforcement and makes the operations wallet the curve rule manager (ADR 0005).
  * The curve rules themselves are written by the API's Quote Registry refresh.
  * Idempotent: an existing PlatformConfig is left as it is.
@@ -488,8 +488,8 @@ export async function bootstrapPlatform(connection: Connection, rpcUrl: string, 
     await ensureTaxedQuote(connection);
     await send(connection, [
       createPlatformConfigIx(program, admin.publicKey, {
-        feeRate: new BN(5_000),
-        creatorFeeRate: new BN(5_000),
+        feeRate: new BN(7_500),
+        creatorFeeRate: new BN(2_500),
         name: "Stoker (localnet)",
         web: "http://localhost:3000",
         img: "http://localhost:3000/icon.png",

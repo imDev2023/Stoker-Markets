@@ -52,7 +52,7 @@ setup("seed the board", async () => {
   // The Creator claims the SOL Creator Fee so far, so their page has a claim in its history...
   await claimViaApi(creator);
   // ...and what trades after it is theirs to claim next. Signal Fire sells out its curve (the local Graduation Target is
-  // 1 SOL), so a closed trade panel is on show too, and its Creator Fee ends at graduation.
+  // 1 SOL), so a closed trade panel is on show too.
   await tradeViaApi(trader, mints.get("Signal Fire")!, "buy", BigInt(2 * LAMPORTS_PER_SOL));
   // Dollar Paired is bought in USDC, so a non-SOL coin page has a trade and the Creator has USDC to claim.
   await fundQuote(trader.publicKey, "USDC", 30_000_000n);
@@ -68,6 +68,7 @@ setup("seed the board", async () => {
   await tradeViaApi(holder, graduated, "sell", (await coinBalance(holder, graduated)) / 4n);
 
   // The Fee Collector's hourly run takes in the platform's revenue: the Platform Fee of every curve so far, and Cap and
-  // Gown's pool fee and Fee Key LP fees, so the revenue page shows every stream.
+  // Gown's pool fee and Fee Key LP fees, so the revenue page shows every stream. The Creator Forward then sends each
+  // Creator their share, so the Creator Fee page has payments from the platform in SOL and USDC.
   await runFeeCollector();
 });

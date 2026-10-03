@@ -6,7 +6,8 @@ import { Keypair, PublicKey, Transaction } from "@solana/web3.js";
 import { launchlabPdas, platformLookupAddresses, WSOL_MINT } from "@launchpad/chain";
 import { CPSWAP_CONFIG, LOCAL_QUOTES } from "@launchpad/localnet";
 import {
-  buildPlatformConfigTransaction, checkPlatformConfig, decodePlatformConfig, signAndSendPlatformConfig, type PlatformConfigArgs,
+  buildPlatformConfigTransaction, checkPlatformConfig, decodePlatformConfig, DEFAULT_CREATOR_FEE_BPS, DEFAULT_PLATFORM_FEE_BPS,
+  signAndSendPlatformConfig, type PlatformConfigArgs,
 } from "@launchpad/mainnet/platform-config";
 import { ensurePlatformLookupTable, platformLookupTableAddresses } from "@launchpad/mainnet/lookup-table";
 import { connection, env, fundedWallet } from "./client";
@@ -18,7 +19,7 @@ describe("tools/mainnet/platform-config", () => {
     const operations = Keypair.generate().publicKey;
     const args: PlatformConfigArgs = {
       cluster: "localnet", admin: admin.publicKey, operations, cpswapConfig: CPSWAP_CONFIG,
-      name: "Launchpad (rehearsal)", web: "https://example.invalid", img: "https://example.invalid/icon.png", platformFeeBps: 50, creatorFeeBps: 50,
+      name: "Launchpad (rehearsal)", web: "https://example.invalid", img: "https://example.invalid/icon.png", platformFeeBps: DEFAULT_PLATFORM_FEE_BPS, creatorFeeBps: DEFAULT_CREATOR_FEE_BPS,
     };
     expect(await decodePlatformConfig(connection(), "localnet", admin.publicKey)).toBeNull();
     const built = await buildPlatformConfigTransaction(connection(), args);
@@ -34,7 +35,7 @@ describe("tools/mainnet/platform-config", () => {
     await signAndSendPlatformConfig(connection(), built.transaction, built.lastValidBlockHeight, admin);
     const view = (await decodePlatformConfig(connection(), "localnet", admin.publicKey))!;
     expect(view).toMatchObject({
-      address: built.platformConfig.toBase58(), platformFeeBps: 50, creatorFeeBps: 50, feeRate: 5000, creatorFeeRate: 5000,
+      address: built.platformConfig.toBase58(), platformFeeBps: 75, creatorFeeBps: 25, feeRate: 7500, creatorFeeRate: 2500,
       name: args.name, web: args.web, img: args.img, feeWallet: operations.toBase58(), nftWallet: operations.toBase58(),
       transferFeeExtensionAuth: operations.toBase58(), vestingWallet: operations.toBase58(), platformCpCreator: operations.toBase58(),
       curveRuleManager: operations.toBase58(), restrictCurveParam: true, cpswapConfig: CPSWAP_CONFIG.toBase58(),
@@ -43,15 +44,15 @@ describe("tools/mainnet/platform-config", () => {
     expect(checkPlatformConfig(view, args)).toEqual([]);
     // The check names every field that differs from what was decided.
     expect(checkPlatformConfig(view, { ...args, platformFeeBps: 100, operations: Keypair.generate().publicKey })).toEqual(
-      expect.arrayContaining([expect.stringMatching(/^fee_rate is 5000, expected 10000$/), expect.stringMatching(/^fee_wallet is /), expect.stringMatching(/^curve_rule_manager is /)]),
+      expect.arrayContaining([expect.stringMatching(/^fee_rate is 7500, expected 10000$/), expect.stringMatching(/^fee_wallet is /), expect.stringMatching(/^curve_rule_manager is /)]),
     );
   });
 
   it("decodes the platform's own PlatformConfig as bootstrapPlatform created it", async () => {
     const view = (await decodePlatformConfig(connection(), "localnet", new PublicKey(env().platform.admin)))!;
-    expect(view).toMatchObject({ address: env().platform.platformConfig, platformFeeBps: 50, creatorFeeBps: 50, curveRuleManager: env().platform.operationsWallet, restrictCurveParam: true });
+    expect(view).toMatchObject({ address: env().platform.platformConfig, platformFeeBps: 75, creatorFeeBps: 25, curveRuleManager: env().platform.operationsWallet, restrictCurveParam: true });
     expect(checkPlatformConfig(view, {
-      operations: new PublicKey(env().platform.operationsWallet), cpswapConfig: CPSWAP_CONFIG, name: view.name, web: view.web, img: view.img, platformFeeBps: 50, creatorFeeBps: 50,
+      operations: new PublicKey(env().platform.operationsWallet), cpswapConfig: CPSWAP_CONFIG, name: view.name, web: view.web, img: view.img, platformFeeBps: DEFAULT_PLATFORM_FEE_BPS, creatorFeeBps: DEFAULT_CREATOR_FEE_BPS,
     })).toEqual([]);
   });
 });

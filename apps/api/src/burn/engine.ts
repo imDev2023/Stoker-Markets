@@ -14,13 +14,17 @@ import { graduations, launches, ledgerEntries, platformSettings, quoteAssets, tr
 import type { Config } from "../env";
 import { JobFailure } from "../jobs";
 import type { SolRoutes } from "../solRoutes";
+import { creatorMoney } from "../fees/creatorShares";
 import { recordBurn } from "./decode";
 
 export type BurnDeps = { db: Db; cfg: Config; operations: Keypair; routes: SolRoutes | null };
 
 /** What the Burn and Flywheel have to spend, in lamports, from the Ledger. */
 export type Budgets = {
-  /** Every Platform Fee, pool fee and Fee Key collection so far, valued in SOL at the Quote Registry's latest prices. */
+  /**
+   * Every Platform Fee, pool fee and Fee Key collection so far, less what of it is the Creators' (ADR 0007), valued in
+   * SOL at the Quote Registry's latest prices.
+   */
   revenueLamports: bigint;
   burn: { shareBps: number; spent: bigint; available: bigint };
   flywheel: { shareBps: number; spent: bigint; available: bigint };
@@ -63,7 +67,7 @@ export async function platformToken(db: Db): Promise<PublicKey | null> {
 }
 
 /**
- * Budgets from the Ledger: revenue entries valued in SOL at the registry's latest price per Quote Asset (SOL at par;
+ * Budgets from the Ledger: revenue entries, net of the Creators' share, valued in SOL at the registry's latest price per Quote Asset (SOL at par;
  * an asset without a price, or a coin a Fee Key paid out, counts for nothing), less what earlier burns spent.
  */
 export async function budgets(db: Db, cfg: Config): Promise<Budgets> {
@@ -76,9 +80,13 @@ export async function budgets(db: Db, cfg: Config): Promise<Budgets> {
     (await db.select({ mint: quoteAssets.mint, priceSol: quoteAssets.priceSol, decimals: quoteAssets.decimals }).from(quoteAssets).where(isNotNull(quoteAssets.priceSol)))
       .map((q) => [q.mint, q]),
   );
+  // What was collected for Creators (ADR 0007) is theirs, forwarded or not, and no part of any budget.
+  const creators = await creatorMoney(db);
   let revenue = 0n;
   for (const c of collected) {
-    const amount = BigInt(c.amount);
+    const gross = BigInt(c.amount);
+    const theirs = creators.get(c.mint)?.accrued ?? 0n;
+    const amount = gross > theirs ? gross - theirs : 0n;
     if (c.mint === WSOL_MINT.toBase58()) {
       revenue += amount;
       continue;

@@ -1,6 +1,6 @@
 # Stoker
 
-A Solana launchpad where anyone launches a coin paired with any Quote Asset, with no gatekeeper choosing which assets are allowed, and every fee a Creator earns is paid by the chain rather than promised by us.
+A Solana launchpad where anyone launches a coin paired with any Quote Asset, with no gatekeeper choosing which assets are allowed, and a Creator earns from every trade: part paid by the chain, where nobody can withhold it, and the rest forwarded by us on a public Ledger.
 
 ## Language
 
@@ -11,7 +11,7 @@ A new coin created on our platform together with its bonding curve, from creatio
 _Avoid_: Token, pool, project
 
 **Creator**:
-The wallet that launched a coin and is entitled to its Creator Fee.
+The wallet that launched a coin and is entitled to its Creator Fee and its Creator Forward.
 _Avoid_: Dev, deployer, owner
 
 **Graduation**:
@@ -46,8 +46,9 @@ _Avoid_: Pair with anything, multi-quote
 ### Fees
 
 **Platform Fee**:
-Our share of every trade on a Launch, earned by the platform.
+Our share of every trade on a Launch, collected by the platform.
 On the curve LaunchLab pays it into one vault per Quote Asset; after Graduation it is the CPMM pool's creator fee, since the platform is every graduated pool's creator.
+Part of it is the Creator's, paid on as the Creator Forward.
 _Avoid_: Protocol fee (that is Raydium's cut)
 
 **Fee Key**:
@@ -57,6 +58,11 @@ _Avoid_: LP NFT, position NFT
 **Creator Fee**:
 The Creator's share of every trade on their Launch's curve before Graduation, paid and claimable on-chain with no action from us.
 _Avoid_: Creator reward, dev fee, royalty
+
+**Creator Forward**:
+What the platform pays a Creator out of the Platform Fee it has collected, straight to the Creator's wallet in the Quote Asset: a match of the Creator Fee on the curve, and half of the pool's creator fee after Graduation (ADR 0007).
+Also one such payment.
+_Avoid_: Creator Fee (that is the on-chain part), payout, rebate, revenue share
 
 ### Revenue
 
@@ -73,11 +79,11 @@ Moving revenue from the Operations Wallet to the Treasury, so the hot wallet nev
 _Avoid_: Withdrawal, transfer (on its own)
 
 **Fee Collector**:
-The scheduled job that claims every Platform Fee and Fee Key into the Operations Wallet and sweeps it to the Treasury.
+The scheduled job that claims every Platform Fee and Fee Key into the Operations Wallet and sweeps it to the Treasury, less what is owed to Creators.
 _Avoid_: Fee cron, claimer
 
 **Ledger**:
-The append-only public record of every movement of platform revenue, each tied to its transaction signature; Reward Rounds, Burns and Flywheel buys join it.
+The append-only public record of every movement of platform revenue, each tied to its transaction signature; Creator Forwards, Burns and Flywheel buys are on it too.
 _Avoid_: History, log, audit trail
 
 ### Rewards

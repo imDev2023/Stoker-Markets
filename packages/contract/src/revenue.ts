@@ -13,13 +13,14 @@ const raw = z.string().regex(/^\d+$/, "must be a whole number of raw units");
 /**
  * What a Ledger entry records.
  * - `platform_fee`: the Platform Fee claimed from LaunchLab's vault for one Quote Asset, paid by every curve trade.
- * - `pool_fee`: a graduated coin's CPMM pool creator fee, which is the platform's after Graduation (ADR 0001).
+ * - `pool_fee`: a graduated coin's CPMM pool creator fee, which the platform collects after Graduation (ADR 0007).
  * - `fee_key`: the LP fees of a graduated pool's locked liquidity, collected with its Fee Key, in both of the pool's tokens.
  * - `sweep`: revenue moved from the operations wallet to the treasury (ADR 0004).
+ * - `creator_forward`: a Creator's share of that revenue, paid from the operations wallet to the Creator (ADR 0007).
  * - `burn`: SOL spent on the Platform Token and the Platform Token destroyed, two entries of one transaction.
  * - `flywheel`: the same for a top Launch the Flywheel rule picked.
  */
-export const LedgerKind = z.enum(["platform_fee", "pool_fee", "fee_key", "sweep", "burn", "flywheel"]);
+export const LedgerKind = z.enum(["platform_fee", "pool_fee", "fee_key", "sweep", "creator_forward", "burn", "flywheel"]);
 export type LedgerKind = z.infer<typeof LedgerKind>;
 
 /**
@@ -38,7 +39,7 @@ export const LedgerEntry = z.object({
   amount: raw,
   /** Where it came from: a Platform Fee vault, a CPMM pool, or the operations wallet for a sweep. */
   source: base58,
-  /** Where it went: the operations wallet, or the treasury for a sweep. */
+  /** Where it went: the operations wallet, the treasury for a sweep, or the Creator for a Creator Forward. */
   destination: base58,
   /** The graduated coin whose pool paid it; null for the Platform Fee (one vault collects every Launch's) and sweeps. */
   launch: z.object({ mint: base58, symbol: z.string(), name: z.string() }).nullable(),
@@ -73,6 +74,10 @@ export const RevenueTotal = RevenueStreams.extend({
   asset: RevenueAsset,
   /** Moved on to the treasury so far. */
   swept: raw,
+  /** Forwarded to Creators so far (ADR 0007): their share of what was collected. */
+  creatorForwarded: raw,
+  /** Collected for Creators and not forwarded yet: still in the operations wallet, and not the platform's. */
+  creatorPending: raw,
 });
 export type RevenueTotal = z.infer<typeof RevenueTotal>;
 
@@ -103,7 +108,7 @@ export type Revenue = z.infer<typeof Revenue>;
 // ---------------------------------------------------------------------------------------------------------------------
 // Operator: scheduled job runs.
 
-export const JobName = z.enum(["quote-registry", "graduation-watch", "fee-collector", "reward-tax-lock", "reward-rounds", "burn"]);
+export const JobName = z.enum(["quote-registry", "graduation-watch", "fee-collector", "creator-forward", "reward-tax-lock", "reward-rounds", "burn"]);
 export type JobName = z.infer<typeof JobName>;
 
 export const JobRun = z.object({

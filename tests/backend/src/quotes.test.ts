@@ -8,7 +8,7 @@ import {
 import { PreparedTrade, TradeList, type TradeSide } from "@launchpad/contract";
 import { LOCAL_QUOTES, localnetKeys, mintLocalQuote, send } from "@launchpad/localnet";
 import {
-  connection, deliverWebhook, env, fundedWallet, getLaunch, launch, listQuotes, prepare, refreshQuoteRegistry, signAndSend,
+  connection, deliverWebhook, env, feeAt, feeRates, fundedWallet, getLaunch, launch, listQuotes, prepare, refreshQuoteRegistry, signAndSend,
 } from "./client";
 
 // The stack prices the local quotes in USD (tools/localnet LOCAL_QUOTE_PRICES_USD): SOL 150, USDC 1, NVDAx 180, JTO 2.5,
@@ -208,8 +208,10 @@ describe("trading on a non-SOL curve", () => {
     await mintLocalQuote(connection(), usdc.mint, trader.publicKey, USDC(50));
 
     const buy = await trade(trader, coin.mint, "buy", USDC(10));
-    // 1.25% of 10 USDC in fees: 0.025 to Raydium, 0.05 Platform Fee, 0.05 Creator Fee.
-    expect(buy.fees).toEqual({ raydium: "25000", platform: "50000", creator: "50000" });
+    // 1.25% of 10 USDC in fees: 0.025 to Raydium, the rest split between the Platform Fee and Creator Fee as the chain has them.
+    const rates = await feeRates();
+    expect(buy.fees).toEqual({ raydium: "25000", platform: feeAt(USDC(10), rates.platform).toString(), creator: feeAt(USDC(10), rates.creator).toString() });
+    expect(BigInt(buy.fees.platform) + BigInt(buy.fees.creator)).toBe(USDC(0.1));
     expect(await usdcOf(trader)).toBe(USDC(40));
     const coins = BigInt(buy.amountOut);
 

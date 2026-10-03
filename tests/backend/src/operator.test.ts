@@ -44,6 +44,7 @@ describe("the operator view", () => {
 
 describe("fee-change announcements", () => {
   it("can't be prepared before the announced time, and after it builds the admin's transaction which changes the fees", async () => {
+    const original = PlatformInfo.parse(await (await api("/v1/platform")).json());
     const soon = new Date(Date.now() + 1_000).toISOString();
     const tooSoon = await api("/v1/operator/fees/announce", {
       method: "POST", headers: operator(), body: JSON.stringify({ platformFeeBps: 60, creatorFeeBps: 40, effectiveAt: soon, note: "too soon" }),
@@ -84,10 +85,10 @@ describe("fee-change announcements", () => {
     const applied = FeeAnnouncementList.parse(await (await api("/v1/announcements")).json()).announcements.find((a) => a.id === id)!;
     expect(applied.appliedSignature).toBe(signature);
 
-    // Back to the ADR 0001 rates for the other tests, the same way.
+    // Back to the rates the platform started with, for the other tests, the same way.
     const back = await api("/v1/operator/fees/announce", {
       method: "POST", headers: operator(),
-      body: JSON.stringify({ platformFeeBps: 50, creatorFeeBps: 50, effectiveAt: new Date(Date.now() + env().feeChangeLeadSeconds * 1000 + 1_500).toISOString() }),
+      body: JSON.stringify({ platformFeeBps: original.platformFeeBps, creatorFeeBps: original.creatorFeeBps, effectiveAt: new Date(Date.now() + env().feeChangeLeadSeconds * 1000 + 1_500).toISOString() }),
     });
     const { id: backId } = (await back.json()) as { id: string };
     await new Promise((r) => setTimeout(r, env().feeChangeLeadSeconds * 1000 + 2_000));
@@ -99,6 +100,7 @@ describe("fee-change announcements", () => {
     const rsig = await connection().sendRawTransaction(rtx.serialize());
     await connection().confirmTransaction({ signature: rsig, blockhash: rtx.recentBlockhash!, lastValidBlockHeight: restore.lastValidBlockHeight }, "confirmed");
     expect((await api(`/v1/transactions/${rsig}`, { method: "POST" })).status).toBe(200);
-    expect(PlatformInfo.parse(await (await api("/v1/platform")).json()).platformFeeBps).toBe(50);
+    const restored = PlatformInfo.parse(await (await api("/v1/platform")).json());
+    expect([restored.platformFeeBps, restored.creatorFeeBps]).toEqual([original.platformFeeBps, original.creatorFeeBps]);
   }, 120_000);
 });
