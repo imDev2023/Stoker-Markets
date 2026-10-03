@@ -31,6 +31,7 @@ The forward is paid in the Quote Asset the fee was earned in, SOL as plain SOL, 
 A share counts as owed once the platform has collected the fee it comes from: a curve trade's share when a Platform Fee claim for its Quote Asset has landed at or after the trade's slot, a pool's share when its creator fee collection is on the Ledger.
 So the platform never owes more than it has received, and what a Creator is owed is reproducible from indexed trades and the Ledger alone.
 A Creator's owed amount in one asset is paid once it is worth at least `CREATOR_FORWARD_MIN_LAMPORTS` (0.01 SOL) at the Quote Registry's price; an asset without a price is paid whenever anything is owed, as the Fee Collector collects one.
+The minimum is set in SOL, not dollars, so it moves with the SOL price rather than with a price feed (owner's decision on 2026-10-03: StonkFun's $5 per payout is a dollar rule it introduced after the fact; ours is public from launch and lower).
 
 Every forward is one row of `creator_forwards`, written with its transaction's signature before the transaction is sent, and what a Creator is owed is what they earned less every forward that has landed or may still land.
 A run that dies, or a transaction that is lost, therefore never pays twice: the next run settles the row first (landed, failed on-chain, or expired past its last valid block height) and only a failed or expired one is paid again.
