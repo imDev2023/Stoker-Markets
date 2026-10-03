@@ -255,7 +255,8 @@ export async function rewardPotLamports(db: Db): Promise<bigint> {
     .select({ amount: sql<string>`coalesce(sum(${rewardPayouts.amount}), 0)::text` })
     .from(rewardPayouts)
     .innerJoin(rewardRounds, eq(rewardRounds.id, rewardPayouts.roundId))
-    .where(and(eq(rewardRounds.payoutMint, WSOL), inArray(rewardPayouts.status, ["paid", "sending", "unpaid"])));
+    // Only what has landed has left the wallet: a payout still to be sent, or in flight, is SOL the sweep must leave too.
+    .where(and(eq(rewardRounds.payoutMint, WSOL), eq(rewardPayouts.status, "paid")));
   const pot = BigInt(sold!.proceeds) - BigInt(paid!.amount);
   return pot > 0n ? pot : 0n;
 }
