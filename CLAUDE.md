@@ -5,7 +5,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 
 ## Read first
 
-1. GitHub issue #5 (`gh issue view 5`) - the v1 PRD; slices are issues #8 to #23, each with "Blocked by". A slice's latest comment is its current status. Every v1 slice is merged except #23 (mainnet go-live, the owner's, with `docs/runbooks/mainnet.md`); since 2026-10-02 the work in hand is feature parity with StonkFun (issue #41, the owner's decision): before mainnet #43 (Holder Reward payout asset, PR #59) and #44 (permanent metadata on Arweave, ADR 0008), both landed on 2026-10-03 with the launch right after; #53 with #42 (fee split and the Creator Forward, PR #56) and #45 (per-IP rate limits) are merged, and #7 (name, ticker and the registered domain `stoker.markets`) is closed; after mainnet #47, #48, #50, and #37 (motion and analytics); #49 (Airdrop Mode) later; check `gh pr list` for open drafts before starting work, since cloud sessions also push here. Push every working branch: a cloud session can't see a local-only branch and rebuilt #11 from scratch because of one.
+1. GitHub issue #5 (`gh issue view 5`) - the v1 PRD; slices are issues #8 to #23, each with "Blocked by". A slice's latest comment is its current status. Every v1 slice is merged, and so are the two parity slices that had to land before mainnet (#43, the Payout Asset and the launch type choice, and #44, permanent metadata). The work in hand is #23 (mainnet go-live, `docs/runbooks/mainnet.md`): the devnet dress rehearsal is live on `stoker.markets` and its state, addresses and what is proven are in #23's latest comments. After mainnet: #47, #48, #50 and #37; #49 (Airdrop Mode) later; #41 tracks parity with StonkFun. Check `gh pr list` for open drafts before starting work, since cloud sessions also push here. Push every working branch: a cloud session can't see a local-only branch and rebuilt #11 from scratch because of one.
 2. `CONTEXT.md` - the domain glossary; use its terms in code, issues and UI copy.
 3. `docs/adr/` - fee model and the Creator Forward (0007, which supersedes 0001: 0.75% Platform Fee and 0.25% Creator Fee on-chain, the Creator topped up to about 0.5% on the curve and after Graduation by a forwarding job), Cloudflare hosting (0002), server-built transactions (0003), key custody (0004), price-banded curve rules (0005, proposed), Reward Rounds and Burn budgets (0006, to be amended by #43).
 4. `spike/launchlab-devnet/README.md` - what LaunchLab really does on devnet, with tx evidence and gotchas.
@@ -34,6 +34,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 - Never edit `apps/api`, `packages/*` or `tools/*` sources while a backend run is in progress: `wrangler dev` hot-reloads the API mid-run and the results are meaningless. Tests, web and docs are safe to edit meanwhile.
 - UI baselines live in `tests/ui/screenshots/<platform>/`, and only `darwin` exists, so cloud (Linux) sessions can't run the visual projects and a Mac session re-baselines their PRs; after an intended UI change, run `pnpm test:ui --update-snapshots=changed` (`all` rewrites matching baselines with byte-different PNGs) and look at every changed image before committing.
 - Port 8787 and 3000 belong to other projects on this machine; ours are 3100, 8791, 8797, 8899, 5442.
+- Devnet rehearsal (`env.devnet` in both `wrangler.jsonc` files): `pnpm exec wrangler deploy --env devnet` in `apps/api`; in `apps/web`, `NEXT_PUBLIC_API_URL=https://api.stoker.markets pnpm exec opennextjs-cloudflare build`, then `... deploy --env devnet`. `--var NAME:value` on the API deploy overrides one setting for a temporary deploy (a 0.5 SOL `GRADUATION_TARGET_LAMPORTS` to rehearse a Graduation; run the Quote Registry job after any change to it, since the curve rules carry the target). The keypairs, the database password and the operator token are files under `~/.config/stoker/devnet/` on the owner's Mac, never in the repo.
 
 ## Settled (do not re-litigate)
 
@@ -107,7 +108,13 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 - A squash-merged PR conflicts with a branch stacked on it; when main equals a commit the branch already contains, `git merge -s ours origin/main` records it without touching files. Force pushes are blocked for agents here, so merge main in rather than rebasing a pushed branch.
 - A Playwright full-page screenshot doesn't scroll, so `loading="lazy"` images far down a long page load or not by timing; `snap` in `visual.spec.ts` scrolls through the page first. Never force `loading="eager"` from a test: it causes a hydration mismatch. Masks paint even over elements hidden inside a closed `<details>`, so mask only visible ones.
 - lightweight-charts lays out its chart with a `<table>`, so in UI tests scope table queries to the Trades region. Playwright won't click an `aria-disabled` option without `force: true`.
-- `agent-browser screenshot` needs absolute paths. Firecrawl is out of credits.
+- `agent-browser screenshot` needs absolute paths. Firecrawl is out of credits. Google sign-in fails in an agent-browser window: for a site behind the owner's Google login use a Browser Use cloud browser with a saved profile (`BROWSERUSE_API_KEY` in `.env`, spelled without the second underscore), driven with `agent-browser connect <cdpUrl>`, and stop it through the API or it keeps billing.
+- Agents can't write Worker secrets here: the permission classifier denies `wrangler secret put` and `secret bulk`. Hand the owner one `! ...` command instead, and test it for zsh first: zsh does not word-split a variable holding a command (`W="pnpm exec wrangler"; $W ...` fails with "command not found"), so use a shell function.
+- A Helius webhook's new address takes minutes to take effect: a pool trade made about a minute after its pool was added never arrived, and one made a few minutes later arrived in 2 seconds. The site's own trades are covered by the fast path (`POST /v1/transactions/:signature`); anything else in that window is lost unless backfilled. Watching a busy mint (wrapped SOL) would deliver every transaction that names it, so the runbook's "every quote mint" needs checking before the Helius secrets are set on mainnet.
+- The Burn buys through a route source or the coin's own graduated SOL pool, never the curve: until the Platform Token has graduated (or Jupiter routes it) every run skips it with "no SOL route to the Platform Token". A Reward Launch's coin account in the operations wallet holds the tax harvested for holders and the buy's own withheld tax, so it can't be closed after a burn (found on devnet, fixed on the branch `burn-reward-launch`).
+- Devnet has no CPMM config with a 1% creator fee; the rehearsal uses `5MxLgy9oPdTC3YgkiePHqr3EoCRD9uLVYRQS2ANAs7wy` (0.25%), the one the local chain clones. Raydium's devnet crank migrated our two sold-out curves 6 and 31 seconds after they completed. ArDrive Turbo can't be paid in devnet SOL, so there `ARWEAVE_TOP_UP_LAMPORTS` is too small to leave the wallet and only free-tier items land on Arweave.
+- Supabase as the Hyperdrive origin: the direct host (`db.<ref>.supabase.co`) works for Hyperdrive but is IPv6-only, so run migrations from a Mac through the session pooler (`aws-0-<region>.pooler.supabase.com`, user `postgres.<ref>`).
+- The launch form opens with the launch type radio cards (`LaunchType` in `LaunchOptions.tsx`), which every launch baseline shows: a change to them re-baselines all 54 launch images.
 - Devnet faucets are rate-limited and faucet.solana.com is closed to agents; the owner's default Solana CLI wallet holds devnet SOL.
 - StonkFun's Terms of Use ban scraping and copying: never use its frontend, copy or branding; never open its `/admin`, `/api/admin/*` or `/integrators`.
 - `research/social/telegram-group/` is the owner's private group export (other people's messages): gitignored, never published.
@@ -115,7 +122,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 ## Multica dashboard
 
 This project is mirrored on the owner's Multica dashboard (workspace Pandora) as project `c5707009-2225-4a7d-94e3-93a9eed5d951`.
-GitHub issues on `imDev2023/stonk-fun-solana` are the source of truth; Multica only mirrors them (see `docs/agents/issue-tracker.md`).
+GitHub issues on `imDev2023/Stoker-Markets` are the source of truth; Multica only mirrors them (see `docs/agents/issue-tracker.md`).
 At the end of every session, after the tracker is updated, run the `multica-sync` skill for this project: mirror ticket statuses, add any new tickets, and refresh the project's "Current step" section.
 Every Multica write passes `--no-start` and no ticket is ever assigned to an agent, so the sync never starts an agent run.
 If the `multica` CLI is not signed in, say so in the session summary and stop anyway; the sync never blocks the work.
@@ -124,7 +131,7 @@ If the `multica` CLI is not signed in, say so in the session summary and stop an
 
 ### Issue tracker
 
-Issues live in GitHub Issues on `imDev2023/stonk-fun-solana` and are mirrored to Multica; external PRs are not a triage surface. See `docs/agents/issue-tracker.md`.
+Issues live in GitHub Issues on `imDev2023/Stoker-Markets` and are mirrored to Multica; external PRs are not a triage surface. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
