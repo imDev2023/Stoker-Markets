@@ -5,5 +5,14 @@
   "compatibility_date": "2026-09-20",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // The devnet dress rehearsal (runbook, section 11): build with NEXT_PUBLIC_API_URL=https://api.stoker.markets, then
+  // `opennextjs-cloudflare deploy --env devnet`. Its API key is the secret API_KEY.
+  "env": {
+    "devnet": {
+      "name": "stoker-web-devnet",
+      "routes": [{ "pattern": "stoker.markets", "custom_domain": true }],
+      "assets": { "directory": ".open-next/assets", "binding": "ASSETS" }
+    }
+  }
 }
