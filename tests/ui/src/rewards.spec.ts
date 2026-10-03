@@ -1,4 +1,4 @@
-// A Reward Launch's Payout Asset (#43) in the web app: chosen beside the Reward Tax, repeated in the review, and stated
+// A Reward Launch's Payout Asset (#43) in the web app: chosen as the launch type, repeated in the review, and stated
 // on the coin page, where the Holder Rewards card explains the sales it will make.
 import type { Page } from "@playwright/test";
 import { PreparedLaunch } from "@launchpad/contract";
@@ -18,16 +18,20 @@ test("a Creator launches a Reward Launch paid in SOL, and the coin page says so"
   await page.goto("/launch");
   await connectWallet(page);
   await fillForm(page, { name: "Dividend Desk", symbol: "DIVD" });
-  await page.getByRole("checkbox", { name: /^Reward Launch/ }).check();
-  await page.getByRole("group", { name: "Reward Tax" }).getByRole("button", { name: "3%" }).click();
 
-  // The coin itself unless the Creator says otherwise; the choice explains itself either way.
-  const paidIn = page.getByRole("group", { name: "Paid out in" });
-  await expect(paidIn.getByRole("button", { name: "DIVD" })).toHaveAttribute("aria-pressed", "true");
-  await expect(paidIn).toContainText("Holders are paid in DIVD itself, never sold. Fixed at launch, like the rate.");
-  await paidIn.getByRole("button", { name: "SOL" }).click();
-  await expect(paidIn.getByRole("button", { name: "SOL" })).toHaveAttribute("aria-pressed", "true");
-  await expect(paidIn).toContainText(
+  // The launch type is the form's first choice, there before anything is ticked: a standard coin unless the Creator
+  // says otherwise, and each Reward Launch names its Payout Asset and explains itself once chosen.
+  const types = page.getByRole("radiogroup", { name: "Launch type" });
+  const terms = page.getByRole("group", { name: "Reward Tax" });
+  await expect(types.getByRole("radio")).toHaveCount(3);
+  await expect(types.getByRole("radio", { name: /^Standard coin/ })).toBeChecked();
+  await expect(terms).toHaveCount(0);
+  await types.getByRole("radio", { name: /^Reward Launch paid in DIVD/ }).check();
+  await expect(terms).toContainText("Holders are paid in DIVD itself, never sold. Fixed at launch, like the rate.");
+  await types.getByRole("radio", { name: /^Reward Launch paid in SOL/ }).check();
+  await expect(types.getByRole("radio", { name: /^Reward Launch paid in DIVD/ })).not.toBeChecked();
+  await terms.getByRole("button", { name: "3%" }).click();
+  await expect(terms).toContainText(
     "The tax is sold for SOL in small slices, at most 0.5% of the coins in the market per run, and holders are paid in SOL. Fixed at launch, like the rate.",
   );
 
