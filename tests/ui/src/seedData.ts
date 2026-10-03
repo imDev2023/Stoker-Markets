@@ -1,4 +1,5 @@
-// The coins the seed step launches with a First Buy and an Airdrop, shared with the visual tests that look at them.
+// The coins the seed step launches with a First Buy and an Airdrop, and the Reward Launch paid in SOL, shared with the
+// visual tests that look at them.
 import { fixedKeypair, type LaunchFields } from "./fixtures";
 
 /** Their Creator: a key that is the same every run, so the visual tests can connect as them. */
@@ -13,4 +14,10 @@ export const AIRDROP_SENDING: LaunchFields = {
 };
 export const AIRDROP_PAID: LaunchFields = {
   name: "Gift Box", symbol: "GIFT", description: "Launched with an airdrop every wallet has received.", firstBuy: FIRST_BUY, airdrop,
+};
+
+/** A Reward Launch whose Payout Asset is SOL, by a Creator of its own; the seed buys it and runs a round, so its page shows a sale and a payout. */
+export const REWARD_CREATOR = fixedKeypair("reward creator");
+export const REWARD_QUOTE: LaunchFields = {
+  name: "Yield Desk", symbol: "YLD", description: "A Reward Launch whose 3% tax is sold for SOL and paid to holders in SOL.", rewardTax: "300", rewardPayout: "quote",
 };
