@@ -37,7 +37,7 @@ export {
 } from "./curve";
 export { grossForNet, readTransferFees, transferFeeOf, withheldFee, type TransferFee } from "./transferFee";
 export {
-  graduationPoolAddress, loadPool, poolPrice, poolSides, poolSwap, poolSwapExactOut, poolTradeIx, preparePoolTrade, quotePoolTrade,
+  graduationPoolAddress, loadPool, poolPrice, poolSides, poolSwap, poolSwapExactOut, poolTradeInstructions, poolTradeIx, preparePoolTrade, quotePoolTrade,
   readPoolKeys, swapBaseInputIx, swapBaseOutputIx,
   type Pool, type PoolFeeRates, type PoolKeys, type PoolSwap, type PoolToken, type PoolTokenKeys, type PoolTradeQuote,
   type PoolTradeRequest,

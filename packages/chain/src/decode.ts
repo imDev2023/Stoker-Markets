@@ -35,7 +35,7 @@ export type RawTransaction = {
   } | null;
 };
 
-type RawTokenBalance = { accountIndex?: number; mint: string; owner?: string; uiTokenAmount: { decimals: number } };
+type RawTokenBalance = { accountIndex?: number; mint: string; owner?: string; uiTokenAmount: { amount: string; decimals: number } };
 
 export type LaunchCreated = {
   kind: "launch_created";

@@ -3,11 +3,11 @@
 import { test as setup } from "@playwright/test";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
-  claimViaApi, coinBalance, fund, fundedKeypair, fundQuote, graduate, launchViaApi, payAirdropViaApi, runFeeCollector, SEED_CREATOR,
+  claimViaApi, coinBalance, fund, fundedKeypair, fundQuote, graduate, launchViaApi, payAirdropViaApi, runFeeCollector, runRewardRounds, SEED_CREATOR,
   SEED_HOLDER, tradeViaApi,
   type LaunchFields,
 } from "./fixtures";
-import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING } from "./seedData";
+import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, REWARD_CREATOR, REWARD_QUOTE } from "./seedData";
 
 export const SEEDED: LaunchFields[] = [
   { name: "Harbor Lights", symbol: "HRBR", description: "A coin for the night shift at the port." },
@@ -42,6 +42,11 @@ setup("seed the board", async () => {
   await fund(AIRDROP_CREATOR.publicKey, 20);
   await launchViaApi(AIRDROP_CREATOR, AIRDROP_SENDING);
   await payAirdropViaApi(AIRDROP_CREATOR, await launchViaApi(AIRDROP_CREATOR, AIRDROP_PAID));
+  // A Reward Launch paid in SOL (#43): one holder buys, the Reward Engine sells a slice of the tax and pays the round.
+  await fund(REWARD_CREATOR.publicKey, 5);
+  const rewardCoin = await launchViaApi(REWARD_CREATOR, REWARD_QUOTE);
+  await tradeViaApi(await fundedKeypair(5), rewardCoin, "buy", BigInt(0.3 * LAMPORTS_PER_SOL));
+  await runRewardRounds();
 
   // One fixed Creator, so the visual tests can open the Creator Fee page as that Creator.
   const creator = await fundedKeypair(20, SEED_CREATOR);

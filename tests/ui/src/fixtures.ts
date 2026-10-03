@@ -72,6 +72,9 @@ export type LaunchFields = {
   /** Raw units of the Quote Asset. */
   firstBuy?: string;
   airdrop?: { wallet: string; amount: string }[];
+  /** A Reward Launch: its Reward Tax in basis points, and its Payout Asset ("coin" unless set). */
+  rewardTax?: string;
+  rewardPayout?: string;
 };
 
 /** What a wallet does with a transaction the API prepared: sign, send, wait for confirmation, then report it for indexing. */
@@ -219,6 +222,14 @@ export async function runFeeCollector() {
     };
     if (!res.ok || runs.runs[0]?.status !== "succeeded") throw new Error(`the ${job} job failed: ${res.status} ${JSON.stringify(runs.runs[0])}`);
   }
+}
+
+/** Runs the Reward Engine once, as its Cron Trigger would: harvests, sells (for a Quote Asset payout), opens and pays rounds. */
+export async function runRewardRounds() {
+  const { apiUrl, operatorToken } = stackEnv();
+  const res = await fetch(`${apiUrl}/v1/operator/jobs/reward-rounds`, { method: "POST", headers: { authorization: `Bearer ${operatorToken}` } });
+  const body = (await res.json()) as { status: string; error?: string | null };
+  if (!res.ok || body.status !== "succeeded") throw new Error(`the reward-rounds job failed: ${res.status} ${JSON.stringify(body)}`);
 }
 
 export const solBalance = async (owner: PublicKey) => BigInt(await connection().getBalance(owner, "confirmed"));
