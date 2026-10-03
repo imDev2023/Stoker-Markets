@@ -131,19 +131,23 @@ describe("Reward Rounds", () => {
     for (const h of holders) await trade(h, mint, "buy", 40_000_000n);
     const holdings = await Promise.all(holders.map((h) => held(mint, h)));
 
-    // The first run dies after one payout.
-    const first = await runRounds(1);
+    // The first run dies after this coin's first payout. Reward Launches are paid oldest first, and one that another
+    // test file left with tax still to sell pays a round of its own on every run, so the run is given as many payouts
+    // as it takes for one to reach this coin.
+    let first = await runRounds(1);
     expect(first.summary.opened.filter((o) => o.mint === mint)).toHaveLength(1);
-    expect(first.summary.paid).toEqual([{ round: expect.any(String), payouts: 1 }]);
-    expect(first.summary.finished).toEqual([]);
     const { rounds: [round] } = await rewards(mint);
-    expect(round!.status).toBe("paying");
+    const own = (run: typeof first) => run.summary.paid.filter((p) => p.round === round!.id);
+    for (let budget = 2; budget <= 12 && own(first).length === 0; budget++) first = await runRounds(budget);
+    expect(own(first)).toEqual([{ round: round!.id, payouts: 1 }]);
+    expect(first.summary.finished).not.toContain(round!.id);
+    expect((await rewards(mint)).rounds[0]!.status).toBe("paying");
 
     // The next run pays the other two and closes the round.
     const second = await runRounds();
     expect(second.summary.opened.filter((o) => o.mint === mint)).toEqual([]);
-    expect(second.summary.paid).toEqual([{ round: round!.id, payouts: 2 }]);
-    expect(second.summary.finished).toEqual([round!.id]);
+    expect(own(second)).toEqual([{ round: round!.id, payouts: 2 }]);
+    expect(second.summary.finished).toContain(round!.id);
 
     const detail = RewardRoundDetail.parse(await (await api(`/v1/rewards/rounds/${round!.id}`)).json());
     expect(detail.status).toBe("paid");

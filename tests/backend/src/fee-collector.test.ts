@@ -188,32 +188,40 @@ describe("the Platform Fee", () => {
     await deliverWebhook([signature]);
     const trader = await fundedWallet();
     await mintLocalQuote(connection(), USDC, trader.publicKey, usdc(100));
+    // Another test file's Reward Sales in USDC can leave the vault a Platform Fee too small to claim on its own; it is
+    // claimed with this test's, and its Creator's share waits under the forward's minimum.
+    const vault = platformFeeVault(USDC);
+    const dust = await tokenBalance(vault);
     const buys = [await trade(trader, prepared.mint, "buy", usdc(40)), await trade(trader, prepared.mint, "buy", usdc(12.5))];
     await deliverWebhook(buys.map((t) => t.signature));
     const paid = sum(buys.map((t) => BigInt(t.quote.fees.platform)));
     const rates = await feeRates();
     expect(paid).toBe(feeAt(usdc(40), rates.platform) + feeAt(usdc(12.5), rates.platform));
     const share = sum(buys.map((t) => BigInt(t.quote.fees.creator)));
-    const vault = platformFeeVault(USDC);
-    expect(await tokenBalance(vault)).toBe(paid);
+    expect(await tokenBalance(vault)).toBe(dust + paid);
     const inTreasury = await tokensOf(treasury(), USDC);
+    const held = await tokensOf(ops(), USDC);
 
     const run = await runCollector();
     const claim = sentBy(run).find((s) => s.purpose === "platform_fee" && s.subject === vault.toBase58())!;
     const sweep = sentBy(run).find((s) => s.purpose === "sweep")!;
     expect(await tokenBalance(vault)).toBe(0n);
     // The sweep left the Creator's share behind, and the Creator Forward paid it to the Creator in USDC.
-    const forward = (await forwarded()).find((f) => f.creator === creator.publicKey.toBase58())!;
+    const forwards = await forwarded();
+    const forward = forwards.find((f) => f.creator === creator.publicKey.toBase58())!;
     expect(forward).toMatchObject({ mint: USDC.toBase58(), amount: share.toString(), outcome: "paid" });
     expect(await tokensOf(creator.publicKey, USDC)).toBe(share);
     expect(await tokensOf(ops(), USDC)).toBe(await pendingForCreators(USDC));
-    expect((await tokensOf(treasury(), USDC)) - inTreasury).toBe(paid - share);
+    // Everything else went to the treasury: this test's fees less its Creator's share, when the vault started empty.
+    const swept = held + dust + paid - forwardedIn(forwards, USDC.toBase58()) - (await pendingForCreators(USDC));
+    if (dust === 0n) expect(swept).toBe(paid - share);
+    expect((await tokensOf(treasury(), USDC)) - inTreasury).toBe(swept);
 
     const usdcRef = expect.objectContaining({ mint: USDC.toBase58(), symbol: "USDC", decimals: 6 });
     expect(await entriesOf([claim.signature, sweep.signature, forward.signature])).toEqual([
       expect.objectContaining({ signature: forward.signature, kind: "creator_forward", asset: usdcRef, amount: share.toString(), source: ops().toBase58(), destination: creator.publicKey.toBase58(), launch: null }),
-      expect.objectContaining({ signature: sweep.signature, kind: "sweep", asset: usdcRef, amount: (paid - share).toString(), source: ops().toBase58(), destination: treasury().toBase58() }),
-      expect.objectContaining({ signature: claim.signature, kind: "platform_fee", asset: usdcRef, amount: paid.toString(), source: vault.toBase58() }),
+      expect.objectContaining({ signature: sweep.signature, kind: "sweep", asset: usdcRef, amount: swept.toString(), source: ops().toBase58(), destination: treasury().toBase58() }),
+      expect.objectContaining({ signature: claim.signature, kind: "platform_fee", asset: usdcRef, amount: (dust + paid).toString(), source: vault.toBase58() }),
     ]);
   });
 });
