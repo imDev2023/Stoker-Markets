@@ -3,10 +3,12 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./turbo": "./src/turbo.ts"
   },
   "scripts": {
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "arweave-stand-in": "tsx src/arweave-stand-in.ts"
   },
   "dependencies": {
     "@launchpad/arweave": "workspace:*",
@@ -15,6 +17,7 @@
     "@launchpad/localnet": "workspace:*",
     "@solana/web3.js": "^1.99.0",
     "bn.js": "^5.2.2",
+    "bs58": "^6.0.0",
     "postgres": "^3.4.9"
   },
   "devDependencies": {

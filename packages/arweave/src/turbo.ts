@@ -1,6 +1,7 @@
 // ArDrive Turbo's HTTP API, the part a launchpad uses: upload a signed data item, see what it costs, and buy credits
 // with SOL. The SDK (@ardrive/turbo-sdk) runs in a Worker too (spike/turbo-workers), but these few calls need none of
 // its weight. Endpoints as the SDK calls them (packages/turbo-sdk/src/common/{upload,payment}.ts).
+import { plainBytes } from "./dataItem";
 
 export type TurboUrls = {
   /** https://upload.ardrive.io */
@@ -43,7 +44,7 @@ export async function uploadDataItem(urls: TurboUrls, bytes: Uint8Array): Promis
   const res = await fetch(`${urls.upload}/v1/tx/solana`, {
     method: "POST",
     headers: { "content-type": "application/octet-stream", "content-length": String(bytes.byteLength) },
-    body: bytes as BodyInit,
+    body: plainBytes(bytes),
   });
   if (res.status === 402) throw new PaymentRequired(bytes.byteLength);
   if (!res.ok) throw await failed(res, "upload");

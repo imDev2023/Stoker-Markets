@@ -39,6 +39,13 @@
     "ANON_PREPARE_RATE_LIMIT_PER_MINUTE": "25",
     // A Platform Fee or Creator Fee change applies no sooner than this after it is announced.
     "FEE_CHANGE_LEAD_SECONDS": "86400",
+    // Permanent metadata (#44): ArDrive Turbo and the Arweave gateway coins' metadata URIs are built from. Locally the
+    // stand-in from `pnpm arweave-stand-in` plays both services and the gateway; mainnet uses https://upload.ardrive.io,
+    // https://payment.ardrive.io and https://arweave.net (the defaults when unset), and ARWEAVE_TOP_UP_LAMPORTS 50000000.
+    "TURBO_UPLOAD_URL": "http://127.0.0.1:8797",
+    "TURBO_PAYMENT_URL": "http://127.0.0.1:8797",
+    "ARWEAVE_GATEWAY_URL": "http://127.0.0.1:8797",
+    "ARWEAVE_TOP_UP_LAMPORTS": "50000000",
     // From tools/localnet/.ledger/state.json after `pnpm localnet` (see CLAUDE.md); both are required.
     "PLATFORM_CONFIG": "",
     "PLATFORM_ADMIN": "",
@@ -58,8 +65,8 @@
     // liquidity by mint; a mint left out is unverified with unknown liquidity. Mainnet reads Jupiter's list.
     "QUOTE_TOKEN_LIST": "{\"So11111111111111111111111111111111111111112\":{\"verified\":true,\"liquidityUsd\":2500000000},\"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v\":{\"verified\":true,\"liquidityUsd\":900000000},\"Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh\":{\"verified\":true,\"liquidityUsd\":4000000},\"jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL\":{\"verified\":true,\"liquidityUsd\":12000000}}"
   },
-  // Scheduled jobs: the graduation watch every minute, the Quote Registry refresh (ADR 0005) every five, the Fee
-  // Collector hourly. Locally, `wrangler dev --test-scheduled` runs them on GET /__scheduled?cron=<the cron>, and on a
+  // Scheduled jobs: the graduation watch and the Metadata Upload every minute, the Quote Registry refresh (ADR 0005)
+  // every five, the Fee Collector hourly. Locally, `wrangler dev --test-scheduled` runs them on GET /__scheduled?cron=<the cron>, and on a
   // bare GET all three.
   "triggers": { "crons": ["* * * * *", "*/5 * * * *", "15 * * * *", "*/10 * * * *", "45 * * * *"] },
   "hyperdrive": [

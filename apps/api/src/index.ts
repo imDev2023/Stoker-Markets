@@ -21,6 +21,7 @@ import {
   buildLaunch, launchQuoteAsset, loadDraft, mintKeypair, newMintKeyNonce, refuseWith, resolveLaunchModes, saveDraft,
 } from "./launch";
 import { runJob, toJobRun } from "./jobs";
+import { arweaveUrl, metadataDocument, signedItems, signMetadataItems, uploadMetadata } from "./metadata";
 import { refreshQuoteRegistry } from "./quotes/registry";
 import { lockRewardTaxes } from "./rewardTax";
 import { creatorFeeRoutes } from "./routes/creatorFees";
@@ -124,18 +125,24 @@ app.post("/v1/launches/prepare", async (c) => {
   const mintAddress = mint.toBase58();
   const imageKey = `images/${mintAddress}`;
   await c.env.METADATA_BUCKET.put(imageKey, bytes, { httpMetadata: { contentType } });
-  await c.get("db").insert(launchMetadata).values({
-    id: mintAddress,
-    creator: f.creator,
-    name: f.name,
-    symbol: f.symbol,
-    description: f.description,
-    imageKey,
-    imageContentType: contentType,
-    website: f.website ?? null,
-    x: f.x ?? null,
-    telegram: f.telegram ?? null,
-  });
+  const [stored] = await c
+    .get("db")
+    .insert(launchMetadata)
+    .values({
+      id: mintAddress,
+      creator: f.creator,
+      name: f.name,
+      symbol: f.symbol,
+      description: f.description,
+      imageKey,
+      imageContentType: contentType,
+      website: f.website ?? null,
+      x: f.x ?? null,
+      telegram: f.telegram ?? null,
+    })
+    .returning();
+  // Signed now, so the launch transaction names the permanent address; uploaded only once the launch has landed.
+  await signMetadataItems(c.get("db"), c.env.METADATA_BUCKET, cfg, operationsKey(c.env), stored!, { bytes, contentType });
   await saveDraft(c.get("db"), { mint, creator, nonce, quote, firstBuy, airdrop, rewardTaxBps });
   const loaded = await loadDraft(c.get("db"), mintAddress);
   return c.json(await buildLaunch(connection, cfg, loaded!, quote, modes.firstBuy, modes.summary));
@@ -146,8 +153,27 @@ app.post("/v1/webhooks/helius", async (c) => {
   if (!timingSafeEqual(c.req.header("authorization") ?? "", c.env.HELIUS_WEBHOOK_SECRET ?? "")) return c.json({ error: "unauthorized" }, 401);
   const body = await c.req.json<RawTransaction[]>().catch(() => null);
   if (!Array.isArray(body)) return c.json({ error: "expected an array of transactions" }, 400);
-  return c.json(await indexTransactions(c.get("db"), c.get("cfg"), body).catch(indexingFailed));
+  const result = await indexTransactions(c.get("db"), c.get("cfg"), body).catch(indexingFailed);
+  if (result.launched > 0) c.executionCtx.waitUntil(uploadAfterLaunch(c.env));
+  return c.json(result);
 });
+
+/**
+ * A launch that has just landed gets its permanent metadata uploaded right away rather than on the next minute's cron.
+ * On its own database connection: the request's closes with the request.
+ */
+async function uploadAfterLaunch(env: Bindings) {
+  const { db, close } = createDb(env.HYPERDRIVE.connectionString);
+  try {
+    await runJob(db, "metadata-upload", () => uploadMetadata(uploadDeps(env, db)), { exclusive: true });
+  } catch (e) {
+    console.error("metadata upload after a launch failed", e);
+  } finally {
+    await close();
+  }
+}
+
+const uploadDeps = (env: Bindings, db: ReturnType<typeof createDb>["db"]) => ({ db, cfg: config(env), operations: operationsKey(env), bucket: env.METADATA_BUCKET });
 
 /**
  * A batch some of whose transactions could not be indexed answers 500 naming them, so Helius delivers the batch again;
@@ -164,7 +190,9 @@ app.post("/v1/transactions/:signature", async (c) => {
   if (!/^[1-9A-HJ-NP-Za-km-z]{64,88}$/.test(signature)) return c.json({ error: "invalid signature" }, 400);
   const raw = await fetchRawTransaction(c.get("cfg").rpcUrl, signature);
   if (!raw) return c.json({ error: "transaction not found or not confirmed yet" }, 404);
-  return c.json(await indexTransactions(c.get("db"), c.get("cfg"), [raw]).catch(indexingFailed));
+  const result = await indexTransactions(c.get("db"), c.get("cfg"), [raw]).catch(indexingFailed);
+  if (result.launched > 0) c.executionCtx.waitUntil(uploadAfterLaunch(c.env));
+  return c.json(result);
 });
 
 app.route("/v1", launchRoutes);
@@ -241,6 +269,8 @@ app.post("/v1/operator/jobs/creator-forward", (c) =>
   manualJob(c, "creator-forward", () => forwardCreatorShares({ db: c.get("db"), cfg: c.get("cfg"), operations: operationsKey(c.env) })),
 );
 
+app.post("/v1/operator/jobs/metadata-upload", (c) => manualJob(c, "metadata-upload", () => uploadMetadata(uploadDeps(c.env, c.get("db")))));
+
 /** Operator alerts, newest first: open ones and recently resolved ones. */
 app.get("/v1/operator/alerts", async (c) => {
   const rows = await c.get("db").select().from(operatorAlerts).orderBy(desc(operatorAlerts.raisedAt)).limit(200);
@@ -256,7 +286,10 @@ app.get("/v1/operator/alerts", async (c) => {
   return c.json(res);
 });
 
-/** Token metadata JSON in the Metaplex off-chain format, as referenced by the on-chain metadata URI. */
+/**
+ * Token metadata JSON in the Metaplex off-chain format: the same document the coin's on-chain URI names on Arweave,
+ * served from our own domain as the cache (the image on Arweave too, where the coin was launched with it).
+ */
 app.get("/metadata/:file", async (c) => {
   const match = /^([1-9A-HJ-NP-Za-km-z]{32,44})\.json$/.exec(c.req.param("file"));
   if (!match) return c.json({ error: "not found" }, 404);
@@ -264,19 +297,10 @@ app.get("/metadata/:file", async (c) => {
   try {
     const [m] = await db.select().from(launchMetadata).where(eq(launchMetadata.id, match[1]!)).limit(1);
     if (!m) return c.json({ error: "not found" }, 404);
-    const api = config(c.env).publicApiUrl;
-    return c.json(
-      {
-        name: m.name,
-        symbol: m.symbol,
-        description: m.description,
-        image: `${api}/metadata/${m.id}/image`,
-        external_url: m.website ?? undefined,
-        extensions: { website: m.website ?? undefined, twitter: m.x ?? undefined, telegram: m.telegram ?? undefined },
-      },
-      200,
-      { "cache-control": "public, max-age=31536000, immutable" },
-    );
+    const cfg = config(c.env);
+    const items = await signedItems(db, m.id);
+    const image = items ? arweaveUrl(cfg.arweave, items.image.arweaveId) : `${cfg.publicApiUrl}/metadata/${m.id}/image`;
+    return c.json(metadataDocument(m, image), 200, { "cache-control": "public, max-age=31536000, immutable" });
   } finally {
     c.executionCtx.waitUntil(close());
   }
@@ -326,6 +350,8 @@ export default {
       if (run(CRONS.graduationWatch)) {
         await job(runJob(db, "graduation-watch", () => watchGraduations(db, config(env)), { exclusive: true }));
         await job(runJob(db, "reward-tax-lock", () => lockRewardTaxes(db, config(env), operationsKey(env)), { exclusive: true }));
+        // Permanent metadata for any launch the fast path after indexing did not upload (#44).
+        await job(runJob(db, "metadata-upload", () => uploadMetadata(uploadDeps(env, db)), { exclusive: true }));
       }
       // Platform revenue into the operations wallet, and on to the treasury (ADR 0004).
       // Then the Creators' share of what was collected goes on to them (ADR 0007).

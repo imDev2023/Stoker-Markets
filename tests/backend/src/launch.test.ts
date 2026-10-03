@@ -56,8 +56,14 @@ describe("launching a SOL-paired coin", () => {
       createdSignature: signature,
     });
 
+    // The on-chain URI is on Arweave (the stand-in here), where the Metadata Upload job posts the document right after
+    // the launch is indexed; its image is there too.
+    expect(prepared.metadataUri.startsWith(`${env().turbo.url}/`)).toBe(true);
+    await expect.poll(async () => (await fetch(prepared.metadataUri)).status, { timeout: 30_000 }).toBe(200);
     const metadata = (await (await fetch(prepared.metadataUri)).json()) as { image: string };
     expect(metadata).toMatchObject({ name: "Tracer Bullet", symbol: "TRCR", description: "First Launch end to end" });
+    expect(metadata.image.startsWith(`${env().turbo.url}/`)).toBe(true);
+    await expect.poll(async () => (await fetch(metadata.image)).status, { timeout: 30_000 }).toBe(200);
     const image = await fetch(metadata.image);
     expect(image.headers.get("content-type")).toBe("image/png");
     expect(new Uint8Array(await image.arrayBuffer())).toEqual(PNG);

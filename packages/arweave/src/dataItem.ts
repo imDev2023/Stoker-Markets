@@ -11,6 +11,12 @@ const ANCHOR_LENGTH = 32;
 
 export type Tag = { name: string; value: string };
 
+/**
+ * WebCrypto and fetch want a view over a plain ArrayBuffer; nothing here is ever backed by a SharedArrayBuffer, so the
+ * view is handed over as it is rather than copied.
+ */
+export const plainBytes = (b: Uint8Array) => b as Uint8Array<ArrayBuffer>;
+
 export type DataItemInput = {
   data: Uint8Array;
   tags: Tag[];
@@ -27,7 +33,7 @@ export type SignedDataItem = {
 
 const utf8 = (s: string) => new TextEncoder().encode(s);
 
-const sha = async (algorithm: "SHA-256" | "SHA-384", data: Uint8Array) => new Uint8Array(await crypto.subtle.digest(algorithm, data as BufferSource));
+const sha = async (algorithm: "SHA-256" | "SHA-384", data: Uint8Array) => new Uint8Array(await crypto.subtle.digest(algorithm, plainBytes(data)));
 
 function concat(...parts: Uint8Array[]) {
   const out = new Uint8Array(parts.reduce((n, p) => n + p.byteLength, 0));
@@ -180,9 +186,9 @@ export async function parseDataItem(bytes: Uint8Array): Promise<ParsedDataItem> 
   const anchor = hasAnchor ? bytes.subarray(at, (at += ANCHOR_LENGTH)) : null;
   const tagCount = Number(view.getBigUint64(at, true));
   at += 8;
-  const tagBytes = Number(view.getBigUint64(at, true));
+  const tagUint8Array = Number(view.getBigUint64(at, true));
   at += 8;
-  const tags = decodeTags(bytes.subarray(at, (at += tagBytes)));
+  const tags = decodeTags(bytes.subarray(at, (at += tagUint8Array)));
   if (tags.length !== tagCount) throw new Error(`the header says ${tagCount} tags, the tag bytes hold ${tags.length}`);
   const data = bytes.subarray(at);
   const payload = await signingPayload(owner, anchor ?? new Uint8Array(0), tags, data);

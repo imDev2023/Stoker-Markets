@@ -106,6 +106,16 @@ export type Bindings = {
   ANON_PREPARE_RATE_LIMIT_PER_MINUTE?: string;
   /** The PlatformConfig's admin, the cold key that signs fee changes (ADR 0004); PLATFORM_CONFIG is derived from it. */
   PLATFORM_ADMIN: string;
+  /**
+   * Permanent metadata (#44): ArDrive Turbo's upload and payment services, and the Arweave gateway every coin's on-chain
+   * metadata URI is built from. The gateway address is written on-chain at launch and can never change; on mainnet it
+   * must be https on a gateway that lasts (`https://arweave.net`). Locally all three point at the stand-in in tools/stack.
+   */
+  TURBO_UPLOAD_URL?: string;
+  TURBO_PAYMENT_URL?: string;
+  ARWEAVE_GATEWAY_URL?: string;
+  /** SOL sent to Turbo for upload credits each time an upload is refused for want of them; 0.05 SOL unless set. */
+  ARWEAVE_TOP_UP_LAMPORTS?: string;
   HYPERDRIVE: Hyperdrive;
   METADATA_BUCKET: R2Bucket;
 };
@@ -144,7 +154,39 @@ export type Config = {
   anonRateLimitPerMinute: number;
   anonPrepareRateLimitPerMinute: number;
   solRoute: SolRouteConfig | null;
+  arweave: ArweaveConfig;
 };
+
+export type ArweaveConfig = {
+  turbo: { upload: string; payment: string };
+  /** Without a trailing slash; a data item lives at `${gateway}/${id}`. */
+  gateway: string;
+  topUpLamports: bigint;
+};
+
+const TURBO_UPLOAD_URL = "https://upload.ardrive.io";
+const TURBO_PAYMENT_URL = "https://payment.ardrive.io";
+const ARWEAVE_GATEWAY_URL = "https://arweave.net";
+const ARWEAVE_TOP_UP_DEFAULT_LAMPORTS = 50_000_000n;
+
+/**
+ * Where coins' permanent metadata goes and is read from. The gateway is part of every coin's on-chain metadata URI, so
+ * on mainnet it must be https on a gateway that will outlive us, and the services must be the real ones over https.
+ */
+function arweaveConfig(env: Bindings): ArweaveConfig {
+  const trim = (raw: string) => new URL(raw).toString().replace(/\/$/, "");
+  const cfg: ArweaveConfig = {
+    turbo: { upload: trim(env.TURBO_UPLOAD_URL || TURBO_UPLOAD_URL), payment: trim(env.TURBO_PAYMENT_URL || TURBO_PAYMENT_URL) },
+    gateway: trim(env.ARWEAVE_GATEWAY_URL || ARWEAVE_GATEWAY_URL),
+    topUpLamports: env.ARWEAVE_TOP_UP_LAMPORTS ? lamports(env.ARWEAVE_TOP_UP_LAMPORTS, "ARWEAVE_TOP_UP_LAMPORTS") : ARWEAVE_TOP_UP_DEFAULT_LAMPORTS,
+  };
+  if (env.CLUSTER === "mainnet") {
+    for (const [name, url] of [["TURBO_UPLOAD_URL", cfg.turbo.upload], ["TURBO_PAYMENT_URL", cfg.turbo.payment], ["ARWEAVE_GATEWAY_URL", cfg.gateway]] as const)
+      if (!url.startsWith("https://") || /^https:\/\/(localhost|127\.|\[|[\d.]+(:|$))/.test(url))
+        throw new Error(`${name} must be https on a public host on mainnet (got ${url})`);
+  }
+  return cfg;
+}
 
 function bps(raw: string | undefined, name: string, fallback: number) {
   if (raw === undefined || raw === "") return fallback;
@@ -272,6 +314,7 @@ export function config(env: Bindings): Config {
     anonPrepareRateLimitPerMinute: perMinute(env.ANON_PREPARE_RATE_LIMIT_PER_MINUTE, "ANON_PREPARE_RATE_LIMIT_PER_MINUTE", 25),
     feeChangeLeadSeconds: env.FEE_CHANGE_LEAD_SECONDS ? seconds(env.FEE_CHANGE_LEAD_SECONDS, "FEE_CHANGE_LEAD_SECONDS") : FEE_CHANGE_LEAD_DEFAULT_SECONDS,
     solRoute: solRouteConfig(env),
+    arweave: arweaveConfig(env),
   };
 }
 

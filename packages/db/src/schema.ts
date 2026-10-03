@@ -487,3 +487,48 @@ export const feeKeys = pgTable("fee_keys", {
   pool: text("pool").notNull().unique(),
   foundAt: timestamp("found_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Permanent metadata (#44): one row per data item of a Launch, its image and its metadata JSON, each an ANS-104 item
+ * signed with the operations key when the launch was prepared, so the launch transaction carries its Arweave id, and
+ * uploaded to ArDrive Turbo by the Metadata Upload job once the Indexer has seen the launch land. The signed bytes
+ * wait in R2 under `storage_key`; an abandoned launch is never uploaded and costs nothing.
+ */
+export const metadataUploads = pgTable(
+  "metadata_uploads",
+  {
+    mint: text("mint").notNull(),
+    item: text("item", { enum: ["image", "metadata"] }).notNull(),
+    /** The item's Arweave id: the SHA-256 of its signature, base64url, fixed at signing. */
+    arweaveId: text("arweave_id").notNull(),
+    storageKey: text("storage_key").notNull(),
+    /** The whole item, header and data. */
+    bytes: integer("bytes").notNull(),
+    status: text("status", { enum: ["signed", "uploaded"] }).notNull().default("signed"),
+    /** What Turbo charged, in winc; "0" when the item was free or already held. */
+    winc: numeric("winc", { precision: 40, scale: 0 }),
+    /** That charge in lamports at the SOL price Turbo quoted when it was uploaded. */
+    lamports: numeric("lamports", { precision: 40, scale: 0 }),
+    /** Turbo's signed receipt. */
+    receipt: jsonb("receipt"),
+    signedAt: timestamp("signed_at", { withTimezone: true }).notNull().defaultNow(),
+    uploadedAt: timestamp("uploaded_at", { withTimezone: true }),
+  },
+  (t) => [primaryKey({ columns: [t.mint, t.item] }), index("metadata_uploads_status_idx").on(t.status)],
+);
+
+/**
+ * SOL the operations wallet sent to Turbo for upload credits, one row per transfer, written before the transfer is sent
+ * and credited once Turbo has seen it finalized. A transfer that is `sent` is resumed by the next run, never repeated.
+ */
+export const arweaveTopUps = pgTable("arweave_top_ups", {
+  signature: text("signature").primaryKey(),
+  lamports: numeric("lamports", { precision: 40, scale: 0 }).notNull(),
+  status: text("status", { enum: ["sent", "credited", "failed"] }).notNull().default("sent"),
+  /** The credits the transfer bought, once credited. */
+  winc: numeric("winc", { precision: 40, scale: 0 }),
+  lastValidBlockHeight: bigint("last_valid_block_height", { mode: "number" }).notNull(),
+  error: text("error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  settledAt: timestamp("settled_at", { withTimezone: true }),
+});

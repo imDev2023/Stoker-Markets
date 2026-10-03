@@ -10,6 +10,7 @@ import {
 import { curves, feeAnnouncements, graduations, jobRuns, launches, ledgerEntries, operatorAlerts, platformSettings, rewardRounds, type Db } from "@launchpad/db";
 import type { AppEnv, Config } from "../env";
 import { toJobRun } from "../jobs";
+import { uploadCounts } from "../metadata";
 
 /** Where the fees as last read from the chain are kept, so every page can show them without an RPC call. */
 export const FEE_SETTINGS = { platform: "platform_fee_bps", creator: "creator_fee_bps", poolCreator: "pool_creator_fee_bps" } as const;
@@ -21,7 +22,7 @@ operatorViewRoutes.get("/overview", async (c) => {
   const db = c.get("db");
   const cfg = c.get("cfg");
   const status = sql<string>`case when ${graduations.mint} is not null then 'graduated' else coalesce(${curves.status}, 'live') end`;
-  const [byStatus, rewardCount, rounds, burns, latestRuns, openAlerts, fees] = await Promise.all([
+  const [byStatus, rewardCount, rounds, burns, latestRuns, openAlerts, fees, metadataUploads] = await Promise.all([
     db
       .select({ status, n: count() })
       .from(launches)
@@ -34,6 +35,7 @@ operatorViewRoutes.get("/overview", async (c) => {
     db.selectDistinctOn([jobRuns.job]).from(jobRuns).orderBy(jobRuns.job, desc(jobRuns.startedAt)),
     db.select({ n: count() }).from(operatorAlerts).where(isNull(operatorAlerts.resolvedAt)),
     platformFees(db, cfg),
+    uploadCounts(db),
   ]);
   const n = (rows: { status: string; n: number }[], s: string) => rows.find((r) => r.status === s)?.n ?? 0;
   const res: OperatorOverview = {
@@ -44,6 +46,7 @@ operatorViewRoutes.get("/overview", async (c) => {
     },
     rewardRounds: { paying: n(rounds, "paying"), paid: n(rounds, "paid") },
     burns: burns[0]!.n,
+    metadataUploads,
     jobs: latestRuns.map(toJobRun),
     openAlerts: openAlerts[0]!.n,
     fees,

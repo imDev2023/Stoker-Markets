@@ -15,7 +15,7 @@ import styles from "./OperatorView.module.css";
 
 const TOKEN_KEY = "launchpad-operator-token";
 const REFRESH_MS = 10_000;
-const JOBS = ["quote-registry", "fee-collector", "reward-rounds", "burn"] as const;
+const JOBS = ["quote-registry", "fee-collector", "reward-rounds", "burn", "metadata-upload"] as const;
 
 type Loaded = { overview: OperatorOverview; alerts: OperatorAlert[]; announcements: FeeAnnouncement[]; keys: ApiKeyInfo[] };
 
@@ -124,6 +124,7 @@ export function OperatorView({ platform }: { platform: PlatformInfo }) {
             <div><dt>Launches</dt><dd>{o.launches.total} ({o.launches.byStatus.live} live, {o.launches.byStatus.graduating} graduating, {o.launches.byStatus.graduated} graduated; {o.launches.reward} Reward Launches)</dd></div>
             <div><dt>Reward Rounds</dt><dd>{o.rewardRounds.paying} paying, {o.rewardRounds.paid} paid</dd></div>
             <div><dt>Burns</dt><dd>{o.burns} transactions</dd></div>
+            <div><dt>Permanent metadata</dt><dd>{o.metadataUploads.uploaded} on Arweave, {o.metadataUploads.pending} waiting</dd></div>
             <div><dt>Fees on-chain</dt><dd>Platform {o.fees.platformFeeBps / 100}%, Creator {o.fees.creatorFeeBps / 100}%</dd></div>
             <div><dt>Open alerts</dt><dd>{o.openAlerts}</dd></div>
           </dl>
