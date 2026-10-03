@@ -3,7 +3,7 @@ import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, VersionedTransaction 
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { inject } from "vitest";
 import {
-  LaunchList, LaunchSummary, PreparedLaunch, PreparedTrade, QuoteAssetList, TradeList, type PayWith, type TradeSide,
+  LaunchList, LaunchSummary, PlatformInfo, PreparedLaunch, PreparedTrade, QuoteAssetList, TradeList, type PayWith, type TradeSide,
 } from "@launchpad/contract";
 import { WSOL_MINT, type RawTransaction } from "@launchpad/chain";
 import { QUOTE_REGISTRY_CRON } from "@launchpad/stack";
@@ -204,6 +204,23 @@ export async function networkFee(signature: string) {
 }
 
 export const SOL = (n: number) => BigInt(Math.round(n * LAMPORTS_PER_SOL));
+
+/** The platform facts every client reads, the fee rates as the chain has them among them. */
+export async function platformInfo() {
+  return PlatformInfo.parse(await (await fetch(`${env().apiUrl}/v1/platform`)).json());
+}
+
+/**
+ * The curve's Platform Fee and Creator Fee in basis points, as the chain has them now. Tests work fee amounts out from
+ * these, never from constants, so a change to the split (ADR 0007, or an announced fee change) needs no test edits.
+ */
+export async function feeRates() {
+  const p = await platformInfo();
+  return { platform: p.platformFeeBps, creator: p.creatorFeeBps };
+}
+
+/** A fee of `bps` basis points on an amount, rounded up as LaunchLab rounds it. */
+export const feeAt = (amount: bigint, bps: number) => (amount * BigInt(Math.round(bps * 100)) + 999_999n) / 1_000_000n;
 
 /** A coin launched through the API and indexed, ready to trade. */
 export async function launchedCoin() {

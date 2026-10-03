@@ -1,18 +1,20 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { NothingToClaimError, prepareCreatorFeeClaim, readCreatorFeeVaults, WSOL_MINT } from "@launchpad/chain";
 import {
-  PrepareCreatorFeeClaimRequest, type CreatorFeeClaimList, type CreatorFees, type PreparedCreatorFeeClaim, type QuoteRef,
+  PrepareCreatorFeeClaimRequest, type CreatorFeeClaimList, type CreatorFees, type CreatorForwardList, type PreparedCreatorFeeClaim, type QuoteRef,
 } from "@launchpad/contract";
-import { creatorFeeClaims, curves, graduations, launches, launchMetadata, quoteAssets, trades, type Db } from "@launchpad/db";
+import { creatorFeeClaims, creatorForwards, curves, graduations, launches, launchMetadata, quoteAssets, trades, type Db } from "@launchpad/db";
 import type { AppEnv } from "../env";
+import { committedForwards, creatorShares, creatorSharesByLaunch } from "../fees/creatorShares";
 import { toQuoteRef } from "../quotes/assets";
 
 /**
  * The Creator Fee: what a Creator can claim per Quote Asset (read from the chain), what their Launches earned, the claim
- * transaction (ADR 0003), and the public history of their claims.
+ * transaction (ADR 0003), and the public history of their claims. Next to it, the Creator Forward (ADR 0007): what the
+ * platform owes and has paid the Creator from its own revenue.
  */
 export const creatorFeeRoutes = new Hono<AppEnv>();
 
@@ -42,7 +44,7 @@ creatorFeeRoutes.get("/creators/:address/fees", async (c) => {
   const address = creator.toBase58();
   const db = c.get("db");
   const cfg = c.get("cfg");
-  const [ownLaunches, claimed] = await Promise.all([
+  const [ownLaunches, claimed, shares, committed, byLaunch] = await Promise.all([
     db
       .select({
         mint: launches.mint,
@@ -52,7 +54,7 @@ creatorFeeRoutes.get("/creators/:address/fees", async (c) => {
         hasMetadata: sql<boolean>`${launchMetadata.id} is not null`,
         status: curves.status,
         graduated: sql<boolean>`${graduations.mint} is not null`,
-        // The Creator Fee ends at Graduation: only curve trades pay it, never trades in the Raydium pool after.
+        // The chain pays the Creator Fee on curve trades only; after Graduation the Creator's share is all forwarded.
         earned: sql<string>`coalesce((select sum(${trades.creatorFee}) from ${trades} where ${trades.mint} = ${launches.mint} and ${trades.venue} = 'curve'), 0)::text`,
       })
       .from(launches)
@@ -66,7 +68,16 @@ creatorFeeRoutes.get("/creators/:address/fees", async (c) => {
       .from(creatorFeeClaims)
       .where(eq(creatorFeeClaims.creator, address))
       .groupBy(creatorFeeClaims.quoteMint),
+    creatorShares(db, { collectedOnly: false, creator: address }),
+    committedForwards(db, address),
+    creatorSharesByLaunch(db, address),
   ]);
+  const forward = (quoteMint: string) => {
+    const share = shares.find((s) => s.mint === quoteMint);
+    const earned = share ? share.curve + share.pool : 0n;
+    const forwarded = committed.get(`${address} ${quoteMint}`) ?? 0n;
+    return { earned: earned.toString(), forwarded: forwarded.toString(), pending: (earned > forwarded ? earned - forwarded : 0n).toString() };
+  };
 
   // SOL first, then the other Quote Assets in a stable order.
   const mints = [...new Set([...ownLaunches.map((l) => l.quoteMint), ...claimed.map((r) => r.quoteMint)])].sort((a, b) =>
@@ -86,6 +97,7 @@ creatorFeeRoutes.get("/creators/:address/fees", async (c) => {
         claimable: v.balance.toString(),
         earned: sum(ownLaunches.filter((l) => l.quoteMint === quoteMint).map((l) => l.earned)),
         claimed: sum(claimed.filter((r) => r.quoteMint === quoteMint).map((r) => r.amount)),
+        forward: forward(quoteMint),
       };
     }),
     launches: ownLaunches.map((l) => ({
@@ -97,6 +109,7 @@ creatorFeeRoutes.get("/creators/:address/fees", async (c) => {
       // A Launch nobody has traded yet is live; one Raydium has migrated is graduated whatever its last curve trade said.
       status: l.graduated ? "graduated" : (l.status ?? "live"),
       earned: l.earned,
+      forward: { curve: byLaunch.curve.get(l.mint) ?? "0", pool: byLaunch.pool.get(l.mint) ?? "0" },
     })),
   };
   return c.json(res);
@@ -119,6 +132,30 @@ creatorFeeRoutes.get("/creators/:address/claims", async (c) => {
       quote: quote(r.quoteMint),
       amount: r.amount,
       time: r.blockTime.toISOString(),
+    })),
+  };
+  return c.json(res);
+});
+
+/** The Creator Forwards paid to a Creator, or on their way, newest first: the public history of what the platform sent. */
+creatorFeeRoutes.get("/creators/:address/forwards", async (c) => {
+  const creator = creatorParam(c.req.param("address")).toBase58();
+  const limit = Math.min(Math.max(Number(c.req.query("limit") ?? 50) || 50, 1), 100);
+  const db = c.get("db");
+  const rows = await db
+    .select()
+    .from(creatorForwards)
+    .where(and(eq(creatorForwards.creator, creator), inArray(creatorForwards.status, ["sending", "paid"])))
+    .orderBy(desc(sql`coalesce(${creatorForwards.paidAt}, ${creatorForwards.createdAt})`), desc(creatorForwards.signature))
+    .limit(limit);
+  const quote = await quoteRefs(db, new Map(rows.map((r) => [r.assetMint, r.assetDecimals])));
+  const res: CreatorForwardList = {
+    forwards: rows.map((r) => ({
+      signature: r.signature,
+      quote: quote(r.assetMint),
+      amount: r.amount,
+      status: r.status as "sending" | "paid",
+      time: (r.paidAt ?? r.createdAt).toISOString(),
     })),
   };
   return c.json(res);

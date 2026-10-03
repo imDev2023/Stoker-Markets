@@ -6,6 +6,7 @@ import {
 } from "@launchpad/contract";
 import { jobRuns, jobTransactions, launches, ledgerEntries } from "@launchpad/db";
 import { operationsKey, type AppEnv } from "../env";
+import { creatorMoney, unforwarded } from "../fees/creatorShares";
 import { revenueAssets } from "../fees/ledger";
 import { toJobRun } from "../jobs";
 
@@ -27,7 +28,7 @@ function streams(s: StreamSums): RevenueStreams {
 revenueRoutes.get("/revenue", async (c) => {
   const db = c.get("db");
   const cfg = c.get("cfg");
-  const [totals, daily] = await Promise.all([
+  const [totals, daily, creators] = await Promise.all([
     db
       .select({ mint: ledgerEntries.assetMint, decimals: sql<number>`max(${ledgerEntries.assetDecimals})`, kind: ledgerEntries.kind, amount: sql<string>`sum(${ledgerEntries.amount})::text` })
       .from(ledgerEntries)
@@ -41,10 +42,11 @@ revenueRoutes.get("/revenue", async (c) => {
         group by 1, 2, 4
       )
       select * from daily where day in (select distinct day from daily order by day desc limit ${REVENUE_DAYS})`),
+    creatorMoney(db),
   ]);
   const asset = await revenueAssets(db, cfg.publicApiUrl, new Map([...totals, ...daily].map((r) => [r.mint, Number(r.decimals)])));
 
-  const byAsset = new Map<string, StreamSums & { sweep?: bigint }>();
+  const byAsset = new Map<string, StreamSums & { sweep?: bigint; creator_forward?: bigint }>();
   for (const r of totals) byAsset.set(r.mint, { ...byAsset.get(r.mint), [r.kind]: BigInt(r.amount) });
   const collected = (s: StreamSums) => (s.platform_fee ?? 0n) + (s.pool_fee ?? 0n) + (s.fee_key ?? 0n);
   // SOL first, then by ticker: amounts in different assets don't compare.
@@ -68,7 +70,10 @@ revenueRoutes.get("/revenue", async (c) => {
     totals: [...byAsset.entries()]
       .filter(([, s]) => collected(s) > 0n)
       .sort(order)
-      .map(([mint, s]) => ({ asset: asset(mint), ...streams(s), swept: (s.sweep ?? 0n).toString() })),
+      .map(([mint, s]) => ({
+        asset: asset(mint), ...streams(s), swept: (s.sweep ?? 0n).toString(),
+        creatorForwarded: (s.creator_forward ?? 0n).toString(), creatorPending: unforwarded(creators, mint).toString(),
+      })),
     days: [...days.entries()]
       .sort(([a], [b]) => b.localeCompare(a))
       .map(([day, assets]) => ({ day, assets: [...assets.entries()].sort(order).map(([mint, s]) => ({ asset: asset(mint), ...streams(s) })) })),

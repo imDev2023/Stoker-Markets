@@ -1,19 +1,20 @@
 import { Connection, PublicKey, SendTransactionError, type Keypair, type TransactionInstruction } from "@solana/web3.js";
-import { and, eq, inArray, isNotNull, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, ne, sql } from "drizzle-orm";
 import {
   feeKeyInstructions, findFeeKeys, platformFeeClaimInstructions, poolCreatorFeeInstructions, readPlatformFeeVaults, readPoolKeys,
   readTokenHoldings, signedTransaction, simulateFeeKeyCollection, sweepInstructions, WSOL_MINT, type FeeKey, type PoolKeys, type RevenueContext,
 } from "@launchpad/chain";
-import { feeKeys, graduations, jobTransactions, launches, ledgerEntries, quoteAssets, trades, type Db } from "@launchpad/db";
+import { feeKeys, graduations, jobTransactions, launches, ledgerEntries, trades, type Db } from "@launchpad/db";
 import type { Config } from "../env";
 import { fetchRawTransaction } from "../indexer";
 import { JobFailure } from "../jobs";
 import { reservedLamports } from "../burn/engine";
+import { creatorMoney, unforwarded } from "./creatorShares";
 import { recordRevenue, revenueContext } from "./ledger";
+import { valuer } from "./value";
 
 const JOB = "fee-collector";
 const WSOL = WSOL_MINT.toBase58();
-const LAMPORTS_PER_SOL = 1_000_000_000n;
 
 export type CollectorDeps = { db: Db; cfg: Config; operations: Keypair };
 
@@ -125,28 +126,6 @@ function quoteSide(pool: PoolKeys, quoteOf: Map<string, string>) {
 }
 
 /**
- * Whether an amount of an asset is worth a collection: at least the minimum in SOL at the Quote Registry's latest price.
- * An asset without a price is collected whenever there is any, since there is no telling what it is worth.
- */
-async function valuer(db: Db, minLamports: bigint) {
-  const prices = new Map(
-    (await db.select({ mint: quoteAssets.mint, priceSol: quoteAssets.priceSol, decimals: quoteAssets.decimals }).from(quoteAssets).where(isNotNull(quoteAssets.priceSol)))
-      .map((q) => [q.mint, q]),
-  );
-  return (mint: string, amount: bigint) => {
-    if (amount <= 0n) return false;
-    if (mint === WSOL) return amount >= minLamports;
-    const q = prices.get(mint);
-    if (!q) return true;
-    // amount / 10^decimals * priceSol SOL, compared in lamports without floating point.
-    const [whole, fraction = ""] = q.priceSol!.split(".");
-    const price = BigInt(whole! + fraction);
-    const lamports = (amount * price * LAMPORTS_PER_SOL) / (10n ** BigInt(q.decimals) * 10n ** BigInt(fraction.length));
-    return lamports >= minLamports;
-  };
-}
-
-/**
  * The Fee Keys of the given pools, from what the operations wallet holds. A Fee Key is looked up on-chain once, when a
  * graduated pool has none on record, and remembered.
  */
@@ -194,29 +173,34 @@ async function poolsTradedSinceLastFeeKeyCollection(db: Db, pools: string[]) {
  * Sweeps the operations wallet into the treasury: its SOL down to the float (plus the Burn's and Flywheel's unspent
  * budgets) once it holds more than the threshold above that, and
  * of every other token, the revenue the Ledger shows it collected and has not swept yet. Anything else the wallet holds
- * in that token (a Reward Round's harvested tax, say) stays. Tokens go in batches that fit a transaction.
+ * in that token (a Reward Round's harvested tax, say) stays, and so does what Creators are owed and have not been
+ * forwarded yet (ADR 0007), in SOL or any token. Tokens go in batches that fit a transaction.
  */
 async function sweep(
   db: Db, connection: Connection, cfg: Config, treasury: PublicKey, operations: Keypair,
   send: (purpose: string, subject: string, ixs: TransactionInstruction[]) => Promise<boolean>,
 ) {
   const ops = operations.publicKey;
+  const creators = await creatorMoney(db);
+  // Revenue still in the wallet per token: collected, less what was swept and what was forwarded to Creators.
   const unswept = await db
     .select({
       mint: ledgerEntries.assetMint,
-      amount: sql<string>`sum(case when ${ledgerEntries.kind} = 'sweep' then -${ledgerEntries.amount} else ${ledgerEntries.amount} end)::text`,
+      amount: sql<string>`sum(case when ${ledgerEntries.kind} in ('sweep', 'creator_forward') then -${ledgerEntries.amount} else ${ledgerEntries.amount} end)::text`,
     })
     .from(ledgerEntries)
-    .where(and(inArray(ledgerEntries.kind, ["platform_fee", "pool_fee", "fee_key", "sweep"]), ne(ledgerEntries.assetMint, WSOL)))
+    .where(and(inArray(ledgerEntries.kind, ["platform_fee", "pool_fee", "fee_key", "sweep", "creator_forward"]), ne(ledgerEntries.assetMint, WSOL)))
     .groupBy(ledgerEntries.assetMint)
     .orderBy(sql`min(${ledgerEntries.slot})`, ledgerEntries.assetMint);
-  const owed = new Map(unswept.filter((r) => BigInt(r.amount) > 0n).map((r) => [r.mint, BigInt(r.amount)]));
+  const owed = new Map(
+    unswept.map((r): [string, bigint] => [r.mint, BigInt(r.amount) - unforwarded(creators, r.mint)]).filter(([, amount]) => amount > 0n),
+  );
   const held = await readTokenHoldings(connection, ops, [...owed.keys()].map((m) => new PublicKey(m)));
   const tokens = held
     .map((t) => ({ ...t, amount: t.amount < owed.get(t.mint.toBase58())! ? t.amount : owed.get(t.mint.toBase58())! }))
     .filter((t) => t.amount > 0n);
-  // SOL the Burn and Flywheel have not spent yet stays behind, on top of the float.
-  const keep = cfg.sweepFloatLamports + (await reservedLamports(db, cfg));
+  // SOL the Burn and Flywheel have not spent yet stays behind, on top of the float, and so does SOL owed to Creators.
+  const keep = cfg.sweepFloatLamports + (await reservedLamports(db, cfg)) + unforwarded(creators, WSOL);
   const balance = BigInt(await connection.getBalance(ops, "confirmed"));
   const lamports = balance > cfg.sweepThresholdLamports + keep - cfg.sweepFloatLamports ? balance - keep : 0n;
   if (lamports === 0n && tokens.length === 0) return false;

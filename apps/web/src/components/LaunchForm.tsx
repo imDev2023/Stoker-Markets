@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { LAUNCH_IMAGE_MAX_BYTES, type PlatformInfo, type PreparedLaunch, type QuoteAsset } from "@launchpad/contract";
 import { ApiRequestError, prepareLaunch, reportTransaction, retryLaunch } from "@/lib/api";
 import { landedError } from "@/lib/transactions";
+import { creatorEarnings } from "@/lib/fees";
 import { COIN_DECIMALS, formatAmount, formatUnits, isSol, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
 import { LaunchOptions, supplyShare, useLaunchOptions } from "./LaunchOptions";
@@ -38,6 +39,7 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
   const router = useRouter();
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
+  const earns = creatorEarnings(platform);
   const [name, setName] = useState("");
   const [symbol, setSymbol] = useState("");
   const [description, setDescription] = useState("");
@@ -232,7 +234,9 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
           </div>
           <div>
             <dt>You earn</dt>
-            <dd>~{platform.creatorFeeBps / 100}% of every trade until graduation, claimable on-chain</dd>
+            <dd>
+              {earns.summary}. On the curve {earns.chain}% is yours to claim on-chain; the rest is sent to your wallet.
+            </dd>
           </div>
         </dl>
 

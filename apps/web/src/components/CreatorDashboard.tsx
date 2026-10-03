@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useCallback, useEffect, useState } from "react";
-import type { CreatorFeeClaim, CreatorFees, PlatformInfo } from "@launchpad/contract";
-import { getCreatorFees, listCreatorFeeClaims } from "@/lib/api";
-import { explorerUrl, formatUnits, formatUtc, quoteTicker, shortAddress } from "@/lib/format";
+import type { CreatorFeeClaim, CreatorFees, CreatorForward, CurveStatus, PlatformInfo } from "@launchpad/contract";
+import { getCreatorFees, listCreatorFeeClaims, listCreatorForwards } from "@/lib/api";
+import { creatorEarnings } from "@/lib/fees";
+import { explorerUrl, formatUnits, formatUtc, quoteTicker, shortAddress, SOL_DECIMALS } from "@/lib/format";
 import { ClaimCard } from "./ClaimCard";
 import { CopyButton } from "./CopyButton";
 import { WalletButton } from "./WalletButton";
@@ -13,25 +14,30 @@ import styles from "./CreatorDashboard.module.css";
 
 const REFRESH_MS = 10_000;
 
+/** Where a coin earns its Creator from: its curve until it sells out, its Raydium pool after graduation. */
+const EARNING: Record<CurveStatus, string> = { live: "Earning on its curve", graduating: "Graduating", graduated: "Earning in its pool" };
+
 /**
- * A Creator's public Creator Fee page: what each vault holds, what each coin earned, and every claim. Anyone can look;
- * only the Creator's own wallet gets the claim buttons.
+ * A Creator's public Creator Fee page: what each vault holds, what each coin earned, every claim, and everything the
+ * platform has sent the Creator (ADR 0007). Anyone can look; only the Creator's own wallet gets the claim buttons.
  */
 export function CreatorDashboard({
-  initialFees, initialClaims, platform,
-}: { initialFees: CreatorFees; initialClaims: CreatorFeeClaim[]; platform: PlatformInfo }) {
+  initialFees, initialClaims, initialForwards, platform,
+}: { initialFees: CreatorFees; initialClaims: CreatorFeeClaim[]; initialForwards: CreatorForward[]; platform: PlatformInfo }) {
   const { publicKey } = useWallet();
   const [fees, setFees] = useState(initialFees);
   const [claims, setClaims] = useState(initialClaims);
+  const [forwards, setForwards] = useState(initialForwards);
   const creator = fees.creator;
   const isOwner = publicKey?.toBase58() === creator;
-  const feePct = platform.creatorFeeBps / 100;
+  const earns = creatorEarnings(platform);
 
   const refresh = useCallback(async () => {
     try {
-      const [f, c] = await Promise.all([getCreatorFees(creator), listCreatorFeeClaims(creator)]);
+      const [f, c, w] = await Promise.all([getCreatorFees(creator), listCreatorFeeClaims(creator), listCreatorForwards(creator)]);
       if (f) setFees(f);
       setClaims(c.claims);
+      setForwards(w.forwards);
     } catch {
       // keep showing the last good data; the next tick retries
     }
@@ -44,7 +50,7 @@ export function CreatorDashboard({
 
   const nothingYet = fees.assets.length === 0 && fees.launches.length === 0;
   // A Quote Asset whose coins have never traded has an empty vault and no history: nothing to show for it yet.
-  const assets = fees.assets.filter((a) => a.claimable !== "0" || a.earned !== "0" || a.claimed !== "0");
+  const assets = fees.assets.filter((a) => a.claimable !== "0" || a.earned !== "0" || a.claimed !== "0" || a.forward.earned !== "0");
 
   return (
     <article className={`shell ${styles.page}`}>
@@ -58,8 +64,8 @@ export function CreatorDashboard({
           <CopyButton value={creator} label="Copy creator address" />
         </p>
         <p className={styles.lede}>
-          Creators earn {feePct}% of every trade on their coins&apos; curves. The chain pays it into a vault only the
-          Creator&apos;s wallet can claim from, so it never waits on us.
+          Creators earn {earns.summary}. On the curve the chain pays {earns.chain}% into a vault only the Creator&apos;s
+          wallet can claim from, so it never waits on us. The platform sends the rest straight to the Creator&apos;s wallet.
         </p>
       </header>
 
@@ -107,7 +113,7 @@ export function CreatorDashboard({
               <h2 id="coins-title" className={styles.cardTitle}>Coins</h2>
               <ul className={styles.coins}>
                 {fees.launches.map((l) => {
-                  const live = l.status === "live";
+                  const earned = BigInt(l.earned) + BigInt(l.forward.curve) + BigInt(l.forward.pool);
                   return (
                     <li key={l.mint}>
                       <Link href={`/coin/${l.mint}`} className={styles.coin}>
@@ -118,9 +124,9 @@ export function CreatorDashboard({
                         </span>
                         <span className={styles.coinEarned}>
                           <span>
-                            <span className="mono">{formatUnits(l.earned, l.quote.decimals, 6)}</span> {quoteTicker(l.quote)}
+                            <span className="mono">{formatUnits(earned.toString(), l.quote.decimals, 6)}</span> {quoteTicker(l.quote)}
                           </span>
-                          <span className={live ? styles.earning : styles.ended}>{live ? "Earning" : "Ended at graduation"}</span>
+                          <span className={styles.earning}>{EARNING[l.status]}</span>
                         </span>
                       </Link>
                     </li>
@@ -133,11 +139,19 @@ export function CreatorDashboard({
 
         <aside className={styles.side}>
           <section className={styles.rule} aria-labelledby="rule-title">
-            <h2 id="rule-title" className={styles.cardTitle}>Paid until graduation</h2>
+            <h2 id="rule-title" className={styles.cardTitle}>How a Creator is paid</h2>
             <p>
-              The Creator Fee is {feePct}% of every trade while a coin trades on its curve. At graduation, when the curve
-              sells out and the coin moves to its Raydium pool, the Creator Fee ends and that coin&apos;s trading fees go to
-              the platform.
+              While a coin trades on its curve, the chain pays the Creator Fee, {earns.chain}% of every trade, into the
+              vault. The platform adds {earns.forward}% out of its own fee.
+            </p>
+            <p>
+              After graduation the coin trades in its Raydium pool, and the platform sends on {earns.poolShare}% of the
+              creator fee that pool pays it, ~{earns.pool}% of every trade.
+            </p>
+            <p>
+              The platform&apos;s part arrives in the Creator&apos;s wallet within about an hour of being collected, once it
+              is worth {formatUnits(platform.creatorForward.minLamports, SOL_DECIMALS)} SOL, with nothing to claim. Every
+              payment is on the <Link href="/revenue">public ledger</Link>.
             </p>
           </section>
 
@@ -154,6 +168,25 @@ export function CreatorDashboard({
                     </span>
                     <a href={explorerUrl("tx", c.signature, platform)} target="_blank" rel="noreferrer">View transaction</a>
                     <time dateTime={c.time} className={styles.claimTime}>{formatUtc(c.time)}</time>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+
+          <section className={styles.card} aria-labelledby="forwards-title">
+            <h2 id="forwards-title" className={styles.cardTitle}>Sent by the platform</h2>
+            {forwards.length === 0 ? (
+              <p className={styles.muted}>Nothing sent yet.</p>
+            ) : (
+              <ol className={styles.claims}>
+                {forwards.map((f) => (
+                  <li key={f.signature}>
+                    <span className={styles.claimAmount}>
+                      <span className="mono">{formatUnits(f.amount, f.quote.decimals, f.quote.decimals)}</span> {quoteTicker(f.quote)}
+                    </span>
+                    <a href={explorerUrl("tx", f.signature, platform)} target="_blank" rel="noreferrer">View transaction</a>
+                    <time dateTime={f.time} className={styles.claimTime}>{f.status === "sending" ? "On its way" : formatUtc(f.time)}</time>
                   </li>
                 ))}
               </ol>

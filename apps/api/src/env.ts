@@ -81,6 +81,11 @@ export type Bindings = {
   SWEEP_FLOAT_LAMPORTS: string;
   /** A fee worth less than this many lamports is left to grow rather than collected at a loss to network fees. */
   COLLECT_MIN_LAMPORTS: string;
+  /**
+   * What a Creator must be owed in one Quote Asset, worth this many lamports at the Quote Registry's price, before the
+   * Creator Forward pays it (ADR 0007); 0.01 SOL unless set.
+   */
+  CREATOR_FORWARD_MIN_LAMPORTS?: string;
   /** How long before it applies a change to the Reward Round rules must be announced, in seconds (a day on mainnet). */
   REWARD_RULES_LEAD_SECONDS?: string;
   /** The Burn's share of revenue, in basis points; 6000 (60%) unless set. */
@@ -128,6 +133,7 @@ export type Config = {
   sweepThresholdLamports: bigint;
   sweepFloatLamports: bigint;
   collectMinLamports: bigint;
+  creatorForwardMinLamports: bigint;
   rewardRulesLeadSeconds: number;
   burnShareBps: number;
   flywheelShareBps: number;
@@ -149,6 +155,7 @@ function bps(raw: string | undefined, name: string, fallback: number) {
 
 const REWARD_RULES_LEAD_DEFAULT_SECONDS = 24 * 60 * 60;
 const BURN_MIN_SPEND_DEFAULT_LAMPORTS = 10_000_000n;
+const CREATOR_FORWARD_MIN_DEFAULT_LAMPORTS = 10_000_000n;
 const FEE_CHANGE_LEAD_DEFAULT_SECONDS = 24 * 60 * 60;
 /** On mainnet a fee change to every live curve is announced at least this long ahead, whatever the setting says. */
 const FEE_CHANGE_LEAD_MAINNET_MIN_SECONDS = 60 * 60;
@@ -252,6 +259,9 @@ export function config(env: Bindings): Config {
     sweepThresholdLamports,
     sweepFloatLamports,
     collectMinLamports: lamports(env.COLLECT_MIN_LAMPORTS, "COLLECT_MIN_LAMPORTS"),
+    creatorForwardMinLamports: env.CREATOR_FORWARD_MIN_LAMPORTS
+      ? lamports(env.CREATOR_FORWARD_MIN_LAMPORTS, "CREATOR_FORWARD_MIN_LAMPORTS")
+      : CREATOR_FORWARD_MIN_DEFAULT_LAMPORTS,
     rewardRulesLeadSeconds: env.REWARD_RULES_LEAD_SECONDS ? seconds(env.REWARD_RULES_LEAD_SECONDS, "REWARD_RULES_LEAD_SECONDS") : REWARD_RULES_LEAD_DEFAULT_SECONDS,
     burnShareBps: bps(env.BURN_SHARE_BPS, "BURN_SHARE_BPS", 6_000),
     flywheelShareBps: bps(env.FLYWHEEL_SHARE_BPS, "FLYWHEEL_SHARE_BPS", 500),

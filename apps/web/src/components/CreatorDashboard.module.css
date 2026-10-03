@@ -226,8 +226,7 @@
   text-align: right;
 }
 
-.earning,
-.ended {
+.earning {
   display: inline-flex;
   padding: 1px 8px;
   border-radius: 999px;
@@ -239,11 +238,6 @@
 .earning {
   background: var(--verified-bg);
   color: var(--verified);
-}
-
-.ended {
-  background: var(--fog);
-  color: var(--ink-3);
 }
 
 .claims {

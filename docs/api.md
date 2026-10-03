@@ -8,7 +8,7 @@ Base URL: `PUBLIC_API_URL` (locally `http://localhost:8791`). Everything below i
 
 | Endpoint | What it answers |
 | --- | --- |
-| `GET /platform` | Cluster, RPC for browsers, program and PlatformConfig addresses, the Graduation Target in lamports, the Platform Fee and Creator Fee as the chain has them now, the referral share rate. |
+| `GET /platform` | Cluster, RPC for browsers, program and PlatformConfig addresses, the Graduation Target in lamports, the Platform Fee and Creator Fee as the chain has them now, the referral share rate, and `creatorForward`: what the platform forwards to a Creator on top of the Creator Fee (ADR 0007), in basis points of curve and pool volume, with its minimum. |
 | `GET /quotes`, `GET /quotes/:mint` | The Quote Registry: every Quote Asset with its price, Graduation Target, whether it can be launched against, whether a referral share fee applies on it, and its Quote Risk Labels (`labels`: `kind`, `severity`, `title`, `detail`, `source`; null until the Quote Registry refresh has checked the mint, an empty list when there is nothing to flag). Labels come from the mint's authorities and Token-2022 extensions and from the token list; they inform and never block. |
 | `GET /launches` | The board. `sort` (`new`, `trending`, `marketCap`, `volume`, `graduating`), `category`, `quote`, `status`, `limit`, `offset`. |
 | `GET /launches/quotes` | The Quote Assets that have Launches, for filters. |
@@ -17,9 +17,9 @@ Base URL: `PUBLIC_API_URL` (locally `http://localhost:8791`). Everything below i
 | `GET /launches/:mint/quote` | A trade quote. `side`, `amount`, `slippageBps`, `payWith` (`quote` or `sol`), `referrer`. |
 | `GET /launches/:mint/airdrop` | An Airdrop's recipients and which are paid. |
 | `GET /launches/:mint/rewards`, `GET /rewards/rules`, `GET /rewards/rounds/:id`, `GET /wallets/:address/rewards` | Holder Rewards: tax waiting, the rules in force and announced, every round, a wallet's payouts. |
-| `GET /creators/:address/fees`, `/claims` | A Creator's fee vaults and claims. |
+| `GET /creators/:address/fees`, `/claims`, `/forwards` | A Creator's fee vaults and claims, and the Creator Forward: per Quote Asset what was earned, forwarded and is still pending, per Launch what its curve and pool earned, and every forward with its transaction. |
 | `GET /creators/:address/launch-permissions` | What the launch form offers this wallet: `airdrop` is true only for wallets the operator has allowed. |
-| `GET /revenue`, `GET /ledger` | Platform revenue per asset and per day, and the Ledger page by page (`kind`, `limit`, `before`). |
+| `GET /revenue`, `GET /ledger` | Platform revenue per asset and per day, with what of it was forwarded to Creators and what is still owed them, and the Ledger page by page (`kind`, `limit`, `before`; a `creator_forward` entry is a payment to a Creator). |
 | `GET /burns` | Burn and Flywheel: shares, rule, budgets, picks, every buy and burn. |
 | `GET /announcements` | Every announced Platform Fee or Creator Fee change, with the transaction that applied it once it has. |
 
@@ -55,7 +55,7 @@ Behind `Authorization: Bearer <OPERATOR_TOKEN>`.
 | `GET /operator/overview` | Launches by status, rounds, burns, the latest run of each job, open alerts, the fees on-chain. |
 | `GET /operator/alerts` | Alerts: a stuck Graduation, a Reward Tax left unlocked, a failed job, a stalled Reward Round; each resolved when its cause goes away. |
 | `GET /operator/jobs?job=` | Job runs and unsettled job transactions. |
-| `POST /operator/jobs/{quote-registry,fee-collector,reward-rounds,burn}` | Runs a job now; `?fail=simulated` makes it fail on purpose to see the alert path. |
+| `POST /operator/jobs/{quote-registry,fee-collector,creator-forward,reward-rounds,burn}` | Runs a job now; `?fail=simulated` makes it fail on purpose to see the alert path. |
 | `POST /operator/rewards/rules` | Announces a Reward Round rules change, effective no sooner than `REWARD_RULES_LEAD_SECONDS` ahead. |
 | `PUT /operator/platform-token` | Names the Platform Token the Burn buys. |
 | `GET /operator/airdrop-creators`, `POST` (`wallet`), `DELETE /operator/airdrop-creators/:wallet` | The Creator wallets allowed an airdrop at launch. The list starts empty, so nobody is offered one until the operator names a wallet. |
