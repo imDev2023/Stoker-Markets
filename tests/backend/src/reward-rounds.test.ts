@@ -11,9 +11,9 @@ import { loadCurve } from "@launchpad/chain";
 import {
   CoinRewards, LedgerPage, PreparedLaunch, REWARD_SALE_MAX_RESERVE_BPS, RewardRoundDetail, RewardRulesPage, WalletRewards, type RewardPayoutAsset,
 } from "@launchpad/contract";
-import { LOCAL_QUOTES, mintLocalQuote } from "@launchpad/localnet";
+import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
 import { REWARD_ROUNDS_CRON } from "@launchpad/stack";
-import { connection, deliverWebhook, env, fundedWallet, prepare, signAndSend, solOf, tokenBalance, trade, trades } from "./client";
+import { connection, deliverWebhook, env, fundedWallet, prepare, quote, signAndSend, solOf, tokenBalance, trade, trades } from "./client";
 
 const api = (path: string, init?: RequestInit) => fetch(`${env().apiUrl}${path}`, init);
 const operator = () => ({ authorization: `Bearer ${env().operatorToken}` });
@@ -277,6 +277,35 @@ describe("Reward Rounds", () => {
     // The one holder gets the whole pot, in USDC.
     expect(round!.paid).toBe(sale!.proceeds);
     expect((await usdcOf(holder.publicKey)) - before).toBe(BigInt(round!.paid));
+  });
+
+  it("sells in the coin's Raydium pool once it has graduated, and nothing while Raydium is moving it", async () => {
+    await runRounds();
+    const { mint, pool } = await rewardCoin(300, "quote");
+    const trader = await fundedWallet(10);
+    const buyout = await trade(trader, mint, "buy", 2_000_000_000n);
+    expect(buyout.quote.completesCurve).toBe(true);
+    await deliverWebhook([buyout.signature]);
+    // Sold out but not migrated: the tax is harvested, and the slice waits.
+    const waiting = await runRounds();
+    expect(waiting.summary.sold.filter((s) => s.mint === mint)).toEqual([]);
+    expect(waiting.summary.unsold.find((u) => u.mint === mint)?.reason).toMatch(/Raydium is moving the coin/);
+
+    const migration = await migrateCurve(connection(), pool);
+    await deliverWebhook([migration.signature]);
+    for (let i = 0; i < 40; i++) {
+      if ((await quote(mint, { side: "buy", amount: "10000000" })).ok) break;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    const run = await runRounds();
+    const [sale] = run.summary.sold.filter((s) => s.mint === mint);
+    expect(sale).toMatchObject({ venue: "pool", outcome: "landed" });
+    expect(BigInt(sale!.proceeds!)).toBeGreaterThan(0n);
+    const sold = (await trades(mint)).find((t) => t.signature === sale!.signature);
+    expect(sold).toMatchObject({ side: "sell", venue: "pool", trader: env().platform.operationsWallet });
+    const { rounds: [round], sales } = await rewards(mint);
+    expect(sales!.recent[0]).toMatchObject({ signature: sale!.signature, venue: "pool", status: "landed", coins: sale!.coins, proceeds: sale!.proceeds });
+    expect(round).toMatchObject({ status: "paid", eligibleHolders: 1, payout: { asset: "quote", symbol: "SOL" }, sold: sale!.coins, paid: sale!.proceeds });
   });
 
   it("runs on its Cron Trigger too", async () => {

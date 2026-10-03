@@ -36,7 +36,7 @@ test("a Creator launches a Reward Launch paid in SOL, and the coin page says so"
   await acceptDisclaimer(page);
   const launch = await prepared;
   expect(launch.rewardTax).toEqual({ bps: 300, payout: "quote" });
-  await expect(review(page)).toContainText("A Reward Launch: every transfer of DIVD withholds 3% for its holders.");
+  await expect(review(page)).toContainText("A Reward Launch: every transfer of DIVD withholds 3% for its holders, the first buy's coins included.");
   await expect(review(page)).toContainText("It is sold for SOL in small slices and paid out in SOL. Nobody can change the rate or the payout asset, now or later.");
   expect(wallet.requests).toHaveLength(0);
 
