@@ -128,7 +128,7 @@
         "QUOTE_TOKEN_LIST": "{\"So11111111111111111111111111111111111111112\":{\"verified\":true,\"liquidityUsd\":2500000000},\"USDCoctVLVnvTXBEuP9s8hntucdJokbo17RwHuNXemT\":{\"verified\":true,\"liquidityUsd\":900000000}}"
       },
       "triggers": { "crons": ["* * * * *", "*/5 * * * *", "15 * * * *", "*/10 * * * *", "45 * * * *"] },
-      "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "00000000000000000000000000000000" }],
+      "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "2efc4f50e7fc42c5aba3d523b1d5e096" }],
       "r2_buckets": [{ "binding": "METADATA_BUCKET", "bucket_name": "stoker-metadata-devnet" }]
     }
   }
