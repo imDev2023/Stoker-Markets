@@ -326,9 +326,8 @@ test("launch form as a Reward Launch paid in the Quote Asset, and its review", a
   await page.locator('input[type="file"]').setInputFiles({ name: "coin.png", mimeType: "image/png", buffer: COIN_PNG });
   await page.getByLabel("Name").fill("Yield Desk");
   await page.getByLabel("Ticker").fill("YLD");
-  await page.getByRole("checkbox", { name: /^Reward Launch/ }).check();
+  await page.getByRole("radiogroup", { name: "Launch type" }).getByRole("radio", { name: /^Reward Launch paid in SOL/ }).check();
   await page.getByRole("group", { name: "Reward Tax" }).getByRole("button", { name: "3%" }).click();
-  await page.getByRole("group", { name: "Paid out in" }).getByRole("button", { name: "SOL" }).click();
   await expect(page.getByText(/^The tax is sold for SOL in small slices/)).toBeVisible();
   await snap(page, "launch-reward.png");
 
