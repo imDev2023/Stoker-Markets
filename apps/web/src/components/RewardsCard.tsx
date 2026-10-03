@@ -77,7 +77,7 @@ export function RewardsCard({ rewards, symbol, platform }: { rewards: CoinReward
           {rewards.rounds.map((r) => (
             <li key={r.id}>
               <span>
-                <Link href={`/rewards/rounds/${r.id}`}>Round of {formatUtc(r.startedAt)}</Link>{" "}
+                <Link href={`/rewards/rounds/${r.id}`}>Round of <time dateTime={r.startedAt}>{formatUtc(r.startedAt)}</time></Link>{" "}
                 <span className={`${styles.status} ${r.status === "paid" ? styles.paid : ""}`}>
                   {r.status === "paid" ? "Paid" : "Paying"} · {r.eligibleHolders} {r.eligibleHolders === 1 ? "holder" : "holders"}
                 </span>
