@@ -10,7 +10,7 @@ import BN from "bn.js";
 import { cpmmCoder, launchlabPdas, lockCoder, lockPdas, programsFor, WSOL_MINT } from "@launchpad/chain";
 import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
 import { FEE_COLLECTOR_CRON } from "@launchpad/stack";
-import { BurnsPage, HolderList, JobRun, JobRunList, LedgerPage, Revenue, type LedgerEntry } from "@launchpad/contract";
+import { BurnsPage, CoinRewards, HolderList, JobRun, JobRunList, LaunchList, LedgerPage, Revenue, type LedgerEntry } from "@launchpad/contract";
 import {
   SOL, coinsOf, connection, deliverWebhook, env, feeAt, feeRates, fundedWallet, launch, launchedCoin, networkFee, quote, tokenBalance, trade,
 } from "./client";
@@ -20,6 +20,24 @@ const WSOL = WSOL_MINT.toBase58();
 const USDC = LOCAL_QUOTES.USDC;
 const usdc = (n: number) => BigInt(Math.round(n * 1e6));
 const ops = () => new PublicKey(env().platform.operationsWallet);
+
+/**
+ * SOL the operations wallet holds for the holders of Reward Launches paid in SOL (ADR 0006, #43): what their Reward
+ * Sales brought in and no round has paid out yet. Other test files leave such pots behind; the sweep never takes them.
+ */
+async function rewardPots() {
+  let pots = 0n;
+  for (let offset: number | null = 0; offset !== null; ) {
+    const page = LaunchList.parse(await (await fetch(`${env().apiUrl}/v1/launches?limit=100&offset=${offset}`)).json());
+    for (const l of page.launches) {
+      if (l.rewardTax?.payout !== "quote" || l.quote.mint !== WSOL) continue;
+      const r = CoinRewards.parse(await (await fetch(`${env().apiUrl}/v1/launches/${l.mint}/rewards`)).json());
+      pots += BigInt(r.sales!.proceeds) - r.rounds.reduce((paid, round) => paid + BigInt(round.paid), 0n);
+    }
+    offset = page.nextOffset;
+  }
+  return pots;
+}
 const treasury = () => new PublicKey(env().treasury);
 const platformConfig = () => new PublicKey(env().platform.platformConfig);
 const platformFeeVault = (quoteMint: PublicKey) => launchlabPdas(programs.launchlab).platformFeeVault(platformConfig(), quoteMint);
@@ -323,13 +341,15 @@ describe("the sweep", () => {
     const forwards = await forwarded();
     expect(forwards.every((f) => f.mint === WSOL)).toBe(true);
     const waiting = await pendingForCreators(WSOL_MINT);
-    const owed = waiting + forwardedIn(forwards, WSOL);
+    // And so does the SOL that Reward Sales brought in for holders (ADR 0006): theirs, never revenue.
+    const pots = await rewardPots();
+    const owed = waiting + forwardedIn(forwards, WSOL) + pots;
     const [entry] = await entriesOf([sweeps[0]!.signature]);
     expect(entry).toMatchObject({ kind: "sweep", asset: { mint: WSOL }, amount: (held - float - reserved - owed).toString(), source: ops().toBase58(), destination: treasury().toBase58() });
     expect((await lamportsOf(treasury())) - inTreasury).toBe(held - float - reserved - owed);
     const left = await lamportsOf(ops());
-    expect(left).toBe(float + reserved + waiting - (await networkFees([sweeps[0]!, ...forwards].map((s) => s.signature))));
-    expect(left - reserved - waiting).toBeLessThan(threshold);
+    expect(left).toBe(float + reserved + waiting + pots - (await networkFees([sweeps[0]!, ...forwards].map((s) => s.signature))));
+    expect(left - reserved - waiting - pots).toBeLessThan(threshold);
   });
 
   it("sweeps only a token's revenue, leaving anything else the wallet holds in it", async () => {
@@ -410,8 +430,9 @@ describe("the Ledger", () => {
     const [entries, r] = [await ledger(), await revenue()];
     expect(r).toMatchObject({ operationsWallet: ops().toBase58(), treasury: treasury().toBase58(), sweepThresholdLamports: env().sweepThresholdLamports });
     const total = (mint: string, kind: string) => sum(entries.filter((e) => e.asset.mint === mint && e.kind === kind).map((e) => BigInt(e.amount)));
-    // Revenue streams only: the sweep moves revenue on, the Creator Forward pays Creators their share, the Burn and Flywheel spend it.
-    const mints = [...new Set(entries.filter((e) => !["sweep", "creator_forward", "burn", "flywheel"].includes(e.kind)).map((e) => e.asset.mint))];
+    // Revenue streams only: the sweep moves revenue on, the Creator Forward pays Creators their share, the Burn and Flywheel
+    // spend it, and a Reward Sale's proceeds are the holders'.
+    const mints = [...new Set(entries.filter((e) => ["platform_fee", "pool_fee", "fee_key"].includes(e.kind)).map((e) => e.asset.mint))];
     expect(r.totals.map((t) => t.asset.mint).sort()).toEqual(mints.sort());
     expect(r.totals[0]!.asset.mint).toBe(WSOL);
     for (const t of r.totals) {
