@@ -111,7 +111,8 @@
         "BURN_SHARE_BPS": "6000",
         "FLYWHEEL_SHARE_BPS": "500",
         "FLYWHEEL_TOP_N": "10",
-        "BURN_MIN_SPEND_LAMPORTS": "10000000",
+        // A tenth of mainnet's minimum, so the little revenue a rehearsal makes is enough for one buy-and-burn.
+        "BURN_MIN_SPEND_LAMPORTS": "1000000",
         "REFERRAL_SHARE_BPS": "50",
         "ANON_RATE_LIMIT_PER_MINUTE": "300",
         "ANON_PREPARE_RATE_LIMIT_PER_MINUTE": "25",
