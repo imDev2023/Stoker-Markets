@@ -30,7 +30,7 @@ async function taxConfig(mint: string) {
 describe("a Reward Launch", () => {
   it.each([100, 300, 500] as const)("launches with a %i bps Reward Tax on SOL, as a Token-2022 coin nobody can retax", async (bps) => {
     const { prepared, mint } = await rewardCoin(bps);
-    expect(prepared.rewardTax).toEqual({ bps });
+    expect(prepared.rewardTax).toEqual({ bps, payout: "coin" });
     const account = await connection().getAccountInfo(new PublicKey(mint));
     expect(account!.owner.toBase58()).toBe(TOKEN_2022_PROGRAM_ID.toBase58());
     const config = (await taxConfig(mint))!;
@@ -43,7 +43,7 @@ describe("a Reward Launch", () => {
     expect(config.withdrawWithheldAuthority.toBase58()).toBe(env().platform.operationsWallet);
 
     const summary = LaunchSummary.parse((await getLaunch(mint)).launch);
-    expect(summary.rewardTax).toEqual({ bps, locked: null });
+    expect(summary.rewardTax).toEqual({ bps, payout: "coin", locked: null });
   });
 
   it("withholds the tax on every trade, which the quote shows and the wallet confirms", async () => {
@@ -65,6 +65,31 @@ describe("a Reward Launch", () => {
     const { quote: sold } = await trade(trader, mint, "sell", coins, 0);
     expect(sold.amountOut).toBe(sell.amountOut);
     expect(await coinsOf(mint, trader)).toBe(0n);
+  });
+
+  it("fixes the Payout Asset at launch: prepared, kept by a retry, shown on the Launch, and never for a standard coin", async () => {
+    const creator = await fundedWallet(10);
+    // The payout asset is a Reward Launch's choice alone.
+    const standard = await prepare({ creator: creator.publicKey.toBase58(), rewardPayout: "quote" });
+    expect(standard.status).toBe(400);
+    expect(await standard.text()).toMatch(/only for a Reward Launch/);
+
+    const res = await prepare({ creator: creator.publicKey.toBase58(), rewardTax: "300", rewardPayout: "quote", symbol: "RWQ" });
+    expect(res.status, await res.clone().text()).toBe(200);
+    const prepared = PreparedLaunch.parse(await res.json());
+    expect(prepared.rewardTax).toEqual({ bps: 300, payout: "quote" });
+    // A retry rebuilds the same launch with the same choice; nothing about it can be sent again differently.
+    const again = PreparedLaunch.parse(await (await fetch(`${env().apiUrl}/v1/launches/${prepared.mint}/prepare`, { method: "POST" })).json());
+    expect(again.mint).toBe(prepared.mint);
+    expect(again.rewardTax).toEqual({ bps: 300, payout: "quote" });
+    const signature = await signAndSend(again, creator);
+    await deliverWebhook([signature]);
+    expect(LaunchSummary.parse((await getLaunch(prepared.mint)).launch).rewardTax).toEqual({ bps: 300, payout: "quote", locked: null });
+
+    // Left out, a Reward Launch pays in the coin, as every one did before the choice existed.
+    const coin = await rewardCoin(100);
+    expect(coin.prepared.rewardTax).toEqual({ bps: 100, payout: "coin" });
+    expect(LaunchSummary.parse((await getLaunch(coin.mint)).launch).rewardTax).toEqual({ bps: 100, payout: "coin", locked: null });
   });
 
   it("works on a Quote Asset other than SOL, with a first buy that allows for the tax", async () => {

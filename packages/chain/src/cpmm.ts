@@ -382,6 +382,21 @@ export async function preparePoolTrade(connection: Connection, r: PoolTradeReque
   ]);
 }
 
+/** The instructions of one buy or sell in a graduated Launch's pool, with the trader's token accounts opened and closed around it. */
+export async function poolTradeInstructions(connection: Connection, r: PoolTradeRequest): Promise<TransactionInstruction[]> {
+  const { base, quote } = poolSides(r.pool, r.baseMint);
+  const accounts = await tradeAccounts(connection, {
+    trader: r.trader, baseMint: base.mint, baseTokenProgram: base.program, quoteMint: quote.mint, quoteTokenProgram: quote.program, side: r.side, amountIn: r.amountIn,
+  });
+  return [
+    ...accounts.setup,
+    poolTradeIx(r.cpmm, r.pool, r.baseMint, {
+      trader: r.trader, side: r.side, baseAccount: accounts.base, quoteAccount: accounts.quote, amountIn: r.amountIn, minAmountOut: r.minAmountOut,
+    }),
+    ...accounts.cleanup,
+  ];
+}
+
 /** A buy (Quote Asset in) or sell (coins in) in a graduated Launch's pool, from and to the given token accounts. */
 export function poolTradeIx(
   cpmm: PublicKey, pool: Pool, baseMint: PublicKey,

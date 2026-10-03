@@ -39,6 +39,8 @@ export type LaunchForm = {
   firstBuy?: string;
   /** Basis points, as the form sends it: "100", "300" or "500". */
   rewardTax?: string;
+  /** A Reward Launch's Payout Asset, "coin" or "quote"; the API takes "coin" when left out. */
+  rewardPayout?: string;
   /** Sent as the JSON text the multipart form carries; a string is sent as it is. */
   airdrop?: { wallet: string; amount: string }[] | string;
   /** Leaves the Creator off the operator's airdrop list, to see the API refuse; otherwise `prepare` allows a Creator who sends an airdrop. */

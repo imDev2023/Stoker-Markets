@@ -157,37 +157,136 @@
   border-color: var(--danger);
 }
 
-.reward {
+.type {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.typeLabel,
+.ratesLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.types {
   display: grid;
-  gap: 0.5rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* A whole card is the radio's label: the dot sits beside the name, and the hint runs under both. */
+.typeCard {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+  gap: 6px 9px;
+  padding: 12px 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  cursor: pointer;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+/* Drawn here rather than by the browser, whose unchecked radio is a grey disc on the dark theme. */
+.typeCard input {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  border: 1.5px solid var(--ink-3);
+  border-radius: 50%;
+  background: transparent;
+  cursor: inherit;
+}
+
+.typeCard input:checked {
+  border-color: var(--cobalt);
+  background: radial-gradient(circle, var(--cobalt) 0 4px, transparent 4.5px);
+}
+
+.typeName {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* The Payout Asset on a line of its own, so the two Reward Launch cards differ where the eye lands. */
+.typeName > span {
+  display: block;
+  color: var(--cobalt-strong);
+}
+
+.typeHint {
+  grid-column: 1 / -1;
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+  overflow-wrap: anywhere;
+}
+
+@media (hover: hover) {
+  .typeCard:hover {
+    border-color: var(--ink-3);
+  }
+}
+
+.typeCard:has(input:checked) {
+  border-color: var(--cobalt);
+  box-shadow: inset 0 0 0 1px var(--cobalt);
+}
+
+.typeCard:has(input:focus-visible) {
+  box-shadow: inset 0 0 0 1px var(--cobalt), 0 0 0 3px color-mix(in srgb, var(--cobalt) 22%, transparent);
+}
+
+.typeCard input:focus-visible {
+  outline: none;
+}
+
+.typeCard:has(input:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* On a phone the cards stack, and the hint moves under the name so each stays short. */
+@media (max-width: 560px) {
+  .types {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .typeHint {
+    grid-column: 2;
+  }
 }
 
 .rates {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-  padding-left: 1.75rem;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 .rates button {
   min-width: 3.5rem;
   padding: 0.35rem 0.75rem;
-  border: 1px solid var(--line, currentColor);
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: transparent;
+  background: var(--paper);
   color: inherit;
   font: inherit;
   cursor: pointer;
 }
 
 .rates button[aria-pressed="true"] {
-  background: var(--accent, #2b45ff);
-  border-color: var(--accent, #2b45ff);
-  color: #fff;
+  background: var(--cobalt);
+  border-color: var(--cobalt);
+  color: var(--on-cobalt);
 }
 
 .rates .hint {
   flex-basis: 100%;
-  margin: 0;
 }

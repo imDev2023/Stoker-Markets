@@ -103,7 +103,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
             <div>
               <dt>Reward tax</dt>
               <dd>
-                {launch.rewardTax.bps / 100}% of every transfer, paid out to holders in {launch.symbol}
+                {launch.rewardTax.bps / 100}% of every transfer, paid out to holders in {launch.rewardTax.payout === "coin" ? launch.symbol : quote}
                 {launch.rewardTax.locked ? (
                   <span className={styles.verified}>
                     Fixed for good:{" "}

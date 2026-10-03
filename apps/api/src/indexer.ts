@@ -4,7 +4,7 @@ import {
   curvePrice, decodeTransaction, initialCurveReserves, poolPrice, RATE_DENOMINATOR, writableAccounts, type CreatorFeeClaimed, type Graduated,
   type LaunchCreated, type PlatformConfigUpdated, type PoolSwapExecuted, type RawTransaction, type TradeExecuted,
 } from "@launchpad/chain";
-import { creatorFeeClaims, curves, feeAnnouncements, graduations, launches, operatorAlerts, type Db } from "@launchpad/db";
+import { creatorFeeClaims, curves, feeAnnouncements, graduations, launchDrafts, launches, operatorAlerts, type Db } from "@launchpad/db";
 import { indexAirdropPayments } from "./airdrop";
 import type { Config } from "./env";
 import { watchAddresses } from "./helius";
@@ -126,6 +126,11 @@ export async function indexAccountHistory(
 const time = (blockTime: number | null) => new Date((blockTime ?? Math.floor(Date.now() / 1000)) * 1000);
 
 async function indexLaunch(db: Db, e: LaunchCreated) {
+  // A Reward Launch's Payout Asset is the Creator's choice at prepare time, kept with the draft (ADR 0006, #43); one
+  // launched on our PlatformConfig without our API has no draft and pays in the coin, as every Reward Launch did before.
+  const [draft] = e.rewardTaxBps === null
+    ? []
+    : await db.select({ rewardPayout: launchDrafts.rewardPayout }).from(launchDrafts).where(eq(launchDrafts.mint, e.baseMint.toBase58())).limit(1);
   const inserted = await db
     .insert(launches)
     .values({
@@ -142,6 +147,7 @@ async function indexLaunch(db: Db, e: LaunchCreated) {
       totalBaseSell: e.totalBaseSell.toString(),
       graduationTarget: e.graduationTargetRaw.toString(),
       rewardTaxBps: e.rewardTaxBps,
+      rewardPayout: e.rewardTaxBps === null ? null : (draft?.rewardPayout ?? "coin"),
       createdSignature: e.signature,
       createdSlot: e.slot,
       createdAt: time(e.blockTime),

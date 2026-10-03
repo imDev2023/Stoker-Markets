@@ -38,7 +38,7 @@ revenueRoutes.get("/revenue", async (c) => {
         select to_char(${ledgerEntries.blockTime} at time zone 'UTC', 'YYYY-MM-DD') as day, ${ledgerEntries.assetMint} as mint,
           max(${ledgerEntries.assetDecimals}) as decimals, ${ledgerEntries.kind} as kind, sum(${ledgerEntries.amount})::text as amount
         from ${ledgerEntries}
-        where ${ledgerEntries.kind} <> 'sweep'
+        where ${ledgerEntries.kind} in ('platform_fee', 'pool_fee', 'fee_key')
         group by 1, 2, 4
       )
       select * from daily where day in (select distinct day from daily order by day desc limit ${REVENUE_DAYS})`),

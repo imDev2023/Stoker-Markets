@@ -105,8 +105,16 @@ The percentage withheld from every transfer of a Reward Launch's coin, in that s
 _Avoid_: Transfer fee (the chain's mechanism), tax
 
 **Holder Reward**:
-A holder's pro-rata share of collected Reward Tax, paid in the same coin, never sold for anything else.
+A holder's pro-rata share of collected Reward Tax, paid in the Launch's Payout Asset.
 _Avoid_: Dividend, yield, airdrop, reflection
+
+**Payout Asset**:
+What a Reward Launch pays its Holder Rewards in, fixed at launch and never changed: the coin itself, never sold, or the paired Quote Asset, bought with the tax through Reward Sales.
+_Avoid_: Reward token, reflection asset, payout mode
+
+**Reward Sale**:
+One bounded sale of collected Reward Tax into the coin's own market for the Quote Asset, made by the Reward Engine on its schedule for a Launch whose Payout Asset is the Quote Asset, and public down to its transaction.
+_Avoid_: Dump, conversion, swap (on its own)
 
 **Reward Round**:
 One published cycle of collecting Reward Tax and paying Holder Rewards, with its snapshot, rules version and payout transactions public.

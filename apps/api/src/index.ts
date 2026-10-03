@@ -118,7 +118,8 @@ app.post("/v1/launches/prepare", async (c) => {
   if (airdrop.length > 0 && !(await mayAirdrop(c.get("db"), creator.toBase58())))
     return c.json({ error: "Airdrops at launch aren't open to this wallet. Launch without one." }, 403);
   const rewardTaxBps = f.rewardTax ?? null;
-  const modes = await resolveLaunchModes(connection, cfg, quote, creator, firstBuy, airdrop, rewardTaxBps).catch(refuseWith(400));
+  const rewardPayout = f.rewardPayout ?? null;
+  const modes = await resolveLaunchModes(connection, cfg, quote, creator, firstBuy, airdrop, rewardTaxBps, rewardPayout).catch(refuseWith(400));
 
   const nonce = newMintKeyNonce();
   const mint = mintKeypair(cfg.mintKeySecret, nonce).publicKey;
@@ -143,7 +144,7 @@ app.post("/v1/launches/prepare", async (c) => {
     .returning();
   // Signed now, so the launch transaction names the permanent address; uploaded only once the launch has landed.
   await signMetadataItems(c.get("db"), c.env.METADATA_BUCKET, cfg, operationsKey(c.env), stored!, { bytes, contentType });
-  await saveDraft(c.get("db"), { mint, creator, nonce, quote, firstBuy, airdrop, rewardTaxBps });
+  await saveDraft(c.get("db"), { mint, creator, nonce, quote, firstBuy, airdrop, rewardTaxBps, rewardPayout });
   const loaded = await loadDraft(c.get("db"), mintAddress);
   return c.json(await buildLaunch(connection, cfg, loaded!, quote, modes.firstBuy, modes.summary));
 });

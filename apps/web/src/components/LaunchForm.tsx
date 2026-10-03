@@ -12,7 +12,7 @@ import { landedError } from "@/lib/transactions";
 import { creatorEarnings } from "@/lib/fees";
 import { COIN_DECIMALS, formatAmount, formatUnits, isSol, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
-import { LaunchOptions, supplyShare, useLaunchOptions } from "./LaunchOptions";
+import { LaunchOptions, LaunchType, supplyShare, useLaunchOptions } from "./LaunchOptions";
 import { PairMark } from "./PairMark";
 import { QuoteLabelList } from "./QuoteLabels";
 import { QuotePicker } from "./QuotePicker";
@@ -168,6 +168,8 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
         <h1 className={styles.title}>Launch a coin</h1>
 
         <fieldset className={styles.fields} disabled={busy}>
+          <LaunchType options={options} coin={symbol} />
+
           <div className={styles.imageRow}>
             <label className={styles.drop}>
               {imageUrl ? <img src={imageUrl} alt="Coin image preview" /> : <span>Add image</span>}
@@ -365,7 +367,13 @@ function ReviewText({ review, symbol }: { review: Review; symbol: string }) {
       {prepared.rewardTax && (
         <p>
           A Reward Launch: every transfer of {symbol} withholds <strong>{prepared.rewardTax.bps / 100}%</strong> for its holders,
-          the first buy&apos;s coins included. Nobody can change the rate, now or later.
+          the first buy&apos;s coins included.{" "}
+          {prepared.rewardTax.payout === "coin" ? (
+            <>It is paid out in <strong>{symbol}</strong> itself, never sold.</>
+          ) : (
+            <>It is sold for {ticker} in small slices and paid out in <strong>{ticker}</strong>.</>
+          )}{" "}
+          Nobody can change the rate or the payout asset, now or later.
         </p>
       )}
       {prepared.airdrop && (

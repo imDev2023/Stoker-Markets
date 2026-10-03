@@ -6,7 +6,7 @@ import {
   allowAirdrops, COIN_PNG, drain, expect, expectNoHorizontalOverflow, expectNoTruncatedText, fixedKeypair, giveCoins, listLaunches, SEED_CREATOR, SEED_HOLDER,
   test,
 } from "./fixtures";
-import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING } from "./seedData";
+import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, REWARD_QUOTE } from "./seedData";
 import { connectTestWallet, installTestWallet, openWalletMenu, TEST_WALLET_NAME } from "./wallet";
 
 // The chart's time axis and candle spacing follow the clock, so its canvases are masked like any other time. Only what is
@@ -319,6 +319,27 @@ test("launch form with a first buy and an airdrop", async ({ page, wallet }) => 
   expect(wallet.requests).toHaveLength(0);
 });
 
+test("launch form as a Reward Launch paid in the Quote Asset, and its review", async ({ page, wallet }) => {
+  await page.goto("/launch");
+  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
+  await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
+  await page.locator('input[type="file"]').setInputFiles({ name: "coin.png", mimeType: "image/png", buffer: COIN_PNG });
+  await page.getByLabel("Name").fill("Yield Desk");
+  await page.getByLabel("Ticker").fill("YLD");
+  await page.getByRole("radiogroup", { name: "Launch type" }).getByRole("radio", { name: /^Reward Launch paid in SOL/ }).check();
+  await page.getByRole("group", { name: "Reward Tax" }).getByRole("button", { name: "3%" }).click();
+  await expect(page.getByText(/^The tax is sold for SOL in small slices/)).toBeVisible();
+  await snap(page, "launch-reward.png");
+
+  await page.getByRole("button", { name: "Review launch" }).click();
+  const dialog = page.getByRole("dialog", { name: "Before you launch" });
+  await dialog.getByRole("checkbox").check();
+  await dialog.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("region", { name: "Review your launch" })).toContainText("It is sold for SOL in small slices and paid out in SOL.");
+  await snap(page, "launch-review-reward.png");
+  expect(wallet.requests).toHaveLength(0);
+});
+
 test("launch form with a mistake in the airdrop list", async ({ page, wallet }) => {
   await allowAirdrops(wallet.keypair.publicKey);
   await launchFormWithOptions(page, `${OPTION_WALLETS[0]}, 250000\n${OPTION_WALLETS[0]}, 500000`);
@@ -358,6 +379,15 @@ test("coin page with a paid airdrop", async ({ page }) => {
   await expect(card.getByRole("link", { name: "Paid" })).toHaveCount(3);
   await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
   await snap(page, "coin-airdrop-paid.png");
+});
+
+test("coin page of a Reward Launch paid in SOL, after a sale and a round", async ({ page }) => {
+  await page.goto(`/coin/${await mintOf(REWARD_QUOTE.name)}`);
+  const card = page.getByRole("region", { name: "Holder rewards" });
+  await expect(card.getByRole("list", { name: "Reward Rounds" })).toContainText("Paid");
+  await expect(card.getByRole("list", { name: "Reward Sales" }).getByRole("listitem")).toHaveCount(1);
+  await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
+  await snap(page, "coin-rewards.png", tradedDynamic);
 });
 
 test("header wallet menu when connected", async ({ page, wallet }) => {
