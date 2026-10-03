@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "localnet": "pnpm --filter @launchpad/localnet start",
     "test:backend": "pnpm --filter @launchpad/tests-backend test",
-    "test:ui": "pnpm --filter @launchpad/tests-ui test"
+    "test:ui": "pnpm --filter @launchpad/tests-ui test",
+    "arweave-stand-in": "pnpm --filter @launchpad/stack arweave-stand-in"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

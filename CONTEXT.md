@@ -83,8 +83,16 @@ The scheduled job that claims every Platform Fee and Fee Key into the Operations
 _Avoid_: Fee cron, claimer
 
 **Ledger**:
-The append-only public record of every movement of platform revenue, each tied to its transaction signature; Creator Forwards, Burns and Flywheel buys are on it too.
+The append-only public record of every movement of platform revenue, each tied to its transaction signature; Creator Forwards, Burns, Flywheel buys and what permanent metadata costs are on it too.
 _Avoid_: History, log, audit trail
+
+**Permanent Metadata**:
+A coin's image and metadata JSON on Arweave, posted through ArDrive Turbo, where the coin's on-chain metadata URI points and nobody can change them.
+_Avoid_: IPFS, pinned metadata, hosted metadata
+
+**Metadata Upload**:
+The scheduled job that posts every launched coin's Permanent Metadata to Arweave, buying Turbo credits with SOL from the Operations Wallet when needed.
+_Avoid_: Arweave cron, uploader
 
 ### Rewards
 

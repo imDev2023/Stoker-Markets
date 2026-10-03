@@ -11,6 +11,10 @@ test("the operator issues an API key, sees it once, and revokes it", async ({ pa
   const keys = keysCard(page);
   await expect(keys).toBeVisible();
 
+  // At a glance, the permanent metadata count (#44): the seeded Launches are on Arweave (the stand-in), none waiting.
+  const glance = page.getByRole("region", { name: "At a glance" });
+  await expect(glance.getByText(/^\d+ on Arweave, 0 waiting$/)).toBeVisible();
+
   await keys.getByLabel("Name").fill("Telegram bot");
   await keys.getByLabel("Requests a minute").fill("120");
   await keys.getByRole("button", { name: "Issue a key" }).click();

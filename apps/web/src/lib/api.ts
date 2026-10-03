@@ -248,7 +248,7 @@ export async function revokeApiKey(token: string, id: string) {
   if (!res.ok) throw new ApiRequestError(res.status === 401 ? "unauthorized" : `revoking the key failed (${res.status})`, res.status);
 }
 
-export async function runOperatorJob(token: string, job: "quote-registry" | "fee-collector" | "reward-rounds" | "burn") {
+export async function runOperatorJob(token: string, job: "quote-registry" | "fee-collector" | "reward-rounds" | "burn" | "metadata-upload") {
   const res = await apiFetch(`${API_URL}/v1/operator/jobs/${job}`, operator(token, {}));
   const body: unknown = await res.json().catch(() => null);
   if (!res.ok && res.status === 401) throw new ApiRequestError("unauthorized", 401);

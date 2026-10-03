@@ -15,6 +15,7 @@ import postgres from "postgres";
 import { runMigrations } from "@launchpad/db/migrate";
 import { bootstrapPlatform, LOCAL_QUOTE_PRICES_USD, LOCAL_QUOTE_TOKEN_LIST, localnetKeys, startLocalnet, type LocalnetState } from "@launchpad/localnet";
 import { createSolRoutes, type SolRoutes } from "@launchpad/localnet/routes";
+import { startTurboStandIn, type TurboStandIn } from "./turbo";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -35,6 +36,13 @@ export type StackEnv = {
   heliusApiUrl: string;
   heliusApiKey: string;
   heliusWebhookId: string;
+  /**
+   * Stands in for ArDrive Turbo and the Arweave gateway (#44): the API posts signed data items, buys credits with SOL
+   * sent to `depositAddress` on the local chain, and every coin's metadata URI resolves at `url/<id>`.
+   */
+  turbo: { url: string; depositAddress: string };
+  /** What one top-up sends Turbo, in lamports, as the API has it. */
+  arweaveTopUpLamports: string;
   /** How long a sold-out curve waits for migration before the API alerts. */
   graduationAlertAfterSeconds: number;
   /** Where the Fee Collector sweeps revenue: a fresh address per stack, standing in for the cold treasury. */
@@ -275,6 +283,10 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
 
     const sink = await startAlertSink();
     cleanups.push(sink.stop);
+    const turbo: TurboStandIn = await startTurboStandIn({ rpcUrl: chain.rpcUrl, port: await freePort() });
+    cleanups.push(turbo.stop);
+    // Small, so a test's top-up is cheap, and still enough for many of the largest images.
+    const arweaveTopUpLamports = String(LAMPORTS_PER_SOL / 50);
     const graduationAlertAfterSeconds = opts.graduationAlertAfterSeconds ?? 5;
     const referralShareBps = 50;
     const feeChangeLeadSeconds = 3;
@@ -314,6 +326,10 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       HELIUS_WEBHOOK_ID,
       OPERATOR_TOKEN,
       ALERT_WEBHOOK_URL: sink.url,
+      TURBO_UPLOAD_URL: turbo.url,
+      TURBO_PAYMENT_URL: turbo.url,
+      ARWEAVE_GATEWAY_URL: turbo.url,
+      ARWEAVE_TOP_UP_LAMPORTS: arweaveTopUpLamports,
       MINT_KEY_SECRET: randomBytes(32).toString("hex"),
       TREASURY_WALLET: fees.treasury,
       SWEEP_THRESHOLD_LAMPORTS: fees.sweepThresholdLamports,
@@ -370,6 +386,7 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       env: {
         apiUrl, webUrl, rpcUrl: chain.rpcUrl, databaseUrl: pg.url, webhookSecret: WEBHOOK_SECRET, operatorToken: OPERATOR_TOKEN,
         alertSinkUrl: sink.url, heliusApiUrl: helius.url, heliusApiKey: HELIUS_API_KEY, heliusWebhookId: HELIUS_WEBHOOK_ID,
+        turbo: { url: turbo.url, depositAddress: turbo.depositAddress }, arweaveTopUpLamports,
         graduationAlertAfterSeconds, ...fees, referralShareBps, feeChangeLeadSeconds, platform, solRoutes, webApiKey, apiVars: vars,
       },
       stop,

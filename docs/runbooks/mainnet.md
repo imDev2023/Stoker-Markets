@@ -99,7 +99,9 @@ Put the mainnet values in an `env.production` block of `apps/api/wrangler.jsonc`
 | `BURN_SHARE_BPS`, `FLYWHEEL_SHARE_BPS`, `FLYWHEEL_TOP_N`, `BURN_MIN_SPEND_LAMPORTS` | `6000`, `500`, `10`, `10000000` (PRD) | whole basis points |
 | `REFERRAL_SHARE_BPS` | `50` | capped per Quote Asset by its GlobalConfig |
 | `ANON_RATE_LIMIT_PER_MINUTE`, `ANON_PREPARE_RATE_LIMIT_PER_MINUTE` | `300`, `25` | what one IP may do each minute without an API key |
-| `triggers.crons` | the five in `wrangler.jsonc` as they are | graduation watch, Quote Registry, Fee Collector (and the Creator Forward after it), Reward Engine, Burn |
+| `TURBO_UPLOAD_URL`, `TURBO_PAYMENT_URL`, `ARWEAVE_GATEWAY_URL` | `https://upload.ardrive.io`, `https://payment.ardrive.io`, `https://arweave.net` (the local defaults name the stand-in) | https on a public host; the gateway is in every coin's on-chain URI and can never change (section 8, ADR 0008) |
+| `ARWEAVE_TOP_UP_LAMPORTS` | `50000000` (0.05 SOL, about 34 launches with the largest image) | sent from the operations wallet's float to Turbo whenever an upload is refused for want of credits |
+| `triggers.crons` | the five in `wrangler.jsonc` as they are | graduation watch (and the Metadata Upload with it), Quote Registry, Fee Collector (and the Creator Forward after it), Reward Engine, Burn |
 | `hyperdrive[0].id`, `r2_buckets[0].bucket_name` | from section 4 and 8 | |
 
 Secrets, set with `wrangler secret put <NAME> --env production`, never in the config file:
@@ -138,12 +140,14 @@ Addresses to watch (print them with `launchlabPdas(program)` from `packages/chai
 
 A Helius webhook holds up to 100,000 addresses. The `POST /v1/transactions/:signature` fast path means the web app never waits for the webhook, but every trade made elsewhere does. The API keeps the webhook's URL, type and auth header as it found them when it adds addresses, so create the webhook by hand first; `tests/backend/src/helius.test.ts` proves both additions against a stand-in for Helius's API in `tools/stack`. The `POST /v1/transactions/:signature` fast path means the web app never waits for the webhook, but every trade made elsewhere does.
 
-## 8. Metadata hosting and the permanent domain
+## 8. Permanent metadata on Arweave, and the domain
 
-Every coin's metadata URI is `PUBLIC_API_URL/metadata/<file>` and its image `PUBLIC_API_URL/metadata/<mint>/image`, written on-chain at launch where LaunchLab holds the update authority: the domain in `PUBLIC_API_URL` must stay ours for good, and the API refuses a temporary one on mainnet. Metadata bodies live in Postgres and images in the R2 bucket (`METADATA_BUCKET`, `launchpad-metadata` in `wrangler.jsonc`; create it in the Cloudflare account, or name the one created).
+Every coin's on-chain metadata URI is `ARWEAVE_GATEWAY_URL/<id>` (`https://arweave.net/<id>`), written at launch where LaunchLab holds the update authority (ADR 0008, #44). The image and the metadata JSON are signed as Arweave data items with the operations key when the launch is prepared and posted through ArDrive Turbo once the launch is indexed, so nothing is uploaded for a launch that never lands. The document, with its image, is also served from our own domain as a cache: `PUBLIC_API_URL/metadata/<mint>.json` from Postgres and `PUBLIC_API_URL/metadata/<mint>/image` from the R2 bucket (`METADATA_BUCKET`, `launchpad-metadata` in `wrangler.jsonc`; create it in the Cloudflare account, or name the one created), which is what the site shows.
 
+- Turbo is paid in SOL: whenever an upload is refused for want of credits, the Metadata Upload job sends `ARWEAVE_TOP_UP_LAMPORTS` (0.05 SOL) from the operations wallet to Turbo's deposit address and Turbo credits it once finalized. Items under about 105 KiB are free. Every top-up and every paid upload is on the Ledger (`arweave_top_up`, `metadata_upload`) and the `/operator` page counts what is on Arweave and what still waits; a failed run raises `job_failed`. The float the Fee Collector leaves (1 SOL) covers many top-ups, so no extra balance is needed beyond section 1's.
+- A fresh item is on `arweave.net` only once Turbo has bundled it onto Arweave, minutes after the upload; `https://turbo-gateway.com/<id>` serves it at once. Wallets that read the URI on launch day may show the image a little late; the site never waits.
 - **owner** Register the domain (#7) and keep it renewed on auto-pay under an account nobody else controls; add `api.<domain>` as the API Worker's custom domain and `<domain>` as the web Worker's.
-- Arweave, decided 2026-09-27: optional, but if wanted it must ship before the first mainnet launch, because launched coins keep their URL. If added, use ArDrive Turbo (`@ardrive/turbo-sdk`, pays in SOL from the operations wallet), never Irys, which retires its Arweave endpoints on 2026-11-01; sign the upload at prepare time and upload only once the launch confirms, so abandoned launches cost nothing; first confirm the SDK runs under Workers' `nodejs_compat`. Not built. **owner**: decide yes or no before section 10.
+- After the deploy, before the first launch: `GET https://payment.ardrive.io/v1/account/balance/solana?address=<operations wallet>` answers 404 (no credits yet) and the first launch's run of `metadata-upload` (`GET /v1/operator/jobs?job=metadata-upload`) shows one top-up credited and both items uploaded; `https://arweave.net/<id>` resolves within the hour.
 
 ## 9. The web Worker
 
@@ -179,7 +183,7 @@ Run the same deploy against real devnet (`CLUSTER=devnet`, the devnet program id
 6. [ ] API deployed with the checklist's values and secrets; `/health` ok (section 5).
 7. [ ] Quote Registry refreshed until 571 Quote Assets each have a curve rule (section 6).
 8. [ ] Helius raw webhook on the PlatformConfig and the creator fee vault authority, with the secret (section 7); `HELIUS_API_KEY` and `HELIUS_WEBHOOK_ID` set so pools and quote mints join it on their own (section 5).
-9. [ ] Domain and R2 in place; Arweave decided (section 8).
+9. [ ] Domain and R2 in place; the Arweave settings left at their mainnet defaults (section 8).
 10. [ ] Web deployed on the domain (section 9).
 11. [ ] Alerts arrive in the chosen channel: `POST /v1/operator/jobs/fee-collector?fail=simulated` raises `job_failed`, the next run resolves it.
 12. [ ] Platform Token launched fairly and named; GlobalConfig requested after Graduation (section 10).
@@ -192,6 +196,5 @@ Run the same deploy against real devnet (`CLUSTER=devnet`, the devnet program id
 - Choose the mainnet CPMM config (the 1% creator fee one).
 - Open the Cloudflare, Helius, Jupiter (if a key is wanted) and Postgres accounts, and create the Hyperdrive configuration, the R2 bucket and the webhook.
 - Choose the alert channel and who holds the operator token; set the sweep thresholds if the defaults are wrong.
-- Decide on Arweave before the first launch.
 - Launch the Platform Token, publish the proof, and ask Raydium for its GlobalConfig.
 - Run the devnet rehearsal, and the first tiny mainnet Launch that proves Jupiter prices and routes.

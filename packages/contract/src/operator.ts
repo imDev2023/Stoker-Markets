@@ -17,6 +17,11 @@ export const OperatorOverview = z.object({
   rewardRounds: z.object({ paying: z.number().int(), paid: z.number().int() }),
   /** Buy-and-burn transactions so far. */
   burns: z.number().int(),
+  /**
+   * Permanent metadata (#44): Launches whose image and metadata JSON are on Arweave, and launched ones still waiting
+   * for the Metadata Upload job (an item signed for a launch that never landed is neither).
+   */
+  metadataUploads: z.object({ uploaded: z.number().int(), pending: z.number().int() }),
   /** The latest run of each scheduled job. */
   jobs: z.array(JobRun),
   openAlerts: z.number().int(),
