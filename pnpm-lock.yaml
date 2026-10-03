@@ -26,6 +26,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@launchpad/arweave':
+        specifier: workspace:*
+        version: link:../../packages/arweave
       '@launchpad/chain':
         specifier: workspace:*
         version: link:../../packages/chain
@@ -107,6 +110,16 @@ importers:
         specifier: ^4.142.0
         version: 4.142.0(@cloudflare/workers-types@5.20260927.1)(@types/node@24.19.0)(bufferutil@4.1.0)
 
+  packages/arweave:
+    dependencies:
+      '@noble/curves':
+        specifier: ^2.4.0
+        version: 2.4.0
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.19.0
+
   packages/chain:
     dependencies:
       '@coral-xyz/anchor':
@@ -162,6 +175,9 @@ importers:
 
   tests/backend:
     devDependencies:
+      '@launchpad/arweave':
+        specifier: workspace:*
+        version: link:../../packages/arweave
       '@launchpad/chain':
         specifier: workspace:*
         version: link:../../packages/chain
@@ -284,6 +300,9 @@ importers:
 
   tools/stack:
     dependencies:
+      '@launchpad/arweave':
+        specifier: workspace:*
+        version: link:../../packages/arweave
       '@launchpad/chain':
         specifier: workspace:*
         version: link:../../packages/chain

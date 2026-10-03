@@ -9,6 +9,7 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
+    "@launchpad/arweave": "workspace:*",
     "@launchpad/chain": "workspace:*",
     "@launchpad/db": "workspace:*",
     "@launchpad/localnet": "workspace:*",
