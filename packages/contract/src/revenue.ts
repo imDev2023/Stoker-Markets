@@ -19,8 +19,12 @@ const raw = z.string().regex(/^\d+$/, "must be a whole number of raw units");
  * - `creator_forward`: a Creator's share of that revenue, paid from the operations wallet to the Creator (ADR 0007).
  * - `burn`: SOL spent on the Platform Token and the Platform Token destroyed, two entries of one transaction.
  * - `flywheel`: the same for a top Launch the Flywheel rule picked.
+ * - `arweave_top_up`: SOL sent from the operations wallet to ArDrive Turbo for upload credits (#44).
+ * - `metadata_upload`: what one Launch's permanent metadata cost in those credits, in lamports at the SOL price Turbo
+ *   quoted when it was uploaded; keyed by the launch transaction, one entry per item (image, metadata JSON) that was
+ *   not free. No SOL moves: the credits bought by a top-up are spent.
  */
-export const LedgerKind = z.enum(["platform_fee", "pool_fee", "fee_key", "sweep", "creator_forward", "burn", "flywheel"]);
+export const LedgerKind = z.enum(["platform_fee", "pool_fee", "fee_key", "sweep", "creator_forward", "burn", "flywheel", "arweave_top_up", "metadata_upload"]);
 export type LedgerKind = z.infer<typeof LedgerKind>;
 
 /**
@@ -108,7 +112,7 @@ export type Revenue = z.infer<typeof Revenue>;
 // ---------------------------------------------------------------------------------------------------------------------
 // Operator: scheduled job runs.
 
-export const JobName = z.enum(["quote-registry", "graduation-watch", "fee-collector", "creator-forward", "reward-tax-lock", "reward-rounds", "burn"]);
+export const JobName = z.enum(["quote-registry", "graduation-watch", "fee-collector", "creator-forward", "reward-tax-lock", "reward-rounds", "burn", "metadata-upload"]);
 export type JobName = z.infer<typeof JobName>;
 
 export const JobRun = z.object({

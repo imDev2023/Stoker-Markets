@@ -15,15 +15,20 @@ const KIND: Record<LedgerKind, string> = {
   creator_forward: "Forwarded to a Creator",
   burn: "Platform Token burn",
   flywheel: "Flywheel burn",
+  arweave_top_up: "Arweave credits bought",
+  metadata_upload: "Permanent metadata",
 };
 
 /** Entries that move revenue out of the operations wallet rather than into it. */
-const OUT = new Set<LedgerKind>(["sweep", "creator_forward"]);
+const OUT = new Set<LedgerKind>(["sweep", "creator_forward", "arweave_top_up", "metadata_upload"]);
 
 /** Where an entry's money came from, in words: every curve pools its Platform Fee in one vault per Quote Asset. */
 function origin(e: LedgerEntry) {
   if (e.kind === "sweep") return "From the operations wallet";
   if (e.kind === "creator_forward") return <>To <Link href={`/creator/${e.destination}`} className="mono">{shortAddress(e.destination)}</Link></>;
+  if (e.kind === "arweave_top_up") return "SOL to ArDrive Turbo";
+  if (e.kind === "metadata_upload")
+    return e.launch ? <>Uploaded for <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link>, in credits</> : "Uploaded, in credits";
   if (e.kind === "burn" || e.kind === "flywheel")
     return e.launch ? <>Bought and burned <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link></> : "Bought and burned";
   if (e.launch) return <>From <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link></>;

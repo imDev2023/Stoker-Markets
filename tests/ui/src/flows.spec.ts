@@ -47,8 +47,12 @@ test("a Creator launches a SOL-paired coin and finds it on the board and its coi
 
   const [launch] = (await listLaunches()).filter((l) => l.mint === mint);
   expect(launch?.creator).toBe(wallet.keypair.publicKey.toBase58());
+  // The on-chain URI is on Arweave (the stand-in here), posted right after the launch was indexed; the image is there too.
+  expect(launch!.metadataUri.startsWith(`${stack.turbo.url}/`)).toBe(true);
+  await expect.poll(async () => (await page.request.get(launch!.metadataUri)).status(), { timeout: 30_000 }).toBe(200);
   const metadata = await (await page.request.get(launch!.metadataUri)).json();
-  expect(metadata).toMatchObject({ name: COIN.name, symbol: COIN.symbol, description: COIN.description, image: launch!.image });
+  expect(metadata).toMatchObject({ name: COIN.name, symbol: COIN.symbol, description: COIN.description });
+  expect(metadata.image.startsWith(`${stack.turbo.url}/`)).toBe(true);
 
   // The board lists it, and its card leads back to the coin page.
   await page.goto("/");

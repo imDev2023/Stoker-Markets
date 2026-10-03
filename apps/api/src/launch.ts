@@ -13,6 +13,7 @@ import {
 import type { AirdropRecipients, GraduationTarget, LaunchModesSummary, PreparedLaunch, RewardTaxBps, TradeQuote } from "@launchpad/contract";
 import { airdropRecipients, launchDrafts, launchMetadata, type Db } from "@launchpad/db";
 import type { Config } from "./env";
+import { arweaveUrl, signedItems } from "./metadata";
 import { launchQuoteAsBuilt, priceLaunch, type LaunchQuote } from "./quotes/assets";
 import type { QuoteMarket } from "./quotes/pricing";
 
@@ -193,7 +194,10 @@ export async function loadDraft(db: Db, mint: string) {
     .limit(1);
   if (!row) return null;
   const recipients = await db.select().from(airdropRecipients).where(eq(airdropRecipients.mint, mint)).orderBy(asc(airdropRecipients.position));
-  return { draft: row.launch_drafts, metadata: row.launch_metadata, recipients };
+  // The permanent metadata was signed when the draft was first prepared, so a retry carries the same Arweave address.
+  const items = await signedItems(db, mint);
+  if (!items) throw new Error(`draft ${mint} has no signed metadata items`);
+  return { draft: row.launch_drafts, metadata: row.launch_metadata, recipients, items };
 }
 
 export type LoadedDraft = NonNullable<Awaited<ReturnType<typeof loadDraft>>>;
@@ -202,8 +206,8 @@ export type LoadedDraft = NonNullable<Awaited<ReturnType<typeof loadDraft>>>;
 export async function buildLaunch(
   connection: Connection, cfg: Config, loaded: LoadedDraft, quote: QuoteAsset, firstBuy: FirstBuyQuote | null, summary: LaunchModesSummary,
 ) {
-  const { draft, metadata } = loaded;
-  const metadataUri = `${cfg.publicApiUrl}/metadata/${draft.mint}.json`;
+  const { draft, metadata, items } = loaded;
+  const metadataUri = arweaveUrl(cfg.arweave, items.metadata.arweaveId);
   const prepared = await prepareLaunch(
     connection,
     {

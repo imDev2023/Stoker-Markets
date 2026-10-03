@@ -8,6 +8,7 @@
     "types": "wrangler types --env-interface CloudflareBindings"
   },
   "dependencies": {
+    "@launchpad/arweave": "workspace:*",
     "@launchpad/chain": "workspace:*",
     "@launchpad/contract": "workspace:*",
     "@launchpad/db": "workspace:*",

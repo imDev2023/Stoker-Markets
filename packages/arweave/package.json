@@ -1,0 +1,17 @@
+{
+  "name": "@launchpad/arweave",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@noble/curves": "^2.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0"
+  }
+}

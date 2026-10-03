@@ -19,7 +19,7 @@ Base URL: `PUBLIC_API_URL` (locally `http://localhost:8791`). Everything below i
 | `GET /launches/:mint/rewards`, `GET /rewards/rules`, `GET /rewards/rounds/:id`, `GET /wallets/:address/rewards` | Holder Rewards: tax waiting, the rules in force and announced, every round, a wallet's payouts. |
 | `GET /creators/:address/fees`, `/claims`, `/forwards` | A Creator's fee vaults and claims, and the Creator Forward: per Quote Asset what was earned, forwarded and is still pending, per Launch what its curve and pool earned, and every forward with its transaction. |
 | `GET /creators/:address/launch-permissions` | What the launch form offers this wallet: `airdrop` is true only for wallets the operator has allowed. |
-| `GET /revenue`, `GET /ledger` | Platform revenue per asset and per day, with what of it was forwarded to Creators and what is still owed them, and the Ledger page by page (`kind`, `limit`, `before`; a `creator_forward` entry is a payment to a Creator). |
+| `GET /revenue`, `GET /ledger` | Platform revenue per asset and per day, with what of it was forwarded to Creators and what is still owed them, and the Ledger page by page (`kind`, `limit`, `before`; a `creator_forward` entry is a payment to a Creator, an `arweave_top_up` SOL sent to ArDrive Turbo for upload credits, a `metadata_upload` what one Launch's permanent metadata cost in those credits, in lamports, against its launch transaction). |
 | `GET /burns` | Burn and Flywheel: shares, rule, budgets, picks, every buy and burn. |
 | `GET /announcements` | Every announced Platform Fee or Creator Fee change, with the transaction that applied it once it has. |
 
@@ -29,7 +29,7 @@ Each returns an unsigned transaction (base64) for the user's wallet to sign and 
 
 | Endpoint | What it prepares |
 | --- | --- |
-| `POST /launches/prepare` (multipart) | A launch: `creator`, `quoteMint`, `name`, `symbol`, `description`, `website`, `x`, `telegram`, `image`, and the launch modes `firstBuy`, `airdrop`, `rewardTax`. An `airdrop` from a wallet the operator has not allowed is refused with 403. The mint address is fixed at first prepare; `POST /launches/:mint/prepare` rebuilds the same launch for a retry. |
+| `POST /launches/prepare` (multipart) | A launch: `creator`, `quoteMint`, `name`, `symbol`, `description`, `website`, `x`, `telegram`, `image`, and the launch modes `firstBuy`, `airdrop`, `rewardTax`. An `airdrop` from a wallet the operator has not allowed is refused with 403. The mint address and the coin's `metadataUri` on Arweave are fixed at first prepare; `POST /launches/:mint/prepare` rebuilds the same launch for a retry. The image and metadata JSON are uploaded to Arweave once the launch is indexed (ADR 0008); until then the URI answers 404. |
 | `GET /launch-quote` | What a First Buy would get before anything is prepared. |
 | `POST /launches/:mint/airdrop/prepare` | The Creator's airdrop payments, however many transactions they take. |
 | `POST /trades/prepare` | A buy or sell, on the curve or in the pool: `mint`, `trader`, `side`, `amount`, `slippageBps`, `payWith`, `referrer`. |
@@ -52,10 +52,10 @@ Behind `Authorization: Bearer <OPERATOR_TOKEN>`.
 
 | Endpoint | What it does |
 | --- | --- |
-| `GET /operator/overview` | Launches by status, rounds, burns, the latest run of each job, open alerts, the fees on-chain. |
+| `GET /operator/overview` | Launches by status, rounds, burns, Launches with their metadata on Arweave and still waiting (`metadataUploads`), the latest run of each job, open alerts, the fees on-chain. |
 | `GET /operator/alerts` | Alerts: a stuck Graduation, a Reward Tax left unlocked, a failed job, a stalled Reward Round; each resolved when its cause goes away. |
 | `GET /operator/jobs?job=` | Job runs and unsettled job transactions. |
-| `POST /operator/jobs/{quote-registry,fee-collector,creator-forward,reward-rounds,burn}` | Runs a job now; `?fail=simulated` makes it fail on purpose to see the alert path. |
+| `POST /operator/jobs/{quote-registry,fee-collector,creator-forward,reward-rounds,burn,metadata-upload}` | Runs a job now; `?fail=simulated` makes it fail on purpose to see the alert path. |
 | `POST /operator/rewards/rules` | Announces a Reward Round rules change, effective no sooner than `REWARD_RULES_LEAD_SECONDS` ahead. |
 | `PUT /operator/platform-token` | Names the Platform Token the Burn buys. |
 | `GET /operator/airdrop-creators`, `POST` (`wallet`), `DELETE /operator/airdrop-creators/:wallet` | The Creator wallets allowed an airdrop at launch. The list starts empty, so nobody is offered one until the operator names a wallet. |
