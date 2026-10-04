@@ -45,6 +45,8 @@ export type StackEnv = {
   arweaveTopUpLamports: string;
   /** How long a sold-out curve waits for migration before the API alerts. */
   graduationAlertAfterSeconds: number;
+  /** How long after a Graduation the graduation watch keeps backfilling the new pool's trades. */
+  poolBackfillSeconds: number;
   /** Where the Fee Collector sweeps revenue: a fresh address per stack, standing in for the cold treasury. */
   treasury: string;
   /** The Fee Collector's settings, as the API has them. */
@@ -288,6 +290,8 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
     // Small, so a test's top-up is cheap, and still enough for many of the largest images.
     const arweaveTopUpLamports = String(LAMPORTS_PER_SOL / 50);
     const graduationAlertAfterSeconds = opts.graduationAlertAfterSeconds ?? 5;
+    // Short, so a test can see the pool backfill close without waiting minutes; production uses 900.
+    const poolBackfillSeconds = 8;
     const referralShareBps = 50;
     const feeChangeLeadSeconds = 3;
 
@@ -320,6 +324,7 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       QUOTE_TOKEN_LIST: JSON.stringify(LOCAL_QUOTE_TOKEN_LIST),
       OPERATIONS_KEY: JSON.stringify(Array.from(localnetKeys().operations.secretKey)),
       GRADUATION_ALERT_AFTER_SECONDS: String(graduationAlertAfterSeconds),
+      POOL_BACKFILL_SECONDS: String(poolBackfillSeconds),
       HELIUS_WEBHOOK_SECRET: WEBHOOK_SECRET,
       HELIUS_API_URL: helius.url,
       HELIUS_API_KEY,
@@ -387,7 +392,7 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
         apiUrl, webUrl, rpcUrl: chain.rpcUrl, databaseUrl: pg.url, webhookSecret: WEBHOOK_SECRET, operatorToken: OPERATOR_TOKEN,
         alertSinkUrl: sink.url, heliusApiUrl: helius.url, heliusApiKey: HELIUS_API_KEY, heliusWebhookId: HELIUS_WEBHOOK_ID,
         turbo: { url: turbo.url, depositAddress: turbo.depositAddress }, arweaveTopUpLamports,
-        graduationAlertAfterSeconds, ...fees, referralShareBps, feeChangeLeadSeconds, platform, solRoutes, webApiKey, apiVars: vars,
+        graduationAlertAfterSeconds, poolBackfillSeconds, ...fees, referralShareBps, feeChangeLeadSeconds, platform, solRoutes, webApiKey, apiVars: vars,
       },
       stop,
     };
