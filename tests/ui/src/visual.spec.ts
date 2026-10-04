@@ -174,7 +174,7 @@ test("trade panel paying with SOL on a USDC-paired coin, quote and review", asyn
   // The test wallet holds no USDC, so the panel pays with SOL.
   await expect(panel.getByRole("group", { name: "Pay with" }).getByRole("button", { name: "SOL" })).toHaveAttribute("aria-pressed", "true");
   await panel.getByRole("button", { name: "0.5 SOL" }).click();
-  await expect(panel.getByText("You pay about")).toBeVisible();
+  await expect(panel.getByText("You pay exactly")).toBeVisible();
   await expect(panel).toHaveScreenshot("trade-sol-quote.png", { mask: tradedDynamic(page) });
 
   await panel.getByRole("button", { name: "Review buy" }).click();
