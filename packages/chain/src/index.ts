@@ -48,7 +48,7 @@ export {
   type PreparedTrade, type TradeStep, type UnsignedTransaction,
 } from "./wallet";
 export {
-  cpmmSolSwap, prepareRoutedBuy, routedLimits, splitSlippage, transferFeeBps,
+  cpmmSolSwap, cpmmSolSwapIn, prepareRoutedBuy, routedQuoteAccount, ROUTE_TOLERANCE_BPS, transferFeeBps,
   type RoutedBuyRequest, type RoutedMarket, type SolSwap, type SolSwapBuilder,
 } from "./route";
 export {
