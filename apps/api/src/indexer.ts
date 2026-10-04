@@ -1,10 +1,10 @@
 import { Connection, type PublicKey } from "@solana/web3.js";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   curvePrice, decodeTransaction, initialCurveReserves, poolPrice, RATE_DENOMINATOR, writableAccounts, type CreatorFeeClaimed, type Graduated,
   type LaunchCreated, type PlatformConfigUpdated, type PoolSwapExecuted, type RawTransaction, type TradeExecuted,
 } from "@launchpad/chain";
-import { creatorFeeClaims, curves, feeAnnouncements, graduations, launchDrafts, launches, operatorAlerts, type Db } from "@launchpad/db";
+import { creatorFeeClaims, curves, feeAnnouncements, graduations, launchDrafts, launches, operatorAlerts, trades, type Db } from "@launchpad/db";
 import { indexAirdropPayments } from "./airdrop";
 import type { Config } from "./env";
 import { watchAddresses } from "./helius";
@@ -92,40 +92,53 @@ async function indexTransaction(db: Db, cfg: Config, tx: RawTransaction, result:
 }
 
 const SIGNATURE_PAGE = 1000;
+// How many transactions a backfill fetches from the node at once.
+const FETCH_BATCH = 8;
 
 /**
  * Backfills one account: indexes each of its confirmed transactions newer than `until`, oldest first, and returns the
- * newest signature it indexed (or `until` if there was nothing new), from which the next backfill can resume, with
+ * newest signature it got to (or `until` if there was nothing new), from which the next backfill can resume, with
  * what it indexed. A listed transaction that can't be fetched or indexed yet (an RPC node behind the one that listed
- * it, say) stops the backfill there, so the cursor never moves past a transaction that was not indexed; `complete`
- * says whether it reached the newest one listed.
+ * it, say) stops the backfill there, so the cursor never moves past a transaction that was not indexed. `limit` stops
+ * it after that many transactions, for a caller that comes back; `complete` says whether it reached the newest one
+ * listed, and `seen` how many it got through. A trade the Indexer already has (the webhook delivered it) is passed over without being fetched again.
  */
 export async function indexAccountHistory(
-  db: Db, cfg: Config, connection: Connection, account: PublicKey, until: string | null,
-): Promise<{ newest: string | null; indexed: IndexResult; complete: boolean }> {
-  const found: string[] = [];
+  db: Db, cfg: Config, connection: Connection, account: PublicKey, until: string | null, limit = Infinity,
+): Promise<{ newest: string | null; indexed: IndexResult; complete: boolean; seen: number }> {
+  const listed: string[] = [];
   let before: string | undefined;
   for (;;) {
     const page = await connection.getSignaturesForAddress(account, { before, until: until ?? undefined, limit: SIGNATURE_PAGE }, "confirmed");
-    found.push(...page.filter((s) => !s.err).map((s) => s.signature));
+    listed.push(...page.filter((s) => !s.err).map((s) => s.signature));
     if (page.length < SIGNATURE_PAGE) break;
     before = page.at(-1)!.signature;
   }
+  const found = listed.reverse().slice(0, limit);
   let newest = until;
-  let complete = true;
+  let seen = 0;
+  let complete = found.length === listed.length;
   const indexed: IndexResult = { launched: 0, traded: 0, claimed: 0, graduated: 0, airdropped: 0 };
-  for (const signature of found.reverse()) {
-    const raw = await fetchRawTransaction(cfg.rpcUrl, signature);
-    if (!raw) {
-      console.warn(`backfill of ${account.toBase58()} stopped at ${signature}, which could not be fetched yet`);
-      complete = false;
-      break;
+  for (let i = 0; i < found.length && seen === i; i += FETCH_BATCH) {
+    const batch = found.slice(i, i + FETCH_BATCH);
+    const known = new Set((await db.select({ signature: trades.signature }).from(trades).where(inArray(trades.signature, batch))).map((t) => t.signature));
+    const raws = await Promise.all(batch.map((signature) => (known.has(signature) ? null : fetchRawTransaction(cfg.rpcUrl, signature))));
+    for (const [j, signature] of batch.entries()) {
+      if (!known.has(signature)) {
+        const raw = raws[j];
+        if (!raw) {
+          console.warn(`backfill of ${account.toBase58()} stopped at ${signature}, which could not be fetched yet`);
+          complete = false;
+          break;
+        }
+        const r = await indexTransactions(db, cfg, [raw]);
+        for (const k of Object.keys(indexed) as (keyof IndexResult)[]) indexed[k] += r[k];
+      }
+      newest = signature;
+      seen++;
     }
-    const r = await indexTransactions(db, cfg, [raw]);
-    for (const k of Object.keys(indexed) as (keyof IndexResult)[]) indexed[k] += r[k];
-    newest = signature;
   }
-  return { newest, indexed, complete };
+  return { newest, indexed, complete, seen };
 }
 
 const time = (blockTime: number | null) => new Date((blockTime ?? Math.floor(Date.now() / 1000)) * 1000);
