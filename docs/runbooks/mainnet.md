@@ -7,7 +7,7 @@ The API refuses to start on mainnet until the settings below are right (`apps/ap
 ## 0. Before anything is created on mainnet
 
 - **owner** #7: the product name, the domain and the Platform Token ticker. The PlatformConfig's `name`, `web` and `img` and every coin's metadata URL carry them, and none can change afterwards.
-- **owner** ADR 0005 must be accepted (it is still marked proposed): the hot operations wallet writes every curve rule, and pays about 2 SOL of rent for mainnet's 571 GlobalConfigs.
+- ADR 0005 is accepted (owner, 2026-10-04): the hot operations wallet writes every curve rule, and pays about 2 SOL of rent for mainnet's 571 GlobalConfigs.
 - **owner** A devnet dress rehearsal (section 11) with the mainnet configuration flags on, since the local chain cannot prove Raydium's crank, Jupiter or Helius.
 
 ## 1. Keys and wallets (owner)
@@ -187,7 +187,7 @@ Move it to `devnet.stoker.markets` and `api-devnet.stoker.markets`, which `env.d
 
 ## 12. Go-live checklist
 
-1. [ ] #7 decided: name, domain, ticker. ADR 0005 accepted.
+1. [x] #7 decided: name, domain, ticker. ADR 0005 accepted.
 2. [ ] Admin key on a cold device; operations wallet and Treasury created; operations wallet funded (section 1).
 3. [ ] PlatformConfig created and decoded as expected (section 2).
 4. [ ] Platform Lookup Table created and rooted (section 3).
@@ -203,7 +203,6 @@ Move it to `devnet.stoker.markets` and `api-devnet.stoker.markets`, which `env.d
 ## Only the owner can do
 
 - Decide the name, domain and ticker (#7), and register the domain.
-- Accept ADR 0005.
 - Generate and keep the admin key, the operations wallet and the Treasury; fund the operations wallet; sign the PlatformConfig transaction with the cold key.
 - Choose the mainnet CPMM config (the 1% creator fee one).
 - Open the Cloudflare, Helius, Jupiter (if a key is wanted) and Postgres accounts, and create the Hyperdrive configuration, the R2 bucket and the webhook.
