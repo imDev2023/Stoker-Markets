@@ -16,6 +16,9 @@ export type GraduationWatch = {
 
 // How far back through a curve's transactions to look for a migration the webhook never delivered.
 const BACKFILL_SIGNATURES = 50;
+// The most pool transactions one run of the watch backfills, over every pool: a run stays well inside a minute or two,
+// and a busy pool is caught up over the next runs.
+const POOL_BACKFILL_PER_RUN = 150;
 
 /**
  * The scheduled graduation watch. Raydium's crank migrates a sold-out curve within seconds, and only it can (we cannot
@@ -87,7 +90,8 @@ export async function notifyPending(db: Db, cfg: Config) {
  * Graduation never arrived on devnet), so until `POOL_BACKFILL_SECONDS` after a Graduation was indexed, every run reads
  * what the new pool did since the last pass and indexes it. The pass that finds the window over is the last: it closes
  * the backfill, and the pool's trades arrive through the webhook alone from then on. Indexing is idempotent, so a trade
- * the webhook did deliver is counted once.
+ * the webhook did deliver is counted once. A run backfills at most `POOL_BACKFILL_PER_RUN` transactions, oldest
+ * Graduation first; a pool it could not finish stays open and is carried on from its cursor by the next run.
  */
 async function backfillPools(db: Db, cfg: Config, connection: Connection, now: Date, result: GraduationWatch) {
   const open = await db
@@ -95,10 +99,14 @@ async function backfillPools(db: Db, cfg: Config, connection: Connection, now: D
     .from(graduations)
     .where(isNull(graduations.backfillClosedAt))
     .orderBy(graduations.slot);
+  let budget = POOL_BACKFILL_PER_RUN;
   for (const g of open) {
+    if (budget <= 0) break;
     const last = now.getTime() - g.indexedAt.getTime() >= cfg.poolBackfillSeconds * 1000;
-    const { newest, indexed, complete } = await indexAccountHistory(db, cfg, connection, new PublicKey(g.pool), g.until);
-    // A pass cut short by a transaction the node could not serve yet leaves the backfill open for the next run.
+    const { newest, indexed, complete, seen } = await indexAccountHistory(db, cfg, connection, new PublicKey(g.pool), g.until, budget);
+    budget -= seen;
+    // A pass cut short, by the run's budget or by a transaction the node could not serve yet, leaves the backfill
+    // open for the next run.
     await db
       .update(graduations)
       .set({ backfilledUntil: newest, ...(last && complete ? { backfillClosedAt: now } : {}) })
