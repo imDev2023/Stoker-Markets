@@ -1,6 +1,6 @@
 // The Helius webhook keeps itself current through Helius's webhook API (runbook, section 7): the Indexer adds each
-// graduated pool when it indexes the Graduation, and the Quote Registry refresh adds every quote mint, so pool swaps and
-// issuer changes to a mint keep arriving without anyone editing the webhook. The stack stands in for Helius's API.
+// graduated pool when it indexes the Graduation, so pool swaps keep arriving without anyone editing the webhook. It never
+// adds a quote mint. The stack stands in for Helius's API.
 import { describe, expect, it } from "vitest";
 import { PublicKey } from "@solana/web3.js";
 import { launchlabPdas } from "@launchpad/chain";
@@ -16,23 +16,16 @@ async function webhook(apiKey = env().heliusApiKey): Promise<{ status: number; w
 }
 
 describe("the Helius webhook's addresses", () => {
-  it("gain every quote mint at the Quote Registry refresh, with the rest of the webhook left as it was", async () => {
+  it("never gain a quote mint: the Quote Registry refresh leaves the webhook as it was", async () => {
     const before = (await webhook()).webhook!;
     const program = new PublicKey(env().platform.launchlab);
     // As the owner created it: our PlatformConfig and the creator fee vault authority.
     expect(before.accountAddresses).toEqual(expect.arrayContaining([env().platform.platformConfig, launchlabPdas(program).creatorFeeVaultAuthority.toBase58()]));
     await refreshQuoteRegistry();
+    // Watching a mint would deliver every transaction that names it, which for SOL is much of the chain.
     const after = (await webhook()).webhook!;
-    for (const q of await listQuotes()) expect(after.accountAddresses).toContain(q.mint);
-    expect(after.accountAddresses).toEqual(expect.arrayContaining(before.accountAddresses));
-    expect(new Set(after.accountAddresses).size).toBe(after.accountAddresses.length);
-    // The update replaces the whole webhook, so its URL, types, kind and auth header must travel back unchanged.
-    expect(after).toMatchObject({
-      webhookURL: `${env().apiUrl}/v1/webhooks/helius`, transactionTypes: ["ANY"], webhookType: "raw", authHeader: env().webhookSecret,
-    });
-    // A second refresh has nothing to add and leaves the webhook alone.
-    await refreshQuoteRegistry();
-    expect((await webhook()).webhook!.accountAddresses).toEqual(after.accountAddresses);
+    expect(after).toEqual(before);
+    for (const q of await listQuotes()) expect(after.accountAddresses).not.toContain(q.mint);
   });
 
   it("gain a graduated Launch's pool when the Indexer indexes its Graduation", async () => {
@@ -48,6 +41,10 @@ describe("the Helius webhook's addresses", () => {
     expect(await (await deliverWebhook([migration.signature])).json()).toMatchObject({ graduated: 0 });
     const addresses = (await webhook()).webhook!.accountAddresses;
     expect(addresses.filter((a) => a === migration.pool.toBase58())).toHaveLength(1);
+    // The update replaces the whole webhook, so its URL, types, kind and auth header must travel back unchanged.
+    expect((await webhook()).webhook).toMatchObject({
+      webhookURL: `${env().apiUrl}/v1/webhooks/helius`, transactionTypes: ["ANY"], webhookType: "raw", authHeader: env().webhookSecret,
+    });
   });
 
   it("are behind the API key, which the stand-in checks like Helius does", async () => {

@@ -13,12 +13,11 @@ type Webhook = {
 
 /**
  * Adds addresses to the Helius webhook through Helius's webhook API (`GET` then `PUT /v0/webhooks/:id`), so a graduated
- * pool's swaps and every quote mint's changes keep arriving without anyone adding them by hand (runbook, section 7).
+ * pool's swaps keep arriving without anyone adding the pool by hand (runbook, section 7).
  * Nothing happens without `HELIUS_API_KEY` and `HELIUS_WEBHOOK_ID` (the local stack, devnet without Helius): null.
  * Idempotent: an address already watched is left as it is, and nothing is written when nothing is missing. The rest of
  * the webhook (its URL, types and auth header) is sent back exactly as read, since the update replaces the whole thing.
- * A failure throws: the caller decides whether that stops the indexing (it does for a Graduation, which is then
- * delivered again) or fails the job (the Quote Registry refresh, which alerts the operator and tries again in five minutes).
+ * A failure throws, which stops the indexing of the Graduation; Helius then delivers it again.
  */
 export async function watchAddresses(cfg: Config, addresses: string[]): Promise<{ added: number; watched: number } | null> {
   const h = cfg.helius;
