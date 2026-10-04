@@ -76,7 +76,64 @@
       "localConnectionString": "postgres://launchpad:launchpad@127.0.0.1:5442/launchpad"
     }
   ],
-  "r2_buckets": [{ "binding": "METADATA_BUCKET", "bucket_name": "launchpad-metadata" }]
+  "r2_buckets": [{ "binding": "METADATA_BUCKET", "bucket_name": "launchpad-metadata" }],
+  // The devnet dress rehearsal on stoker.markets (runbook, section 11): `wrangler deploy --env devnet`. Real devnet, our
+  // own PlatformConfig and Platform Lookup Table there, file keypairs for the admin, operations wallet and Treasury.
+  // RPC_URL is a secret here, since the provider's URL carries its key. Bindings and vars are not inherited by an
+  // environment, so everything is named again.
+  "env": {
+    "devnet": {
+      "name": "stoker-api-devnet",
+      "routes": [{ "pattern": "api.stoker.markets", "custom_domain": true }],
+      "vars": {
+        "CLUSTER": "devnet",
+        // Browsers get the public endpoint, never the Worker's own RPC URL and its key.
+        "PUBLIC_RPC_URL": "https://api.devnet.solana.com",
+        "PUBLIC_API_URL": "https://api.stoker.markets",
+        "WEB_ORIGIN": "https://stoker.markets",
+        "LAUNCHLAB_PROGRAM": "DRay6fNdQ5J82H7xV6uq2aV3mNrUZ1J4PgSKsWgptcm6",
+        "CPMM_PROGRAM": "DRaycpLY18LhpbydsBWbVJtxpNv9oXPgjRSfpF2bWpYb",
+        "LOCK_PROGRAM": "DRay25Usp3YJAi7beckgpGUC7mGJ2cR1AVPxhYfwVCUX",
+        "PLATFORM_CONFIG": "J8wXws7sKpbSEDEQHmJPCS3XSqbDKQR7UPhAmyZ5oPCQ",
+        "PLATFORM_ADMIN": "FGLT7WLZNxwYFn9JJ6M11PjYsmQUwcShgX6zmhTa2eCn",
+        "PLATFORM_LOOKUP_TABLE": "3caF92CXJm4WstFrfC1DDzboJDkzvdDJ3BJXM4ymzJvr",
+        "TREASURY_WALLET": "CJbQFc5YZBNmhWNKKfXgVNvkmRqWs5Jcdk8XTrbyqcwt",
+        // The Graduation Target is mainnet's 85 SOL, so the site reads as it will on mainnet; a Graduation through
+        // Raydium's crank was proven on 2026-10-03 with it at 0.5 SOL ("500000000"), which is the value to set again to
+        // rehearse one. Devnet SOL is scarce, so the sweep is small: above 2.1 SOL down to 1.9.
+        "GRADUATION_TARGET_LAMPORTS": "85000000000",
+        "GRADUATION_ALERT_AFTER_SECONDS": "300",
+        "SWEEP_THRESHOLD_LAMPORTS": "2100000000",
+        "SWEEP_FLOAT_LAMPORTS": "1900000000",
+        "COLLECT_MIN_LAMPORTS": "100000",
+        "CREATOR_FORWARD_MIN_LAMPORTS": "1000000",
+        "REWARD_RULES_LEAD_SECONDS": "86400",
+        "BURN_SHARE_BPS": "6000",
+        "FLYWHEEL_SHARE_BPS": "500",
+        "FLYWHEEL_TOP_N": "10",
+        // A tenth of mainnet's minimum, so the little revenue a rehearsal makes is enough for one buy-and-burn.
+        "BURN_MIN_SPEND_LAMPORTS": "1000000",
+        "REFERRAL_SHARE_BPS": "50",
+        "ANON_RATE_LIMIT_PER_MINUTE": "300",
+        "ANON_PREPARE_RATE_LIMIT_PER_MINUTE": "25",
+        "FEE_CHANGE_LEAD_SECONDS": "86400",
+        // The real Turbo and gateway: items within Turbo's free tier (about 105 KiB) land on Arweave. Turbo can't be
+        // paid in devnet SOL, so the top-up is too small to leave the wallet and a larger image stays off Arweave.
+        "TURBO_UPLOAD_URL": "https://upload.ardrive.io",
+        "TURBO_PAYMENT_URL": "https://payment.ardrive.io",
+        "ARWEAVE_GATEWAY_URL": "https://arweave.net",
+        "ARWEAVE_TOP_UP_LAMPORTS": "5000",
+        // Devnet has no Jupiter: SOL and devnet USDC are priced by hand, and nothing routes a buy paid with SOL.
+        "PRICE_SOURCE": "static",
+        "SOL_ROUTE_SOURCE": "none",
+        "QUOTE_PRICES_USD": "{\"So11111111111111111111111111111111111111112\":\"150\",\"USDCoctVLVnvTXBEuP9s8hntucdJokbo17RwHuNXemT\":\"1\"}",
+        "QUOTE_TOKEN_LIST": "{\"So11111111111111111111111111111111111111112\":{\"verified\":true,\"liquidityUsd\":2500000000},\"USDCoctVLVnvTXBEuP9s8hntucdJokbo17RwHuNXemT\":{\"verified\":true,\"liquidityUsd\":900000000}}"
+      },
+      "triggers": { "crons": ["* * * * *", "*/5 * * * *", "15 * * * *", "*/10 * * * *", "45 * * * *"] },
+      "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "2efc4f50e7fc42c5aba3d523b1d5e096" }],
+      "r2_buckets": [{ "binding": "METADATA_BUCKET", "bucket_name": "stoker-metadata-devnet" }]
+    }
+  }
   // Secrets, set with `wrangler secret put` and in `.dev.vars` locally: OPERATIONS_KEY, HELIUS_WEBHOOK_SECRET,
   // MINT_KEY_SECRET, OPERATOR_TOKEN, and optionally JUPITER_API_KEY, ALERT_WEBHOOK_URL, and HELIUS_API_KEY together
   // with HELIUS_WEBHOOK_ID (the Indexer then adds each graduated pool, and the Quote Registry refresh every quote

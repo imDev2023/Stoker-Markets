@@ -115,7 +115,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 ## Multica dashboard
 
 This project is mirrored on the owner's Multica dashboard (workspace Pandora) as project `c5707009-2225-4a7d-94e3-93a9eed5d951`.
-GitHub issues on `imDev2023/stonk-fun-solana` are the source of truth; Multica only mirrors them (see `docs/agents/issue-tracker.md`).
+GitHub issues on `imDev2023/Stoker-Markets` are the source of truth; Multica only mirrors them (see `docs/agents/issue-tracker.md`).
 At the end of every session, after the tracker is updated, run the `multica-sync` skill for this project: mirror ticket statuses, add any new tickets, and refresh the project's "Current step" section.
 Every Multica write passes `--no-start` and no ticket is ever assigned to an agent, so the sync never starts an agent run.
 If the `multica` CLI is not signed in, say so in the session summary and stop anyway; the sync never blocks the work.
@@ -124,7 +124,7 @@ If the `multica` CLI is not signed in, say so in the session summary and stop an
 
 ### Issue tracker
 
-Issues live in GitHub Issues on `imDev2023/stonk-fun-solana` and are mirrored to Multica; external PRs are not a triage surface. See `docs/agents/issue-tracker.md`.
+Issues live in GitHub Issues on `imDev2023/Stoker-Markets` and are mirrored to Multica; external PRs are not a triage surface. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
