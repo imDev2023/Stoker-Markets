@@ -4,16 +4,19 @@
   "type": "module",
   "exports": {
     "./platform-config": "./platform-config.ts",
-    "./lookup-table": "./lookup-table.ts"
+    "./lookup-table": "./lookup-table.ts",
+    "./jupiter-route": "./jupiter-route.ts"
   },
   "scripts": {
     "platform-config": "tsx platform-config.ts",
     "lookup-table": "tsx lookup-table.ts",
+    "jupiter-route": "tsx jupiter-route.ts",
     "typecheck": "tsc -p ."
   },
   "dependencies": {
     "@launchpad/chain": "workspace:*",
     "@launchpad/localnet": "workspace:*",
+    "@solana/spl-token": "^0.4.15",
     "@solana/web3.js": "^1.99.0",
     "bn.js": "^5.2.2"
   },

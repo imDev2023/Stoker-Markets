@@ -459,21 +459,21 @@ export function TradePanel({
               {route && (
                 <>
                   <div className={styles.group}>
-                    <dt>You pay about</dt>
+                    <dt>You pay exactly</dt>
                     <dd>
                       <span className="mono">{sol(roundLamports(BigInt(route.solIn), "nearest"))}</span> SOL
                     </dd>
                   </div>
                   <div>
-                    <dt>At most</dt>
+                    <dt>Spent on the coins</dt>
                     <dd>
-                      <span className="mono">{sol(roundLamports(BigInt(route.maxSolIn), "up"))}</span> SOL
+                      <span className="mono">{formatUnits(route.quoteOut, quoteDecimals, quoteDecimals)}</span> {quoteSymbol}
                     </dd>
                   </div>
                   <div>
-                    <dt>Swapped for</dt>
+                    <dt>Stays in your wallet, about</dt>
                     <dd>
-                      <span className="mono">{formatUnits(route.quoteOut, quoteDecimals, quoteDecimals)}</span> {quoteSymbol}
+                      <span className="mono">{formatUnits(route.kept, quoteDecimals, quoteDecimals)}</span> {quoteSymbol}
                     </dd>
                   </div>
                 </>
@@ -510,7 +510,7 @@ export function TradePanel({
               Enter an amount to see what you get and every fee you pay.
             </p>
           )}
-          {route && <p className={styles.routeNote}>{routeNote(route, shown!.slippageBps, quoteSymbol)}</p>}
+          {route && <p className={styles.routeNote}>{routeNote(route, quoteSymbol)}</p>}
           {shown?.completesCurve && (
             <p className={styles.completes}>
               This buy takes the last coins on the curve and starts graduation, so it costs{" "}
@@ -548,9 +548,12 @@ export function TradePanel({
               ) : r.prepared.quote.route ? (
                 <>
                   Your wallet pays <strong className="mono">{sol(-r.walletLamports)} SOL</strong> in total, including network fees
-                  and any account rent. It buys exactly{" "}
+                  and any account rent. The swap turns <strong className="mono">{sol(BigInt(r.prepared.quote.route.solIn))} SOL</strong>{" "}
+                  of it into {quoteSymbol}:{" "}
                   <strong className="mono">{formatUnits(r.prepared.quote.route.quoteOut, quoteDecimals, quoteDecimals)} {quoteSymbol}</strong>{" "}
-                  with it and spends all of it {r.prepared.quote.venue === "pool" ? "in the pool" : "on the curve"}, so none is left over.
+                  is spent {r.prepared.quote.venue === "pool" ? "in the pool" : "on the curve"}, and about{" "}
+                  <strong className="mono">{formatUnits(r.prepared.quote.route.kept, quoteDecimals, quoteDecimals)} {quoteSymbol}</strong>{" "}
+                  stays in your wallet.
                 </>
               ) : r.prepared.quote.side === "buy" ? (
                 <>
@@ -565,7 +568,7 @@ export function TradePanel({
                 </>
               )}{" "}
               {r.prepared.quote.route
-                ? `If the prices move more than ${slippageBps / 100}% in total first, the trade fails and nothing is traded.`
+                ? `If SOL buys over ${r.prepared.quote.route.slippageBps.route / 100}% less ${quoteSymbol} first, or the coin's price moves more than ${slippageBps / 100}%, the trade fails and nothing is traded.`
                 : `If the price moves more than ${slippageBps / 100}% first, the trade fails and nothing is traded.`}
             </p>
             <div className={styles.actions}>
@@ -602,12 +605,11 @@ export function TradePanel({
   );
 }
 
-/** How a buy paid with SOL is routed and how its slippage is split, in a line. */
-function routeNote(route: SolRoute, slippageBps: number, quoteSymbol: string) {
-  const { route: swap, trade } = route.slippageBps;
+/** How a buy paid with SOL is routed, and why some of the Quote Asset stays in the wallet, in a line. */
+function routeNote(route: SolRoute, quoteSymbol: string) {
   return (
-    `Swapped through ${route.via.join(", ")}. Your ${slippageBps / 100}% slippage allows up to ${swap / 100}% more SOL for the ` +
-    `${quoteSymbol} and ${trade / 100}% fewer coins.`
+    `Swapped through ${route.via.join(", ")}. The swap may deliver up to ${route.slippageBps.route / 100}% less ${quoteSymbol} than ` +
+    `the price gives now, so the buy spends only what is sure to arrive and the rest stays in your wallet as ${quoteSymbol}.`
   );
 }
 
@@ -672,7 +674,7 @@ function landedError(text: string, prepared: PreparedTrade, quoteSymbol: string)
   const f = failure(text, prepared);
   if (f.step === "route")
     return f.slippage
-      ? `SOL bought less ${quoteSymbol} than your slippage allows before the trade landed, so nothing was swapped or traded and only the network fee was charged. Try again, or allow more slippage.`
+      ? `SOL bought less ${quoteSymbol} than the swap allows before the trade landed, so nothing was swapped or traded and only the network fee was charged. Try again.`
       : `The swap from SOL to ${quoteSymbol} failed on-chain, so nothing was traded and only the network fee was charged. Try again, or pay in ${quoteSymbol}.`;
   return f.slippage
     ? "The price moved past your slippage before the trade landed, so nothing was traded and only the network fee was charged. Try again, or allow more slippage."
@@ -684,7 +686,7 @@ function unsentError(text: string, prepared: PreparedTrade, quoteSymbol: string)
   const f = failure(text, prepared);
   if (f.step === "route")
     return f.slippage
-      ? `SOL buys less ${quoteSymbol} now than your slippage allows, so nothing was sent, swapped or charged. Check the new quote and try again, or allow more slippage.`
+      ? `SOL buys less ${quoteSymbol} now than the swap allows, so nothing was sent, swapped or charged. Check the new quote and try again.`
       : `The swap from SOL to ${quoteSymbol} would fail, so nothing was sent or charged. Try again in a moment, or pay in ${quoteSymbol}.`;
   return f.slippage
     ? "The price moved past your slippage before the trade was sent, so nothing was traded or charged. Check the new quote and try again, or allow more slippage."
@@ -706,7 +708,7 @@ function simulationError(text: string, prepared: PreparedTrade, payingQuote: str
   const f = failure(text, prepared);
   if (f.step === "route")
     return f.slippage
-      ? `SOL buys less ${quoteSymbol} now than your slippage allows. Check the new quote and try again.`
+      ? `SOL buys less ${quoteSymbol} now than the swap allows. Check the new quote and try again.`
       : `The swap from SOL to ${quoteSymbol} would fail, so nothing was sent. Try again in a moment, or pay in ${quoteSymbol}.`;
   if (f.slippage) return "The price has moved past your slippage. Check the new quote and try again.";
   return "The trade would fail on-chain, so nothing was sent. Try again in a moment.";

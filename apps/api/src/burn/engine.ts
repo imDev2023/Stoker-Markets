@@ -8,8 +8,8 @@ import {
 import BN from "bn.js";
 import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import {
-  cpmmSolSwap, graduationPoolAddress, loadCurve, loadPool, poolSides, poolSwap, poolSwapExactOut, signedTransaction, transferFeeBps, WSOL_MINT,
-  type SolSwap,
+  cpmmSolSwap, graduationPoolAddress, loadCurve, loadPool, poolSides, poolSwap, poolSwapExactOut, routedQuoteAccount, signedTransaction,
+  swapBaseOutputIx, transferFeeBps, WSOL_MINT, type SolSwap,
 } from "@launchpad/chain";
 import { graduations, launches, ledgerEntries, platformSettings, quoteAssets, trades, type Db } from "@launchpad/db";
 import type { Config } from "../env";
@@ -190,7 +190,8 @@ async function buyAndBurn(
   db: Db, cfg: Config, connection: Connection, operations: Keypair, routes: SolRoutes | null, mint: PublicKey, lamports: bigint, kind: "burn" | "flywheel",
 ) {
   const ops = operations.publicKey;
-  const swap = await planSwap(db, cfg, connection, routes, mint, lamports);
+  const [launch] = await db.select({ pool: launches.pool }).from(launches).where(eq(launches.mint, mint.toBase58())).limit(1);
+  const swap = await planSwap(cfg, connection, routes, ops, mint, launch?.pool, lamports);
   if (!swap) return null;
   const { amount, decimals, tokenProgram, build } = swap;
   const account = getAssociatedTokenAddressSync(mint, ops, false, tokenProgram);
@@ -234,51 +235,57 @@ type PlannedSwap = {
 };
 
 /**
- * How to buy the coin with SOL: through the route source (Jupiter on mainnet) if it knows the coin, else through the
- * coin's own graduated pool when it is paired with SOL. Buys what the budget gets at the current price less the
- * slippage allowance, so the swap fails whole rather than spending more than the budget.
+ * How to buy the coin with SOL, always in the coin's own graduated pool, for an exact number of coins so the burn knows
+ * what to burn. A coin paired with SOL is bought there directly. A coin paired with another Quote Asset takes two steps
+ * in the one transaction: the route source (Jupiter on mainnet) swaps the budget into the Quote Asset, in the wallet's
+ * own account for it, and the pool then sells the coins for no more than the least the route delivers. The route
+ * never buys a coin itself, so no coin is left unburned; the Quote Asset the swap delivers beyond what the pool took
+ * stays in the wallet, outside the Ledger's revenue, and no sweep takes it. Null when there is no such way.
  */
-async function planSwap(db: Db, cfg: Config, connection: Connection, routes: SolRoutes | null, mint: PublicKey, lamports: bigint): Promise<PlannedSwap | null> {
+async function planSwap(
+  cfg: Config, connection: Connection, routes: SolRoutes | null, ops: PublicKey, mint: PublicKey, pool: string | undefined, lamports: bigint,
+): Promise<PlannedSwap | null> {
+  if (!pool) return null;
   const budget = new BN(lamports.toString());
-  const [row] = await db
-    .select({ decimals: launches.decimals, quoteMint: launches.quoteMint, pool: launches.pool })
-    .from(launches)
-    .where(eq(launches.mint, mint.toBase58()))
-    .limit(1);
-  if (routes) {
-    const bought = await routes.exactIn(mint, budget).catch(() => null);
-    if (bought && !bought.isZero()) {
-      const amount = bought.muln(10_000 - SLIPPAGE_BPS).divn(10_000);
-      const plan = await routes.exactOut(mint, amount, SLIPPAGE_BPS);
-      if (plan && plan.maxSolIn.lte(budget)) {
-        const info = await connection.getAccountInfo(mint, "confirmed");
-        if (!info) throw new Error(`mint ${mint.toBase58()} does not exist`);
-        return { amount, decimals: row?.decimals ?? (await mintDecimals(connection, mint)), tokenProgram: info.owner, build: plan.swap };
-      }
-    }
-  }
-  if (!row || row.quoteMint !== WSOL_MINT.toBase58()) return null;
-  const curve = await loadCurve(connection, new PublicKey(row.pool));
+  const curve = await loadCurve(connection, new PublicKey(pool));
   if (!curve || curve.status !== "graduated") return null;
-  const pool = await loadPool(connection, await graduationPoolAddress(connection, cfg.cpmm, curve));
-  if (!pool || !pool.swapEnabled || pool.chainTime < pool.openTime) return null;
-  const { base } = poolSides(pool, mint);
-  const bought = poolSwap(pool, WSOL_MINT, budget).amountOut;
+  const market = await loadPool(connection, await graduationPoolAddress(connection, cfg.cpmm, curve));
+  if (!market || !market.swapEnabled || market.chainTime < market.openTime) return null;
+  const { base, quote } = poolSides(market, mint);
+  const least = (coins: BN) => coins.muln(10_000 - SLIPPAGE_BPS).divn(10_000);
+  if (quote.mint.equals(WSOL_MINT)) {
+    const bought = poolSwap(market, WSOL_MINT, budget).amountOut;
+    if (bought.isZero()) return null;
+    const amount = least(bought);
+    const exact = poolSwapExactOut(market, WSOL_MINT, amount);
+    if (!exact || exact.amountIn.gt(budget)) return null;
+    return {
+      amount,
+      decimals: base.decimals,
+      tokenProgram: base.program,
+      build: cpmmSolSwap(connection, { cpmm: cfg.cpmm, pool: market, amountOut: amount, maxAmountIn: budget }),
+    };
+  }
+  // A Quote Asset with a transfer fee delivers less than the route promised, which the pool's limit can't allow for.
+  if (!routes || (await transferFeeBps(connection, quote.mint, quote.program)) > 0) return null;
+  const route = await routes.swapIn({ mint: quote.mint, tokenProgram: quote.program }, budget, ops).catch(() => null);
+  if (!route || route.minOut.isZero()) return null;
+  const bought = poolSwap(market, quote.mint, route.minOut).amountOut;
   if (bought.isZero()) return null;
-  const amount = bought.muln(10_000 - SLIPPAGE_BPS).divn(10_000);
-  const exact = poolSwapExactOut(pool, WSOL_MINT, amount);
-  if (!exact || exact.amountIn.gt(budget)) return null;
+  const amount = least(bought);
+  const exact = poolSwapExactOut(market, quote.mint, amount);
+  if (!exact || exact.amountIn.gt(route.minOut)) return null;
   return {
     amount,
     decimals: base.decimals,
     tokenProgram: base.program,
-    build: cpmmSolSwap(connection, { cpmm: cfg.cpmm, pool, amountOut: amount, maxAmountIn: budget }),
+    build: async (trader, destination) => {
+      const s = await route.swap();
+      const buy = swapBaseOutputIx(cfg.cpmm, market, {
+        payer: trader, input: quote, output: base, inputAccount: routedQuoteAccount(trader, quote.mint, quote.program), outputAccount: destination,
+        amountOut: amount, maxAmountIn: route.minOut,
+      });
+      return { ...s, swap: [...s.swap, buy], lookupTables: [cfg.lookupTable, ...s.lookupTables] };
+    },
   };
-}
-
-async function mintDecimals(connection: Connection, mint: PublicKey) {
-  const info = await connection.getParsedAccountInfo(mint, "confirmed");
-  const parsed = info.value?.data;
-  if (!parsed || !("parsed" in parsed)) throw new Error(`mint ${mint.toBase58()} is not a token mint`);
-  return (parsed.parsed as { info: { decimals: number } }).info.decimals;
 }

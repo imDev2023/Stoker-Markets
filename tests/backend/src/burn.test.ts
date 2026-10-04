@@ -6,7 +6,7 @@ import { PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync, getMint, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { BurnsPage, LedgerPage } from "@launchpad/contract";
 import { BURN_CRON, FEE_COLLECTOR_CRON } from "@launchpad/stack";
-import { migrateCurve } from "@launchpad/localnet";
+import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
 import { connection, deliverWebhook, env, fundedWallet, launch, launchedCoin, quote, SOL, tokenBalance, trade } from "./client";
 
 const api = (path: string, init?: RequestInit) => fetch(`${env().apiUrl}${path}`, init);
@@ -173,6 +173,53 @@ describe("Burn and Flywheel", () => {
     expect(harvested).toBeGreaterThan(0n);
     await burnOnce(await fund());
     expect(await tokenBalance(account)).toBe(harvested);
+  });
+
+  it("buys a coin paired with USDC in two steps: SOL into USDC through the route, then the coin in its own pool", async () => {
+    const USDC = LOCAL_QUOTES.USDC;
+    const creator = await fundedWallet();
+    const { prepared, signature } = await launch(creator, { symbol: "UBRN", quoteMint: USDC.toBase58() });
+    await deliverWebhook([signature]);
+    const mint = new PublicKey(prepared.mint);
+    const trader = await fundedWallet(20);
+    await mintLocalQuote(connection(), USDC, trader.publicKey, 400_000_000n);
+    const buyout = await trade(trader, prepared.mint, "buy", 200_000_000n);
+    expect(buyout.quote.completesCurve).toBe(true);
+    const migration = await migrateCurve(connection(), new PublicKey(prepared.pool));
+    await deliverWebhook([buyout.signature, migration.signature]);
+    for (let i = 0; i < 40; i++) {
+      if ((await quote(prepared.mint, { side: "buy", amount: "1000000" })).ok) break;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    expect((await api("/v1/operator/platform-token", { method: "PUT", headers: operator(), body: JSON.stringify({ mint: prepared.mint }) })).status).toBe(200);
+    for (let i = 0; i < 6 && BigInt((await burns()).budgets.burn.available) < SOL(0.012); i++) {
+      const coin = await launchedCoin();
+      await deliverWebhook([(await trade(trader, coin.mint, "buy", SOL(1.2))).signature]);
+      await runJob("fee-collector");
+    }
+    const budget = BigInt((await burns()).budgets.burn.available);
+    expect(budget).toBeGreaterThanOrEqual(SOL(0.012));
+    const ops = new PublicKey(env().platform.operationsWallet);
+    const usdcHeld = await tokenBalance(getAssociatedTokenAddressSync(USDC, ops, false, TOKEN_PROGRAM_ID));
+    const supply = (await getMint(connection(), mint, "confirmed", TOKEN_PROGRAM_ID)).supply;
+
+    const run = await runJob("burn");
+    const summary = run.summary as {
+      burned: { signature: string; lamports: string; amount: string } | null;
+      flywheel: { mint: string; amount: string }[];
+      skipped: { mint: string; reason: string }[];
+      problems: string[];
+    };
+    expect(summary.problems).toEqual([]);
+    expect(summary.skipped.filter((k) => k.mint === prepared.mint)).toEqual([]);
+    expect(summary.burned).not.toBeNull();
+    const picked = summary.flywheel.filter((f) => f.mint === prepared.mint).reduce((sum, f) => sum + BigInt(f.amount), 0n);
+    expect(supply - (await getMint(connection(), mint, "confirmed", TOKEN_PROGRAM_ID)).supply).toBe(BigInt(summary.burned!.amount) + picked);
+    // The swap takes exactly the budget, and every coin bought is burned: the wallet keeps none.
+    expect(BigInt(summary.burned!.lamports)).toBe(budget);
+    expect(await connection().getAccountInfo(getAssociatedTokenAddressSync(mint, ops, false, TOKEN_PROGRAM_ID), "confirmed")).toBeNull();
+    // The pool took no more USDC than the least the swap could deliver, so the wallet's own USDC is never spent.
+    expect(await tokenBalance(getAssociatedTokenAddressSync(USDC, ops, false, TOKEN_PROGRAM_ID))).toBeGreaterThanOrEqual(usdcHeld);
   });
 
   it("runs on its Cron Trigger too, and the Fee Collector's sweep leaves the unspent budgets behind", async () => {

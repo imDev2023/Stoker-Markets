@@ -12,6 +12,7 @@ The rules are versioned and public; a new version takes effect no sooner than a 
 
 Burn and Flywheel budgets are shares of revenue as the Ledger records it: every Platform Fee, pool fee and Fee Key collection valued in SOL at the Quote Registry's latest prices, less what earlier runs spent, which the Ledger also records (kinds `burn` and `flywheel`, two entries per transaction: the SOL spent and the coins destroyed).
 Each buy is an exact-output swap for what the budget buys at the current price less a 1% slippage allowance, followed by a burn of exactly that many coins in the same transaction, so a buy never spends more than its budget and the wallet never keeps any of the coin.
+The buy is always in the coin's own graduated pool. A coin paired with a Quote Asset other than SOL takes one more step in the same transaction (#64): the SOL route swaps the budget into that Quote Asset first, and the pool then sells the coins for no more than the least the route delivers; what the route delivers beyond that stays in the operations wallet as the Quote Asset, outside the Ledger's revenue.
 The Fee Collector's sweep leaves the unspent budgets in the operations wallet on top of its float.
 The Platform Token is named by the operator (`PUT /v1/operator/platform-token`) once Launch #1 has landed; until then the Burn is idle.
 The Flywheel rule is the top N graduated Launches by 24-hour trading volume valued in SOL, each bought with an equal share; a coin without a SOL route (paired with something else, and off Jupiter) is skipped and its share waits.

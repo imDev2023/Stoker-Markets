@@ -1,11 +1,12 @@
-// Paying with SOL on a Launch paired with another Quote Asset: one transaction swaps SOL for exactly the Quote Asset the
-// trade spends and then trades it. On the local fork the swap goes through a Raydium CPMM pool of SOL against USDC,
+// Paying with SOL on a Launch paired with another Quote Asset: one transaction swaps an exact amount of SOL into the
+// Quote Asset, in the trader's own account for it, and then trades the least the swap may deliver; the rest of what it
+// delivers stays in the wallet. On the local fork the swap goes through a Raydium CPMM pool of SOL against USDC,
 // standing in for Jupiter (the API's "raydium-cpmm" route source); tools/localnet seeds it at SOL = 150 USDC.
 import { describe, expect, it } from "vitest";
 import { Keypair, PublicKey, VersionedTransaction } from "@solana/web3.js";
 import { ACCOUNT_SIZE, TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import type BN from "bn.js";
-import { launchlabCoder, launchlabPdas, loadPool, programsFor, splitSlippage, WSOL_MINT } from "@launchpad/chain";
+import { launchlabCoder, launchlabPdas, loadPool, programsFor, ROUTE_TOLERANCE_BPS, WSOL_MINT } from "@launchpad/chain";
 import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
 import { swapThroughSolRoute } from "@launchpad/localnet/routes";
 import { PlatformInfo, PreparedTrade, TradeQuote } from "@launchpad/contract";
@@ -37,13 +38,22 @@ async function preparedWithSol(trader: Keypair, mint: string, lamports: bigint, 
   return PreparedTrade.parse(await res.json());
 }
 
-/** Every token account a wallet holds under the SPL Token program, with balances. */
+/** Every token account a wallet holds under the SPL Token program, with balances, in the order of their mints. */
 async function tokenAccounts(owner: Keypair) {
   const { value } = await connection().getParsedTokenAccountsByOwner(owner.publicKey, { programId: TOKEN_PROGRAM_ID }, "confirmed");
-  return value.map((a) => ({ mint: a.account.data.parsed.info.mint as string, amount: a.account.data.parsed.info.tokenAmount.amount as string }));
+  return value
+    .map((a) => ({ mint: a.account.data.parsed.info.mint as string, amount: a.account.data.parsed.info.tokenAmount.amount as string }))
+    .sort((a, b) => a.mint.localeCompare(b.mint));
 }
 
-/** Someone else swaps SOL for USDC in the route pool, which makes USDC dearer in SOL for the next buyer. */
+/** What a trader holds after a buy paid with SOL: the coins, and the USDC the swap delivered beyond what the trade spent. */
+const holdings = (mint: string, coins: string, kept: string) =>
+  [{ mint, amount: coins }, { mint: USDC.toBase58(), amount: kept }].sort((a, b) => a.mint.localeCompare(b.mint));
+
+/** The least a swap may deliver of what it is expected to. */
+const leastOf = (expected: bigint) => (expected * BigInt(10_000 - ROUTE_TOLERANCE_BPS)) / 10_000n;
+
+/** Someone else swaps SOL for USDC in the route pool, so the next buyer's SOL buys less USDC. */
 async function moveRoutePool(lamports: bigint) {
   await swapThroughSolRoute(connection(), await fundedWallet(Number(lamports / SOL(1)) + 2), USDC, lamports);
 }
@@ -72,7 +82,7 @@ describe("paying with SOL on a USDC-paired Launch", () => {
     expect(info.solRoute).toBe("raydium-cpmm");
   });
 
-  it("swaps SOL for exactly the USDC the buy spends, and the trader ends up with the coins and nothing else", async () => {
+  it("swaps exactly the SOL, spends the least USDC the swap may deliver, and leaves the rest of it in the trader's wallet", async () => {
     const { creator, mint, pool } = await usdcCoin();
     const trader = await fundedWallet();
     const shown = TradeQuote.parse(await (await quote(mint, solQuery(SOL(0.1)))).json());
@@ -80,18 +90,20 @@ describe("paying with SOL on a USDC-paired Launch", () => {
     expect(shown.route).toEqual({
       source: "raydium-cpmm",
       via: ["Raydium CPMM"],
-      solIn: expect.any(String),
-      maxSolIn: expect.any(String),
+      solIn: SOL(0.1).toString(),
+      maxSolIn: SOL(0.1).toString(),
       quoteOut: shown.amountIn,
+      kept: expect.any(String),
       fee: expect.any(String),
       feeBps: 25,
-      slippageBps: { route: 50, trade: 50 },
+      slippageBps: { route: ROUTE_TOLERANCE_BPS, trade: 100 },
     });
     const r = shown.route!;
-    expect(BigInt(r.solIn)).toBeLessThanOrEqual(SOL(0.1));
-    expect(BigInt(r.solIn)).toBeGreaterThan(SOL(0.0999));
-    expect(BigInt(r.quoteOut)).toBeGreaterThan(usdc(14.9));
-    expect(BigInt(r.quoteOut)).toBeLessThan(usdc(15));
+    const expected = BigInt(r.quoteOut) + BigInt(r.kept);
+    expect(expected).toBeGreaterThan(usdc(14.9));
+    expect(expected).toBeLessThan(usdc(15));
+    // The trade spends what the swap is sure to deliver: 0.3% under what the price gives now.
+    expect(BigInt(r.quoteOut)).toBe(leastOf(expected));
     expect(BigInt(r.fee!)).toBe((BigInt(r.solIn) * 2500n + 999_999n) / 1_000_000n);
     // The trade's fees are 1.25% of the USDC it spends, in USDC.
     expect(Object.values(shown.fees).reduce((a, b) => a + BigInt(b), 0n)).toBe((BigInt(r.quoteOut) * 12_500n + 999_999n) / 1_000_000n);
@@ -109,14 +121,15 @@ describe("paying with SOL on a USDC-paired Launch", () => {
     const signature = await signAndSend(p, trader);
 
     expect(await coinsOf(mint, trader)).toBe(BigInt(shown.amountOut));
-    // The trader pays exactly the swap's cost, the network fee, and rent for their coin account and any fee vault this
-    // trade opens; the temporary SOL and USDC accounts are closed and refunded.
-    expect(sol - (await solOf(trader))).toBe(BigInt(r.solIn) + (await networkFee(signature)) + (await rent()) * BigInt(1 + newFeeVaults));
-    expect(await tokenAccounts(trader)).toEqual([{ mint, amount: shown.amountOut }]);
-    // The route pool took exactly the SOL and gave exactly the USDC quoted; the curve's fees landed where they belong.
+    // The trader pays exactly the SOL they named, the network fee, and rent for their coin account, their USDC account
+    // and any fee vault this trade opens; the temporary wrapped-SOL account is closed and refunded.
+    expect(sol - (await solOf(trader))).toBe(SOL(0.1) + (await networkFee(signature)) + (await rent()) * BigInt(2 + newFeeVaults));
+    // Nothing moved in the route pool since the quote, so the swap delivered what was expected and the trader keeps
+    // the difference in USDC.
+    expect(await tokenAccounts(trader)).toEqual(holdings(mint, shown.amountOut, r.kept));
     const after = await routeVaults();
-    expect(after.sol - vaults.sol).toBe(BigInt(r.solIn));
-    expect(vaults.usdc - after.usdc).toBe(BigInt(r.quoteOut));
+    expect(after.sol - vaults.sol).toBe(SOL(0.1));
+    expect(vaults.usdc - after.usdc).toBe(expected);
     const d = await usdcFees(pool, creator);
     expect({ raydium: d.raydium - fees.raydium, platform: d.platform - fees.platform, creator: d.creator - fees.creator }).toEqual({
       raydium: BigInt(shown.fees.raydium), platform: BigInt(shown.fees.platform), creator: BigInt(shown.fees.creator),
@@ -129,28 +142,27 @@ describe("paying with SOL on a USDC-paired Launch", () => {
     ]);
   });
 
-  it("never touches USDC the trader already holds", async () => {
+  it("never spends USDC the trader already holds", async () => {
     const { mint } = await usdcCoin();
     const trader = await fundedWallet();
     await mintLocalQuote(connection(), USDC, trader.publicKey, usdc(7));
     const p = await preparedWithSol(trader, mint, SOL(0.05));
     await signAndSend(p, trader);
-    expect(await tokenBalance(getAssociatedTokenAddressSync(USDC, trader.publicKey))).toBe(usdc(7));
+    expect(await tokenBalance(getAssociatedTokenAddressSync(USDC, trader.publicKey))).toBe(usdc(7) + BigInt(p.quote.route!.kept));
     expect(await coinsOf(mint, trader)).toBe(BigInt(p.quote.amountOut));
   });
 
-  it("splits the slippage so the worst fill of both steps together stays within what the trader chose", async () => {
+  it("gives the trade the trader's whole slippage: the SOL paid and the USDC spent are exact", async () => {
     const { mint } = await usdcCoin();
     for (const bps of [0, 50, 100, 300, 5_000]) {
       const q = TradeQuote.parse(await (await quote(mint, solQuery(SOL(0.2), bps))).json());
       const r = q.route!;
-      expect(r.slippageBps).toEqual(splitSlippage(bps));
-      expect(BigInt(r.maxSolIn)).toBe((BigInt(r.solIn) * BigInt(10_000 + r.slippageBps.route)) / 10_000n);
-      // Most SOL for fewest coins is no worse than the quoted SOL per coin less the slippage:
-      // maxSolIn / minAmountOut <= (solIn / amountOut) / (1 - bps).
-      expect(BigInt(r.maxSolIn) * BigInt(q.amountOut) * BigInt(10_000 - bps)).toBeLessThanOrEqual(
-        BigInt(r.solIn) * BigInt(q.minAmountOut) * 10_000n,
-      );
+      expect(r.slippageBps).toEqual({ route: ROUTE_TOLERANCE_BPS, trade: bps });
+      expect([r.solIn, r.maxSolIn]).toEqual([SOL(0.2).toString(), SOL(0.2).toString()]);
+      expect(BigInt(r.quoteOut)).toBe(leastOf(BigInt(r.quoteOut) + BigInt(r.kept)));
+      // The fewest coins are the quoted coins less the slippage, and no fewer.
+      expect(BigInt(q.minAmountOut)).toBeLessThanOrEqual(BigInt(q.amountOut));
+      expect(BigInt(q.minAmountOut)).toBeGreaterThanOrEqual((BigInt(q.amountOut) * BigInt(10_000 - bps)) / 10_000n);
     }
   });
 
@@ -170,11 +182,11 @@ describe("paying with SOL on a USDC-paired Launch", () => {
     expect(Buffer.from(p.transaction, "base64").length).toBeLessThanOrEqual(1232);
   });
 
-  it("fails as a whole when SOL got dearer than the swap's slippage allows, costing only the network fee", async () => {
+  it("fails as a whole when the SOL buys less USDC than the swap's allowance, costing only the network fee", async () => {
     const { mint } = await usdcCoin();
     const trader = await fundedWallet();
     const p = await preparedWithSol(trader, mint, SOL(0.1), 100);
-    // Someone swaps 20 SOL for USDC first, which moves the route pool about 4%, past the swap's 0.5%.
+    // Someone swaps 20 SOL for USDC first, which moves the route pool about 4%, past the swap's 0.3%.
     await moveRoutePool(SOL(20));
     const sol = await solOf(trader);
     const { signature, err } = await sendLanding(p, trader);
@@ -207,7 +219,9 @@ describe("paying with SOL on a USDC-paired Launch", () => {
     const r = p.quote.route!;
     expect(p.quote.completesCurve).toBe(true);
     expect(BigInt(r.quoteOut)).toBeLessThan(usdc(160));
+    // The swap is for only the SOL that much USDC costs, so little is left over: well under 1% of what the trade spends.
     expect(BigInt(r.solIn)).toBeLessThan(SOL(1.1));
+    expect(BigInt(r.kept) * 100n).toBeLessThan(BigInt(r.quoteOut));
     const sol = await solOf(trader);
     const signature = await signAndSend(p, trader);
     const state = launchlabCoder.accounts.decode("PoolState", (await connection().getAccountInfo(pool, "confirmed"))!.data) as {
@@ -215,10 +229,11 @@ describe("paying with SOL on a USDC-paired Launch", () => {
     };
     expect(state.status).toBe(1);
     expect(await coinsOf(mint, trader)).toBe(BigInt(state.total_base_sell.toString()));
-    expect(await tokenAccounts(trader)).toEqual([{ mint, amount: state.total_base_sell.toString() }]);
+    expect(await tokenAccounts(trader)).toEqual(holdings(mint, state.total_base_sell.toString(), r.kept));
+    // Rent for the coin account and the USDC account, and for up to two fee vaults.
     const spent = sol - (await solOf(trader)) - (await networkFee(signature));
-    expect(spent - BigInt(r.solIn)).toBeGreaterThanOrEqual(await rent());
-    expect(spent - BigInt(r.solIn)).toBeLessThanOrEqual((await rent()) * 3n);
+    expect(spent - BigInt(r.solIn)).toBeGreaterThanOrEqual((await rent()) * 2n);
+    expect(spent - BigInt(r.solIn)).toBeLessThanOrEqual((await rent()) * 4n);
   });
 
   it("works in a graduated coin's pool too", async () => {
@@ -237,8 +252,8 @@ describe("paying with SOL on a USDC-paired Launch", () => {
     const p = await preparedWithSol(trader, mint, SOL(0.1));
     const signature = await signAndSend(p, trader);
     expect(await coinsOf(mint, trader)).toBe(BigInt(shown.amountOut));
-    expect(sol - (await solOf(trader))).toBe(BigInt(shown.route!.solIn) + (await networkFee(signature)) + (await rent()));
-    expect(await tokenAccounts(trader)).toEqual([{ mint, amount: shown.amountOut }]);
+    expect(sol - (await solOf(trader))).toBe(SOL(0.1) + (await networkFee(signature)) + (await rent()) * 2n);
+    expect(await tokenAccounts(trader)).toEqual(holdings(mint, shown.amountOut, shown.route!.kept));
     expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 1, claimed: 0, graduated: 0, airdropped: 0 });
     expect((await trades(mint))[0]).toMatchObject({ signature, venue: "pool", side: "buy", quoteAmount: shown.amountIn });
   });
