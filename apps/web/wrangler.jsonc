@@ -6,11 +6,18 @@
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
   "observability": { "enabled": true },
-  // The devnet dress rehearsal (runbook, section 11): build with NEXT_PUBLIC_API_URL=https://api.stoker.markets, then
-  // `opennextjs-cloudflare deploy --env devnet`. Its API key is the secret API_KEY.
+  // Each environment is built with its own API: NEXT_PUBLIC_API_URL=https://api-devnet.stoker.markets for the devnet
+  // dress rehearsal (runbook, section 11) and https://api.stoker.markets for mainnet (section 9), then
+  // `opennextjs-cloudflare deploy --env devnet` or `--env production`. Each has its own API key, the secret API_KEY.
+  // Until the rehearsal is moved at go-live, the deployed one still answers on stoker.markets.
   "env": {
     "devnet": {
       "name": "stoker-web-devnet",
+      "routes": [{ "pattern": "devnet.stoker.markets", "custom_domain": true }],
+      "assets": { "directory": ".open-next/assets", "binding": "ASSETS" }
+    },
+    "production": {
+      "name": "stoker-web",
       "routes": [{ "pattern": "stoker.markets", "custom_domain": true }],
       "assets": { "directory": ".open-next/assets", "binding": "ASSETS" }
     }
