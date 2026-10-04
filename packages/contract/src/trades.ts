@@ -86,27 +86,31 @@ export const SolRouteSource = z.enum(["raydium-cpmm", "jupiter"]);
 export type SolRouteSource = z.infer<typeof SolRouteSource>;
 
 /**
- * The swap in front of a buy paid with SOL. It buys exactly `quoteOut` of the Quote Asset, which the trade then spends
- * in full, so no Quote Asset is left in the wallet; SOL the swap doesn't use goes back to the wallet in the same
- * transaction. If either step fails, the whole transaction fails and nothing moves.
+ * The swap in front of a buy paid with SOL. It swaps exactly `solIn` lamports for the Quote Asset, delivered to the
+ * trader's own account for it, and the trade then spends `quoteOut`: the least the swap is allowed to deliver. What it
+ * delivers beyond that (`kept`, as expected at the current price) stays in the trader's wallet as the Quote Asset.
+ * If either step fails, the whole transaction fails and nothing moves.
  */
 export const SolRoute = z.object({
   source: SolRouteSource,
   /** The venues the swap goes through, such as "Raydium CPMM", or the hops Jupiter picked. */
   via: z.array(z.string()),
-  /** Lamports the swap costs at the current price. */
+  /** Lamports the swap takes, exactly. */
   solIn: raw,
-  /** The most lamports the swap may take; above this it fails. */
+  /** The most lamports the swap may take: `solIn`, since the swap is for an exact amount of SOL. */
   maxSolIn: raw,
-  /** Quote Asset the swap buys, exactly, in raw units: the trade's `amountIn`. */
+  /** Quote Asset the trade spends, in raw units (its `amountIn`): at most the least the swap may deliver. */
   quoteOut: raw,
+  /** Quote Asset expected to stay in the trader's wallet after the trade, in raw units: what the swap delivers at the current price less `quoteOut`. */
+  kept: raw,
   /** The swap's own fees in lamports, part of `solIn`; null when the source prices them into its route without saying. */
   fee: raw.nullable(),
   /** The rate behind `fee`, in basis points of what goes into the swap; null with it. */
   feeBps: z.number().nullable(),
   /**
-   * The trader's slippage split between the two steps: the swap may cost up to `route` bps more SOL, and the trade may
-   * give up to `trade` bps fewer coins. Together they never let the SOL paid per coin get worse than `slippageBps` allows.
+   * The tolerance of each step: the swap may deliver up to `route` bps less Quote Asset than expected (a fixed
+   * allowance, which only changes how much is `kept`), and the trade may give up to `trade` bps fewer coins, which is
+   * the trader's whole `slippageBps`: the SOL paid and the Quote Asset spent are both exact.
    */
   slippageBps: z.object({ route: z.number().int(), trade: z.number().int() }),
 });

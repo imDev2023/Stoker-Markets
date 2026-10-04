@@ -5,7 +5,7 @@ import BN from "bn.js";
 import { desc, eq, sql } from "drizzle-orm";
 import {
   curvePrice, graduationPoolAddress, loadCurve, loadPool, minAmountOut, poolSides, preparePoolTrade, prepareRoutedBuy, prepareTrade,
-  quotePoolTrade, quoteTrade, RATE_DENOMINATOR, routedLimits, splitSlippage, TransactionTooLargeError, transferFeeBps, WSOL_MINT,
+  quotePoolTrade, quoteTrade, RATE_DENOMINATOR, ROUTE_TOLERANCE_BPS, TransactionTooLargeError, transferFeeBps, WSOL_MINT,
   type PreparedTrade as ChainPreparedTrade, type RoutedMarket,
 } from "@launchpad/chain";
 import {
@@ -34,8 +34,9 @@ tradeRoutes.get("/launches/:mint/quote", async (c) => {
 tradeRoutes.post("/trades/prepare", async (c) => {
   const body = PrepareTradeRequest.safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: "invalid trade request", details: body.error.issues }, 400);
-  const { quote, prepare } = await quoteMarket(c.env, c.get("db"), c.get("cfg"), body.data.mint, body.data);
-  const res: PreparedTrade = { ...(await prepare(new PublicKey(body.data.trader))), quote };
+  const trader = new PublicKey(body.data.trader);
+  const { quote, prepare } = await quoteMarket(c.env, c.get("db"), c.get("cfg"), body.data.mint, body.data, trader);
+  const res: PreparedTrade = { ...(await prepare(trader)), quote };
   return c.json(res);
 });
 
@@ -155,7 +156,7 @@ type Venue = {
  * a trade to the wrong place: the curve while it is live, the Raydium CPMM pool once Raydium has migrated it. A buy paid
  * with SOL on a Launch paired with anything else goes through the SOL route first.
  */
-async function quoteMarket(env: Bindings, db: Db, cfg: Config, mint: string, r: TradeQuoteQuery): Promise<Market> {
+async function quoteMarket(env: Bindings, db: Db, cfg: Config, mint: string, r: TradeQuoteQuery, trader: PublicKey | null = null): Promise<Market> {
   const [launch] = await db
     .select({ pool: launches.pool, quoteSymbol: quoteAssets.symbol })
     .from(launches)
@@ -171,7 +172,7 @@ async function quoteMarket(env: Bindings, db: Db, cfg: Config, mint: string, r: 
 
   if (r.payWith === "sol" && r.side === "sell")
     throw new HTTPException(400, { message: "Only a buy can be paid with SOL; a sell pays out the coin's Quote Asset." });
-  if (r.payWith === "sol" && !venue.quoteMint.equals(WSOL_MINT)) return routedMarket(connection, env, cfg, venue, symbol, amount, r.slippageBps, referral);
+  if (r.payWith === "sol" && !venue.quoteMint.equals(WSOL_MINT)) return routedMarket(connection, env, cfg, venue, symbol, amount, r.slippageBps, referral, trader);
 
   const { priced, limitFrom, prepare } = venue.price(r.side, amount, referral);
   const limit = minAmountOut(limitFrom, r.slippageBps);
@@ -283,12 +284,20 @@ async function venueOf(connection: Connection, cfg: Config, mint: string, curveA
   };
 }
 
+const BPS = 10_000;
+/** Room on top of the SOL a smaller swap is worked out to need, so its guaranteed minimum still covers the trade. */
+const RESCALE_ROOM_BPS = 10;
+
 /**
- * A buy paid with `lamports` of SOL. The trade spends the Quote Asset that SOL buys right now (less, when the buy takes
- * the rest of the curve), and the route buys exactly that much. The trader's slippage is split between the two.
+ * A buy paid with `lamports` of SOL. The route swaps exactly that SOL and promises the least Quote Asset it will
+ * deliver; the trade spends that minimum (less, when the buy takes the rest of the curve), so the SOL paid and the
+ * Quote Asset spent are both exact and the trader's slippage is all the trade's. What the swap delivers beyond the
+ * minimum stays in the trader's wallet. `trader` is who the swap is built for: a quote without one is priced for a
+ * stand-in and can't be prepared.
  */
 async function routedMarket(
   connection: Connection, env: Bindings, cfg: Config, venue: Venue, symbol: string, lamports: BN, slippageBps: number, referral: ReferralPlan | null,
+  trader: PublicKey | null,
 ): Promise<Market> {
   const routes = solRoutes(env, cfg, connection);
   if (!routes) throw new HTTPException(422, { message: `Paying with SOL isn't available here. Pay in ${symbol} instead.` });
@@ -301,41 +310,51 @@ async function routedMarket(
     console.error("SOL route source failed", e);
     return new HTTPException(503, { message: "The SOL route is unavailable right now. Try again in a minute." });
   };
-  const bought = await routes.exactIn(venue.quoteMint, lamports).catch((e: unknown) => Promise.reject(unavailable(e)));
-  if (!bought) throw noRoute();
-  if (bought.isZero()) throw new HTTPException(400, { message: "amount is too small to trade" });
-  const { priced, limitFrom } = venue.price("buy", bought, referral);
-  const quoteAmount = new BN(priced.amountIn);
-  const split = splitSlippage(slippageBps);
-  const plan = await routes.exactOut(venue.quoteMint, quoteAmount, split.route).catch((e: unknown) => Promise.reject(unavailable(e)));
+  const taker = trader ?? cfg.platformAdmin;
+  const swapIn = (amount: BN) =>
+    routes.swapIn({ mint: venue.quoteMint, tokenProgram: venue.quoteTokenProgram }, amount, taker).catch((e: unknown) => Promise.reject(unavailable(e)));
+  let plan = await swapIn(lamports);
   if (!plan) throw noRoute();
-  const { minCoins } = routedLimits(plan.solIn, limitFrom, split);
+  if (plan.minOut.isZero()) throw new HTTPException(400, { message: "amount is too small to trade" });
+  const { priced, limitFrom } = venue.price("buy", plan.minOut, referral);
+  const quoteAmount = new BN(priced.amountIn);
+  // The buy takes the rest of the curve for less than the SOL buys: the swap is asked again for the SOL that much
+  // costs, with a little room, so the trader isn't left holding the difference. If that falls short, the first stands.
+  if (quoteAmount.lt(plan.minOut)) {
+    const needed = lamports.mul(quoteAmount).div(plan.minOut).muln(BPS + RESCALE_ROOM_BPS).divn(BPS).addn(1);
+    const smaller = needed.lt(lamports) ? await swapIn(needed) : null;
+    if (smaller && smaller.minOut.gte(quoteAmount)) plan = smaller;
+  }
+  const minCoins = minAmountOut(limitFrom, slippageBps);
+  const route = plan;
   const quote: TradeQuote = {
     ...priced,
     minAmountOut: walletSide(minCoins, limitFrom, new BN(priced.amountOut)).toString(),
     slippageBps,
     route: {
-      source: plan.source,
-      via: plan.via,
-      solIn: plan.solIn.toString(),
-      maxSolIn: plan.maxSolIn.toString(),
+      source: route.source,
+      via: route.via,
+      solIn: route.solIn.toString(),
+      maxSolIn: route.solIn.toString(),
       quoteOut: quoteAmount.toString(),
-      fee: plan.fee?.toString() ?? null,
-      feeBps: plan.feeBps,
-      slippageBps: split,
+      kept: route.expectedOut.sub(quoteAmount).toString(),
+      fee: route.fee?.toString() ?? null,
+      feeBps: route.feeBps,
+      slippageBps: { route: ROUTE_TOLERANCE_BPS, trade: slippageBps },
     },
   };
   return {
     quote,
-    prepare: (trader) =>
-      prepareRoutedBuy(connection, {
+    prepare: async (signer) => {
+      if (!trader || !signer.equals(trader)) throw new Error("a routed buy is prepared for the trader its swap was built for");
+      return prepareRoutedBuy(connection, {
         trader,
         market: venue.market,
         quoteMint: venue.quoteMint,
         quoteTokenProgram: venue.quoteTokenProgram,
         quoteAmount,
         minAmountOut: minCoins,
-        swap: plan.swap,
+        swap: await route.swap(),
         // Our own shared accounts are in the Platform Lookup Table; the swap brings any tables its route needs.
         lookupTables: [cfg.lookupTable],
         referral: referral && !referral.rate.isZero() ? { referrer: referral.referrer, rate: referral.rate } : null,
@@ -343,6 +362,7 @@ async function routedMarket(
         if (e instanceof TransactionTooLargeError)
           throw new HTTPException(422, { message: `This SOL route doesn't fit in one transaction. Pay in ${symbol} instead.` });
         throw e;
-      }),
+      });
+    },
   };
 }
