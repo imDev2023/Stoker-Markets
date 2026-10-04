@@ -1,8 +1,8 @@
-import { PublicKey, TransactionInstruction, type Connection } from "@solana/web3.js";
+import type { Connection, PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import BN from "bn.js";
 import {
-  cpmmSolSwapIn, loadPool, poolSwap, RATE_DENOMINATOR, ROUTE_TOLERANCE_BPS, WSOL_MINT, type SolSwap,
+  cpmmSolSwapIn, jupiterSwapIn, loadPool, poolSwap, RATE_DENOMINATOR, ROUTE_TOLERANCE_BPS, WSOL_MINT, type SolSwap,
 } from "@launchpad/chain";
 import type { SolRouteSource } from "@launchpad/contract";
 
@@ -80,82 +80,17 @@ export function cpmmSolRoutes(connection: Connection, cpmm: PublicKey, pools: Ma
   };
 }
 
-type JupiterInstruction = { programId: string; accounts: { pubkey: string; isSigner: boolean; isWritable: boolean }[]; data: string };
-/** `GET /swap/v2/build`: the quote and the swap's instructions in one answer. */
-type JupiterBuild = {
-  inAmount: string;
-  outAmount: string;
-  otherAmountThreshold: string;
-  swapMode: string;
-  routePlan: { swapInfo: { label?: string } }[];
-  computeBudgetInstructions?: JupiterInstruction[];
-  setupInstructions?: JupiterInstruction[];
-  swapInstruction: JupiterInstruction;
-  cleanupInstruction?: JupiterInstruction | null;
-  otherInstructions?: JupiterInstruction[];
-  addressesByLookupTableAddress?: Record<string, string[]> | null;
-};
-
 /**
- * Accounts Jupiter may use for its route, leaving room in the transaction for the trade after it (about 20 accounts
- * on the curve or in the pool) under the 64-account lock limit.
+ * Jupiter's Swap API v2 (`jupiterSwapIn` in `packages/chain`). Unproven on the local chain, which has no Jupiter:
+ * `tools/mainnet/jupiter-route.ts` simulates its swap on mainnet, and the local tests exercise `cpmmSolRoutes` through
+ * the same code.
  */
-const JUPITER_MAX_ACCOUNTS = 36;
-const JUPITER_COMPUTE_UNITS = 400_000;
-const JUPITER_API = "https://api.jup.ag";
-const COMPUTE_BUDGET_PROGRAM = "ComputeBudget111111111111111111111111111111";
-const SET_COMPUTE_UNIT_LIMIT = 2;
-
-/**
- * Jupiter's Swap API v2, its `/build` endpoint: Metis routing, returned as raw instructions for our own transaction.
- * It swaps an exact amount in and names the least it delivers (`otherAmountThreshold`); v2 has no exact-out. By default
- * the swap wraps the taker's SOL, opens and delivers into the taker's associated token account for the output, and
- * unwraps what is left. Unproven on the local chain, which has no Jupiter: `tools/mainnet/jupiter-route.ts` simulates
- * its swap on mainnet, and the local tests exercise `cpmmSolRoutes` through the same code.
- */
-export function jupiterSolRoutes(apiKey: string | undefined, apiUrl = JUPITER_API): SolRoutes {
-  const headers: Record<string, string> = apiKey ? { "x-api-key": apiKey } : {};
-  const instruction = (ix: JupiterInstruction) =>
-    new TransactionInstruction({
-      programId: new PublicKey(ix.programId),
-      keys: ix.accounts.map((a) => ({ pubkey: new PublicKey(a.pubkey), isSigner: a.isSigner, isWritable: a.isWritable })),
-      data: Buffer.from(ix.data, "base64"),
-    });
+export function jupiterSolRoutes(apiKey: string | undefined): SolRoutes {
   return {
     source: "jupiter",
     async swapIn(quote, lamports, taker) {
-      const query = new URLSearchParams({
-        inputMint: WSOL_MINT.toBase58(), outputMint: quote.mint.toBase58(), amount: lamports.toString(), taker: taker.toBase58(),
-        slippageBps: String(ROUTE_TOLERANCE_BPS), maxAccounts: String(JUPITER_MAX_ACCOUNTS),
-      });
-      const res = await fetch(`${apiUrl}/swap/v2/build?${query}`, { headers });
-      // Jupiter answers 400 or 404 when it has no route.
-      if (res.status === 400 || res.status === 404) return null;
-      if (!res.ok) throw new Error(`Jupiter build failed: ${res.status}`);
-      const b = (await res.json()) as JupiterBuild;
-      if (b.swapMode !== "ExactIn" || !new BN(b.inAmount).eq(lamports)) return null;
-      // Jupiter's own compute unit limit for the route, when it sends one; the caller sets the transaction's.
-      const limit = (b.computeBudgetInstructions ?? [])
-        .filter((ix) => ix.programId === COMPUTE_BUDGET_PROGRAM)
-        .map((ix) => Buffer.from(ix.data, "base64"))
-        .find((data) => data[0] === SET_COMPUTE_UNIT_LIMIT && data.length >= 5);
-      const swap: SolSwap = {
-        setup: (b.setupInstructions ?? []).map(instruction),
-        swap: [instruction(b.swapInstruction)],
-        cleanup: [...(b.cleanupInstruction ? [instruction(b.cleanupInstruction)] : []), ...(b.otherInstructions ?? []).map(instruction)],
-        lookupTables: Object.keys(b.addressesByLookupTableAddress ?? {}).map((a) => new PublicKey(a)),
-        computeUnits: limit ? limit.readUInt32LE(1) : JUPITER_COMPUTE_UNITS,
-      };
-      return {
-        source: "jupiter",
-        via: [...new Set(b.routePlan.map((h) => h.swapInfo.label ?? "Jupiter"))],
-        solIn: lamports,
-        expectedOut: new BN(b.outAmount),
-        minOut: new BN(b.otherAmountThreshold),
-        fee: null,
-        feeBps: null,
-        swap: () => Promise.resolve(swap),
-      };
+      const j = await jupiterSwapIn({ apiKey }, quote.mint, lamports, taker);
+      return j && { source: "jupiter", via: j.via, solIn: j.solIn, expectedOut: j.expectedOut, minOut: j.minOut, fee: null, feeBps: null, swap: () => Promise.resolve(j.swap) };
     },
   };
 }

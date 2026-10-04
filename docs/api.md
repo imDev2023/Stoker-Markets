@@ -14,7 +14,7 @@ Base URL: `PUBLIC_API_URL` (locally `http://localhost:8791`). Everything below i
 | `GET /launches/quotes` | The Quote Assets that have Launches, for filters. |
 | `GET /launches/:mint` | One Launch: curve progress, Graduation, Reward Tax (with its `payout` asset, `coin` or `quote`), market. |
 | `GET /launches/:mint/trades`, `/candles?interval=`, `/holders` | Indexed trades (with any referral fee paid), price candles, top holders read from the chain. |
-| `GET /launches/:mint/quote` | A trade quote. `side`, `amount`, `slippageBps`, `payWith` (`quote` or `sol`), `referrer`. |
+| `GET /launches/:mint/quote` | A trade quote. `side`, `amount`, `slippageBps`, `payWith` (`quote` or `sol`), `referrer`. A buy paid with SOL on a coin paired with another asset carries `route`: the swap takes exactly `solIn`, the trade spends `quoteOut` (the least the swap may deliver, `slippageBps.route` under the current price), and about `kept` of the Quote Asset stays in the trader's wallet. |
 | `GET /launches/:mint/airdrop` | An Airdrop's recipients and which are paid. |
 | `GET /launches/:mint/rewards`, `GET /rewards/rules`, `GET /rewards/rounds/:id`, `GET /wallets/:address/rewards` | Holder Rewards: the Payout Asset, tax waiting, the pot, the rules in force and announced, every round, a wallet's payouts; for a Quote Asset payout also the Reward Sales (`sales`: the bounds, totals, and the latest sales with their transactions). Amounts of a pot or payout are in the round's `payout` asset. |
 | `GET /creators/:address/fees`, `/claims`, `/forwards` | A Creator's fee vaults and claims, and the Creator Forward: per Quote Asset what was earned, forwarded and is still pending, per Launch what its curve and pool earned, and every forward with its transaction. |

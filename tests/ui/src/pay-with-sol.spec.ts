@@ -1,5 +1,5 @@
-// Paying with SOL on a coin paired with something else: the trade panel offers SOL, shows the swap in front of the buy,
-// and one transaction swaps and buys, or does nothing. These flows buy JTO-paired coins, so the local SOL-USDC route
+// Paying with SOL on a coin paired with something else: the trade panel offers SOL, shows the swap in front of the buy
+// and what of the Quote Asset stays in the wallet, and one transaction swaps and buys, or does nothing. These flows buy JTO-paired coins, so the local SOL-USDC route
 // pool stays as the visual tests expect it.
 import type { Page } from "@playwright/test";
 import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
@@ -54,7 +54,7 @@ async function tokenAccounts(owner: PublicKey) {
   return value.map((a) => ({ mint: a.account.data.parsed.info.mint as string, amount: a.account.data.parsed.info.tokenAmount.amount as string }));
 }
 
-test("a trader holding only SOL buys a JTO-paired coin, and ends up with the coins and nothing else", async ({ page, wallet }) => {
+test("a trader holding only SOL buys a JTO-paired coin, and ends up with the coins and the little JTO the swap left over", async ({ page, wallet }) => {
   const mint = await jtoCoin("SOLB");
   await openConnected(page, mint);
   // The wallet holds no JTO, so the panel offers to pay with SOL straight away.
@@ -65,21 +65,27 @@ test("a trader holding only SOL buys a JTO-paired coin, and ends up with the coi
   await panel(page).getByRole("button", { name: "0.1 SOL" }).click();
   await expect(panel(page).getByLabel("You pay")).toHaveValue("0.1");
   const quote = panel(page).getByRole("definition");
-  await expect(panel(page).getByText("You pay about")).toBeVisible();
-  // 0.1 SOL buys about 5.98 JTO in the 1,000 SOL : 60,000 JTO pool after its 0.25% fee, which the buy then spends.
+  await expect(panel(page).getByText("You pay exactly")).toBeVisible();
+  // 0.1 SOL buys about 5.98 JTO in the 1,000 SOL : 60,000 JTO pool after its 0.25% fee. The buy spends the least the
+  // swap may deliver, 0.3% under that, and the rest stays in the wallet.
   await expect(quote.filter({ hasText: /^0\.1 SOL$/ })).toBeVisible();
-  await expect(quote.filter({ hasText: /^0\.1005 SOL$/ })).toBeVisible();
-  await expect(quote.filter({ hasText: /^5\.98\d+ JTO$/ })).toBeVisible();
+  await expect(quote.filter({ hasText: /^5\.96\d+ JTO$/ })).toBeVisible();
+  await expect(quote.filter({ hasText: /^0\.0179\d+ JTO$/ })).toBeVisible();
   for (const fee of ["Swap to JTO", "Raydium", "Platform fee", "Creator fee"]) await expect(panel(page).getByText(fee, { exact: false }).first()).toBeVisible();
-  await expect(panel(page).getByText(/^Swapped through Raydium CPMM\. Your 1% slippage allows up to 0\.5% more SOL for the JTO and 0\.5% fewer coins\.$/)).toBeVisible();
+  await expect(
+    panel(page).getByText(
+      "Swapped through Raydium CPMM. The swap may deliver up to 0.3% less JTO than the price gives now, so the buy spends only what is sure to arrive and the rest stays in your wallet as JTO.",
+      { exact: true },
+    ),
+  ).toBeVisible();
 
   const sol = await solBalance(wallet.keypair.publicKey);
   const prepared = await reviewBuy(page);
   const route = prepared.quote.route!;
   await expect(review(page)).toContainText(/^Your wallet pays 0\.1\d+ SOL in total, including network fees and any account rent\. /);
   await expect(review(page)).toContainText(
-    `It buys exactly ${jto(route.quoteOut)} JTO with it and spends all of it on the curve, so none is left over. ` +
-      "If the prices move more than 1% in total first, the trade fails and nothing is traded.",
+    `The swap turns 0.1 SOL of it into JTO: ${jto(route.quoteOut)} JTO is spent on the curve, and about ${jto(route.kept)} JTO stays in your wallet. ` +
+      "If SOL buys over 0.3% less JTO first, or the coin's price moves more than 1%, the trade fails and nothing is traded.",
   );
   const shownTotal = Number((await review(page).locator("strong.mono").first().textContent())!.replace(" SOL", ""));
   expect(wallet.requests).toHaveLength(0);
@@ -87,7 +93,11 @@ test("a trader holding only SOL buys a JTO-paired coin, and ends up with the coi
   await review(page).getByRole("button", { name: "Sign and buy" }).click();
   await expect(panel(page).getByRole("status")).toHaveText(/^Bought [\d,]+ SOLB\. View transaction$/);
   expect(wallet.requests).toHaveLength(1);
-  expect(await tokenAccounts(wallet.keypair.publicKey)).toEqual([{ mint, amount: prepared.quote.amountOut }]);
+  // The coins, and the JTO the swap delivered beyond what the buy spent: nothing moved in the route pool since the quote.
+  const held = await tokenAccounts(wallet.keypair.publicKey);
+  expect(held).toHaveLength(2);
+  expect(held.find((a) => a.mint === mint)?.amount).toBe(prepared.quote.amountOut);
+  expect(held.find((a) => a.mint !== mint)?.amount).toBe(route.kept);
   // The wallet paid what the review said, to the lamport the review shows.
   const spent = Number(sol - (await solBalance(wallet.keypair.publicKey))) / LAMPORTS_PER_SOL;
   expect(Math.abs(spent - shownTotal)).toBeLessThan(1e-6);
@@ -100,7 +110,7 @@ test("declining in the wallet swaps and buys nothing, and says so", async ({ pag
   const mint = await jtoCoin("SOLN");
   await openConnectedPayingSol(page, mint);
   await panel(page).getByLabel("You pay").fill("0.1");
-  await expect(panel(page).getByText("You pay about")).toBeVisible();
+  await expect(panel(page).getByText("You pay exactly")).toBeVisible();
   await reviewBuy(page);
   const sol = await solBalance(wallet.keypair.publicKey);
   wallet.declineNext();
@@ -113,19 +123,19 @@ test("declining in the wallet swaps and buys nothing, and says so", async ({ pag
   expect(await tokenAccounts(wallet.keypair.publicKey)).toEqual([]);
 });
 
-test("SOL getting dearer than the slippage allows before signing swaps nothing and says so", async ({ page, wallet }) => {
+test("SOL buying less JTO than the swap allows before signing swaps nothing and says so", async ({ page, wallet }) => {
   const mint = await jtoCoin("SOLS");
   await openConnectedPayingSol(page, mint);
   await panel(page).getByLabel("You pay").fill("0.1");
-  await expect(panel(page).getByText("You pay about")).toBeVisible();
+  await expect(panel(page).getByText("You pay exactly")).toBeVisible();
   await reviewBuy(page);
-  // Someone swaps 20 SOL for JTO first, moving the route pool about 4%, far past the swap's 0.5% share of the 1%.
+  // Someone swaps 20 SOL for JTO first, moving the route pool about 4%, far past the swap's 0.3%.
   await moveSolRoute("JTO", BigInt(20 * LAMPORTS_PER_SOL));
   const sol = await solBalance(wallet.keypair.publicKey);
 
   await review(page).getByRole("button", { name: "Sign and buy" }).click();
   await expect(panel(page).getByRole("alert")).toHaveText(
-    "SOL buys less JTO now than your slippage allows, so nothing was sent, swapped or charged. Check the new quote and try again, or allow more slippage.",
+    "SOL buys less JTO now than the swap allows, so nothing was sent, swapped or charged. Check the new quote and try again.",
   );
   await expect(review(page)).toBeHidden();
   expect(wallet.requests).toHaveLength(1);
@@ -137,9 +147,9 @@ test("the coin moving more than the slippage allows before signing buys nothing 
   const mint = await jtoCoin("SOLM");
   await openConnectedPayingSol(page, mint);
   await panel(page).getByLabel("You pay").fill("0.1");
-  await expect(panel(page).getByText("You pay about")).toBeVisible();
+  await expect(panel(page).getByText("You pay exactly")).toBeVisible();
   await reviewBuy(page);
-  // Someone else buys the coin with JTO first and moves its price well past the trade's 0.5%.
+  // Someone else buys the coin with JTO first and moves its price well past the trade's 1%.
   const fast = await fundedKeypair();
   await fundQuote(fast.publicKey, "JTO", 20n * 10n ** 9n);
   await tradeViaApi(fast, mint, "buy", 20n * 10n ** 9n);

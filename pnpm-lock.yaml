@@ -40,7 +40,7 @@ importers:
         version: link:../../packages/db
       '@solana/spl-token':
         specifier: ^0.4.15
-        version: 0.4.15(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6))(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)
+        version: 0.4.15(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@6.0.3))(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@6.0.3)
       '@solana/web3.js':
         specifier: ^1.99.0
         version: 1.99.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)
@@ -65,7 +65,7 @@ importers:
         version: 5.2.0
       wrangler:
         specifier: ^4.142.0
-        version: 4.142.0(@cloudflare/workers-types@5.20260927.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+        version: 4.142.0(@cloudflare/workers-types@5.20260927.1)(@types/node@24.19.0)(bufferutil@4.1.0)
 
   apps/web:
     dependencies:
@@ -281,6 +281,9 @@ importers:
       '@launchpad/localnet':
         specifier: workspace:*
         version: link:../localnet
+      '@solana/spl-token':
+        specifier: ^0.4.15
+        version: 0.4.15(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6))(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)
       '@solana/web3.js':
         specifier: ^1.99.0
         version: 1.99.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)
@@ -9208,20 +9211,7 @@ snapshots:
       sharp: 0.35.4(@types/node@24.19.0)
       undici: 7.29.0
       workerd: 1.20260926.1
-      ws: 8.21.0(bufferutil@4.1.0)(utf-8-validate@6.0.6)
-      youch: 4.1.0-beta.10
-    transitivePeerDependencies:
-      - '@types/node'
-      - bufferutil
-      - utf-8-validate
-
-  miniflare@5.20260926.0-alpha(bufferutil@4.1.0)(utf-8-validate@6.0.6):
-    dependencies:
-      '@cspotcode/source-map-support': 0.8.1
-      sharp: 0.35.4(@types/node@24.19.0)
-      undici: 7.29.0
-      workerd: 1.20260926.1
-      ws: 8.21.0(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      ws: 8.21.0(bufferutil@4.1.0)
       youch: 4.1.0-beta.10
     transitivePeerDependencies:
       - '@types/node'
@@ -10000,24 +9990,6 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  wrangler@4.142.0(@cloudflare/workers-types@5.20260927.1)(bufferutil@4.1.0)(utf-8-validate@6.0.6):
-    dependencies:
-      '@cloudflare/kv-asset-handler': 0.5.0
-      '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20260926.1)
-      blake3-wasm: 2.1.5
-      esbuild: 0.28.1
-      miniflare: 5.20260926.0-alpha(bufferutil@4.1.0)(utf-8-validate@6.0.6)
-      path-to-regexp: 6.3.0
-      unenv: 2.0.0-rc.24
-      workerd: 1.20260926.1
-    optionalDependencies:
-      '@cloudflare/workers-types': 5.20260927.1
-      fsevents: 2.3.3
-    transitivePeerDependencies:
-      - '@types/node'
-      - bufferutil
-      - utf-8-validate
-
   wrap-ansi@6.2.0:
     dependencies:
       ansi-styles: 4.3.0
@@ -10043,10 +10015,9 @@ snapshots:
       bufferutil: 4.1.0
       utf-8-validate: 6.0.6
 
-  ws@8.21.0(bufferutil@4.1.0)(utf-8-validate@6.0.6):
+  ws@8.21.0(bufferutil@4.1.0):
     optionalDependencies:
       bufferutil: 4.1.0
-      utf-8-validate: 6.0.6
 
   ws@8.22.0(bufferutil@4.1.0)(utf-8-validate@6.0.6):
     optionalDependencies:

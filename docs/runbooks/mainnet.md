@@ -92,7 +92,7 @@ Put the mainnet values in an `env.production` block of `apps/api/wrangler.jsonc`
 | `GRADUATION_ALERT_AFTER_SECONDS` | `300` | a stuck Graduation alert after five minutes without Raydium's crank |
 | `POOL_BACKFILL_SECONDS` | `900` | for 15 minutes after a Graduation the graduation watch reads the new pool's history every minute, since a webhook takes minutes to start delivering a new address |
 | `PRICE_SOURCE` | `jupiter` | `static` is refused on mainnet; drop `QUOTE_PRICES_USD` |
-| `SOL_ROUTE_SOURCE` | `jupiter` (or `none` to offer no SOL payment on non-SOL Launches) | `raydium-cpmm` is refused; drop `SOL_ROUTE_POOLS` |
+| `SOL_ROUTE_SOURCE` | `jupiter` (or `none` to offer no SOL payment on non-SOL Launches) | `raydium-cpmm` is refused; drop `SOL_ROUTE_POOLS`. Before the switch, prove the route against the real Jupiter: `RPC_URL=<mainnet RPC> pnpm --filter @launchpad/mainnet jupiter-route <a wallet with SOL> [quote mint]` simulates the swap and fails if it would deliver under its promised minimum |
 | `TREASURY_WALLET` | the Treasury address | required on mainnet |
 | `SWEEP_THRESHOLD_LAMPORTS`, `SWEEP_FLOAT_LAMPORTS`, `COLLECT_MIN_LAMPORTS` | `5000000000`, `1000000000`, `1000000` unless the owner decides otherwise (#14's open question) | float below threshold and above the rent a sweep may pay |
 | `CREATOR_FORWARD_MIN_LAMPORTS` | `10000000` (0.01 SOL): what a Creator must be owed in one Quote Asset, at the Quote Registry's price, before the Creator Forward pays it (ADR 0007) | the job runs hourly, right after the Fee Collector |
@@ -114,7 +114,7 @@ Secrets, set with `wrangler secret put <NAME> --env production`, never in the co
 | `MINT_KEY_SECRET` | at least 32 random characters. Every launch's mint key is derived from it and a nonce, so a retry rebuilds the same coin address; never rotate it while any prepared launch could still be retried, and keep an offline copy |
 | `OPERATOR_TOKEN` | a long random string; whoever holds it has the operator endpoints and the `/operator` page. **owner**: who holds it |
 | `ALERT_WEBHOOK_URL` | the chat webhook (Slack, Discord, Telegram) alerts are posted to as JSON; without it alerts are only stored. **owner**: which channel |
-| `JUPITER_API_KEY` | optional; without it prices and routes use the free `lite-api.jup.ag` host with its lower limits. **owner**: whether to pay for one |
+| `JUPITER_API_KEY` | optional; without it prices use the free `lite-api.jup.ag` host and routes use `api.jup.ag` without a key, both with lower limits. **owner**: whether to pay for one |
 | `HELIUS_API_KEY`, `HELIUS_WEBHOOK_ID` | optional, together: the Helius API key and the id of the raw webhook from section 7. With both, the Indexer adds each graduated pool to the webhook as it indexes the Graduation, and the Quote Registry refresh adds every quote mint, through Helius's webhook API (`PUT /v0/webhooks/<id>`, `apps/api/src/helius.ts`); one without the other fails `/health`. Without them the webhook's addresses are edited by hand |
 
 After the deploy: `GET https://api.<domain>/health` must answer `{"ok":true}`; any configuration error is its message.

@@ -51,6 +51,7 @@ export {
   cpmmSolSwap, cpmmSolSwapIn, prepareRoutedBuy, routedQuoteAccount, ROUTE_TOLERANCE_BPS, transferFeeBps,
   type RoutedBuyRequest, type RoutedMarket, type SolSwap, type SolSwapBuilder,
 } from "./route";
+export { JUPITER_API, jupiterSwapIn, type JupiterSwapIn } from "./jupiter";
 export {
   decodeTransaction, writableAccounts,
   type RawTransaction, type ChainEvent, type LaunchCreated, type TradeExecuted, type CreatorFeeClaimed, type Graduated,
