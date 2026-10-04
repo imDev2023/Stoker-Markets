@@ -49,6 +49,8 @@ export type Bindings = {
   OPERATIONS_KEY: string;
   /** How long a sold-out curve may wait for Raydium's migration before the operator is alerted. */
   GRADUATION_ALERT_AFTER_SECONDS: string;
+  /** How long after a Graduation is indexed the graduation watch keeps reading the new pool's history for trades the webhook missed. */
+  POOL_BACKFILL_SECONDS: string;
   /** The Authorization header value Helius sends with every webhook delivery. */
   HELIUS_WEBHOOK_SECRET: string;
   /**
@@ -135,6 +137,7 @@ export type Config = {
   lookupTable: PublicKey;
   graduationTargetLamports: BN;
   graduationAlertAfterSeconds: number;
+  poolBackfillSeconds: number;
   alertWebhookUrl: string | null;
   helius: HeliusConfig | null;
   mintKeySecret: string;
@@ -293,6 +296,7 @@ export function config(env: Bindings): Config {
     lookupTable: key("PLATFORM_LOOKUP_TABLE"),
     graduationTargetLamports: new BN(env.GRADUATION_TARGET_LAMPORTS),
     graduationAlertAfterSeconds: seconds(env.GRADUATION_ALERT_AFTER_SECONDS, "GRADUATION_ALERT_AFTER_SECONDS"),
+    poolBackfillSeconds: seconds(env.POOL_BACKFILL_SECONDS, "POOL_BACKFILL_SECONDS"),
     alertWebhookUrl: env.ALERT_WEBHOOK_URL ? new URL(env.ALERT_WEBHOOK_URL).toString() : null,
     helius: heliusConfig(env),
     mintKeySecret: mintKeySecret(env.MINT_KEY_SECRET),

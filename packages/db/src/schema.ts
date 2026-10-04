@@ -204,6 +204,10 @@ export const graduations = pgTable("graduations", {
   /** Slot of the pool trade the price is from. */
   priceSlot: bigint("price_slot", { mode: "number" }),
   indexedAt: timestamp("indexed_at", { withTimezone: true }).notNull().defaultNow(),
+  /** The newest of the pool's transactions the pool backfill has read; the next pass resumes after it. Null before the first. */
+  backfilledUntil: text("backfilled_until"),
+  /** When the pool backfill made its last pass: the pool's trades arrive through the webhook alone from then on. Null while it runs. */
+  backfillClosedAt: timestamp("backfill_closed_at", { withTimezone: true }),
 });
 
 /**
