@@ -1,6 +1,6 @@
 // What a burn transaction did, read back from the chain for the Ledger: the SOL that left the operations wallet (its
-// balance change less the network fee; rent it paid comes back in the same transaction) and the coins the burn
-// instruction destroyed.
+// balance change less the network fee and less any rent, which comes back in the same transaction or stays in a coin
+// account the wallet keeps) and the coins the burn instruction destroyed.
 import { PublicKey } from "@solana/web3.js";
 import bs58 from "bs58";
 import type { RawTransaction } from "@launchpad/chain";
@@ -32,7 +32,14 @@ export function decodeBurn(raw: RawTransaction, operationsWallet: PublicKey, min
     if (b.accountIndex === undefined || b.owner !== operationsWallet.toBase58() || meta.postBalances[b.accountIndex] !== 0) continue;
     refunds += BigInt(meta.preBalances[b.accountIndex] ?? 0);
   }
-  const lamports = BigInt(meta.preBalances[opsIndex]!) - BigInt(meta.postBalances[opsIndex]!) - BigInt(meta.fee) + refunds;
+  // A Reward Launch's coin account stays open after the burn; when this transaction opened it, the rent it paid sits in
+  // an account the wallet still owns, and is no more part of what the buy cost than a refund is.
+  let deposits = 0n;
+  for (const b of meta.postTokenBalances ?? []) {
+    if (b.accountIndex === undefined || b.owner !== operationsWallet.toBase58() || meta.preBalances[b.accountIndex] !== 0) continue;
+    deposits += BigInt(meta.postBalances[b.accountIndex] ?? 0);
+  }
+  const lamports = BigInt(meta.preBalances[opsIndex]!) - BigInt(meta.postBalances[opsIndex]!) - BigInt(meta.fee) + refunds - deposits;
   let amount = 0n;
   let decimals: number | null = null;
   for (const ix of [...tx.transaction.message.instructions, ...(meta.innerInstructions ?? []).flatMap((g) => g.instructions)]) {
