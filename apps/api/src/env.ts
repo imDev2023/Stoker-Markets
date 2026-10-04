@@ -55,8 +55,8 @@ export type Bindings = {
   HELIUS_WEBHOOK_SECRET: string;
   /**
    * Optional, together: Helius's API key and the id of our raw webhook. With both, the Indexer adds each graduated
-   * pool's address to the webhook and the Quote Registry refresh adds every quote mint (`PUT /v0/webhooks/:id`), so
-   * their transactions keep arriving without anyone editing the webhook by hand; without them nothing is called.
+   * pool's address to the webhook (`PUT /v0/webhooks/:id`), so its trades keep arriving without anyone editing the
+   * webhook by hand; without them nothing is called.
    */
   HELIUS_API_KEY?: string;
   HELIUS_WEBHOOK_ID?: string;
