@@ -90,6 +90,7 @@ Put the mainnet values in an `env.production` block of `apps/api/wrangler.jsonc`
 | `PLATFORM_LOOKUP_TABLE` | from section 3 | must exist and be active |
 | `GRADUATION_TARGET_LAMPORTS` | `85000000000` (85 SOL, PRD) | the local stack uses 1 SOL |
 | `GRADUATION_ALERT_AFTER_SECONDS` | `300` | a stuck Graduation alert after five minutes without Raydium's crank |
+| `POOL_BACKFILL_SECONDS` | `900` | for 15 minutes after a Graduation the graduation watch reads the new pool's history every minute, since a webhook takes minutes to start delivering a new address |
 | `PRICE_SOURCE` | `jupiter` | `static` is refused on mainnet; drop `QUOTE_PRICES_USD` |
 | `SOL_ROUTE_SOURCE` | `jupiter` (or `none` to offer no SOL payment on non-SOL Launches) | `raydium-cpmm` is refused; drop `SOL_ROUTE_POOLS` |
 | `TREASURY_WALLET` | the Treasury address | required on mainnet |
@@ -134,7 +135,7 @@ Addresses to watch (print them with `launchlabPdas(program)` from `packages/chai
 | --- | --- |
 | Our PlatformConfig | Every launch, curve trade, Graduation (migration) and `update_platform_config` on our platform names it. Watching the whole LaunchLab program instead would deliver every other platform's traffic. |
 | `launchlabPdas(program).creatorFeeVaultAuthority` (seed `creator_fee_vault_auth_seed`) | `claim_creator_fee` names no platform, so claims made without our site only reach us through this PDA, which every claim passes (CLAUDE.md traps). |
-| Each graduated pool | Pool trades after Graduation. The Indexer backfills a pool's history when it indexes the Graduation, and with `HELIUS_API_KEY` and `HELIUS_WEBHOOK_ID` set (section 5) adds the pool's address to the webhook in the same delivery, before recording the Graduation, so a failed call makes Helius deliver the migration again. Without the secrets, add pools by hand or watch the CPMM program (high volume). |
+| Each graduated pool | Pool trades after Graduation. The Indexer backfills a pool's history when it indexes the Graduation, and with `HELIUS_API_KEY` and `HELIUS_WEBHOOK_ID` set (section 5) adds the pool's address to the webhook in the same delivery, before recording the Graduation, so a failed call makes Helius deliver the migration again. Helius takes minutes to start delivering a new address, so for `POOL_BACKFILL_SECONDS` after that the graduation watch reads the pool's history every minute and indexes what the webhook missed. Without the secrets, add pools by hand or watch the CPMM program (high volume). |
 | The operations wallet | Optional: the jobs record their own transactions, but this catches anything sent from the wallet by hand. |
 | Each quote mint (all 571) | So Quote Risk Labels (#11) update within seconds of an issuer changing a mint: the Indexer re-reads a mint any delivered transaction marked writable. With the secrets set, every Quote Registry refresh adds the quote mints that are missing (one `GET`, and a `PUT` only when something is missing); without them, add the mints by hand, or the five-minute refresh re-reads them. |
 
