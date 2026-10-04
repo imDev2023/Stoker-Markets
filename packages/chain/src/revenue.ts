@@ -337,7 +337,11 @@ export type RevenueMovement = {
   index: number;
   /** What moved; SOL as the wrapped-SOL mint. */
   mint: PublicKey;
-  /** Raw units that arrived at the destination: what left the source, less any Token-2022 transfer fee. */
+  /**
+   * Raw units. For revenue coming in, what arrived at the operations wallet: what left the source, less any Token-2022
+   * transfer fee. For a sweep, what left the operations wallet, whatever fee the token then withholds on the way to the
+   * treasury: collected less swept is then what the wallet still holds, and a sweep never reaches into anything else.
+   */
   amount: BN;
   decimals: number;
   /** Where it came from: the Platform Fee vault, the CPMM pool, or the operations wallet for a sweep. */
@@ -385,7 +389,8 @@ function tokenTransfer(ix: RawInstruction, keys: string[]): Transfer | null {
 
 /**
  * The platform revenue a confirmed transaction moved: Platform Fee claims on our PlatformConfig, creator fees and Fee Key
- * collections paid to the operations wallet, and sweeps from the operations wallet to the treasury, each with what arrived.
+ * collections paid to the operations wallet, each with what arrived, and sweeps from the operations wallet to the treasury,
+ * each with what left the wallet.
  * Failed transactions move nothing.
  */
 export function decodeRevenue(raw: RawTransaction, ctx: RevenueContext): RevenueMovement[] {
@@ -480,7 +485,7 @@ export function decodeRevenue(raw: RawTransaction, ctx: RevenueContext): Revenue
     if (!mint) return;
     const decimals = t.decimals ?? decimalsOf(mint);
     if (decimals === null) return;
-    push({ kind: "sweep", mint: new PublicKey(mint), amount: received(t), decimals, source: ctx.operationsWallet, destination: ctx.treasury!, pool: null });
+    push({ kind: "sweep", mint: new PublicKey(mint), amount: t.amount, decimals, source: ctx.operationsWallet, destination: ctx.treasury!, pool: null });
   });
   return out;
 }
