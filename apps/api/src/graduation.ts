@@ -3,13 +3,15 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { loadCurve } from "@launchpad/chain";
 import { curves, graduations, launches, operatorAlerts, type Db } from "@launchpad/db";
 import type { Config } from "./env";
-import { fetchRawTransaction, indexTransactions } from "./indexer";
+import { fetchRawTransaction, indexAccountHistory, indexTransactions } from "./indexer";
 
 export type GraduationWatch = {
   /** Launches found migrated on-chain whose migration the Indexer had missed, now indexed. */
   recovered: string[];
   /** Launches newly alerted as stuck: sold out past the threshold with no migration. */
   alerted: string[];
+  /** Pool trades of newly graduated Launches that the webhook had not delivered, now indexed from the pool's history. */
+  backfilled: { mint: string; trades: number }[];
 };
 
 // How far back through a curve's transactions to look for a migration the webhook never delivered.
@@ -29,9 +31,10 @@ export async function watchGraduations(db: Db, cfg: Config, now = new Date()): P
     .leftJoin(graduations, eq(graduations.mint, curves.mint))
     .where(and(eq(curves.status, "graduating"), isNull(graduations.mint), sql`coalesce(${curves.completedAt}, ${curves.updatedAt}) < ${cutoff.toISOString()}::timestamptz`));
 
-  const result: GraduationWatch = { recovered: [], alerted: [] };
-  if (waiting.length === 0) return result;
+  const result: GraduationWatch = { recovered: [], alerted: [], backfilled: [] };
   const connection = new Connection(cfg.rpcUrl, "confirmed");
+  await backfillPools(db, cfg, connection, now, result);
+  if (waiting.length === 0) return result;
   for (const w of waiting) {
     const curve = await loadCurve(connection, new PublicKey(w.curve));
     if (curve?.status === "graduated" && (await backfillMigration(db, cfg, connection, w.curve))) {
@@ -76,6 +79,31 @@ export async function notifyPending(db: Db, cfg: Config) {
       .update(operatorAlerts)
       .set({ notifiedAt: null })
       .where(and(eq(operatorAlerts.kind, a.kind), eq(operatorAlerts.subject, a.subject)));
+  }
+}
+
+/**
+ * The pool backfill. A webhook takes minutes to start delivering a newly added address (a pool trade a minute after
+ * Graduation never arrived on devnet), so until `POOL_BACKFILL_SECONDS` after a Graduation was indexed, every run reads
+ * what the new pool did since the last pass and indexes it. The pass that finds the window over is the last: it closes
+ * the backfill, and the pool's trades arrive through the webhook alone from then on. Indexing is idempotent, so a trade
+ * the webhook did deliver is counted once.
+ */
+async function backfillPools(db: Db, cfg: Config, connection: Connection, now: Date, result: GraduationWatch) {
+  const open = await db
+    .select({ mint: graduations.mint, pool: graduations.pool, until: graduations.backfilledUntil, indexedAt: graduations.indexedAt })
+    .from(graduations)
+    .where(isNull(graduations.backfillClosedAt))
+    .orderBy(graduations.slot);
+  for (const g of open) {
+    const last = now.getTime() - g.indexedAt.getTime() >= cfg.poolBackfillSeconds * 1000;
+    const { newest, indexed, complete } = await indexAccountHistory(db, cfg, connection, new PublicKey(g.pool), g.until);
+    // A pass cut short by a transaction the node could not serve yet leaves the backfill open for the next run.
+    await db
+      .update(graduations)
+      .set({ backfilledUntil: newest, ...(last && complete ? { backfillClosedAt: now } : {}) })
+      .where(eq(graduations.mint, g.mint));
+    if (indexed.traded > 0) result.backfilled.push({ mint: g.mint, trades: indexed.traded });
   }
 }
 
