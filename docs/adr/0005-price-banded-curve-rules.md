@@ -1,6 +1,6 @@
 # Price-banded curve rules, managed by the hot operations wallet
 
-Status: proposed, implemented on the local chain, awaiting the operator's approval (#10).
+Status: accepted by the owner on 2026-10-04 (#23), after the devnet rehearsal ran on it.
 
 A Graduation Target is fixed at launch as 85 SOL-equivalent in the Quote Asset's raw units, so for anything but SOL it depends on a price the chain cannot see.
 LaunchLab curve rules compare launch parameters with constants, so an exact on-chain pin of `TotalFundRaisingB` only works for SOL.
