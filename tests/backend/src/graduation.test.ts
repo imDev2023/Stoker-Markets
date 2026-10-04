@@ -410,6 +410,33 @@ describe("the graduation watch", () => {
     expect(await alertsSentFor(mint)).toEqual([]);
   });
 
+  it("indexes pool trades the webhook never delivered, for a while after Graduation and no longer", async () => {
+    const { mint, trader } = await graduatedCoin();
+    const signatures = async () => (await trades(mint)).map((t) => t.signature);
+    // A webhook takes minutes to start delivering a newly added address: this trade never arrives.
+    const missed = await trade(trader, mint, "buy", SOL(0.1));
+    expect(await signatures()).not.toContain(missed.signature);
+    await runScheduledJobs();
+    expect((await trades(mint)).find((t) => t.signature === missed.signature)).toMatchObject({ side: "buy", venue: "pool" });
+    const res = await fetch(`${env().apiUrl}/v1/operator/jobs?job=graduation-watch`, { headers: { authorization: `Bearer ${env().operatorToken}` } });
+    const [run] = ((await res.json()) as { runs: { summary: { backfilled: { mint: string; trades: number }[] } }[] }).runs;
+    expect(run!.summary.backfilled).toContainEqual({ mint, trades: 1 });
+    // Delivered late after all, it is still one trade.
+    await deliverWebhook([missed.signature]);
+    expect((await signatures()).filter((s) => s === missed.signature)).toHaveLength(1);
+
+    // The first run past the window makes the last pass; from then on the pool's trades come through the webhook alone.
+    await waitSeconds(env().poolBackfillSeconds + 1);
+    const last = await trade(trader, mint, "buy", SOL(0.1));
+    await runScheduledJobs();
+    expect(await signatures()).toContain(last.signature);
+    const late = await trade(trader, mint, "buy", SOL(0.1));
+    await runScheduledJobs();
+    expect(await signatures()).not.toContain(late.signature);
+    await deliverWebhook([late.signature]);
+    expect(await signatures()).toContain(late.signature);
+  });
+
   it("keeps operator alerts behind the operator token", async () => {
     expect((await alerts("wrong-token")).status).toBe(401);
     expect((await fetch(`${env().apiUrl}/v1/operator/alerts`)).status).toBe(401);

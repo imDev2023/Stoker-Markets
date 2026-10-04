@@ -79,10 +79,12 @@ async function indexTransaction(db: Db, cfg: Config, tx: RawTransaction, result:
       const graduated = await indexGraduation(db, cfg, e);
       result.graduated += graduated;
       // Swaps in the new pool may have been delivered before the migration (webhooks promise no order) and were
-      // dropped, since the pool was not ours yet. Now that it is, its history so far is indexed and counted here.
+      // dropped, since the pool was not ours yet. Now that it is, its history so far is indexed and counted here. The
+      // graduation watch carries on from there, for the minutes a webhook takes to start delivering a new address.
       if (graduated) {
         const backfilled = await indexAccountHistory(db, cfg, new Connection(cfg.rpcUrl, "confirmed"), e.pool, null);
         for (const k of Object.keys(result) as (keyof IndexResult)[]) result[k] += backfilled.indexed[k];
+        await db.update(graduations).set({ backfilledUntil: backfilled.newest }).where(eq(graduations.mint, e.baseMint.toBase58()));
       }
     }
   }
@@ -95,11 +97,12 @@ const SIGNATURE_PAGE = 1000;
  * Backfills one account: indexes each of its confirmed transactions newer than `until`, oldest first, and returns the
  * newest signature it indexed (or `until` if there was nothing new), from which the next backfill can resume, with
  * what it indexed. A listed transaction that can't be fetched or indexed yet (an RPC node behind the one that listed
- * it, say) stops the backfill there, so the cursor never moves past a transaction that was not indexed.
+ * it, say) stops the backfill there, so the cursor never moves past a transaction that was not indexed; `complete`
+ * says whether it reached the newest one listed.
  */
 export async function indexAccountHistory(
   db: Db, cfg: Config, connection: Connection, account: PublicKey, until: string | null,
-): Promise<{ newest: string | null; indexed: IndexResult }> {
+): Promise<{ newest: string | null; indexed: IndexResult; complete: boolean }> {
   const found: string[] = [];
   let before: string | undefined;
   for (;;) {
@@ -109,18 +112,20 @@ export async function indexAccountHistory(
     before = page.at(-1)!.signature;
   }
   let newest = until;
+  let complete = true;
   const indexed: IndexResult = { launched: 0, traded: 0, claimed: 0, graduated: 0, airdropped: 0 };
   for (const signature of found.reverse()) {
     const raw = await fetchRawTransaction(cfg.rpcUrl, signature);
     if (!raw) {
       console.warn(`backfill of ${account.toBase58()} stopped at ${signature}, which could not be fetched yet`);
+      complete = false;
       break;
     }
     const r = await indexTransactions(db, cfg, [raw]);
     for (const k of Object.keys(indexed) as (keyof IndexResult)[]) indexed[k] += r[k];
     newest = signature;
   }
-  return { newest, indexed };
+  return { newest, indexed, complete };
 }
 
 const time = (blockTime: number | null) => new Date((blockTime ?? Math.floor(Date.now() / 1000)) * 1000);

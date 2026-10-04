@@ -53,6 +53,7 @@
     "GRADUATION_TARGET_LAMPORTS": "85000000000",
     // Raydium's crank migrates a sold-out curve within seconds; five minutes without it means something is wrong.
     "GRADUATION_ALERT_AFTER_SECONDS": "300",
+    "POOL_BACKFILL_SECONDS": "900",
     // The local chain's quote fixtures, priced as in tools/localnet LOCAL_QUOTE_PRICES_USD; mainnet uses "jupiter".
     "PRICE_SOURCE": "static",
     // Buys paid with SOL route through the local chain's CPMM pools of SOL against USDC and JTO (tools/localnet
@@ -103,6 +104,7 @@
         // rehearse one. Devnet SOL is scarce, so the sweep is small: above 2.1 SOL down to 1.9.
         "GRADUATION_TARGET_LAMPORTS": "85000000000",
         "GRADUATION_ALERT_AFTER_SECONDS": "300",
+        "POOL_BACKFILL_SECONDS": "900",
         "SWEEP_THRESHOLD_LAMPORTS": "2100000000",
         "SWEEP_FLOAT_LAMPORTS": "1900000000",
         "COLLECT_MIN_LAMPORTS": "100000",
