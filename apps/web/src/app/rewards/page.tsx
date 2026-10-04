@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { REWARD_SALE_MAX_RESERVE_BPS, REWARD_SALE_SLIPPAGE_BPS } from "@launchpad/contract";
 import { getRewardRules } from "@/lib/api";
 import { COIN_DECIMALS, formatUnits, formatUtc } from "@/lib/format";
@@ -53,7 +54,12 @@ export default async function RewardsPage() {
         )}
         <p className={styles.note}>
           Each wallet&apos;s share is its holding over every eligible holding at the round&apos;s snapshot. The curve&apos;s and pool&apos;s own
-          accounts and the platform&apos;s wallet never count as holders.
+          accounts and the platform&apos;s operations wallet never count as holders.
+        </p>
+        <p className={styles.note}>
+          The platform&apos;s treasury does count. A pool pays part of its fees in the coin, those coins end up in the treasury, and
+          it takes its share of a round like any other holder. Its address and everything it receives are on the{" "}
+          <Link href="/revenue">revenue page</Link>.
         </p>
         <p className={styles.note}>
           Where a coin pays in its Quote Asset, the tax is sold into the coin&apos;s own market one slice per run, about every ten minutes:
