@@ -30,8 +30,9 @@ export class IndexBatchError extends Error {
  * One transaction that can't be indexed never stops the others: the batch goes on, and `IndexBatchError` names what
  * failed at the end, so a retry of the batch only has those to bring back.
  * A transaction that may have written a Quote Asset's mint (an issuer changing an authority, a fee or a pause) has that
- * mint re-read for its Quote Risk Labels (#11) before the batch answers, so labels follow the issuer within seconds
- * when the webhook watches the quote mints.
+ * mint re-read for its Quote Risk Labels (#11) before the batch answers. The webhook does not watch the quote mints
+ * (a busy one would deliver much of the chain), so this only catches a change in a transaction delivered for another
+ * reason; the Quote Registry refresh re-reads every mint every five minutes.
  */
 export async function indexTransactions(db: Db, cfg: Config, txs: RawTransaction[]): Promise<IndexResult> {
   const result: IndexResult = { launched: 0, traded: 0, claimed: 0, graduated: 0, airdropped: 0 };
