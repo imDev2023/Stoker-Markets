@@ -36,6 +36,7 @@ The admin key needs about 0.01 SOL: the PlatformConfig's rent (0.0075) and four 
 Exactly what `bootstrapPlatform` in `tools/localnet/src/index.ts` does on the local chain, signed by the cold key instead. Mainnet program ids are in `packages/chain/src/programs.ts` (`programsFor("mainnet")`): LaunchLab `LanMV9sAd7wArD4vJFi2qDdfnVhFxYSUg6eADduJ3uj`, CPMM `CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C`, lock `LockrWmn6K5twhz3y9w1dQERbmgSaRkfnTeTKbpofwE`.
 
 1. **owner** Pick the CPMM config graduated pools use: list mainnet's CPMM configs (the spike's `list_cpmm_configs.ts` against a mainnet RPC) and take the one with a 1% creator fee, which is what the PRD and StonkFun use; the config fixes the post-Graduation Platform Fee for every pool for good, and half of what it collects is forwarded to the Creator (ADR 0007).
+   Listed on 2026-10-04: of mainnet's 21 configs only index 11, `CRRS5ieQmBrZjWhcj99JuGrT5tyuWDaGAXLXLFjbAtjQ`, has a 1% creator fee (with a 0.25% trade fee), and it is the one StonkFun's PlatformConfigs name.
 2. Build the four instructions, in one transaction, with `packages/chain`:
    - `createPlatformConfigIx(program, admin, { feeRate: 7500, creatorFeeRate: 2500, name, web, img, operationsWallet, cpswapConfig })`: Platform Fee 0.75% and Creator Fee 0.25% (ADR 0007; rates use LaunchLab's 1e6 denominator), all locked-LP Fee Key rights to the platform (`migrate_nft_info.platform_scale` 1e6), no platform vesting, and the operations wallet as fee wallet, NFT wallet, transfer-fee-extension authority and vesting wallet.
    - `updatePlatformConfigIx(program, admin, { PlatformCPCreator: [operations] })`: the platform is every graduated pool's creator.
@@ -76,7 +77,8 @@ It prints the table's address, which is `PLATFORM_LOOKUP_TABLE`, and refuses a l
 
 ## 5. The API Worker: production configuration checklist
 
-Put the mainnet values in an `env.production` block of `apps/api/wrangler.jsonc` (deploy with `wrangler deploy --env production`) so the local defaults stay as they are. Everything below is read by `config()` and refused on mainnet when wrong.
+The mainnet values are in the `env.production` block of `apps/api/wrangler.jsonc` (deploy with `wrangler deploy --env production`), so the local defaults stay as they are.
+`PLATFORM_CONFIG`, `PLATFORM_ADMIN`, `PLATFORM_LOOKUP_TABLE`, `TREASURY_WALLET` and the Hyperdrive id are empty there until sections 1 to 4 produce them. Everything below is read by `config()` and refused on mainnet when wrong.
 
 | Variable | Mainnet value | Checked |
 | --- | --- | --- |
@@ -153,7 +155,7 @@ Every coin's on-chain metadata URI is `ARWEAVE_GATEWAY_URL/<id>` (`https://arwea
 
 ## 9. The web Worker
 
-`NEXT_PUBLIC_API_URL=https://api.<domain>` at build time, then `pnpm --filter web deploy` (OpenNext build and `opennextjs-cloudflare deploy`; `apps/web/wrangler.jsonc`), with `<domain>` as its custom domain. Confirm the `/launch` page shows the 571 Quote Assets and `/operator` opens with the token. The public site needs no secret.
+`NEXT_PUBLIC_API_URL=https://api.<domain>` at build time (`pnpm exec opennextjs-cloudflare build` in `apps/web`), then `pnpm exec opennextjs-cloudflare deploy --env production` (`env.production` in `apps/web/wrangler.jsonc`, with `<domain>` as its custom domain). Confirm the `/launch` page shows the 571 Quote Assets and `/operator` opens with the token. The public site needs no secret.
 
 The web Worker renders pages on the server, and all of those requests reach the API from the Worker's own address, which the per-IP limit would count as one caller. Issue it an API key with a high limit (`POST /v1/operator/api-keys` with `name` and `rateLimitPerMinute`; 6000, the most a key can have, is 100 requests a second) and set it as the web Worker's secret `API_KEY` (`wrangler secret put API_KEY` in `apps/web`); it is only ever sent from the server. Requests made in a visitor's browser carry no key and count against the visitor's own IP.
 
@@ -174,6 +176,14 @@ Run the same deploy against real devnet (`CLUSTER=devnet`, the devnet program id
 - The Fee Collector sweeps to the treasury and the Creator Forward then pays the Creator their share (ADR 0007): the Creator's wallet receives it with nothing to sign, and the forward is on the Ledger and the Creator Fee page.
 - The Reward Engine pays a round, the Burn buys and burns (a SOL route is needed for the Burn: on devnet use `raydium-cpmm` pools you seed, as the local chain does).
 - The Jupiter route source and `PRICE_SOURCE=jupiter` can only be exercised on mainnet: exercise them with a tiny Launch before opening the site.
+
+The rehearsal ran on `stoker.markets` and `api.stoker.markets`, which mainnet takes over (owner, 2026-10-04).
+Move it to `devnet.stoker.markets` and `api-devnet.stoker.markets`, which `env.devnet` in both `wrangler.jsonc` files now names, before the first production deploy:
+
+1. `pnpm exec wrangler deploy --env devnet` in `apps/api`; the Worker leaves `api.stoker.markets` and answers on `api-devnet.stoker.markets`.
+2. In the Helius dashboard, change the devnet webhook's URL to `https://api-devnet.stoker.markets/v1/webhooks/helius`.
+3. In `apps/web`, `NEXT_PUBLIC_API_URL=https://api-devnet.stoker.markets pnpm exec opennextjs-cloudflare build`, then `pnpm exec opennextjs-cloudflare deploy --env devnet`.
+4. Check `https://api-devnet.stoker.markets/health` and that a devnet trade made away from the site is indexed.
 
 ## 12. Go-live checklist
 
