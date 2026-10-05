@@ -14,6 +14,8 @@ const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], var
 export const metadata: Metadata = {
   title: { default: "Stoker", template: "%s · Stoker" },
   description: "Launch a coin on Solana, paired with any asset. Creators earn from every trade, on the curve and after graduation.",
+  // The same file the PlatformConfig's `img` names on-chain (runbook, section 2), so it must stay at this address.
+  icons: { icon: "/icon.png" },
 };
 
 export const viewport: Viewport = {
