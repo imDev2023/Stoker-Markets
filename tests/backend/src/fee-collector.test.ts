@@ -97,6 +97,14 @@ async function pendingForCreators(mint: PublicKey) {
   return BigInt((await revenue()).totals.find((t) => t.asset.mint === mint.toBase58())?.creatorPending ?? "0");
 }
 
+/**
+ * What the operations wallet holds in a Quote Asset beyond what Creators are owed: the Burn's two-step buy (burn.test.ts)
+ * leaves the Quote Asset its swap delivered beyond what the pool took, which is outside the Ledger and never swept.
+ */
+async function surplusOf(mint: PublicKey) {
+  return (await tokensOf(ops(), mint)) - (await pendingForCreators(mint));
+}
+
 /** The creator fees a pool holds for its creator, per token in the pool's order. */
 async function poolCreatorFees(pool: PublicKey) {
   const account = await connection().getAccountInfo(pool, "confirmed");
@@ -200,7 +208,8 @@ describe("the Platform Fee", () => {
     const share = sum(buys.map((t) => BigInt(t.quote.fees.creator)));
     expect(await tokenBalance(vault)).toBe(dust + paid);
     const inTreasury = await tokensOf(treasury(), USDC);
-    const held = await tokensOf(ops(), USDC);
+    const surplus = await surplusOf(USDC);
+    const held = (await tokensOf(ops(), USDC)) - surplus;
 
     const run = await runCollector();
     const claim = sentBy(run).find((s) => s.purpose === "platform_fee" && s.subject === vault.toBase58())!;
@@ -211,7 +220,7 @@ describe("the Platform Fee", () => {
     const forward = forwards.find((f) => f.creator === creator.publicKey.toBase58())!;
     expect(forward).toMatchObject({ mint: USDC.toBase58(), amount: share.toString(), outcome: "paid" });
     expect(await tokensOf(creator.publicKey, USDC)).toBe(share);
-    expect(await tokensOf(ops(), USDC)).toBe(await pendingForCreators(USDC));
+    expect(await tokensOf(ops(), USDC)).toBe(surplus + (await pendingForCreators(USDC)));
     // Everything else went to the treasury: this test's fees less its Creator's share, when the vault started empty.
     const swept = held + dust + paid - forwardedIn(forwards, USDC.toBase58()) - (await pendingForCreators(USDC));
     if (dust === 0n) expect(swept).toBe(paid - share);
@@ -286,6 +295,7 @@ describe("after Graduation", () => {
     const paid = await poolTrades(coin, usdc(50));
     expect(await quoteCreatorFee(coin.pool, USDC)).toBe(paid);
     const inTreasury = await tokensOf(treasury(), USDC);
+    const surplus = await surplusOf(USDC);
 
     const run = await runCollector();
     const sent = sentBy(run);
@@ -304,7 +314,7 @@ describe("after Graduation", () => {
     expect((await tokensOf(treasury(), USDC)) - inTreasury).toBe(usdcOf(["sweep"]));
     expect((await forwarded()).find((f) => f.creator === coin.creator.publicKey.toBase58())).toMatchObject({ mint: USDC.toBase58(), amount: share.toString(), outcome: "paid" });
     expect(await tokensOf(coin.creator.publicKey, USDC)).toBe(share);
-    expect(await tokensOf(ops(), USDC)).toBe(await pendingForCreators(USDC));
+    expect(await tokensOf(ops(), USDC)).toBe(surplus + (await pendingForCreators(USDC)));
   });
 
   it("leaves a fee worth less than the collection minimum to grow, and collects it once it is worth it", async () => {

@@ -120,6 +120,13 @@
       "when": 1791104208500,
       "tag": "0016_pool_backfill",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791317636829,
+      "tag": "0017_chosen_mint_keys",
+      "breakpoints": true
     }
   ]
 }

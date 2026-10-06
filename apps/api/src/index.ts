@@ -18,7 +18,7 @@ import { notifyPending, watchGraduations } from "./graduation";
 import { fetchRawTransaction, IndexBatchError, indexTransactions } from "./indexer";
 import { sniffImageType } from "./images";
 import {
-  buildLaunch, launchQuoteAsset, loadDraft, mintKeypair, newMintKeyNonce, refuseWith, resolveLaunchModes, saveDraft,
+  buildLaunch, launchQuoteAsset, loadDraft, newMintKeyNonce, refuseWith, resolveLaunchModes, saveDraft,
 } from "./launch";
 import { runJob, toJobRun } from "./jobs";
 import { arweaveUrl, metadataDocument, signedItems, signMetadataItems, uploadMetadata } from "./metadata";
@@ -28,6 +28,8 @@ import { creatorFeeRoutes } from "./routes/creatorFees";
 import { quotes } from "./routes/quotes";
 import { launchRoutes } from "./routes/launches";
 import { launchModeRoutes, operatorAirdropRoutes } from "./routes/launchModes";
+import { operatorMintKeyRoutes } from "./routes/mintKeys";
+import { mintKeypair, nextChosenMint } from "./mintKeys";
 import { mayAirdrop } from "./airdropAccess";
 import { operatorJobRoutes, revenueRoutes } from "./routes/revenue";
 import { operatorRewardRoutes, rewardRoutes } from "./routes/rewards";
@@ -121,8 +123,11 @@ app.post("/v1/launches/prepare", async (c) => {
   const rewardPayout = f.rewardPayout ?? null;
   const modes = await resolveLaunchModes(connection, cfg, quote, creator, firstBuy, airdrop, rewardTaxBps, rewardPayout).catch(refuseWith(400));
 
-  const nonce = newMintKeyNonce();
-  const mint = mintKeypair(cfg.mintKeySecret, nonce).publicKey;
+  // A key the operator chose for this Creator's next launch (the Platform Token's vanity address, #75) takes the place
+  // of a derived one; the draft then has no nonce and signs with the stored key.
+  const chosen = await nextChosenMint(c.get("db"), creator.toBase58());
+  const nonce = chosen ? null : newMintKeyNonce();
+  const mint = chosen ?? mintKeypair(cfg.mintKeySecret, nonce!).publicKey;
   const mintAddress = mint.toBase58();
   const imageKey = `images/${mintAddress}`;
   await c.env.METADATA_BUCKET.put(imageKey, bytes, { httpMetadata: { contentType } });
@@ -146,7 +151,7 @@ app.post("/v1/launches/prepare", async (c) => {
   await signMetadataItems(c.get("db"), c.env.METADATA_BUCKET, cfg, operationsKey(c.env), stored!, { bytes, contentType });
   await saveDraft(c.get("db"), { mint, creator, nonce, quote, firstBuy, airdrop, rewardTaxBps, rewardPayout });
   const loaded = await loadDraft(c.get("db"), mintAddress);
-  return c.json(await buildLaunch(connection, cfg, loaded!, quote, modes.firstBuy, modes.summary));
+  return c.json(await buildLaunch(c.get("db"), connection, cfg, loaded!, quote, modes.firstBuy, modes.summary));
 });
 
 /** Helius raw-transaction webhook. The same transactions may arrive more than once; indexing is idempotent. */
@@ -221,6 +226,7 @@ app.route("/v1/operator", operatorKeyRoutes);
 app.route("/v1/operator", operatorViewRoutes);
 app.route("/v1/operator", operatorFeeRoutes);
 app.route("/v1/operator", operatorAirdropRoutes);
+app.route("/v1/operator", operatorMintKeyRoutes);
 
 /**
  * Runs one scheduled job now, as its Cron Trigger would, and answers with the run: 500 with the failed run when it

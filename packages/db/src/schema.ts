@@ -238,8 +238,9 @@ export const launchDrafts = pgTable(
   {
     mint: text("mint").primaryKey(),
     creator: text("creator").notNull(),
-    /** With the API's MINT_KEY_SECRET this derives the mint key, so the key itself is never stored. */
-    mintKeyNonce: text("mint_key_nonce").notNull(),
+    /** With the API's MINT_KEY_SECRET this derives the mint key, so the key itself is never stored; null when the draft
+     * launches with a key the operator chose (`chosen_mint_keys`). */
+    mintKeyNonce: text("mint_key_nonce"),
     quoteMint: text("quote_mint").notNull(),
     globalConfig: text("global_config").notNull(),
     /** Raw units of the Quote Asset, fixed from its price when the launch was first prepared; a retry keeps it. */
@@ -257,6 +258,21 @@ export const launchDrafts = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("launch_drafts_creator_idx").on(t.creator)],
+);
+
+/**
+ * Mint keys the operator chose for a Creator's next launch (a ground vanity address, #75), one used per draft in the order
+ * stored. The secret key is AES-256-GCM under a key derived from MINT_KEY_SECRET: base64 of the 12-byte iv, then the ciphertext.
+ */
+export const chosenMintKeys = pgTable(
+  "chosen_mint_keys",
+  {
+    mint: text("mint").primaryKey(),
+    creator: text("creator").notNull(),
+    secret: text("secret").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("chosen_mint_keys_creator_idx").on(t.creator)],
 );
 
 /** One row per wallet an airdrop pays: what it gets, and whether it has been paid. */
