@@ -52,7 +52,7 @@ launchModeRoutes.post("/launches/:mint/prepare", async (c) => {
     return c.json({ error: "This coin has already launched.", details: { mint: loaded.draft.mint } }, 409);
   }
   const modes = await resolveDraftModes(db, connection, cfg, loaded).catch(refuseWith(409));
-  return c.json(await buildLaunch(connection, cfg, loaded, modes.quote, modes.firstBuy, modes.summary));
+  return c.json(await buildLaunch(db, connection, cfg, loaded, modes.quote, modes.firstBuy, modes.summary));
 });
 
 /** The coin's token program, once its mint exists: every coin account and transfer of it names this program. */

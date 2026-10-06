@@ -1,6 +1,5 @@
 // Launch modes behind one launch interface: a standard coin, the Creator's first buy inside the launch transaction, and
 // an airdrop paid from that first buy afterwards. Drafts make every retry rebuild the same coin.
-import { createHmac } from "node:crypto";
 import { HTTPException } from "hono/http-exception";
 import { Keypair, PublicKey, type Connection } from "@solana/web3.js";
 import { ACCOUNT_SIZE, ExtensionType, getAccountLen, getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
@@ -14,6 +13,7 @@ import type { AirdropRecipients, GraduationTarget, LaunchModesSummary, PreparedL
 import { airdropRecipients, launchDrafts, launchMetadata, type Db } from "@launchpad/db";
 import type { Config } from "./env";
 import { arweaveUrl, signedItems } from "./metadata";
+import { draftMintKeypair } from "./mintKeys";
 import { launchQuoteAsBuilt, priceLaunch, type LaunchQuote } from "./quotes/assets";
 import type { QuoteMarket } from "./quotes/pricing";
 
@@ -51,11 +51,6 @@ async function draftQuoteAsset(db: Db, cfg: Config, d: typeof launchDrafts.$infe
 
 /** A fresh nonce for a new draft; with the secret it derives the draft's mint key. */
 export const newMintKeyNonce = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
-
-/** The mint key of a draft. Deterministic, so a retry signs for the same coin address; never stored. */
-export function mintKeypair(secret: string, nonce: string) {
-  return Keypair.fromSeed(createHmac("sha256", secret).update(`launchpad mint key v1:${nonce}`).digest());
-}
 
 /** A first buy quote in the contract's terms: amounts as decimal strings, prices in whole units. */
 export function firstBuyToContract(q: FirstBuyQuote, quoteDecimals: number, quoteTransferFeeBps = 0, rewardTaxBps = 0): TradeQuote {
@@ -166,7 +161,7 @@ export async function resolveLaunchModes(
 export async function saveDraft(
   db: Db,
   d: {
-    mint: PublicKey; creator: PublicKey; nonce: string; quote: QuoteAsset; firstBuy: BN | null; airdrop: AirdropRecipients; rewardTaxBps: RewardTaxBps | null;
+    mint: PublicKey; creator: PublicKey; nonce: string | null; quote: QuoteAsset; firstBuy: BN | null; airdrop: AirdropRecipients; rewardTaxBps: RewardTaxBps | null;
     rewardPayout: RewardPayoutAsset | null;
   },
 ) {
@@ -210,7 +205,7 @@ export type LoadedDraft = NonNullable<Awaited<ReturnType<typeof loadDraft>>>;
 
 /** Builds a draft's launch transaction, signed by its mint key, with the Quote Asset and launch modes it was prepared with. */
 export async function buildLaunch(
-  connection: Connection, cfg: Config, loaded: LoadedDraft, quote: QuoteAsset, firstBuy: FirstBuyQuote | null, summary: LaunchModesSummary,
+  db: Db, connection: Connection, cfg: Config, loaded: LoadedDraft, quote: QuoteAsset, firstBuy: FirstBuyQuote | null, summary: LaunchModesSummary,
 ) {
   const { draft, metadata, items } = loaded;
   const metadataUri = arweaveUrl(cfg.arweave, items.metadata.arweaveId);
@@ -231,7 +226,7 @@ export async function buildLaunch(
       lookupTable: await loadLookupTable(connection, cfg.lookupTable),
       rewardTaxBps: draft.rewardTaxBps,
     },
-    mintKeypair(cfg.mintKeySecret, draft.mintKeyNonce),
+    await draftMintKeypair(db, cfg, draft),
   );
   if (prepared.mint.toBase58() !== draft.mint) throw new Error(`draft ${draft.mint} derived a different mint key`);
   const body: PreparedLaunch = {
