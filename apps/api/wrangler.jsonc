@@ -152,12 +152,13 @@
         "LAUNCHLAB_PROGRAM": "LanMV9sAd7wArD4vJFi2qDdfnVhFxYSUg6eADduJ3uj",
         "CPMM_PROGRAM": "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C",
         "LOCK_PROGRAM": "LockrWmn6K5twhz3y9w1dQERbmgSaRkfnTeTKbpofwE",
-        // From the runbook's sections 1 to 3: the PDA of the cold admin key, that key's address, the table the
-        // operations wallet creates, and the Treasury's address.
-        "PLATFORM_CONFIG": "",
-        "PLATFORM_ADMIN": "",
+        // From the runbook's sections 1 to 3: the PDA of the cold admin key, that key's address (the owner's hardware
+        // wallet account "Stoker-Admin", 2026-10-06), the table the operations wallet creates, and the Treasury's address
+        // (the account "Stoker-Treasury" on the same device).
+        "PLATFORM_CONFIG": "GgKHZ4N7KU1vBcgzueeyBnZCA6UCbR1RfazwqM5PZjCd",
+        "PLATFORM_ADMIN": "DYyY2pHas2GADGnkNPeMoSqa6Mt7EmAH8gSUUtMfPaE5",
         "PLATFORM_LOOKUP_TABLE": "",
-        "TREASURY_WALLET": "",
+        "TREASURY_WALLET": "H2FarRiAy9PHYeuxuaotkgAqBuLwZqPeU8Hw5ZMeU3Ga",
         "GRADUATION_TARGET_LAMPORTS": "85000000000",
         "GRADUATION_ALERT_AFTER_SECONDS": "300",
         "POOL_BACKFILL_SECONDS": "900",

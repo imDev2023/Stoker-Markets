@@ -78,7 +78,7 @@ It prints the table's address, which is `PLATFORM_LOOKUP_TABLE`, and refuses a l
 ## 5. The API Worker: production configuration checklist
 
 The mainnet values are in the `env.production` block of `apps/api/wrangler.jsonc` (deploy with `wrangler deploy --env production`), so the local defaults stay as they are.
-`PLATFORM_CONFIG`, `PLATFORM_ADMIN`, `PLATFORM_LOOKUP_TABLE`, `TREASURY_WALLET` and the Hyperdrive id are empty there until sections 1 to 4 produce them. Everything below is read by `config()` and refused on mainnet when wrong.
+`PLATFORM_ADMIN` (`DYyY2pHas2GADGnkNPeMoSqa6Mt7EmAH8gSUUtMfPaE5`), `PLATFORM_CONFIG` (its PDA, `GgKHZ4N7KU1vBcgzueeyBnZCA6UCbR1RfazwqM5PZjCd`) and `TREASURY_WALLET` (`H2FarRiAy9PHYeuxuaotkgAqBuLwZqPeU8Hw5ZMeU3Ga`) are set from the owner's hardware wallet accounts (2026-10-06); `PLATFORM_LOOKUP_TABLE` and the Hyperdrive id are empty there until sections 3 and 4 produce them. Everything below is read by `config()` and refused on mainnet when wrong.
 
 | Variable | Mainnet value | Checked |
 | --- | --- | --- |
@@ -188,7 +188,7 @@ Move it to `devnet.stoker.markets` and `api-devnet.stoker.markets`, which `env.d
 ## 12. Go-live checklist
 
 1. [x] #7 decided: name, domain, ticker. ADR 0005 accepted.
-2. [ ] Admin key on a cold device; operations wallet and Treasury created; operations wallet funded (section 1).
+2. [ ] Admin key on a cold device; operations wallet and Treasury created; operations wallet funded (section 1). Admin `DYyY2pHas2GADGnkNPeMoSqa6Mt7EmAH8gSUUtMfPaE5` and Treasury `H2FarRiAy9PHYeuxuaotkgAqBuLwZqPeU8Hw5ZMeU3Ga` are hardware wallet accounts (2026-10-06); the admin still needs 0.01 SOL and the operations wallet is not created.
 3. [ ] PlatformConfig created and decoded as expected (section 2).
 4. [ ] Platform Lookup Table created and rooted (section 3).
 5. [ ] Postgres migrated; Hyperdrive configured (section 4).
