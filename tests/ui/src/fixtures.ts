@@ -297,7 +297,12 @@ export const test = base.extend<{
   browserErrors: [
     async ({ page, expectedHttpErrors }, use) => {
       const errors: string[] = [];
-      page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}`));
+      // `next dev` only: when `notFound()` interrupts a server component, React's development performance tracks
+      // measure it with a start time that was never set (vercel/next.js#86060, open). Production builds have no tracks.
+      const devPerformanceTrack = /^Failed to execute 'measure' on 'Performance': .* cannot have a negative time stamp\.$/;
+      page.on("pageerror", (e) => {
+        if (!devPerformanceTrack.test(e.message)) errors.push(`pageerror: ${e.message}`);
+      });
       page.on("console", (m) => {
         // A page's own HTTP status (a 404 for a coin that doesn't exist) is asserted by the test, not treated as an error.
         // So is a status a test provokes on purpose.

@@ -114,8 +114,9 @@ test("search palette, with a match", async ({ page }) => {
   await page.evaluate(() => document.fonts.ready);
   await expectNoTruncatedText(page);
   await expectNoHorizontalOverflow(page);
-  // The palette covers the viewport, so the viewport is the shot; nothing in it varies between runs.
-  await expect(page).toHaveScreenshot("search.png");
+  // The palette covers the viewport, so the viewport is the shot; the page shows through its backdrop, so the page's
+  // times are masked as in any other shot.
+  await expect(page).toHaveScreenshot("search.png", { mask: dynamic(page) });
 });
 
 test("coin page", async ({ page }) => {
