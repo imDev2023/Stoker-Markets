@@ -10,11 +10,11 @@ export const GraduationTarget = z.object({ raw: rawAmount, lamports: rawAmount }
 export type GraduationTarget = z.infer<typeof GraduationTarget>;
 
 /**
- * The kinds of Quote Asset the board filters by. A stablecoin is one of a known list of mints; a tokenized stock is a mint
- * whose freeze authority or permanent delegate belongs to a known stock issuer (xStocks, Backpack, PreStocks); everything
- * else is a community token.
+ * The kinds of Quote Asset the board filters by. A stablecoin, a leveraged token (Hylo's 3x tokens) and a collectible are
+ * each one of a known list of mints; a tokenized stock is a mint whose freeze authority or permanent delegate belongs to a
+ * known stock issuer (xStocks, PreStocks, Tessera, Backpack); everything else is a community token.
  */
-export const QUOTE_CATEGORIES = ["sol", "stablecoin", "tokenized_stock", "community"] as const;
+export const QUOTE_CATEGORIES = ["sol", "stablecoin", "tokenized_stock", "leveraged", "collectible", "community"] as const;
 export const QuoteCategory = z.enum(QUOTE_CATEGORIES);
 export type QuoteCategory = z.infer<typeof QuoteCategory>;
 
@@ -22,7 +22,7 @@ export type QuoteCategory = z.infer<typeof QuoteCategory>;
  * Which issuer a tokenized stock comes from, read from the authorities it keeps over the mint; the board's "Paired with"
  * chips are finer than the category for stocks. Null for every Quote Asset that is not a tokenized stock.
  */
-export const QUOTE_ISSUERS = ["xstocks", "prestocks", "backpack"] as const;
+export const QUOTE_ISSUERS = ["xstocks", "prestocks", "tessera", "backpack"] as const;
 export const QuoteIssuer = z.enum(QUOTE_ISSUERS);
 export type QuoteIssuer = z.infer<typeof QuoteIssuer>;
 

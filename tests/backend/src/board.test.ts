@@ -202,6 +202,10 @@ describe("sorting and filtering the board", () => {
     expect(mints(await only({ category: "sol" }))).toEqual([coin.sold, coin.big, coin.small, coin.quiet]);
     expect(mints(await only({ category: "tokenized_stock" }))).toEqual([]);
     expect(mints(await only({ issuer: "xstocks" }))).toEqual([]);
+    // No local Quote Asset is a leveraged token, a collectible or a Tessera stock; the filters are known and find nothing.
+    expect(mints(await only({ category: "leveraged" }))).toEqual([]);
+    expect(mints(await only({ category: "collectible" }))).toEqual([]);
+    expect(mints(await only({ issuer: "tessera" }))).toEqual([]);
     expect(mints(await only({ status: "graduating" }))).toEqual([coin.sold]);
     expect(mints(await only({ status: "live", sort: "market_cap" }))).toEqual([coin.big, coin.dollar, coin.small, coin.quiet]);
     expect(mints(await only({ status: "graduated" }))).toEqual([]);

@@ -16,24 +16,28 @@ export const CATEGORY_LABELS: Record<QuoteCategory, string> = {
   sol: "Solana",
   stablecoin: "Currencies",
   tokenized_stock: "Stocks",
+  leveraged: "Leverage",
+  collectible: "Collectibles",
   community: "Custom",
 };
 
+/** In the order the chips show them. */
 export const ISSUER_LABELS: Record<QuoteIssuer, string> = {
   xstocks: "xStocks",
   prestocks: "PreStocks",
+  tessera: "Tessera",
   backpack: "Backpack",
 };
 
 /**
  * The "Paired with" chips: a stock issuer, or a category for everything that has no issuer. A chip sets one of the two
- * filters and clears the other; "All" clears both.
+ * filters and clears the other; "All" clears both. Backpack Securities' stocks are the set shown elsewhere as "Sunrise".
  */
 export type PairedChip = { label: string; category: QuoteCategory | null; issuer: QuoteIssuer | null };
 export const PAIRED_CHIPS: PairedChip[] = [
   { label: "All", category: null, issuer: null },
   ...(Object.keys(ISSUER_LABELS) as QuoteIssuer[]).map((issuer) => ({ label: ISSUER_LABELS[issuer], category: null, issuer })),
-  ...(["stablecoin", "sol", "community"] as const).map((category) => ({ label: CATEGORY_LABELS[category], category, issuer: null })),
+  ...(["stablecoin", "leveraged", "collectible", "sol", "community"] as const).map((category) => ({ label: CATEGORY_LABELS[category], category, issuer: null })),
 ];
 
 /** Whether a Quote Asset is within the chosen chip: by issuer when one is chosen, else by category, else always. */
