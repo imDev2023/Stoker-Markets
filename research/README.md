@@ -87,6 +87,8 @@ Frontend: Next.js with the Jupiter wallet kit, swap plugin and chart API, a toke
 
 ## Where everything is
 
+Moved to the private repository `imDev2023/Stoker-Markets-research` on 2026-10-07, before this repository went public (StonkFun's Terms of Use ban copying):
+
 - `website/`: page text (`pages/`), screenshots, Terms of Use, public API dumps (`api/`, including all 139,770 assets and all 3,985 graduated tokens in `api/bulk/`), internal page feeds, Jupiter chart candles, frontend bundles and route manifest (`meta/buildManifest.js`).
 - `onchain/`: on-chain report (`onchain/README.md`), decoded accounts, 29 full transactions, program binaries and IDLs, pool dumps and decoder scripts.
 - `social/`: X profile and posts, Telegram channel, and a links table (`social/README.md`).

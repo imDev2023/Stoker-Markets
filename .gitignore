@@ -7,17 +7,15 @@ node_modules/
 # Large research artefacts (program binaries, raw dumps)
 research/onchain/programs/*.so
 research/**/*.gz
-research/website/api/bulk/
-research/website/api/rewards_limit_100.json
-research/website/api/internal/rewards-overview.json
-research/website/frontend-js/*.js
 .firecrawl/
 
 # Throwaway keypairs from spikes
 **/.keys/
 
 # Private Telegram group export (other people's messages; never publish)
-research/social/telegram-group/
+# StonkFun's saved pages and social material: private repo imDev2023/Stoker-Markets-research, never here (this repo is public)
+research/website/
+research/social/
 
 # Full Meteora DBC account dump (too large for git; the summary JSONs are kept)
 research/competitors/meteora_dbc_configs.json

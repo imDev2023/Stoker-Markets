@@ -21,7 +21,7 @@ The Flywheel rule is the top N graduated Launches by 24-hour trading volume valu
 
 - Paying Holder Rewards through a queue of per-holder jobs (Cloudflare Queues) with Durable Object locks: more moving parts than a resumable table of payouts and the job lease the other jobs already use; the table gives the same guarantee and is easier to read back.
 - Selling the collected tax and paying holders in SOL as the only model: rejected by the PRD; holders complained about exactly that at StonkFun.
-  The amendment below lets the Creator choose it per Launch, with the selling bounded and published, because the demand for "hold a meme, earn a stock" is the main reason people hold reward coins there (`research/social/x-gap-analysis.md`, gap 1).
+  The amendment below lets the Creator choose it per Launch, with the selling bounded and published, because the demand for "hold a meme, earn a stock" is the main reason people hold reward coins there (`research/social/x-gap-analysis.md` (private repo `imDev2023/Stoker-Markets-research`), gap 1).
 - Burning from a fixed percentage of each Fee Collector run rather than from the Ledger: a run that fails half way, or revenue collected while the burn is idle, would be lost or double counted; the Ledger makes the shares exact and reproducible.
 - Exact-input buys: the burn instruction needs to know how many coins to burn, and leaving dust in the wallet breaks the "never keeps any" property.
 
