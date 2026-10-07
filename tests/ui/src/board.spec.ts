@@ -150,3 +150,12 @@ test("a coin nobody has bought shows the curve holding everything and a Creator 
   await expect(holders.getByRole("listitem")).toHaveCount(1);
   await expect(holders.getByRole("listitem")).toContainText(/Curve\s*100\.0%/);
 });
+
+test("the platform's icon is served where the PlatformConfig names it", async ({ page }) => {
+  // The PlatformConfig's `img` is `<web>/icon.png` on-chain (runbook, section 2); wallets and explorers read it from there.
+  const icon = await page.request.get("/icon.png");
+  expect(icon.status()).toBe(200);
+  expect(icon.headers()["content-type"]).toBe("image/png");
+  await page.goto("/");
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute("href", "/icon.png");
+});

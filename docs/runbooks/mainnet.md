@@ -50,6 +50,9 @@ Exactly what `bootstrapPlatform` in `tools/localnet/src/index.ts` does on the lo
      --name "<name>" --web https://<domain> --img https://<domain>/icon.png
    ```
 
+   The `--img` the chain will carry is `https://<domain>/icon.png`, which the web Worker serves from `apps/web/public/icon.png` once it is deployed on the domain (section 9); the admin can change `img` later, at the price of another cold signature.
+   Simulated on mainnet on 2026-10-05 with a stand-in admin, the mainnet CPMM config and nothing sent: all four instructions pass (546 bytes, about 53,000 compute units), and the PlatformConfig's rent is 0.00544576 SOL.
+
    `--platform-fee-bps` defaults to 75 and `--creator-fee-bps` to 25 (ADR 0007). On devnet (section 11), where the admin can be a file keypair, `--sign admin.json` signs, sends and runs the check below in one go.
 4. Verify by decoding the account, which is the acceptance criterion in #23: `pnpm --filter @launchpad/mainnet platform-config check --rpc ... --cluster mainnet --admin <admin pubkey>` prints the decoded PlatformConfig, and with the same `--operations`, `--cpswap-config`, `--name`, `--web` and `--img` as the build it names every field that differs from what was decided, or passes: `fee_rate` 7500, `creator_fee_rate` 2500, `migrate_nft_info` `{1000000, 0, 0}`, `platform_vesting_scale` 0, `fee_wallet`, `nft_wallet`, `transfer_fee_extension_auth`, `vesting_wallet` and `platform_cp_creator` all the operations wallet, `curve_rule_manager` the operations wallet, `restrict_curve_param` on, `cpswap_config` the chosen config, `name`, `web` and `img` as decided in #7. (`launchlabCoder.accounts.decode("PlatformConfig", data)` from `packages/chain` is what it decodes with.) The script is proven against the local chain in `tests/backend/src/mainnet-tools.test.ts`.
 5. `PLATFORM_CONFIG` is `launchlabPdas(program).platformConfig(admin)`; `PLATFORM_ADMIN` is the admin's address, and the API checks on mainnet that the one derives from the other.
@@ -84,7 +87,7 @@ The mainnet values are in the `env.production` block of `apps/api/wrangler.jsonc
 | --- | --- | --- |
 | `CLUSTER` | `mainnet` | turns every check below on |
 | `RPC_URL` | the Helius (or other provider) RPC URL with its key | must be https; never reaches a browser |
-| `PUBLIC_RPC_URL` | a public endpoint, or a browser key restricted to our domain | required on mainnet; https; refused if the URL carries a key, token or secret |
+| `PUBLIC_RPC_URL` | a keyless endpoint made for browsers, such as the Secure RPC URL in Helius's dashboard (no key in it, rate-limited per IP); a URL with `?api-key=` is refused even when the key is restricted to our domain. Not `https://api.mainnet-beta.solana.com`: it answers a server but refuses every request that carries a browser `Origin` with 403 "Access forbidden" (tested 2026-10-05 with `https://stoker.markets` and with localhost), so wallets could not read balances or send trades through it | required on mainnet; https; refused if the URL carries a key, token or secret |
 | `PUBLIC_API_URL` | `https://api.<our domain>` | refused if not https, or on localhost, a bare IP or `workers.dev`: every coin's metadata URL is built from it and can never change (section 8) |
 | `WEB_ORIGIN` | `https://<our domain>` | CORS |
 | `LAUNCHLAB_PROGRAM`, `CPMM_PROGRAM`, `LOCK_PROGRAM` | the mainnet ids in section 2 | the local defaults are devnet's |
