@@ -44,7 +44,7 @@ The Fee Collector's sweep leaves it in the operations wallet, and the Burn and F
 ## Considered Options
 
 - Keep ADR 0001 (0.5% on-chain, nothing after Graduation): fully trustless, but the owner wants parity with StonkFun's "on the curve and after graduation".
-- StonkFun's own split (1.00% platform, 0% creator on-chain, everything forwarded): more revenue passes through us, and its forward broke for about three weeks in September 2026 (`research/social/telegram-group-insights.md`). Keeping 0.25% on-chain means a broken job halves a Creator's curve earnings instead of ending them.
+- StonkFun's own split (1.00% platform, 0% creator on-chain, everything forwarded): more revenue passes through us, and its forward broke for about three weeks in September 2026 (`research/social/telegram-group-insights.md` (private repo `imDev2023/Stoker-Markets-research`)). Keeping 0.25% on-chain means a broken job halves a Creator's curve earnings instead of ending them.
 - Naming the Creator as the pool's creator, or giving the Creator the Fee Key: on-chain, but it cuts post-Graduation revenue by roughly 80% or pays about 0.2%, and ADR 0001 already rejected both.
 - Always paying in SOL: one asset for the Creator, but it adds a swap with its cost, slippage and failure path, and a swap can only promise the least it delivers, not an exact amount (#64).
 - Forwarding exactly 0.5% of indexed pool volume: it depends on the Indexer seeing every pool trade and could exceed what a transfer-fee Quote Asset actually delivered. Half of what was collected cannot.

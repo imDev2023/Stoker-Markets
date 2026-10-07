@@ -9,7 +9,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 2. `CONTEXT.md` - the domain glossary; use its terms in code, issues and UI copy.
 3. `docs/adr/` - fee model and the Creator Forward (0007, which supersedes 0001: 0.75% Platform Fee and 0.25% Creator Fee on-chain, the Creator topped up to about 0.5% on the curve and after Graduation by a forwarding job), Cloudflare hosting (0002), server-built transactions (0003), key custody (0004), price-banded curve rules (0005), Reward Rounds and Burn budgets (0006, to be amended by #43).
 4. `spike/launchlab-devnet/README.md` - what LaunchLab really does on devnet, with tx evidence and gotchas.
-5. `research/README.md` - background on StonkFun only; don't re-derive its findings. `research/social/x-gap-analysis.md` compares us with its full X timeline (1,121 posts) and is the evidence behind #41; `research/onchain/README.md` has its on-chain setup (1.00% to the platform and 0% to the creator on the curve, the creator's share forwarded off-chain).
+5. `research/README.md` - background on StonkFun only; don't re-derive its findings. `research/social/x-gap-analysis.md` in the private repo `imDev2023/Stoker-Markets-research` compares us with its full X timeline (1,121 posts) and is the evidence behind #41; `research/onchain/README.md` has its on-chain setup (1.00% to the platform and 0% to the creator on the curve, the creator's share forwarded off-chain).
 6. `docs/runbooks/mainnet.md` - the go-live runbook (#23): what an agent prepared, and what only the owner can do.
 
 ## Code map
@@ -47,7 +47,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 - Referral share fee (#21): a trade names `share_fee_rate` and the referrer's Quote Asset account (the account before the system program among the remaining accounts); the rate is capped by the GlobalConfig's `max_share_fee_rate` (SOL 1%, most configs including every stock 0), so `referralShare` on a Quote Asset says whether it applies. The Platform Fee and Creator Fee shown anywhere come from the chain (`GET /v1/platform`), never a constant; a change is announced ahead (#22) and applied by the cold admin key.
 
 - After Graduation a trader pays 1.25% and the platform collects about 1.21% of it: the pool's 1% creator fee (half forwarded to the Creator) and, through the Fee Key on the locked liquidity, the liquidity providers' 84% of the 0.25% trade fee; Raydium keeps 0.04%. The mainnet CPMM config is recorded in the runbook's section 2. StonkFun's own token trades mostly on Meteora, but its launchpad is LaunchLab like ours.
-- StonkFun is a LaunchLab `PlatformConfig` pair plus an off-chain backend; its ~0.5% creator share is an off-chain forward that broke for ~3 weeks (`research/social/telegram-group-insights.md`).
+- StonkFun is a LaunchLab `PlatformConfig` pair plus an off-chain backend; its ~0.5% creator share is an off-chain forward that broke for ~3 weeks (`research/social/telegram-group-insights.md` in the private repo `imDev2023/Stoker-Markets-research`).
 - Asset pairing is not StonkFun-only: pump.fun has admin-listed custom quotes since 2026-09-09 (`research/competitors/README.md`). Our wedge is open (any Raydium GlobalConfig quote, 571 on mainnet) plus trustless (a Creator Fee paid by the chain, where StonkFun's on-chain creator share is 0%, and every forward on a public Ledger).
 - Only Raydium's migrate wallet can graduate a pool, and its crank migrates a new platform's pools within seconds (proven on real devnet 2026-09-27).
 - A new Quote Asset needs Raydium to create its GlobalConfig; only the Platform Token's is planned (after it graduates).
@@ -57,7 +57,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 ## Traps
 
 - An airdrop at launch is only for Creator wallets the operator has allowed (`/v1/operator/airdrop-creators`, one `platform_settings` row; empty by default, so the form shows no airdrop and `prepare` answers 403). Tests allow a wallet first: `allowAirdrops` in both suites' helpers, and the backend `prepare` helper does it unless `unlisted` is set.
-- The owner wants StonkFun's features matched but in our own words: never paste its copy, and never fetch stonkfun.xyz (the saved pages are under `research/website/`).
+- The owner wants StonkFun's features matched but in our own words: never paste its copy, and never fetch stonkfun.xyz (the saved pages are in the private repo `imDev2023/Stoker-Markets-research`, never in this one, which is public).
 - Text on the launch form, coin page or home page is in nearly every pixel baseline: a wording change re-baselines about 100 images, and a header change 136.
 - A test that types into the trade panel right after connecting must first wait for the panel's "Pay with" choice to settle: the panel never switches under a typed amount.
 - The Reward Engine's job summary (`POST /v1/operator/jobs/reward-rounds`) covers every Reward Launch there is: a test reads its own coin's entries by mint, and runs the engine once first when it wants a run's `sold` or `paid` to be its coin's alone. A Quote Asset payout's sale is bounded by the market as it stands at that run, so compute the cap (`loadCurve`, 0.5% of `virtualBase - realBase`) right before the run that sells.
@@ -125,7 +125,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 - `info@stoker.markets` receives through Cloudflare Email Routing (forwarded to the owner's Gmail) and sends from that Gmail through Brevo's SMTP relay, which signs with the domain's DKIM key (`brevo1` and `brevo2._domainkey`); sending through `smtp.gmail.com` instead brings back Outlook's "can't verify the sender" banner. The method, a checklist and a DNS checker are in https://github.com/imDev2023/custom-domain-email. The Brevo SMTP key expires after 90 days without use.
 - Devnet faucets are rate-limited and faucet.solana.com is closed to agents; the owner's default Solana CLI wallet holds devnet SOL.
 - StonkFun's Terms of Use ban scraping and copying: never use its frontend, copy or branding; never open its `/admin`, `/api/admin/*` or `/integrators`.
-- `research/social/telegram-group/` is the owner's private group export (other people's messages): gitignored, never published.
+- StonkFun's saved site pages and social material live in the private repo `imDev2023/Stoker-Markets-research` (`research/website/`, `research/social/`; `research/social/telegram-group/` is the owner's private group export, local only). This repository is public since 2026-10-07: never add them back, and never commit anything from stonkfun.xyz here.
 
 ## Multica dashboard
 
