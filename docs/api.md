@@ -59,5 +59,6 @@ Behind `Authorization: Bearer <OPERATOR_TOKEN>`.
 | `POST /operator/rewards/rules` | Announces a Reward Round rules change, effective no sooner than `REWARD_RULES_LEAD_SECONDS` ahead. |
 | `PUT /operator/platform-token` | Names the Platform Token the Burn buys. |
 | `GET /operator/airdrop-creators`, `POST` (`wallet`), `DELETE /operator/airdrop-creators/:wallet` | The Creator wallets allowed an airdrop at launch. The list starts empty, so nobody is offered one until the operator names a wallet. |
+| `GET /operator/mint-keys`, `POST` (`creator`, `secretKey`: a keypair file's 64 bytes), `DELETE /operator/mint-keys/:mint` | Mint keys chosen for a Creator wallet's next launch (the Platform Token's vanity address, #75), kept encrypted under `MINT_KEY_SECRET`; the list says which a draft has taken, never the secret. A taken key can't be removed; a stored address that is already a coin or draft here is refused. |
 | `POST /operator/fees/announce`, `POST /operator/fees/prepare` | Announces a Platform Fee or Creator Fee change, effective no sooner than `FEE_CHANGE_LEAD_SECONDS` ahead (a day on mainnet), and once due prepares the `update_platform_config` transaction for the cold admin key (ADR 0004). The Indexer marks the announcement applied when the change lands. |
 | `POST /operator/api-keys` and the rest | See API keys. |
