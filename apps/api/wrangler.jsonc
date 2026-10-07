@@ -182,7 +182,7 @@
         "SOL_ROUTE_SOURCE": "jupiter"
       },
       "triggers": { "crons": ["* * * * *", "*/5 * * * *", "15 * * * *", "*/10 * * * *", "45 * * * *"] },
-      "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "00000000000000000000000000000000" }],
+      "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "01fb2d350e084d64b496759343705c51" }],
       "r2_buckets": [{ "binding": "METADATA_BUCKET", "bucket_name": "stoker-metadata" }]
     }
   }
