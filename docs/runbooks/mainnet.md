@@ -166,10 +166,18 @@ The web Worker renders pages on the server, and all of those requests reach the 
 
 ## 10. Launch #1: the Platform Token (owner)
 
-1. Launch it from the site like any Creator, paired with SOL, standard (not a Reward Launch), with **no First Buy and no Airdrop**: a First Buy is a team allocation, and the PRD promises none. The launch transaction is public proof; publish its signature and the mint.
-2. Name it for the Burn: `PUT /v1/operator/platform-token` with the mint (the Burn is idle until then).
-3. Once it graduates (85 SOL raised, Raydium's crank migrates it within seconds), ask Raydium for a LaunchLab GlobalConfig with the Platform Token as quote mint; only Raydium can create one (CLAUDE.md, settled). When it exists, the next Quote Registry refresh lists it, prices it and writes its curve rule, and the token becomes a Quote Asset with no code change.
-4. If the Platform Token's GlobalConfig should be in the Platform Lookup Table, extend the table (section 3).
+1. Its address starts with `Stoker` (owner, 2026-10-06): the keypair is ground with the three wallets (section 1). Store it for the wallet that will launch, from the Mac that holds the file (the secret travels once, over https, to the API; it is kept encrypted under `MINT_KEY_SECRET` and never answered back):
+
+   ```sh
+   curl -X POST https://api.stoker.markets/v1/operator/mint-keys -H "authorization: Bearer $OPERATOR_TOKEN" -H "content-type: application/json" \
+     -d "{\"creator\": \"<the launching wallet>\", \"secretKey\": $(cat ~/.config/stoker/mainnet/platform-token.json)}"
+   ```
+
+   That wallet's next launch takes the address (`GET /v1/operator/mint-keys` shows it `drafted` once prepared), so launch from that wallet next, and nothing else from it before. A key no draft has taken can be removed with `DELETE /v1/operator/mint-keys/<address>`.
+2. Launch it from the site like any Creator, paired with SOL, standard (not a Reward Launch), with **no First Buy and no Airdrop**: a First Buy is a team allocation, and the PRD promises none. The launch transaction is public proof; publish its signature and the mint.
+3. Name it for the Burn: `PUT /v1/operator/platform-token` with the mint (the Burn is idle until then).
+4. Once it graduates (85 SOL raised, Raydium's crank migrates it within seconds), ask Raydium for a LaunchLab GlobalConfig with the Platform Token as quote mint; only Raydium can create one (CLAUDE.md, settled). When it exists, the next Quote Registry refresh lists it, prices it and writes its curve rule, and the token becomes a Quote Asset with no code change.
+5. If the Platform Token's GlobalConfig should be in the Platform Lookup Table, extend the table (section 3).
 
 ## 11. Before the switch: the devnet dress rehearsal (owner runs it, an agent prepares it)
 

@@ -159,3 +159,14 @@ export type AllowAirdropCreator = z.infer<typeof AllowAirdropCreator>;
 /** Operator: the Creator wallets allowed an airdrop at launch. */
 export const AirdropCreators = z.object({ wallets: z.array(base58) });
 export type AirdropCreators = z.infer<typeof AirdropCreators>;
+
+/** Operator: a mint key chosen for a Creator's next launch (a ground vanity address), as a Solana keypair file's 64 bytes. */
+export const StoreChosenMintKey = z.object({ creator: base58, secretKey: z.array(z.number().int().min(0).max(255)).length(64) });
+export type StoreChosenMintKey = z.infer<typeof StoreChosenMintKey>;
+
+/** Operator: a chosen mint key, and whether a launch draft has taken it. The secret is never answered. */
+export const ChosenMintKey = z.object({ mint: base58, creator: base58, drafted: z.boolean(), createdAt: z.string() });
+export type ChosenMintKey = z.infer<typeof ChosenMintKey>;
+
+export const ChosenMintKeys = z.object({ keys: z.array(ChosenMintKey) });
+export type ChosenMintKeys = z.infer<typeof ChosenMintKeys>;
