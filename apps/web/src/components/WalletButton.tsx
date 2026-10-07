@@ -41,12 +41,24 @@ export function WalletButton({ variant = "header" }: { variant?: "header" | "inl
   if (publicKey) {
     return (
       <div className={wrap} ref={menu}>
-        <button type="button" className={styles.connected} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-          {wallet?.adapter.icon && <img src={wallet.adapter.icon} alt="" width={18} height={18} />}
+        <button
+          type="button"
+          className={styles.connected}
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          title={wallet ? `Connected with ${wallet.adapter.name}` : undefined}
+        >
+          <svg className={styles.glyph} viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+            <path
+              d="M3 6.5A2.5 2.5 0 0 1 5.5 4h9A1.5 1.5 0 0 1 16 5.5V6h-1V5.5a.5.5 0 0 0-.5-.5h-9A1.5 1.5 0 0 0 4 6.5v7A1.5 1.5 0 0 0 5.5 15h9a.5.5 0 0 0 .5-.5V13h1v1.5a1.5 1.5 0 0 1-1.5 1.5h-9A2.5 2.5 0 0 1 3 13.5v-7Z"
+              fill="currentColor"
+            />
+            <path d="M11 8h5.5a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5H11a2 2 0 1 1 0-4Zm0 1.25a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z" fill="currentColor" />
+          </svg>
           <span className="mono">{shortAddress(publicKey.toBase58())}</span>
         </button>
         {open && (
-          <div className={styles.menu} role="menu">
+          <div className={styles.menu} role="menu" aria-label={wallet ? `Connected with ${wallet.adapter.name}` : "Wallet"}>
             <Link href={`/creator/${publicKey.toBase58()}`} role="menuitem" className={styles.menuLink} onClick={() => setOpen(false)}>
               Your Creator Fee
             </Link>

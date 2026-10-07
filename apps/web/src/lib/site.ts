@@ -13,10 +13,12 @@ export const SITE_LINKS = {
   email: "info@stoker.markets",
 } as const;
 
-/** The header's links, in order; the footer repeats them under "Explore". */
+/** Launching is the header's one button, not a link among the others. */
+export const LAUNCH_LINK = { href: "/launch", label: "Launch a coin" } as const;
+
+/** The header's plain links, in order; the footer repeats them under "Explore", the launch link among them. */
 export const NAV_LINKS = [
   { href: "/", label: "Coins" },
-  { href: "/launch", label: "Launch a coin" },
   { href: "/rewards", label: "Rewards" },
   { href: "/burns", label: "Burns" },
   { href: "/revenue", label: "Revenue" },
@@ -24,7 +26,7 @@ export const NAV_LINKS = [
 ] as const;
 
 export const FOOTER_GROUPS = [
-  { title: "Explore", links: [...NAV_LINKS, { href: "/announcements", label: "Announcements" }] },
+  { title: "Explore", links: [NAV_LINKS[0], LAUNCH_LINK, ...NAV_LINKS.slice(1), { href: "/announcements", label: "Announcements" }] },
   {
     title: "Creators",
     links: [

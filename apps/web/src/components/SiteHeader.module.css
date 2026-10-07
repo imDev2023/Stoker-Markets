@@ -7,11 +7,13 @@
   border-bottom: 1px solid var(--line);
 }
 
+/* The bar spans the window at the page's gutters: it carries more than the content column is wide. */
 .bar {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 16px;
   height: 64px;
+  padding: 0 var(--gutter);
 }
 
 .wordmark {
@@ -24,16 +26,13 @@
   font-size: 1.125rem;
   letter-spacing: -0.01em;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .mark {
   width: 28px;
   height: 28px;
   border-radius: 7px;
-}
-
-.social {
-  display: flex;
 }
 
 .cluster {
@@ -50,29 +49,85 @@
 
 .nav {
   display: flex;
-  gap: 4px;
+  align-self: stretch;
+  gap: 2px;
   margin-right: auto;
 }
 
+/* A link is as tall as the bar, so the current section's marker sits on the bar's bottom edge. */
 .link {
-  padding: 8px 12px;
-  border-radius: 8px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 11px;
   font-weight: 500;
   font-size: 0.9375rem;
   color: var(--ink-2);
   text-decoration: none;
+  white-space: nowrap;
+  transition: color 120ms ease;
 }
 
 .link:hover {
   color: var(--ink);
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+
+.link[aria-current="page"] {
+  color: var(--ink);
+}
+
+.link[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  left: 11px;
+  right: 11px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--cobalt);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.social {
+  display: flex;
+}
+
+.launch {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 40px;
+  padding: 0 16px 0 14px;
+  border-radius: 999px;
+  background: var(--cobalt);
+  color: var(--on-cobalt);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background-color 120ms ease;
+}
+
+.launch:hover {
+  background: var(--cobalt-strong);
 }
 
 /*
- * Below the width the wordmark, the six links, the socials and the wallet button need side by side, the nav steps
- * aside: the wordmark leads to the coins, the hero to launching, and the footer carries every link.
+ * Narrower windows give things up in order: first the socials (the footer has them), then the links (the wordmark leads
+ * to the coins, the button to launching, the footer to everything), then the badge and the words on the two buttons.
  */
-@media (max-width: 1040px) {
+@media (max-width: 1280px) {
+  .social {
+    display: none;
+  }
+}
+
+@media (max-width: 1100px) {
   .nav {
     display: none;
   }
@@ -85,7 +140,22 @@
   .bar {
     gap: 12px;
   }
-  .social {
+  .cluster {
     display: none;
+  }
+  .launch {
+    width: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+  /* Hidden from sight, kept as the button's name. */
+  .launchWord {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 }

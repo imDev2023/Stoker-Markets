@@ -54,16 +54,26 @@
   cursor: progress;
 }
 
+/* In the header the launch button is the one filled action, so connecting is outlined there like the connected state. */
+.header .connect,
 .connected {
   border: 1px solid var(--line);
   background: var(--paper);
+  color: var(--ink);
 }
 
+.header .connect:hover,
 .connected:hover {
   border-color: var(--ink-3);
+  background: var(--paper);
+  color: var(--ink);
 }
 
-.connected img,
+.glyph {
+  flex: none;
+  color: var(--ink-2);
+}
+
 .menu img {
   border-radius: 4px;
 }

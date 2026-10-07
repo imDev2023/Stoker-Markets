@@ -202,3 +202,30 @@ test("the platform's icon is served where the PlatformConfig names it", async ({
   await page.goto("/");
   await expect(page.locator('link[rel="icon"]')).toHaveAttribute("href", "/icon.png");
 });
+
+test("the header's search finds a coin from any page and opens it", async ({ page }) => {
+  const creator = await fundedKeypair(5);
+  const mint = await launchViaApi(creator, { name: "Haystack Finder", symbol: "HAYST" });
+  await page.goto("/rewards");
+
+  // ⌘K (Ctrl+K elsewhere) opens the palette with its field focused; the coin is found through the API's search.
+  await page.keyboard.press("ControlOrMeta+k");
+  const box = page.getByRole("combobox", { name: "Search coins" });
+  await expect(box).toBeFocused();
+  await box.fill("haystack");
+  const found = page.getByRole("listbox", { name: "Coins found" });
+  await expect(found.getByRole("option")).toHaveCount(1);
+  await expect(found.getByRole("option")).toContainText("Haystack Finder");
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(`/coin/${mint}`);
+  await expect(page.getByRole("dialog", { name: "Search coins" })).toHaveCount(0);
+
+  // The header's button opens it too; nothing matching says what was searched for, and Escape hands focus back.
+  const open = page.getByRole("banner").getByRole("button", { name: "Search", exact: true });
+  await open.click();
+  await page.getByRole("combobox", { name: "Search coins" }).fill("no such coin anywhere");
+  await expect(page.getByText("No coins match “no such coin anywhere”.")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "Search coins" })).toHaveCount(0);
+  await expect(open).toBeFocused();
+});
