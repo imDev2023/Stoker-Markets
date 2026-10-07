@@ -85,7 +85,7 @@ Done on 2026-10-07: Supabase project `stoker-mainnet` (ref `fzhdksjedbgompsxryvz
 ## 5. The API Worker: production configuration checklist
 
 The mainnet values are in the `env.production` block of `apps/api/wrangler.jsonc` (deploy with `wrangler deploy --env production`), so the local defaults stay as they are.
-`PLATFORM_CONFIG`, `PLATFORM_ADMIN`, `PLATFORM_LOOKUP_TABLE`, `TREASURY_WALLET` and the Hyperdrive id are empty there until sections 1 to 4 produce them. Everything below is read by `config()` and refused on mainnet when wrong.
+`PLATFORM_CONFIG`, `PLATFORM_ADMIN`, `PLATFORM_LOOKUP_TABLE` and `TREASURY_WALLET` are empty there until sections 1 to 3 produce them; the Hyperdrive id is set (section 4). Everything below is read by `config()` and refused on mainnet when wrong.
 
 | Variable | Mainnet value | Checked |
 | --- | --- | --- |
