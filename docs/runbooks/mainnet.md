@@ -123,7 +123,7 @@ Secrets, set with `wrangler secret put <NAME> --env production`, never in the co
 | `MINT_KEY_SECRET` | at least 32 random characters. Every launch's mint key is derived from it and a nonce, so a retry rebuilds the same coin address; never rotate it while any prepared launch could still be retried, and keep an offline copy |
 | `OPERATOR_TOKEN` | a long random string; whoever holds it has the operator endpoints and the `/operator` page. **owner**: who holds it |
 | `ALERT_WEBHOOK_URL` | the chat webhook (Slack, Discord, Telegram) alerts are posted to as JSON; without it alerts are only stored. **owner**: which channel |
-| `JUPITER_API_KEY` | optional; without it prices use the free `lite-api.jup.ag` host and routes use `api.jup.ag` without a key, both with lower limits. **owner**: whether to pay for one |
+| `JUPITER_API_KEY` | the owner's Jupiter key, `JUP_API_KEY` in `~/.config/env/global.env` (checked 2026-10-07: `api.jup.ag` answers it 200). Set it: without it prices use the keyless `lite-api.jup.ag` host, which Jupiter is retiring, and routes run keyless at 0.5 requests a second. Plans are $0 (1 rps), $25 a month (10 rps) and up; raise the plan when the portal's usage page shows 429s |
 | `HELIUS_API_KEY`, `HELIUS_WEBHOOK_ID` | optional, together: the Helius API key and the id of the raw webhook from section 7. With both, the Indexer adds each graduated pool to the webhook as it indexes the Graduation, through Helius's webhook API (`PUT /v0/webhooks/<id>`, `apps/api/src/helius.ts`); one without the other fails `/health`. Without them the webhook's addresses are edited by hand |
 
 After the deploy: `GET https://api.<domain>/health` must answer `{"ok":true}`; any configuration error is its message.
