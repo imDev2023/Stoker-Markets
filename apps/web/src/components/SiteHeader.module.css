@@ -26,6 +26,16 @@
   text-decoration: none;
 }
 
+.mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+}
+
+.social {
+  display: flex;
+}
+
 .cluster {
   font-family: var(--font-mono);
   font-stretch: 100%;
@@ -59,10 +69,10 @@
 }
 
 /*
- * Below the width the wordmark, all four links and the wallet button need side by side, the nav steps aside: the
- * wordmark leads to the coins and the hero leads to launching.
+ * Below the width the wordmark, the six links, the socials and the wallet button need side by side, the nav steps
+ * aside: the wordmark leads to the coins, the hero to launching, and the footer carries every link.
  */
-@media (max-width: 880px) {
+@media (max-width: 1040px) {
   .nav {
     display: none;
   }
@@ -74,5 +84,8 @@
 @media (max-width: 640px) {
   .bar {
     gap: 12px;
+  }
+  .social {
+    display: none;
   }
 }

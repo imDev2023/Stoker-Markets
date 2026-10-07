@@ -23,8 +23,9 @@ export async function fillForm(page: Page, coin: Partial<typeof COIN> = COIN) {
   await page.getByLabel("Ticker").fill(coin.symbol ?? COIN.symbol);
   if (coin.description) await page.getByLabel("Description").fill(coin.description);
   if (coin.website) await page.getByLabel("Website").fill(coin.website);
-  if (coin.x) await page.getByLabel(/^X\b/).fill(coin.x);
-  if (coin.telegram) await page.getByLabel("Telegram").fill(coin.telegram);
+  // The social fields by role: the header's and footer's "Stoker on X" and "Stoker on Telegram" links share the words.
+  if (coin.x) await page.getByRole("textbox", { name: /^X\b/ }).fill(coin.x);
+  if (coin.telegram) await page.getByRole("textbox", { name: "Telegram" }).fill(coin.telegram);
 }
 
 /** Sets the launch options: a First Buy in SOL, and an Airdrop list as the Creator would type it. */

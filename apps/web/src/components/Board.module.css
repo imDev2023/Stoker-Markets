@@ -41,28 +41,72 @@
   50% { opacity: 0.35; }
 }
 
+/* Row one: the search on the left, the sorts on the right. */
 .toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px 24px;
-  margin-bottom: 20px;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 1 440px;
+  min-width: 0;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  color: var(--ink-3);
+  transition: border-color 120ms ease;
+}
+
+.search:focus-within {
+  border-color: var(--cobalt);
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9375rem;
+  outline: none;
+}
+
+.search input::placeholder {
+  color: var(--ink-3);
+}
+
+.search input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
 }
 
 .sorts {
-  display: inline-grid;
-  grid-template-columns: repeat(4, auto);
-  gap: 3px;
-  padding: 3px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--paper);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.sortLabel {
+  margin-right: 8px;
+  font-size: 0.875rem;
+  color: var(--ink-3);
 }
 
 .sorts button {
   height: 36px;
-  padding: 0 16px;
+  padding: 0 14px;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -79,34 +123,44 @@
   color: var(--paper);
 }
 
+/* Row two: what the coins are paired with, then a Quote Asset within that. */
 .filters {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
+  margin-bottom: 20px;
 }
 
-.categories {
+.paired {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
 }
 
-.categories button {
-  height: 32px;
+.pairedLabel {
+  margin-right: 6px;
+  font-size: 0.875rem;
+  color: var(--ink-3);
+}
+
+.paired button {
+  height: 34px;
   padding: 0 13px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--ink-2);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
   transition: border-color 120ms ease, color 120ms ease, background-color 120ms ease;
 }
 
-.categories button[aria-pressed="true"] {
+.paired button[aria-pressed="true"] {
   border-color: var(--cobalt);
   background: var(--plate);
   color: var(--cobalt-strong);
@@ -117,7 +171,7 @@
   .sorts button:not([aria-pressed="true"]):hover {
     color: var(--ink);
   }
-  .categories button:not([aria-pressed="true"]):hover {
+  .paired button:not([aria-pressed="true"]):hover {
     border-color: var(--ink-3);
     color: var(--ink);
   }
@@ -196,24 +250,33 @@
   background: var(--cobalt-strong);
 }
 
-/* One column of controls: each takes the full width, and the four sorts sit two by two. */
+/* One column of controls: the search takes the full width, the sorts sit two by two, the chips wrap. */
 @media (max-width: 640px) {
   .toolbar,
   .filters {
     flex-direction: column;
     align-items: stretch;
   }
+  .search {
+    flex-basis: auto;
+  }
   .sorts {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    gap: 3px;
+    padding: 3px;
+    border: 1px solid var(--line);
     border-radius: 22px;
+    background: var(--paper);
   }
-  /* Tighter chips keep all five categories on one line across a phone. */
-  .categories {
-    justify-content: space-between;
-    gap: 4px;
+  .sortLabel {
+    display: none;
   }
-  .categories button {
+  .pairedLabel {
+    flex-basis: 100%;
+    margin: 0 0 2px;
+  }
+  .paired button {
     padding: 0 10px;
   }
 }

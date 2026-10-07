@@ -36,7 +36,7 @@ async function quoteRefs(db: Db, decimals: Map<string, number>) {
   const rows = mints.length ? await db.select().from(quoteAssets).where(inArray(quoteAssets.mint, mints)) : [];
   const listed = new Map(rows.map((r) => [r.mint, toQuoteRef(r)]));
   return (mint: string): QuoteRef =>
-    listed.get(mint) ?? { mint, symbol: null, name: null, decimals: decimals.get(mint)!, logo: null, category: "community" };
+    listed.get(mint) ?? { mint, symbol: null, name: null, decimals: decimals.get(mint)!, logo: null, category: "community", issuer: null };
 }
 
 creatorFeeRoutes.get("/creators/:address/fees", async (c) => {

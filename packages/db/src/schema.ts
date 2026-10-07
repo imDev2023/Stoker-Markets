@@ -170,6 +170,8 @@ export const quoteAssets = pgTable("quote_assets", {
   logo: text("logo"),
   /** What kind of asset it is, for filtering the board: from its mint address or its issuer's authorities. */
   category: text("category", { enum: ["sol", "stablecoin", "tokenized_stock", "community"] }).notNull().default("community"),
+  /** Which issuer a tokenized stock is from, by the authorities on its mint; null for every other kind. */
+  issuer: text("issuer", { enum: ["xstocks", "prestocks", "backpack"] }),
   /** Null when no source gives a reliable price. */
   priceUsd: numeric("price_usd"),
   priceSol: numeric("price_sol"),

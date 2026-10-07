@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { Connection, PublicKey, type ParsedAccountData } from "@solana/web3.js";
-import { and, asc, count, desc, eq, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, like, or, sql, type SQL } from "drizzle-orm";
 import { cpmmPdas, launchlabPdas, programsFor } from "@launchpad/chain";
 import {
   LaunchListQuery, type Holder, type HolderKind, type HolderList, type LaunchList, type LaunchQuoteList, type LaunchSummary,
@@ -16,6 +16,15 @@ import { curveProgress } from "./trades";
 export const launchRoutes = new Hono<AppEnv>();
 
 type Filters = Omit<LaunchListQuery, "limit" | "offset" | "sort"> & { mint?: string };
+
+/** A LIKE pattern that matches the text itself: its `%`, `_` and `\` are escaped, so "100%" finds a coin called that. */
+const likeText = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
+
+/** The name or ticker contains the search (any case), or the mint address starts with it (addresses are case-sensitive). */
+function searchClause(q: string) {
+  const contains = `%${likeText(q)}%`;
+  return or(ilike(launches.name, contains), ilike(launches.symbol, contains), like(launches.mint, `${likeText(q)}%`));
+}
 
 /**
  * The Launches matching `filters`, each with its market figures, in `sort` order.
@@ -51,8 +60,10 @@ async function queryLaunches(db: Db, filters: Filters, sort: LaunchListQuery["so
   };
   const where = and(
     filters.mint ? eq(launches.mint, filters.mint) : undefined,
+    filters.q ? searchClause(filters.q) : undefined,
     filters.quote ? eq(launches.quoteMint, filters.quote) : undefined,
     filters.category ? eq(quoteAssets.category, filters.category) : undefined,
+    filters.issuer ? eq(quoteAssets.issuer, filters.issuer) : undefined,
     filters.status ? sql`${status} = ${filters.status}` : undefined,
     filters.creator ? eq(launches.creator, filters.creator) : undefined,
   );

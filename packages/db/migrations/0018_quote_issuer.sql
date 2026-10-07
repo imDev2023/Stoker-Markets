@@ -1,0 +1,1 @@
+ALTER TABLE "quote_assets" ADD COLUMN "issuer" text;

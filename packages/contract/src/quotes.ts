@@ -19,6 +19,14 @@ export const QuoteCategory = z.enum(QUOTE_CATEGORIES);
 export type QuoteCategory = z.infer<typeof QuoteCategory>;
 
 /**
+ * Which issuer a tokenized stock comes from, read from the authorities it keeps over the mint; the board's "Paired with"
+ * chips are finer than the category for stocks. Null for every Quote Asset that is not a tokenized stock.
+ */
+export const QUOTE_ISSUERS = ["xstocks", "prestocks", "backpack"] as const;
+export const QuoteIssuer = z.enum(QUOTE_ISSUERS);
+export type QuoteIssuer = z.infer<typeof QuoteIssuer>;
+
+/**
  * The kinds of Quote Risk Label. From the mint: its issuer's power to freeze wallets, move tokens, pause transfers, add
  * a transfer hook or freeze new accounts by default, a transfer fee (current or scheduled), and balances shown through a
  * multiplier or with interest. From the token list: not verified, and low or unknown liquidity.
@@ -53,6 +61,7 @@ export const QuoteRef = z.object({
   decimals: z.number().int(),
   logo: z.string().nullable(),
   category: QuoteCategory,
+  issuer: QuoteIssuer.nullable(),
 });
 export type QuoteRef = z.infer<typeof QuoteRef>;
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { QuoteCategory, QuoteRef } from "./quotes";
+import { QuoteCategory, QuoteIssuer, QuoteRef } from "./quotes";
 import { CurveStatus } from "./trades";
 
 /** Board discovery: sorting and filtering Launches, their market figures, the Quote Assets in use, and top holders. */
@@ -19,13 +19,21 @@ export const LaunchSort = z.enum(LAUNCH_SORTS);
 export type LaunchSort = z.infer<typeof LaunchSort>;
 
 export const LAUNCH_LIST_MAX = 100;
+export const LAUNCH_SEARCH_MAX = 64;
 
 /** Query string of GET /v1/launches. Filters combine; an unknown value is a 400, never silently ignored. */
 export const LaunchListQuery = z.object({
   sort: LaunchSort.default("new"),
+  /**
+   * A search: Launches whose name or ticker contains it (any case), or whose mint address starts with it. Whitespace
+   * around it is ignored, and an empty search is no filter.
+   */
+  q: z.string().trim().max(LAUNCH_SEARCH_MAX).optional(),
   /** Only Launches paired with this Quote Asset (its mint). */
   quote: base58.optional(),
   category: QuoteCategory.optional(),
+  /** Only Launches paired with a tokenized stock from this issuer. */
+  issuer: QuoteIssuer.optional(),
   status: CurveStatus.optional(),
   /** Only this Creator's Launches. */
   creator: base58.optional(),
