@@ -14,11 +14,13 @@ The API refuses to start on mainnet until the settings below are right (`apps/ap
 
 | Key | Where it lives | What it does |
 | --- | --- | --- |
-| Admin key | Cold: a hardware wallet or a Squads multisig. Never on a server. | Creates the PlatformConfig, whose address is derived from it (`["platform_config", admin]`) and can never change (ADR 0004). Signs the rare `update_platform_config`: fee changes (#22), and re-pointing the wallet roles after a leak. |
+| Admin key | Cold: a file keypair kept offline (owner, 2026-10-06: a software key, not a hardware wallet), or a Squads multisig. Never on a server. | Creates the PlatformConfig, whose address is derived from it (`["platform_config", admin]`) and can never change (ADR 0004). Signs the rare `update_platform_config`: fee changes (#22), and re-pointing the wallet roles after a leak. |
 | Operations wallet | Hot: its secret key is the Worker secret `OPERATIONS_KEY` (JSON byte array). | Every day-to-day role: fee wallet, Fee Key NFT wallet, `platform_cp_creator`, Reward Tax withdraw authority, fee-extension authority, curve rule manager, Reward Round payer, Burn and Flywheel buyer, Platform Lookup Table authority. |
-| Treasury | Cold: a hardware wallet or a Squads vault; `TREASURY_WALLET` is only its address. | Receives the Fee Collector's sweeps. |
+| Treasury | Cold: a file keypair kept offline (owner, 2026-10-06), or a Squads vault; `TREASURY_WALLET` is only its address. | Receives the Fee Collector's sweeps. |
 
-Generate the admin key on the cold device and note its public key: that address is the platform's identity for good. Generate the operations wallet with `solana-keygen new -o operations.json` on a machine you trust, put the JSON array into the Worker secret, and keep an offline copy: losing it strands the Reward Tax withdraw authority on every Reward Launch and the curve rule manager role until the admin re-points them.
+The owner decided (2026-10-06) that all three, and the Platform Token's mint (section 10), are vanity addresses starting with `Stoker` (a prefix, which stays visible when wallets and explorers truncate an address), ground on the owner's Mac with `solana-keygen grind --starts-with Stoker:4` in `~/.config/stoker/mainnet/` (about 400,000 keys a second on 20 threads, so about 26 hours a key; `grind.log` shows progress and the keypairs land as `<address>.json`, the secret never printed). Each is then renamed `admin.json`, `treasury.json`, `operations.json` and `platform-token.json`; the admin's address is the platform's identity for good. Keep `admin.json` and `treasury.json` on an encrypted offline medium and plug it in only to sign, put `operations.json`'s JSON array into the Worker secret `OPERATIONS_KEY`, and keep an offline copy of all three: losing the operations key strands the Reward Tax withdraw authority on every Reward Launch and the curve rule manager role until the admin re-points them. Vanity prefixes are branding only: nothing verifies them, and anyone can grind the same prefix.
+
+With a file admin keypair, section 2's `platform-config build --sign admin.json` signs, sends and checks in one go, so no hardware wallet signing path is needed.
 
 Funding the operations wallet, in SOL, before the first refresh:
 
