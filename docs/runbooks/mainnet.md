@@ -80,6 +80,8 @@ It prints the table's address, which is `PLATFORM_LOOKUP_TABLE`, and refuses a l
 2. Run the migrations from a machine, never from the Worker: `runMigrations(directUrl)` from `@launchpad/db/migrate` applies `packages/db/migrations`, including the trigger that makes `ledger_entries` append-only. Re-run it on every deploy that adds a migration.
 3. Create a Hyperdrive configuration for the database and put its id in `wrangler.jsonc` (`hyperdrive[0].id`, binding `HYPERDRIVE`).
 
+Done on 2026-10-07: Supabase project `stoker-mainnet` (ref `fzhdksjedbgompsxryvz`, org Farhan, London, created with the Supabase CLI; password in `~/.config/stoker/mainnet/db-password`), all 18 migrations applied through the session pooler (`postgres.fzhdksjedbgompsxryvz@aws-0-eu-west-2.pooler.supabase.com:5432`), Hyperdrive `stoker-mainnet` `01fb2d350e084d64b496759343705c51` on the direct host (`db.fzhdksjedbgompsxryvz.supabase.co`), in `env.production`.
+
 ## 5. The API Worker: production configuration checklist
 
 The mainnet values are in the `env.production` block of `apps/api/wrangler.jsonc` (deploy with `wrangler deploy --env production`), so the local defaults stay as they are.
@@ -204,7 +206,7 @@ Move it to `devnet.stoker.markets` and `api-devnet.stoker.markets`, which `env.d
 2. [ ] Admin key on a cold device; operations wallet and Treasury created; operations wallet funded (section 1).
 3. [ ] PlatformConfig created and decoded as expected (section 2).
 4. [ ] Platform Lookup Table created and rooted (section 3).
-5. [ ] Postgres migrated; Hyperdrive configured (section 4).
+5. [x] Postgres migrated; Hyperdrive configured (section 4). 2026-10-07.
 6. [ ] API deployed with the checklist's values and secrets; `/health` ok (section 5).
 7. [ ] Quote Registry refreshed until 571 Quote Assets each have a curve rule (section 6).
 8. [ ] Helius raw webhook on the PlatformConfig and the creator fee vault authority, with the secret (section 7); `HELIUS_API_KEY` and `HELIUS_WEBHOOK_ID` set so graduated pools join it on their own (section 5).
