@@ -127,8 +127,17 @@ test("a wallet without enough SOL is told so before signing", async ({ page, wal
   expect(wallet.requests).toHaveLength(0);
 });
 
-test("a Creator finds their earnings from their coin and is sent them by the platform, with nothing to claim", async ({ page, wallet, stack }) => {
+test("a Creator's earnings are their own page, offered once they have launched, and sent by the platform with nothing to claim", async ({ page, wallet, stack }) => {
   const creator = wallet.keypair.publicKey;
+  const account = page.getByRole("banner").getByRole("button", { name: creator.toBase58().slice(0, 4), exact: false });
+
+  // A wallet that has launched nothing is offered no earnings page.
+  await page.goto("/");
+  await connectTestWallet(page, page.getByRole("banner").getByRole("button", { name: "Connect wallet" }));
+  await account.click();
+  await expect(page.getByRole("menuitem", { name: "Disconnect" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Your earnings" })).toHaveCount(0);
+
   const mint = await launchViaApi(wallet.keypair, { name: "Fee Earner", symbol: "EARN" });
   const bought = await tradeViaApi(await fundedKeypair(), mint, "buy", BigInt(0.4 * LAMPORTS_PER_SOL));
   // Half of the trade's Platform Fee is the Creator's; the chain itself pays the Creator nothing (ADR 0009).
@@ -136,24 +145,23 @@ test("a Creator finds their earnings from their coin and is sent them by the pla
   const share = BigInt(bought.fees.platform) / 2n;
   expect(share).toBeGreaterThan(0n);
 
-  // Anyone can follow a coin to its Creator's public page.
+  // The coin's page says what its Creator earns and how, and leads to no creator page: a Creator's is their own.
   await page.goto(`/coin/${mint}`);
-  // The coin's page says what its Creator earns and how: half of what the platform collects, sent to their wallet.
   const earns = page.getByRole("definition").filter({ hasText: "sent to the Creator's wallet" });
   await expect(earns).toContainText("~0.5% of every trade on the curve and ~0.125% after graduation");
-  await page.getByRole("link", { name: "See what the Creator earned and was paid" }).click();
-  await page.waitForURL(`**/creator/${creator.toBase58()}`);
-  await expect(page.getByRole("heading", { name: "Creator earnings", exact: true })).toBeVisible();
+  await expect(page.locator('a[href^="/creator"]')).toHaveCount(0);
+
+  // Now that the wallet has launched a coin, the account menu leads to its earnings; nothing asks for a signature.
+  await account.click();
+  await page.getByRole("menuitem", { name: "Your earnings" }).click();
+  await page.waitForURL("**/creator");
+  await expect(page.getByRole("heading", { name: "Your creator earnings" })).toBeVisible();
   const card = page.getByRole("region", { name: "SOL" });
   await expect(card).toContainText(`${sol(share)} SOL`);
   await expect(page.getByRole("link", { name: /EARN\s*Fee Earner/ })).toContainText(`${sol(share)} SOL`);
   await expect(page.getByRole("link", { name: /EARN\s*Fee Earner/ })).toContainText("Earning on its curve");
   await expect(card.getByText("Still to be sent").locator("xpath=following-sibling::dd")).toHaveText(`${sol(share)} SOL`);
   await expect(page.getByText("Nothing sent yet.")).toBeVisible();
-
-  // Connecting the Creator's wallet makes it their own page; there is nothing to claim, so nothing asks for a signature.
-  await connectTestWallet(page, page.getByRole("banner").getByRole("button", { name: "Connect wallet" }));
-  await expect(page.getByRole("heading", { name: "Your creator earnings" })).toBeVisible();
   await expect(page.getByRole("button", { name: /claim/i })).toHaveCount(0);
   expect(wallet.requests).toHaveLength(0);
 
@@ -170,12 +178,6 @@ test("a Creator finds their earnings from their coin and is sent them by the pla
   await expect(card.getByText("Sent by the platform").locator("xpath=following-sibling::dd")).toHaveText(`${sol(share)} SOL`);
   await expect(card.getByText("Still to be sent").locator("xpath=following-sibling::dd")).toHaveText("0 SOL");
   expect(wallet.requests).toHaveLength(0);
-
-  // The account menu leads back to this page from anywhere.
-  await page.goto("/");
-  await page.getByRole("banner").getByRole("button", { name: creator.toBase58().slice(0, 4), exact: false }).click();
-  await page.getByRole("menuitem", { name: "Your earnings" }).click();
-  await page.waitForURL(`**/creator/${creator.toBase58()}`);
 });
 
 test("no Raydium SDK or program code ships to the browser", async ({ page, wallet }) => {
@@ -189,7 +191,7 @@ test("no Raydium SDK or program code ships to the browser", async ({ page, walle
   await connectWallet(page);
   await page.goto(`/coin/${launch!.mint}`);
   await page.waitForLoadState("networkidle");
-  await page.goto(`/creator/${launch!.creator}`);
+  await page.goto("/creator");
   await page.waitForLoadState("networkidle");
   expect(scripts.length).toBeGreaterThan(0);
   expect(wallet.requests).toHaveLength(0);

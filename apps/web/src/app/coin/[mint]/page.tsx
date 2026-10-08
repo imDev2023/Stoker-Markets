@@ -95,7 +95,6 @@ export default async function CoinPage({ params, searchParams }: Props) {
             <dd>
               {earns.summary}
               <span>Half of what the platform collects on this coin, sent to the Creator&apos;s wallet with nothing to claim.</span>
-              <Link href={`/creator/${launch.creator}`} className={styles.factLink}>See what the Creator earned and was paid</Link>
             </dd>
           </div>
           {launch.rewardTax && (

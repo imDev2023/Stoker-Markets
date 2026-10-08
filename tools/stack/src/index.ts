@@ -108,8 +108,13 @@ async function waitFor(what: string, check: () => Promise<boolean>, timeoutMs: n
 async function startPostgres(): Promise<{ url: string; stop: () => Promise<void> }> {
   const server = process.env.STACK_DATABASE_URL;
   if (server) {
-    const name = `launchpad_test_${process.pid}_${Date.now()}`;
     const admin = postgres(server, { max: 1, onnotice: () => {} });
+    // A run that was killed never reached `stop`: drop what such runs left behind, told apart by the pid in the name.
+    for (const { datname } of await admin<{ datname: string }[]>`select datname from pg_database where datname like 'launchpad_test_%'`) {
+      const pid = Number(datname.split("_")[2]);
+      if (pid && !alive(pid)) await admin.unsafe(`drop database if exists "${datname}" with (force)`).catch(() => undefined);
+    }
+    const name = `launchpad_test_${process.pid}_${Date.now()}`;
     await admin.unsafe(`create database "${name}"`);
     await admin.end();
     const url = new URL(server);
@@ -123,6 +128,12 @@ async function startPostgres(): Promise<{ url: string; stop: () => Promise<void>
       },
     };
   }
+  // A run that was killed never reached `stop`: remove what such runs left behind, told apart by the pid in the name.
+  const stale = execFileSync("docker", ["ps", "-a", "--filter", "name=^launchpad-test-pg-", "--format", "{{.Names}}"]).toString().split("\n").filter(Boolean);
+  for (const old of stale) {
+    const pid = Number(old.split("-")[3]);
+    if (pid && !alive(pid)) execFileSync("docker", ["rm", "-f", old], { stdio: "ignore" });
+  }
   const name = `launchpad-test-pg-${process.pid}-${Date.now()}`;
   execFileSync("docker", [
     "run", "-d", "--rm", "--name", name, "-e", "POSTGRES_USER=test", "-e", "POSTGRES_PASSWORD=test", "-e", "POSTGRES_DB=test",
@@ -135,6 +146,16 @@ async function startPostgres(): Promise<{ url: string; stop: () => Promise<void>
     return true;
   }, 60_000);
   return { url, stop: async () => void execFileSync("docker", ["rm", "-f", name], { stdio: "ignore" }) };
+}
+
+/** Whether a process with this pid is running on this machine (one we may not signal counts as running). */
+function alive(pid: number) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return (e as NodeJS.ErrnoException).code === "EPERM";
+  }
 }
 
 /** Runs a stack process, keeping its output; with `STACK_LOG_DIR` set, the output also streams to `<dir>/<name>.log`. */
@@ -264,8 +285,17 @@ export async function startApi(opts: { port: number; vars: Record<string, string
 /** Starts everything and returns the addresses plus a teardown that stops it all, in reverse order. */
 export async function startStack(opts: StackOptions = {}): Promise<{ env: StackEnv; stop: () => Promise<void> }> {
   const cleanups: (() => Promise<void> | void)[] = [];
+  // Every cleanup runs even when one fails, so a chain that will not stop never leaves the database container behind.
   const stop = async () => {
-    for (const c of cleanups.reverse()) await c();
+    const failures: unknown[] = [];
+    for (const c of [...cleanups].reverse()) {
+      try {
+        await c();
+      } catch (e) {
+        failures.push(e);
+      }
+    }
+    if (failures.length) throw new AggregateError(failures, "stopping the stack failed");
   };
   try {
     const pg = await startPostgres();

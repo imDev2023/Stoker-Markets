@@ -104,7 +104,9 @@ describe("Burn and Flywheel", () => {
     expect(BigInt(left?.lamports ?? "0")).toBeLessThanOrEqual(BigInt(after.budgets.burn.available));
   });
 
-  it("burns a graduated Reward Launch too, and leaves the coin account that holds its harvested Reward Tax open", async () => {
+  // The suite's longest flow: a Graduation, then the burn funded twice through up to a dozen launch-and-buy-out rounds,
+  // about 80 s on its own and more beside another chain on the same machine.
+  it("burns a graduated Reward Launch too, and leaves the coin account that holds its harvested Reward Tax open", { timeout: 180_000 }, async () => {
     // Named as the Platform Token here; the Flywheel buys a graduated Reward Launch it picks in the same way.
     const creator = await fundedWallet();
     // Paid out in SOL: the tax harvested for the holders waits in the wallet's coin account, sold a slice per run.

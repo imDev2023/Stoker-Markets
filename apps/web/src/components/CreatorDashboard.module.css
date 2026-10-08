@@ -23,29 +23,29 @@
   line-height: 1.05;
 }
 
-.who {
+/* The one card shown without a wallet, or to one that has launched nothing: as wide as the heading's text. */
+.connect,
+.lone {
+  max-width: 44em;
+}
+
+.connect {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 14px 16px;
   flex-wrap: wrap;
-  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+
+.connect p {
   margin: 0;
-  font-weight: 500;
-}
-
-.whoLabel {
-  color: var(--ink-3);
-  font-size: 0.875rem;
-  font-weight: 400;
-}
-
-.who a {
-  text-decoration: none;
-  border-bottom: 1px solid var(--line);
-}
-
-.who a:hover {
-  color: var(--cobalt);
-  border-color: var(--cobalt);
+  flex: 1 1 260px;
+  color: var(--ink-2);
+  font-size: 0.9375rem;
 }
 
 .lede {

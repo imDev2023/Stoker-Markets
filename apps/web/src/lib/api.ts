@@ -60,9 +60,9 @@ export const BOARD_SIZE = 60;
 /** The board's sort and filters, as both the API and the page's URL take them. */
 export type BoardQuery = { sort: LaunchSort; category: QuoteCategory | null; issuer: QuoteIssuer | null; quote: string | null; q: string };
 
-export async function listLaunches(q: Partial<BoardQuery> & { status?: CurveStatus; limit?: number } = {}, signal?: AbortSignal) {
+export async function listLaunches(q: Partial<BoardQuery> & { status?: CurveStatus; creator?: string; limit?: number } = {}, signal?: AbortSignal) {
   const query = new URLSearchParams({ limit: String(q.limit ?? BOARD_SIZE) });
-  for (const key of ["sort", "category", "issuer", "quote", "status", "q"] as const) {
+  for (const key of ["sort", "category", "issuer", "quote", "status", "creator", "q"] as const) {
     const value = q[key];
     if (value) query.set(key, value);
   }

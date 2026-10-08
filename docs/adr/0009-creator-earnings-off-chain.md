@@ -35,7 +35,7 @@ Money owed to Creators is not the platform's revenue: the sweep leaves it in the
 ## What goes
 
 The claim card, `POST /v1/creator-fees/prepare`, the "claim without this website" page and the footer link to it, the Indexer's claim tracking (`creator_fee_claims`) and the webhook's watch on the creator fee vault authority: there is nothing to claim.
-The creator page keeps what each Quote Asset and each coin earned, what has been sent and what is still to come.
+The creator page keeps what each Quote Asset and each coin earned, what has been sent and what is still to come, and is the connected Creator's own (owner, 2026-10-08): no public per-address page and no nav or footer entry; the account menu leads to it once the wallet has launched a coin, and the coin page and the Ledger name the Creator without linking to it (the Ledger links the explorer).
 The user-facing term is Creator Earnings; "Creator Fee" stays LaunchLab's on-chain term, 0 on our platform, which the fee-change flow and the announcements still name.
 
 ## Considered Options

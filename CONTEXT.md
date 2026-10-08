@@ -66,7 +66,7 @@ Also one such payment.
 _Avoid_: Creator Fee (that is LaunchLab's on-chain term), payout, rebate, revenue share, claim
 
 **Creator Earnings**:
-What a Creator's Launches have earned them, the sum of their Creator Forwards: earned, sent and still to be sent, per Quote Asset and per Launch on the creator page.
+What a Creator's Launches have earned them, the sum of their Creator Forwards: earned, sent and still to be sent, per Quote Asset and per Launch on their own page (`/creator`), which only the connected wallet sees and is offered once it has launched a coin; there is no public creator page (owner, 2026-10-08).
 _Avoid_: Creator Fee, claimable, rewards (those are for holders)
 
 ### Revenue

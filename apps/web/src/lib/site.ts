@@ -22,17 +22,15 @@ export const NAV_LINKS = [
   { href: "/rewards", label: "Rewards" },
   { href: "/burns", label: "Burns" },
   { href: "/revenue", label: "Revenue" },
-  { href: "/creator", label: "Creator earnings" },
 ] as const;
 
+// A Creator's earnings page is their own (owner, 2026-10-08): nothing links to it but the account menu, once the
+// connected wallet has launched a coin.
 export const FOOTER_GROUPS = [
   { title: "Explore", links: [NAV_LINKS[0], LAUNCH_LINK, ...NAV_LINKS.slice(1), { href: "/announcements", label: "Announcements" }] },
   {
     title: "Creators",
-    links: [
-      { href: "/launch", label: "Launch a coin" },
-      { href: "/creator", label: "Your earnings" },
-    ],
+    links: [{ href: "/launch", label: "Launch a coin" }],
   },
   {
     title: "Developers",

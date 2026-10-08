@@ -27,9 +27,11 @@ const OUT = new Set<LedgerKind>(["sweep", "creator_forward", "arweave_top_up", "
 const isOut = (e: LedgerEntry) => OUT.has(e.kind) || (e.kind === "reward_sale" && e.launch?.mint === e.asset.mint);
 
 /** Where an entry's money came from, in words: every curve pools its Platform Fee in one vault per Quote Asset. */
-function origin(e: LedgerEntry) {
+function origin(e: LedgerEntry, platform: PlatformInfo) {
   if (e.kind === "sweep") return "From the operations wallet";
-  if (e.kind === "creator_forward") return <>To <Link href={`/creator/${e.destination}`} className="mono">{shortAddress(e.destination)}</Link></>;
+  // A Creator's page is their own; the wallet a forward reached is public on the explorer.
+  if (e.kind === "creator_forward")
+    return <>To <a href={explorerUrl("address", e.destination, platform)} target="_blank" rel="noreferrer" className="mono">{shortAddress(e.destination)}</a></>;
   if (e.kind === "arweave_top_up") return "SOL to ArDrive Turbo";
   if (e.kind === "metadata_upload")
     return e.launch ? <>Uploaded for <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link>, in credits</> : "Uploaded, in credits";
@@ -85,7 +87,7 @@ export function LedgerList({ initial, platform }: { initial: LedgerPage; platfor
               {isOut(e) ? "−" : "+"}
               <span className="mono">{formatUnits(e.amount, e.asset.decimals, e.asset.decimals)}</span> {quoteTicker(e.asset)}
             </span>
-            <span className={styles.origin}>{origin(e)}</span>
+            <span className={styles.origin}>{origin(e, platform)}</span>
             <a className={styles.tx} href={explorerUrl("tx", e.signature, platform)} target="_blank" rel="noreferrer" title="View transaction">
               <time dateTime={e.time}>{formatUtc(e.time)}</time>
             </a>

@@ -88,8 +88,8 @@ test("a Creator launches with a first buy and an airdrop, then sends the airdrop
   await card.getByText("Show the 3 wallets").click();
   await expect(card.getByRole("link", { name: "Paid" })).toHaveCount(3);
 
-  // The Creator's share of the first buy is on their page, to be sent by the platform.
-  await page.goto(`/creator/${wallet.keypair.publicKey.toBase58()}`);
+  // The Creator's share of the first buy is on their own page, to be sent by the platform.
+  await page.goto("/creator");
   await expect(page.getByRole("region", { name: "SOL" })).toContainText(`${firstBuyShare} SOL`);
   await expect(page.getByRole("link", { name: /PARTY\s*Party Favors/ })).toContainText("Earning");
 });
