@@ -45,15 +45,29 @@ export default async function RewardsPage() {
           collect it and pay it to holders pro rata in the Payout Asset the Creator fixed at launch: the coin itself, never sold, or the
           coin&apos;s Quote Asset, bought with the tax in small, published sales.
         </p>
-        <p className={styles.lead}>
-          The platform keeps none of the tax and pays the network fee of every payout. After Graduation it gives up the power to change
-          the rate, so nobody can raise, lower or remove it. A round opens on its own once {inForce ? `${coins(inForce.roundThreshold)} coins of tax (${shareOfSupply(inForce.roundThreshold)} of the supply)` : "the threshold"} have
-          collected, checked every ten minutes, and pays every wallet holding at least {inForce ? `${coins(inForce.minHolding)} coins (${shareOfSupply(inForce.minHolding)} of the supply)` : "the minimum"} at
-          its snapshot. Where the Payout Asset is the Quote Asset, no sale takes more than {REWARD_SALE_MAX_RESERVE_BPS / 100}% of the coins in the market or
-          moves the price by more than {REWARD_SALE_SLIPPAGE_BPS / 100}%, so paying holders never dumps the coin they hold. The rules are versioned and change
-          only with a day&apos;s notice, and every round is public down to its snapshot slot, sales and payout transactions, so any wallet
-          can check what it was paid below.
-        </p>
+        {/* The holder's case, one claim per column across the page rather than one long paragraph (owner, 2026-10-08). */}
+        <ul className={styles.case} aria-label="Why the rewards favour the holder">
+          <li>
+            <strong>The platform keeps none of it.</strong> The tax is the holders&apos;, and the platform pays the network fee of every payout.
+          </li>
+          <li>
+            <strong>The rate can never change.</strong> After Graduation the platform gives up the power to change it, so nobody can raise,
+            lower or remove it.
+          </li>
+          <li>
+            <strong>Rounds run on their own.</strong> One opens once {inForce ? `${coins(inForce.roundThreshold)} coins of tax (${shareOfSupply(inForce.roundThreshold)} of the supply)` : "the threshold"} have
+            collected, checked every ten minutes, and pays every wallet holding at least {inForce ? `${coins(inForce.minHolding)} coins (${shareOfSupply(inForce.minHolding)} of the supply)` : "the minimum"} at
+            its snapshot.
+          </li>
+          <li>
+            <strong>Paying never dumps the coin.</strong> Where the Payout Asset is the Quote Asset, no sale takes more than {REWARD_SALE_MAX_RESERVE_BPS / 100}% of
+            the coins in the market or moves the price by more than {REWARD_SALE_SLIPPAGE_BPS / 100}%.
+          </li>
+          <li>
+            <strong>Public and versioned.</strong> The rules change only with a day&apos;s notice, and every round is public down to its
+            snapshot slot, sales and payout transactions, so any wallet can check what it was paid below.
+          </li>
+        </ul>
       </div>
 
       <dl className={styles.tiles} aria-label="Across every Reward Launch">

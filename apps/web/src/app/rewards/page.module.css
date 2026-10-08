@@ -294,9 +294,29 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The description under the title: two paragraphs closer together than the page's blocks. */
+/* The description under the title: the lead, then the holder's case, closer together than the page's blocks. */
 .intro {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
+}
+
+/* The holder's case reads left to right across the page, one claim per column; on a phone the claims stack. */
+.case {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.case strong {
+  display: block;
+  margin-bottom: 2px;
+  font-weight: 600;
+  color: var(--ink);
 }
