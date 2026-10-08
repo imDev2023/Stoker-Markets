@@ -188,7 +188,8 @@ describe("on the curve", () => {
 
   it("lets a share under the minimum wait, and pays it whole once it has grown past it", async () => {
     const { creator, mint } = await launchedCoin();
-    const small = await curveBuy(mint, SOL(0.02));
+    // Half of a 1% fee on 0.015 SOL is 75,000 lamports, under the stack's 100,000 minimum (0.02 SOL would be exactly it).
+    const small = await curveBuy(mint, SOL(0.015));
     expect(small).toBeLessThan(BigInt(env().creatorForwardMinLamports));
     const held = await solOf(creator);
 

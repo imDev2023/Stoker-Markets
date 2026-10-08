@@ -382,8 +382,9 @@ describe("the sweep", () => {
     await mintLocalQuote(connection(), USDC, trader.publicKey, usdc(20));
     const bought = await trade(trader, prepared.mint, "buy", usdc(20));
     await deliverWebhook([bought.signature]);
-    // The platform's part of the fee: the Creator's share of it is forwarded, never swept.
-    const fee = BigInt(bought.quote.fees.platform) - BigInt(bought.quote.fees.creator);
+    // The platform's part of the fee: the Creator's half of it is forwarded, never swept.
+    const share = BigInt(bought.quote.fees.platform) / 2n;
+    const fee = BigInt(bought.quote.fees.platform) - share;
     const inTreasury = await tokensOf(treasury(), USDC);
     const held = await tokensOf(ops(), USDC);
 
@@ -391,7 +392,7 @@ describe("the sweep", () => {
     const sweep = sentBy(run).find((s) => s.purpose === "sweep")!;
     expect((await entriesOf([sweep.signature])).map((e) => [e.asset.mint, e.amount])).toEqual([[USDC.toBase58(), fee.toString()]]);
     expect((await tokensOf(treasury(), USDC)) - inTreasury).toBe(fee);
-    expect((await forwarded()).find((f) => f.creator === creator.publicKey.toBase58())).toMatchObject({ amount: bought.quote.fees.creator, outcome: "paid" });
+    expect((await forwarded()).find((f) => f.creator === creator.publicKey.toBase58())).toMatchObject({ amount: share.toString(), outcome: "paid" });
     expect(await tokensOf(ops(), USDC)).toBe(held);
   });
 
@@ -425,9 +426,9 @@ describe("the Ledger", () => {
 
     const after = await ledger();
     const added = after.filter((e) => !before.some((b) => b.signature === e.signature && b.index === e.index));
-    // The collection, and the Creator's share of it forwarded once.
+    // The collection, and the Creator's half of it forwarded once.
     expect(added.map((e) => [e.kind, e.amount, e.destination])).toEqual([
-      ["creator_forward", t.quote.fees.creator, creator.publicKey.toBase58()],
+      ["creator_forward", (BigInt(t.quote.fees.platform) / 2n).toString(), creator.publicKey.toBase58()],
       ["platform_fee", t.quote.fees.platform, ops().toBase58()],
     ]);
     // No signature and position appears twice.
