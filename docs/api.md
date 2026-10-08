@@ -3,7 +3,7 @@
 The web app is one client of the API among many ([ADR 0003](adr/0003-server-built-transactions.md)): a Telegram bot, a trading terminal or a script uses the same endpoints, and gets the same unsigned transactions to sign.
 Every body is JSON and every amount is a raw integer as a decimal string.
 The zod contract in [`packages/contract`](../packages/contract/src) is the source of truth for every shape; this page is the map.
-The site renders it at [stoker.markets/api](https://stoker.markets/api), where the quickstart is answered live by the API.
+The site's [API page](https://stoker.markets/api) introduces it, with a quickstart the API answers live; this file is the full reference until that page grows into it.
 
 Base URL: `https://api.stoker.markets/v1` on mainnet; any deployment's is its `PUBLIC_API_URL` under `/v1` (locally `http://localhost:8791/v1`).
 Every path below is relative to it.

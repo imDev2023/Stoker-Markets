@@ -456,24 +456,15 @@ test("revenue page", async ({ page, stack }) => {
 
 test("api page", async ({ page, stack }) => {
   const platform = PlatformInfo.parse(await (await fetch(`${stack.apiUrl}/v1/platform`)).json());
-  const [newest] = await listLaunches();
   await page.goto("/api");
-  await expect(page.getByRole("heading", { name: "The API" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "The API", exact: true })).toBeVisible();
   // The header's "API" is the site's own page now, marked current; the footer's "API docs" is the same page.
   await expect(page.getByRole("banner").getByRole("link", { name: "API" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("contentinfo").getByRole("link", { name: "API docs" })).toHaveAttribute("href", "/api");
-  // The quickstart's answers are the API's own, fetched for this view: the platform, and the board's newest coin.
-  const answers = page.getByRole("figure", { name: "Answer" });
-  await expect(answers).toHaveCount(2);
-  await expect(answers.first()).toContainText(`"platformConfig": "${platform.platformConfig}"`);
-  await expect(answers.nth(1)).toContainText(`"mint": "${newest!.mint}"`);
-  // The reference is docs/api.md up to the operator's section, which stays in the repository.
-  for (const name of ["Reading, no key needed", "Preparing transactions", "Referrals", "API keys and limits", "Errors"])
-    await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /operator/i })).toHaveCount(0);
-  // A link written for the repository's copy (an ADR, an anchor) points at GitHub or lands on this page.
-  await expect(page.getByRole("link", { name: "ADR 0009" }).first()).toHaveAttribute("href", /github\.com\/.*\/docs\/adr\/0009-/);
-  await expect(page.getByRole("link", { name: "API keys and limits" })).toHaveAttribute("href", "#api-keys-and-limits");
-  // The base URL carries the stack's port, and the answers its addresses and times.
+  // The quickstart's answer is the API's own, fetched for this view.
+  await expect(page.getByRole("figure", { name: "Answer" })).toContainText(`"platformConfig": "${platform.platformConfig}"`);
+  // An introduction for now: the full reference stays in the repository until the page grows into it.
+  await expect(page.getByRole("link", { name: "docs/api.md" })).toHaveAttribute("href", /github\.com\/.*\/docs\/api\.md$/);
+  // The base URL carries the stack's port, and the answer its addresses.
   await snap(page, "api.png", (p) => [...dynamic(p), p.getByRole("figure")]);
 });
