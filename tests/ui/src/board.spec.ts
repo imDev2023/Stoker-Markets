@@ -7,7 +7,8 @@ import { connectTestWallet } from "./wallet";
 
 const cards = (page: Page) => page.getByRole("list", { name: "Coins" }).getByRole("link");
 const sorts = (page: Page) => page.getByRole("group", { name: "Sort coins" });
-const categories = (page: Page) => page.getByRole("group", { name: "Quote Asset category" });
+const paired = (page: Page) => page.getByRole("group", { name: "Paired with" });
+const search = (page: Page) => page.getByRole("searchbox", { name: "Search coins" });
 const quoteFilter = (page: Page) => page.getByRole("button", { name: /^Quote Asset: / });
 
 /** The mints the API lists for a query, in order: what the board must show. */
@@ -48,11 +49,11 @@ test("a trader sorts and filters the board, and the address keeps the choice", a
   await tradeViaApi(trader, dollar, "buy", 20_000_000n);
 
   await page.goto("/");
-  await expect(sorts(page).getByRole("button", { name: "New", pressed: true })).toBeVisible();
-  await expectBoard(page, {});
+  await expect(sorts(page).getByRole("button", { name: "Market cap", pressed: true })).toBeVisible();
+  await expectBoard(page, { sort: "market_cap" });
 
   // Each sort shows the coins in the API's order for it, and the address says which sort it is.
-  for (const [label, sort] of [["Trending", "trending"], ["Market cap", "market_cap"], ["Near graduation", "graduation"]] as const) {
+  for (const [label, sort] of [["Newest", "new"], ["24h volume", "trending"], ["Near graduation", "graduation"]] as const) {
     await sorts(page).getByRole("button", { name: label }).click();
     await expect(page).toHaveURL(new RegExp(`/\\?sort=${sort}$`));
     await expect(sorts(page).getByRole("button", { name: label, pressed: true })).toBeVisible();
@@ -62,19 +63,19 @@ test("a trader sorts and filters the board, and the address keeps the choice", a
   const byCap = await expected({ sort: "market_cap" });
   expect(byCap.indexOf(`/coin/${high}`)).toBeLessThan(byCap.indexOf(`/coin/${low}`));
 
-  // A category keeps the sort, and shows only coins paired with that kind of Quote Asset.
-  await categories(page).getByRole("button", { name: "Stablecoins" }).click();
+  // A "Paired with" chip keeps the sort, and shows only coins paired with that kind of Quote Asset.
+  await paired(page).getByRole("button", { name: "Currencies" }).click();
   await expect(page).toHaveURL(/\/\?sort=graduation&category=stablecoin$/);
   await expectBoard(page, { sort: "graduation", category: "stablecoin" });
   await expect(cards(page).filter({ hasNotText: "/USDC" })).toHaveCount(0);
 
-  // The Quote Asset filter offers only what coins are paired with, within the category.
+  // The Quote Asset filter offers only what coins are paired with, within the chip.
   await quoteFilter(page).click();
   const options = page.getByRole("listbox", { name: "Quote Assets" }).getByRole("option");
   await expect(options.filter({ hasText: "USDC" })).toHaveCount(1);
   await expect(options.filter({ hasText: "NVDAx" })).toHaveCount(0);
   await page.keyboard.press("Escape");
-  await categories(page).getByRole("button", { name: "All" }).click();
+  await paired(page).getByRole("button", { name: "All" }).click();
   await quoteFilter(page).click();
   await page.getByRole("combobox", { name: "Search Quote Assets" }).fill("nvda");
   await page.getByRole("option", { name: /NVDAx/ }).click();
@@ -88,11 +89,53 @@ test("a trader sorts and filters the board, and the address keeps the choice", a
   await expect(sorts(page).getByRole("button", { name: "Near graduation", pressed: true })).toBeVisible();
   await expectBoard(page, { sort: "graduation", quote: QUOTES.NVDAx.toBase58() });
 
-  // Choosing a category the chosen Quote Asset isn't in lets go of the Quote Asset.
-  await categories(page).getByRole("button", { name: "SOL" }).click();
+  // Choosing a chip the chosen Quote Asset isn't in lets go of the Quote Asset.
+  await paired(page).getByRole("button", { name: "Solana" }).click();
   await expect(quoteFilter(page)).toHaveAccessibleName("Quote Asset: all");
   await expect(page).toHaveURL(/\/\?sort=graduation&category=sol$/);
   await expectBoard(page, { sort: "graduation", category: "sol" });
+
+  // A stock issuer's chip is finer than the Stocks category: the stock coin, paired with xStocks' NVDAx, is the only one.
+  await paired(page).getByRole("button", { name: "xStocks" }).click();
+  await expect(page).toHaveURL(/\/\?sort=graduation&issuer=xstocks$/);
+  await expectBoard(page, { sort: "graduation", issuer: "xstocks" });
+  await expect(cards(page).filter({ hasNotText: "/NVDAx" })).toHaveCount(0);
+  await paired(page).getByRole("button", { name: "PreStocks" }).click();
+  await expect(page.getByText("No coins match these filters.")).toBeVisible();
+});
+
+test("a trader finds a coin by name, ticker or contract address, and the address keeps the search", async ({ page }) => {
+  const creator = await fundedKeypair(5);
+  const needle = await launchViaApi(creator, { name: "Needle In Stack", symbol: "NEEDL" });
+  await page.goto("/");
+  await expectBoard(page, { sort: "market_cap" });
+
+  // By name, in any case; the search is in the address once typed.
+  await search(page).fill("needle in");
+  await expect(page).toHaveURL(/\/\?q=needle\+in$/);
+  await expectBoard(page, { sort: "market_cap", q: "needle in" });
+  await expect(cards(page)).toHaveCount(1);
+  await expect(cards(page).first()).toHaveAttribute("href", `/coin/${needle}`);
+
+  // By ticker, and by the start of the contract address.
+  await search(page).fill("needl");
+  await expect(cards(page).first()).toHaveAttribute("href", `/coin/${needle}`);
+  await search(page).fill(needle.slice(0, 12));
+  await expect(page).toHaveURL(new RegExp(`q=${needle.slice(0, 12)}$`));
+  await expect(cards(page)).toHaveCount(1);
+
+  // Nothing matching says what was searched for; the reset clears the search.
+  await search(page).fill("no such coin anywhere");
+  await expect(page.getByText('No coins match "no such coin anywhere".')).toBeVisible();
+  await page.getByRole("button", { name: "Show all coins" }).click();
+  await expect(search(page)).toHaveValue("");
+  await expect(page).toHaveURL(/\/$/);
+  await expectBoard(page, { sort: "market_cap" });
+
+  // A shared link opens with the search filled in.
+  await page.goto("/?q=NEEDL");
+  await expect(search(page)).toHaveValue("NEEDL");
+  await expect(cards(page)).toHaveCount(1);
 });
 
 test("a filter nothing matches says so, and one click shows every coin again", async ({ page }) => {
@@ -158,4 +201,31 @@ test("the platform's icon is served where the PlatformConfig names it", async ({
   expect(icon.headers()["content-type"]).toBe("image/png");
   await page.goto("/");
   await expect(page.locator('link[rel="icon"]')).toHaveAttribute("href", "/icon.png");
+});
+
+test("the header's search finds a coin from any page and opens it", async ({ page }) => {
+  const creator = await fundedKeypair(5);
+  const mint = await launchViaApi(creator, { name: "Haystack Finder", symbol: "HAYST" });
+  await page.goto("/rewards");
+
+  // ⌘K (Ctrl+K elsewhere) opens the palette with its field focused; the coin is found through the API's search.
+  await page.keyboard.press("ControlOrMeta+k");
+  const box = page.getByRole("combobox", { name: "Search coins" });
+  await expect(box).toBeFocused();
+  await box.fill("haystack");
+  const found = page.getByRole("listbox", { name: "Coins found" });
+  await expect(found.getByRole("option")).toHaveCount(1);
+  await expect(found.getByRole("option")).toContainText("Haystack Finder");
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(`/coin/${mint}`);
+  await expect(page.getByRole("dialog", { name: "Search coins" })).toHaveCount(0);
+
+  // The header's button opens it too; nothing matching says what was searched for, and Escape hands focus back.
+  const open = page.getByRole("banner").getByRole("button", { name: "Search", exact: true });
+  await open.click();
+  await page.getByRole("combobox", { name: "Search coins" }).fill("no such coin anywhere");
+  await expect(page.getByText("No coins match “no such coin anywhere”.")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "Search coins" })).toHaveCount(0);
+  await expect(open).toBeFocused();
 });

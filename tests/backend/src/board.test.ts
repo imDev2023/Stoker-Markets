@@ -201,6 +201,11 @@ describe("sorting and filtering the board", () => {
     expect(mints(await only({ category: "stablecoin" }))).toEqual([coin.dollar]);
     expect(mints(await only({ category: "sol" }))).toEqual([coin.sold, coin.big, coin.small, coin.quiet]);
     expect(mints(await only({ category: "tokenized_stock" }))).toEqual([]);
+    expect(mints(await only({ issuer: "xstocks" }))).toEqual([]);
+    // No local Quote Asset is a leveraged token, a collectible or a Tessera stock; the filters are known and find nothing.
+    expect(mints(await only({ category: "leveraged" }))).toEqual([]);
+    expect(mints(await only({ category: "collectible" }))).toEqual([]);
+    expect(mints(await only({ issuer: "tessera" }))).toEqual([]);
     expect(mints(await only({ status: "graduating" }))).toEqual([coin.sold]);
     expect(mints(await only({ status: "live", sort: "market_cap" }))).toEqual([coin.big, coin.dollar, coin.small, coin.quiet]);
     expect(mints(await only({ status: "graduated" }))).toEqual([]);
@@ -209,6 +214,46 @@ describe("sorting and filtering the board", () => {
     const stable = await board({ category: "stablecoin", limit: 100 });
     expect(stable.launches.length).toBeGreaterThan(0);
     expect(stable.launches.every((l) => l.quote.category === "stablecoin")).toBe(true);
+  });
+
+  // Their own Creator, so the paging test below still sees exactly the five coins above.
+  const mine = (own: Keypair, q: Partial<Record<keyof LaunchListQuery, string | number>> = {}) => board({ creator: own.publicKey.toBase58(), ...q });
+
+  it("filters by a stock issuer, finer than the category", async () => {
+    const own = await fundedWallet(5);
+    const stock = await launchCoin(own, "STK", LOCAL_QUOTES.NVDAx);
+    expect(mints(await mine(own, { issuer: "xstocks" }))).toEqual([stock]);
+    expect(mints(await mine(own, { category: "tokenized_stock" }))).toEqual([stock]);
+    expect(mints(await mine(own, { issuer: "prestocks" }))).toEqual([]);
+    const list = await mine(own, { issuer: "xstocks" });
+    expect(list.launches[0]?.quote).toMatchObject({ symbol: "NVDAx", category: "tokenized_stock", issuer: "xstocks" });
+    // The Quote Assets in use say their issuer too, so a filter can offer the right ones.
+    const { quotes } = LaunchQuoteList.parse(await (await fetch(`${env().apiUrl}/v1/launches/quotes`)).json());
+    expect(quotes.find((q) => q.mint === LOCAL_QUOTES.NVDAx.toBase58())).toMatchObject({ issuer: "xstocks" });
+    expect(quotes.find((q) => q.mint === LOCAL_QUOTES.USDC.toBase58())).toMatchObject({ issuer: null });
+  });
+
+  it("searches by name, ticker or the start of the mint address, in any case", async () => {
+    const own = await fundedWallet(5);
+    const named = await launchCoin(own, "NDL");
+    await launchCoin(own, "OTHER");
+    // The helper names the coin "Board NDL": the search is on the name and the ticker, whatever the case.
+    expect(mints(await mine(own, { q: "board ndl" }))).toEqual([named]);
+    expect(mints(await mine(own, { q: "ndl" }))).toEqual([named]);
+    expect(mints(await mine(own, { q: named.slice(0, 10) }))).toEqual([named]);
+    // A mint address matches from its start, not its middle.
+    expect(mints(await mine(own, { q: named.slice(2, 12) }))).toEqual([]);
+    expect(mints(await mine(own, { q: "no such coin" }))).toEqual([]);
+    // LIKE's own wildcards are plain characters in a search.
+    expect(mints(await mine(own, { q: "%" }))).toEqual([]);
+    expect(mints(await mine(own, { q: "_" }))).toEqual([]);
+    // Whitespace around the search is ignored, and an empty search is no filter at all.
+    expect(mints(await mine(own, { q: "  ndl " }))).toEqual([named]);
+    expect((await mine(own, { q: "" })).launches.length).toBe(2);
+    // A search combines with the other filters, and one too long is refused.
+    expect(mints(await mine(own, { q: "ndl", category: "stablecoin" }))).toEqual([]);
+    expect(mints(await mine(own, { q: "ndl", sort: "market_cap" }))).toEqual([named]);
+    expect((await fetch(`${env().apiUrl}/v1/launches?q=${"x".repeat(65)}`)).status).toBe(400);
   });
 
   it("pages through results with limit and offset", async () => {

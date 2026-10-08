@@ -104,6 +104,21 @@ test("board Quote Asset filter, open", async ({ page }) => {
   await expect(page).toHaveScreenshot("board-quote-filter.png", { clip });
 });
 
+test("search palette, with a match", async ({ page }) => {
+  await page.goto("/rewards");
+  await page.getByRole("banner").getByRole("button", { name: "Search", exact: true }).click();
+  await page.getByRole("combobox", { name: "Search coins" }).fill("harbor");
+  const found = page.getByRole("listbox", { name: "Coins found" });
+  await expect(found.getByRole("option")).toHaveCount(1);
+  await expect(found.locator("img")).toHaveJSProperty("complete", true);
+  await page.evaluate(() => document.fonts.ready);
+  await expectNoTruncatedText(page);
+  await expectNoHorizontalOverflow(page);
+  // The palette covers the viewport, so the viewport is the shot; the page shows through its backdrop, so the page's
+  // times are masked as in any other shot.
+  await expect(page).toHaveScreenshot("search.png", { mask: dynamic(page) });
+});
+
 test("coin page", async ({ page }) => {
   await page.goto(`/coin/${await mintOf("Tracer Bullet")}`);
   await expect(page.locator("article header img")).toHaveJSProperty("complete", true);

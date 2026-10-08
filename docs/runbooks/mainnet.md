@@ -210,8 +210,8 @@ Move it to `devnet.stoker.markets` and `api-devnet.stoker.markets`, which `env.d
 6. [ ] API deployed with the checklist's values and secrets; `/health` ok (section 5).
 7. [ ] Quote Registry refreshed until 571 Quote Assets each have a curve rule (section 6).
 8. [ ] Helius raw webhook on the PlatformConfig and the creator fee vault authority, with the secret (section 7); `HELIUS_API_KEY` and `HELIUS_WEBHOOK_ID` set so graduated pools join it on their own (section 5).
-9. [ ] Domain and R2 in place; the Arweave settings left at their mainnet defaults (section 8). R2 bucket `stoker-metadata` created 2026-10-07; the domain move (section 11) is still to run.
-10. [ ] Web deployed on the domain (section 9).
+9. [ ] Domain and R2 in place; the Arweave settings left at their mainnet defaults (section 8). R2 bucket `stoker-metadata` created 2026-10-07; the domain move (section 11) is still to run. The zone's "Always Use HTTPS" (SSL/TLS > Edge Certificates) was off on 2026-10-08, so `http://` served the site and the API with 200: turn it on (owner; the agents' token only reads it).
+10. [ ] Web deployed on the domain (section 9). Before it: every non-mainnet cluster answers `noindex` (one line in the root layout, #23's 2026-10-08 comment), so the rehearsal's test coins are never indexed on the production domain.
 11. [ ] Alerts arrive in the chosen channel: `POST /v1/operator/jobs/fee-collector?fail=simulated` raises `job_failed`, the next run resolves it.
 12. [ ] Platform Token launched fairly and named; GlobalConfig requested after Graduation (section 10).
 

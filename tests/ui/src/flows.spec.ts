@@ -31,8 +31,9 @@ test("a Creator launches a SOL-paired coin and finds it on the board and its coi
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/TRCR paired with SOL/);
   await expect(page.getByText(COIN.name, { exact: true })).toBeVisible();
   await expect(page.getByText(COIN.description)).toBeVisible();
+  // The coin's own links, within its article: the footer links to Stoker's X and Telegram under the same names.
   for (const [label, href] of [["Website", COIN.website], ["X", COIN.x], ["Telegram", COIN.telegram]])
-    await expect(page.getByRole("link", { name: label, exact: true })).toHaveAttribute("href", href!);
+    await expect(page.getByRole("article").getByRole("link", { name: label, exact: true })).toHaveAttribute("href", href!);
   const image = page.locator("article header img");
   await expect(image).toHaveJSProperty("complete", true);
   expect(await image.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(256);

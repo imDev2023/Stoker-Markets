@@ -46,7 +46,7 @@ export default async function RewardsPage() {
             </div>
             <div>
               <dt>In force since</dt>
-              <dd>{formatUtc(rules.inForce.effectiveAt)}</dd>
+              <dd><time dateTime={rules.inForce.effectiveAt}>{formatUtc(rules.inForce.effectiveAt)}</time></dd>
             </div>
           </dl>
         ) : (
@@ -78,7 +78,7 @@ export default async function RewardsPage() {
                   Version {r.version}{r.note ? `: ${r.note}` : ""}. Minimum holding <span className="mono">{coins(r.minHolding)}</span>, round from{" "}
                   <span className="mono">{coins(r.roundThreshold)}</span> collected.
                 </span>
-                <span>From {formatUtc(r.effectiveAt)}</span>
+                <span>From <time dateTime={r.effectiveAt}>{formatUtc(r.effectiveAt)}</time></span>
               </li>
             ))}
           </ul>

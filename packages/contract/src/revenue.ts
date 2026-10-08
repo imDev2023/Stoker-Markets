@@ -34,7 +34,7 @@ export type LedgerKind = z.infer<typeof LedgerKind>;
  * An asset revenue arrives in: a Quote Asset, or a graduated coin (a Fee Key pays out both of its pool's tokens).
  * Coins carry their image as `logo`. Quote Asset categories don't apply to coins, so there is none.
  */
-export const RevenueAsset = QuoteRef.omit({ category: true });
+export const RevenueAsset = QuoteRef.omit({ category: true, issuer: true });
 export type RevenueAsset = z.infer<typeof RevenueAsset>;
 
 export const LedgerEntry = z.object({

@@ -3,6 +3,7 @@ import { Archivo, IBM_Plex_Mono, Public_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 import { FeeChangeBanner } from "@/components/FeeChangeBanner";
 import { Providers } from "@/components/Providers";
+import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getPlatform, listAnnouncements } from "@/lib/api";
 import "./globals.css";
@@ -38,6 +39,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           <SiteHeader cluster={platform.cluster} />
           {upcoming && <FeeChangeBanner announcement={upcoming} platform={platform} />}
           <main>{children}</main>
+          <SiteFooter cluster={platform.cluster} />
         </Providers>
       </body>
     </html>
