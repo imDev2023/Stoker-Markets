@@ -9,7 +9,8 @@ import {
 } from "@solana/spl-token";
 import { loadCurve } from "@launchpad/chain";
 import {
-  CoinRewards, LedgerPage, PreparedLaunch, REWARD_SALE_MAX_RESERVE_BPS, Revenue, RewardRoundDetail, RewardRulesPage, WalletRewards, type RewardPayoutAsset,
+  CoinRewards, LedgerPage, PreparedLaunch, REWARD_SALE_MAX_RESERVE_BPS, Revenue, RewardRoundDetail, RewardRulesPage, RewardsOverview, WalletRewards,
+  type RewardPayoutAsset,
 } from "@launchpad/contract";
 import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
 import { REWARD_ROUNDS_CRON } from "@launchpad/stack";
@@ -121,6 +122,48 @@ describe("Reward Rounds", () => {
     const mine = await walletRewards(big.publicKey);
     expect(mine.rewards).toMatchObject([{ round: round!.id, mint, amount: detail.payouts[0]!.amount, status: "paid" }]);
     expect((await walletRewards(dust.publicKey)).rewards).toEqual([]);
+  });
+
+  it("adds every round to the public overview: totals valued now, the coins by what they paid, the latest rounds", async () => {
+    const { mint } = await rewardCoin(300);
+    const [one, two] = [await fundedWallet(10), await fundedWallet(10)];
+    await trade(one, mint, "buy", 80_000_000n);
+    await trade(two, mint, "buy", 40_000_000n);
+    const run = await runRounds();
+    const opened = run.summary.opened.find((o) => o.mint === mint);
+    expect(opened).toBeDefined();
+    const round = RewardRoundDetail.parse(await (await api(`/v1/rewards/rounds/${opened!.round}`)).json());
+    expect(round.status).toBe("paid");
+    const paid = round.payouts.filter((p) => p.status === "paid").reduce((s, p) => s + BigInt(p.amount), 0n);
+
+    const overview = RewardsOverview.parse(await (await api("/v1/rewards")).json());
+    // This coin's round counts in every total; other files' rounds may count too, so each is at least this coin's.
+    expect(overview.totals.payouts).toBeGreaterThanOrEqual(round.payouts.length);
+    expect(overview.totals.rounds).toBeGreaterThanOrEqual(1);
+    expect(overview.totals.rounds).toBeLessThanOrEqual(overview.totals.payouts);
+    expect(overview.totals.launchesPaid).toBeGreaterThanOrEqual(1);
+    expect(overview.totals.walletsPaid).toBeGreaterThanOrEqual(2);
+    expect(overview.totals.lastPaidAt).not.toBeNull();
+
+    // Paid in the coin, it is valued at the coin's latest price times SOL's: the local registry prices SOL, so it has a value.
+    const standing = overview.top.find((t) => t.mint === mint)!;
+    expect(standing).toMatchObject({ payout: { asset: "coin", mint }, rounds: 1, walletsPaid: 2, paid: paid.toString(), rewardTaxBps: 300 });
+    expect(standing.quote.symbol).toBe("SOL");
+    expect(standing.value.usd).toBeGreaterThan(0);
+    expect(standing.value.sol).toBeGreaterThan(0);
+    expect(standing.marketCap?.usd).toBeGreaterThan(0);
+    expect(overview.totals.paidUsd).toBeGreaterThanOrEqual(standing.value.usd!);
+    // Ranked by value: nothing valued ranks below anything unvalued.
+    const values = overview.top.map((t) => t.value.usd);
+    expect(values.slice(values.indexOf(null) === -1 ? values.length : values.indexOf(null)).every((v) => v === null)).toBe(true);
+    for (let i = 1; i < values.length && values[i] !== null; i++) expect(values[i]!).toBeLessThanOrEqual(values[i - 1]!);
+
+    // Newest first, each with the coin behind it and what it pays out, valued now.
+    const latest = overview.recent.find((r) => r.id === round.id)!;
+    expect(latest).toMatchObject({ mint, status: "paid", distributable: round.distributable, eligibleHolders: 2, payout: { asset: "coin" } });
+    expect(latest.value.usd).toBeGreaterThan(0);
+    const starts = overview.recent.map((r) => new Date(r.startedAt).getTime());
+    for (let i = 1; i < starts.length; i++) expect(starts[i]!).toBeLessThanOrEqual(starts[i - 1]!);
   });
 
   it("resumes a round cut short and pays the rest without paying anyone twice", async () => {

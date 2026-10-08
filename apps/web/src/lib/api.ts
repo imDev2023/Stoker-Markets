@@ -1,7 +1,7 @@
 import {
   API_KEY_HEADER, AirdropStatus, ApiError, ApiKeyList, BurnsPage, CandleList, CoinRewards, CreatorFeeClaimList, CreatorFees, CreatorForwardList, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
   HolderList, IssuedApiKey, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PreparedAirdrop,
-  PreparedCreatorFeeClaim, PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAsset, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, TradeList,
+  PreparedCreatorFeeClaim, PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAsset, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, RewardsOverview, TradeList,
   TradeQuote, WalletRewards,
   type AnnounceFeeChange, type CandleInterval, type CreateApiKey, type CurveStatus, type LaunchSort, type PrepareCreatorFeeClaimRequest, type PrepareTradeRequest,
   type QuoteCategory, type QuoteIssuer, type TradeQuoteQuery,
@@ -181,6 +181,11 @@ export async function getCoinRewards(mint: string): Promise<CoinRewards | null> 
 /** Burn and Flywheel: shares, rule, budgets and every buy and burn so far. */
 export async function getBurns() {
   return read(await apiFetch(`${API_URL}/v1/burns`, { cache: "no-store" }), BurnsPage);
+}
+
+/** Every Reward Launch's rounds in one view: totals valued now, the Launches by what they paid, and the latest rounds. */
+export async function getRewardsOverview() {
+  return read(await apiFetch(`${API_URL}/v1/rewards`, { cache: "no-store" }), RewardsOverview);
 }
 
 export async function getRewardRules() {

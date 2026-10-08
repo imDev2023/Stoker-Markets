@@ -405,6 +405,17 @@ test("coin page of a Reward Launch paid in SOL, after a sale and a round", async
   await snap(page, "coin-rewards.png", tradedDynamic);
 });
 
+test("rewards page, after a round has paid", async ({ page }) => {
+  await page.goto("/rewards");
+  const totals = page.locator("dl[aria-label='Across every Reward Launch']");
+  await expect(totals).not.toContainText("Nothing yet");
+  // The seeded Reward Launch has paid a round, so it is in both lists (a flow's own Reward Launch may be too).
+  await expect(page.getByRole("list", { name: "Coins by what they paid" })).toContainText(REWARD_QUOTE.symbol);
+  await expect(page.getByRole("list", { name: "Latest rounds" })).toContainText(REWARD_QUOTE.symbol);
+  await expect(page.locator(`img[src*="/image"]`).first()).toHaveJSProperty("complete", true);
+  await snap(page, "rewards.png", tradedDynamic);
+});
+
 test("header wallet menu when connected", async ({ page, wallet }) => {
   await page.goto("/launch");
   await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));

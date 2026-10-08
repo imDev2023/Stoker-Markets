@@ -16,6 +16,21 @@ test("the empty board invites the first launch", async ({ page }) => {
   await expect(page).toHaveScreenshot("board-empty.png", { fullPage: true });
 });
 
+test("the rewards page before any round", async ({ page }) => {
+  await page.goto("/rewards");
+  // The figures are there at zero, so a visitor sees what the page will count.
+  const totals = page.locator("dl[aria-label='Across every Reward Launch']");
+  await expect(totals).toContainText("Paid to holders");
+  await expect(totals).toContainText("Nothing yet");
+  await expect(totals).toContainText("Wallets paid");
+  await expect(page.getByText("No round has paid yet.", { exact: false })).toBeVisible();
+  await expect(page.getByText("No round yet.", { exact: false })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Wallet address" })).toBeVisible();
+  await expect(page.getByText("Rules in force")).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+  await expect(page).toHaveScreenshot("rewards-empty.png", { fullPage: true, mask: [page.locator("time")] });
+});
+
 test("the revenue page before anything is collected", async ({ page }) => {
   await page.goto("/revenue");
   await expect(page.getByText(/^No revenue collected yet\./)).toBeVisible();
