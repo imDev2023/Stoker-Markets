@@ -1,0 +1,33 @@
+.example {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.example + .example {
+  margin-top: 8px;
+}
+
+.figure {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  min-width: 0;
+}
+
+.caption {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+/* A long answer (a coin with its curve and market) scrolls inside its block rather than running the page. */
+.answer {
+  max-height: 24rem;
+  overflow-y: auto;
+}
+
+.url {
+  overflow-wrap: anywhere;
+}

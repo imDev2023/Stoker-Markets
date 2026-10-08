@@ -1,7 +1,7 @@
 // Every screen at desktop and phone width, light and dark, against committed baselines. Values that change from run to
 // run (addresses, times, costs) are masked; everything else must match to the pixel.
 import type { Page } from "@playwright/test";
-import { LedgerPage, Revenue } from "@launchpad/contract";
+import { LedgerPage, PlatformInfo, Revenue } from "@launchpad/contract";
 import {
   allowAirdrops, COIN_PNG, drain, expect, expectNoHorizontalOverflow, expectNoTruncatedText, fixedKeypair, giveCoins, listLaunches, SEED_CREATOR, SEED_HOLDER,
   test,
@@ -452,4 +452,28 @@ test("revenue page", async ({ page, stack }) => {
   await expect(page.locator("main img").first()).toHaveJSProperty("complete", true);
   // Addresses and times differ between runs; every amount follows from the seed's fixed trades.
   await snap(page, "revenue.png", (p) => [p.locator("time"), p.locator("a.mono")]);
+});
+
+test("api page", async ({ page, stack }) => {
+  const platform = PlatformInfo.parse(await (await fetch(`${stack.apiUrl}/v1/platform`)).json());
+  const [newest] = await listLaunches();
+  await page.goto("/api");
+  await expect(page.getByRole("heading", { name: "The API" })).toBeVisible();
+  // The header's "API" is the site's own page now, marked current; the footer's "API docs" is the same page.
+  await expect(page.getByRole("banner").getByRole("link", { name: "API" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("contentinfo").getByRole("link", { name: "API docs" })).toHaveAttribute("href", "/api");
+  // The quickstart's answers are the API's own, fetched for this view: the platform, and the board's newest coin.
+  const answers = page.getByRole("figure", { name: "Answer" });
+  await expect(answers).toHaveCount(2);
+  await expect(answers.first()).toContainText(`"platformConfig": "${platform.platformConfig}"`);
+  await expect(answers.nth(1)).toContainText(`"mint": "${newest!.mint}"`);
+  // The reference is docs/api.md up to the operator's section, which stays in the repository.
+  for (const name of ["Reading, no key needed", "Preparing transactions", "Referrals", "API keys and limits", "Errors"])
+    await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /operator/i })).toHaveCount(0);
+  // A link written for the repository's copy (an ADR, an anchor) points at GitHub or lands on this page.
+  await expect(page.getByRole("link", { name: "ADR 0009" }).first()).toHaveAttribute("href", /github\.com\/.*\/docs\/adr\/0009-/);
+  await expect(page.getByRole("link", { name: "API keys and limits" })).toHaveAttribute("href", "#api-keys-and-limits");
+  // The base URL carries the stack's port, and the answers its addresses and times.
+  await snap(page, "api.png", (p) => [...dynamic(p), p.getByRole("figure")]);
 });

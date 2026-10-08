@@ -1,0 +1,119 @@
+/* A document from the repository, laid out for reading: section headings, prose, reference tables and code. */
+.doc {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.h2 {
+  margin: 24px 0 0;
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 700;
+  font-size: 1.375rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.h3 {
+  margin: 12px 0 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.p {
+  margin: 0;
+  max-width: 72ch;
+  color: var(--ink-2);
+}
+
+.code {
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+
+.block {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.table th,
+.table td {
+  padding: 10px 16px 10px 0;
+  border-top: 1px solid var(--line);
+  vertical-align: top;
+  text-align: left;
+}
+
+.table thead th {
+  padding-top: 0;
+  border-top: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.table td {
+  color: var(--ink-2);
+}
+
+/* Wide enough for the longest endpoint (`GET /creators/:address/launch-permissions`) on one line. */
+.table td:first-child {
+  width: 32%;
+  color: var(--ink);
+}
+
+/* On a phone each row stacks: the endpoint, then what it answers. */
+@media (max-width: 640px) {
+  .table,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tr {
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .table tr:first-child {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .table td,
+  .table td:first-child {
+    width: auto;
+    padding: 0;
+    border: 0;
+  }
+
+  .table td + td {
+    margin-top: 4px;
+  }
+}
