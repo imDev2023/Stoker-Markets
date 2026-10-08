@@ -1,5 +1,7 @@
 import { z } from "zod";
+import { MarketValue } from "./board";
 import { RewardPayoutAsset } from "./launchModes";
+import { QuoteRef } from "./quotes";
 
 /**
  * Reward Rounds: how a Reward Launch's collected Reward Tax reaches its holders, all public: the rules in force, each
@@ -171,3 +173,65 @@ export const WalletRewards = z.object({
   ),
 });
 export type WalletRewards = z.infer<typeof WalletRewards>;
+
+/** An amount of a Payout Asset in SOL and USD at the asset's price now; both null when the registry has no price for it. */
+export const RewardValue = z.object({ sol: z.number().nullable(), usd: z.number().nullable() });
+export type RewardValue = z.infer<typeof RewardValue>;
+
+/** A Reward Launch in the overview's ranking: what its rounds have paid, to how many wallets, and where its market stands. */
+export const RewardLaunchStanding = z.object({
+  mint: base58,
+  symbol: z.string(),
+  name: z.string(),
+  image: z.string().nullable(),
+  quote: QuoteRef,
+  rewardTaxBps: z.number().int(),
+  payout: RewardPayoutAssetRef,
+  /** Rounds that have paid at least one holder. */
+  rounds: z.number().int(),
+  /** Wallets this Launch's rounds have paid at least once. */
+  walletsPaid: z.number().int(),
+  /** Paid to holders so far, raw units of the Payout Asset. */
+  paid: raw,
+  value: RewardValue,
+  marketCap: MarketValue.nullable(),
+});
+export type RewardLaunchStanding = z.infer<typeof RewardLaunchStanding>;
+
+export const RewardRoundInOverview = RewardRoundSummary.extend({
+  symbol: z.string(),
+  name: z.string(),
+  image: z.string().nullable(),
+  /** What the round pays out (`distributable`) at the Payout Asset's price now. */
+  value: RewardValue,
+});
+export type RewardRoundInOverview = z.infer<typeof RewardRoundInOverview>;
+
+/**
+ * Every Reward Launch's rounds in one view. A coin payout is valued at the coin's latest price in its Quote Asset times
+ * that asset's price, a Quote Asset payout at the asset's price, both as the registry has them now, never as they were
+ * when the payout landed; a Payout Asset the registry can't price is counted but not valued.
+ */
+export const RewardsOverview = z.object({
+  totals: z.object({
+    /** Every payout that landed, over the Payout Assets with a price. */
+    paidUsd: z.number(),
+    paidSol: z.number(),
+    /** Rounds whose Payout Asset has no price now, so their payouts are in neither total. */
+    unpricedRounds: z.number().int(),
+    /** Payouts that landed, across every round. */
+    payouts: z.number().int(),
+    /** Rounds that have paid at least one holder. */
+    rounds: z.number().int(),
+    lastPaidAt: z.iso.datetime().nullable(),
+    /** Reward Launches whose rounds have paid at least one holder. */
+    launchesPaid: z.number().int(),
+    /** Wallets paid, counted once per Reward Launch. */
+    walletsPaid: z.number().int(),
+  }),
+  /** Reward Launches by what their rounds have paid, valued now, the most first; one with no price ranks by its raw amount, after the valued ones. */
+  top: z.array(RewardLaunchStanding),
+  /** The latest rounds across every Reward Launch, newest first. */
+  recent: z.array(RewardRoundInOverview),
+});
+export type RewardsOverview = z.infer<typeof RewardsOverview>;

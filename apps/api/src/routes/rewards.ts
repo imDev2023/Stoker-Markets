@@ -1,14 +1,17 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { WSOL_MINT } from "@launchpad/chain";
 import {
-  AnnounceRewardRules, REWARD_RULES_LEAD_SECONDS_MIN, REWARD_SALE_MAX_RESERVE_BPS, REWARD_SALE_SLIPPAGE_BPS, type CoinRewards, type RewardPayoutAssetRef,
-  type RewardRoundDetail, type RewardRoundSummary, type RewardRulesPage, type RewardRuleVersion, type WalletRewards,
+  AnnounceRewardRules, REWARD_RULES_LEAD_SECONDS_MIN, REWARD_SALE_MAX_RESERVE_BPS, REWARD_SALE_SLIPPAGE_BPS, type CoinRewards, type MarketValue,
+  type RewardLaunchStanding, type RewardPayoutAssetRef, type RewardRoundDetail, type RewardRoundInOverview, type RewardRoundSummary, type RewardRulesPage,
+  type RewardRuleVersion, type RewardsOverview, type RewardValue, type WalletRewards,
 } from "@launchpad/contract";
-import { launches, quoteAssets, rewardPayouts, rewardRounds, rewardRules, type Db } from "@launchpad/db";
-import { operationsKey, type AppEnv } from "../env";
+import { launches, launchMarkets, launchMetadata, quoteAssets, rewardPayouts, rewardRounds, rewardRules, type Db } from "@launchpad/db";
+import { operationsKey, type AppEnv, type Config } from "../env";
+import { toQuoteRef } from "../quotes/assets";
 import { publishedRules, taxWaiting } from "../rewards/engine";
 import { quotePot, salesOf } from "../rewards/sales";
 
@@ -58,6 +61,172 @@ function address(value: string, what: string) {
     throw new HTTPException(400, { message: `invalid ${what}` });
   }
 }
+
+/** Postgres returns doubles computed from numerics as numbers or strings depending on the path; normalise to a number. */
+const num = (v: number | string | null | undefined) => (v === null || v === undefined ? null : Number(v));
+
+/** A launched coin's image, served by the API once its metadata is stored. */
+const imageOf = (cfg: Config, mint: string, metadata: unknown) => (metadata ? `${cfg.publicApiUrl}/metadata/${mint}/image` : null);
+
+/** The board's market cap: the coin's latest price times its supply, in the Quote Asset, SOL and USD. */
+function marketCapOf(launch: { supply: string; decimals: number }, market: { price: number } | null, quote: { priceSol: string | null; priceUsd: string | null }): MarketValue | null {
+  if (!market) return null;
+  const cap = market.price * (Number(launch.supply) / 10 ** launch.decimals);
+  return { quote: cap, sol: quote.priceSol === null ? null : cap * Number(quote.priceSol), usd: quote.priceUsd === null ? null : cap * Number(quote.priceUsd) };
+}
+
+/** `amount` raw units of a Payout Asset, each worth `unitSol` and `unitUsd` now. */
+const valueOf = (amount: string, unitSol: number | string | null, unitUsd: number | string | null): RewardValue => ({
+  sol: unitSol === null ? null : Number(amount) * Number(unitSol),
+  usd: unitUsd === null ? null : Number(amount) * Number(unitUsd),
+});
+
+/**
+ * Every round across every Reward Launch in one view, valued at each Payout Asset's price now (see RewardsOverview in
+ * the contract): the totals, the Reward Launches ranked by what their rounds have paid, and the latest rounds.
+ */
+rewardRoutes.get("/rewards", async (c) => {
+  const db = c.get("db");
+  const cfg = c.get("cfg");
+  // What one raw unit of a round's Payout Asset is worth now: a coin payout at the coin's latest price in its Quote
+  // Asset times that asset's price, a Quote Asset payout at that asset's own registry price; null where there is none.
+  const payoutQuote = alias(quoteAssets, "payout_quote");
+  const unit = (quotePrice: SQL, payoutPrice: SQL) =>
+    sql<number | null>`(case when ${rewardRounds.payoutMint} = ${launches.mint} then ${launchMarkets.price} * ${quotePrice} else ${payoutPrice} end) / power(10::double precision, ${rewardRounds.payoutDecimals})`;
+  // Each round with what its landed payouts add up to, and its unit values.
+  const valued = db.$with("valued").as(
+    db
+      .select({
+        id: rewardRounds.id,
+        mint: rewardRounds.mint,
+        paid: sql<string>`coalesce(sum(${rewardPayouts.amount}) filter (where ${rewardPayouts.status} = 'paid'), 0)`.as("paid"),
+        payouts: sql<number>`(count(*) filter (where ${rewardPayouts.status} = 'paid'))::int`.as("payouts"),
+        unitSol: unit(sql`${quoteAssets.priceSol}::double precision`, sql`${payoutQuote.priceSol}::double precision`).as("unit_sol"),
+        unitUsd: unit(sql`${quoteAssets.priceUsd}::double precision`, sql`${payoutQuote.priceUsd}::double precision`).as("unit_usd"),
+      })
+      .from(rewardRounds)
+      .innerJoin(launches, eq(launches.mint, rewardRounds.mint))
+      .leftJoin(rewardPayouts, eq(rewardPayouts.roundId, rewardRounds.id))
+      .leftJoin(launchMarkets, eq(launchMarkets.mint, launches.mint))
+      .leftJoin(quoteAssets, eq(quoteAssets.mint, launches.quoteMint))
+      .leftJoin(payoutQuote, eq(payoutQuote.mint, rewardRounds.payoutMint))
+      .groupBy(rewardRounds.id, launches.mint, launchMarkets.mint, quoteAssets.mint, payoutQuote.mint),
+  );
+  const worth = (amount: SQL | typeof valued.paid, per: typeof valued.unitSol) => sql`${amount}::double precision * ${per}`;
+
+  const [totals, lastPaid, [wallets], standings] = await Promise.all([
+    db
+      .with(valued)
+      .select({
+        usd: sql<number | null>`sum(${worth(valued.paid, valued.unitUsd)})`,
+        sol: sql<number | null>`sum(${worth(valued.paid, valued.unitSol)})`,
+        unpriced: sql<number>`(count(*) filter (where ${valued.unitUsd} is null))::int`,
+        payouts: sql<number>`coalesce(sum(${valued.payouts}), 0)::int`,
+        rounds: sql<number>`(count(*) filter (where ${valued.payouts} > 0))::int`,
+        launches: sql<number>`(count(distinct ${valued.mint}) filter (where ${valued.payouts} > 0))::int`,
+      })
+      .from(valued)
+      .then((rows) => rows[0]!),
+    db.select({ at: rewardPayouts.paidAt }).from(rewardPayouts).where(eq(rewardPayouts.status, "paid")).orderBy(desc(rewardPayouts.paidAt)).limit(1),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(
+        db
+          .select({ mint: rewardRounds.mint, wallet: rewardPayouts.wallet })
+          .from(rewardPayouts)
+          .innerJoin(rewardRounds, eq(rewardRounds.id, rewardPayouts.roundId))
+          .where(eq(rewardPayouts.status, "paid"))
+          .groupBy(rewardRounds.mint, rewardPayouts.wallet)
+          .as("paid_wallets"),
+      ),
+    db
+      .with(valued)
+      .select({
+        mint: valued.mint,
+        paid: sql<string>`sum(${valued.paid})::text`,
+        usd: sql<number | null>`sum(${worth(valued.paid, valued.unitUsd)})`,
+        sol: sql<number | null>`sum(${worth(valued.paid, valued.unitSol)})`,
+        rounds: sql<number>`(count(*) filter (where ${valued.payouts} > 0))::int`,
+      })
+      .from(valued)
+      .groupBy(valued.mint)
+      .having(sql`sum(${valued.payouts}) > 0`)
+      .orderBy(sql`sum(${worth(valued.paid, valued.unitUsd)}) desc nulls last`, sql`sum(${valued.paid}) desc`)
+      .limit(10),
+  ]);
+
+  const topMints = standings.map((s) => s.mint);
+  const [details, walletsByMint] = topMints.length
+    ? await Promise.all([
+        db
+          .select({ launch: launches, metadata: launchMetadata, quote: quoteAssets, market: launchMarkets })
+          .from(launches)
+          .innerJoin(quoteAssets, eq(quoteAssets.mint, launches.quoteMint))
+          .leftJoin(launchMetadata, eq(launchMetadata.id, launches.mint))
+          .leftJoin(launchMarkets, eq(launchMarkets.mint, launches.mint))
+          .where(inArray(launches.mint, topMints)),
+        db
+          .select({ mint: rewardRounds.mint, wallets: sql<number>`count(distinct ${rewardPayouts.wallet})::int` })
+          .from(rewardPayouts)
+          .innerJoin(rewardRounds, eq(rewardRounds.id, rewardPayouts.roundId))
+          .where(and(eq(rewardPayouts.status, "paid"), inArray(rewardRounds.mint, topMints)))
+          .groupBy(rewardRounds.mint),
+      ])
+    : [[], []];
+  const top = standings.flatMap((s): RewardLaunchStanding[] => {
+    const d = details.find((r) => r.launch.mint === s.mint);
+    if (!d) return [];
+    const inQuote = d.launch.rewardPayout === "quote";
+    return [{
+      mint: s.mint,
+      symbol: d.launch.symbol,
+      name: d.launch.name,
+      image: imageOf(cfg, s.mint, d.metadata),
+      quote: toQuoteRef(d.quote),
+      rewardTaxBps: d.launch.rewardTaxBps ?? 0,
+      payout: payoutRef(d.launch, inQuote ? d.launch.quoteMint : d.launch.mint, inQuote ? d.quote.decimals : d.launch.decimals, d.quote.symbol),
+      rounds: s.rounds,
+      walletsPaid: walletsByMint.find((w) => w.mint === s.mint)?.wallets ?? 0,
+      paid: s.paid,
+      value: { sol: num(s.sol), usd: num(s.usd) },
+      marketCap: marketCapOf(d.launch, d.market, d.quote),
+    }];
+  });
+
+  const latest = await db
+    .with(valued)
+    .select({ round: rewardRounds, unitSol: valued.unitSol, unitUsd: valued.unitUsd, launch: launches, metadata: launchMetadata, quoteSymbol: quoteAssets.symbol })
+    .from(rewardRounds)
+    .innerJoin(valued, eq(valued.id, rewardRounds.id))
+    .innerJoin(launches, eq(launches.mint, rewardRounds.mint))
+    .leftJoin(launchMetadata, eq(launchMetadata.id, launches.mint))
+    .leftJoin(quoteAssets, eq(quoteAssets.mint, launches.quoteMint))
+    .orderBy(desc(rewardRounds.startedAt), desc(rewardRounds.id))
+    .limit(20);
+  const recent = latest.map((r): RewardRoundInOverview => ({
+    ...roundSummary(r.round, payoutRef(r.launch, r.round.payoutMint, r.round.payoutDecimals, r.quoteSymbol)),
+    symbol: r.launch.symbol,
+    name: r.launch.name,
+    image: imageOf(cfg, r.launch.mint, r.metadata),
+    value: valueOf(r.round.distributable, r.unitSol, r.unitUsd),
+  }));
+
+  const res: RewardsOverview = {
+    totals: {
+      paidUsd: num(totals.usd) ?? 0,
+      paidSol: num(totals.sol) ?? 0,
+      unpricedRounds: totals.unpriced,
+      payouts: totals.payouts,
+      rounds: totals.rounds,
+      lastPaidAt: lastPaid[0]?.at?.toISOString() ?? null,
+      launchesPaid: totals.launches,
+      walletsPaid: wallets?.n ?? 0,
+    },
+    top,
+    recent,
+  };
+  return c.json(res);
+});
 
 rewardRoutes.get("/rewards/rules", async (c) => {
   const { inForce, upcoming } = await publishedRules(c.get("db"));
