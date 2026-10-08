@@ -136,7 +136,7 @@ describe("paying with SOL on a USDC-paired Launch", () => {
     });
 
     // The Indexer sees a USDC buy on the curve; the route's swap is in a pool none of our Launches graduated into.
-    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 1, claimed: 0, graduated: 0, airdropped: 0 });
+    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 1, graduated: 0, airdropped: 0 });
     expect(await trades(mint)).toMatchObject([
       { signature, venue: "curve", side: "buy", trader: trader.publicKey.toBase58(), baseAmount: shown.amountOut, quoteAmount: r.quoteOut },
     ]);
@@ -254,7 +254,7 @@ describe("paying with SOL on a USDC-paired Launch", () => {
     expect(await coinsOf(mint, trader)).toBe(BigInt(shown.amountOut));
     expect(sol - (await solOf(trader))).toBe(SOL(0.1) + (await networkFee(signature)) + (await rent()) * 2n);
     expect(await tokenAccounts(trader)).toEqual(holdings(mint, shown.amountOut, shown.route!.kept));
-    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 1, claimed: 0, graduated: 0, airdropped: 0 });
+    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 1, graduated: 0, airdropped: 0 });
     expect((await trades(mint))[0]).toMatchObject({ signature, venue: "pool", side: "buy", quoteAmount: shown.amountIn });
   });
 });

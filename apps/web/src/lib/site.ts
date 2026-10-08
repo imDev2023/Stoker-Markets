@@ -22,7 +22,7 @@ export const NAV_LINKS = [
   { href: "/rewards", label: "Rewards" },
   { href: "/burns", label: "Burns" },
   { href: "/revenue", label: "Revenue" },
-  { href: "/creator", label: "Creator Fee" },
+  { href: "/creator", label: "Creator earnings" },
 ] as const;
 
 export const FOOTER_GROUPS = [
@@ -31,8 +31,7 @@ export const FOOTER_GROUPS = [
     title: "Creators",
     links: [
       { href: "/launch", label: "Launch a coin" },
-      { href: "/creator", label: "Your Creator Fee" },
-      { href: "/docs/claim-creator-fee", label: "How to claim without the site" },
+      { href: "/creator", label: "Your earnings" },
     ],
   },
   {

@@ -85,7 +85,7 @@ export type Bindings = {
   COLLECT_MIN_LAMPORTS: string;
   /**
    * What a Creator must be owed in one Quote Asset, worth this many lamports at the Quote Registry's price, before the
-   * Creator Forward pays it (ADR 0007); 0.01 SOL unless set.
+   * Creator Forward pays it (ADR 0009); 0.01 SOL unless set.
    */
   CREATOR_FORWARD_MIN_LAMPORTS?: string;
   /** How long before it applies a change to the Reward Round rules must be announced, in seconds (a day on mainnet). */

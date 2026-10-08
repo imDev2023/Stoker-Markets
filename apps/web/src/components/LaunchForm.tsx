@@ -9,7 +9,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { LAUNCH_IMAGE_MAX_BYTES, type PlatformInfo, type PreparedLaunch, type QuoteAsset } from "@launchpad/contract";
 import { ApiRequestError, prepareLaunch, reportTransaction, retryLaunch } from "@/lib/api";
 import { landedError } from "@/lib/transactions";
-import { creatorEarnings } from "@/lib/fees";
+import { creatorEarnings, creatorShareOf } from "@/lib/fees";
 import { COIN_DECIMALS, formatAmount, formatUnits, isSol, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
 import { LaunchOptions, LaunchType, supplyShare, useLaunchOptions } from "./LaunchOptions";
@@ -237,7 +237,7 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
           <div>
             <dt>You earn</dt>
             <dd>
-              {earns.summary}. On the curve {earns.chain}% is yours to claim on-chain; the rest is sent to your wallet.
+              {earns.summary}: half of what the platform collects on your coin, sent to your wallet with nothing to claim.
             </dd>
           </div>
         </dl>
@@ -277,7 +277,7 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
           </div>
         ) : review ? (
           <div className={styles.review} role="region" aria-label="Review your launch">
-            <ReviewText review={review} symbol={symbol} />
+            <ReviewText review={review} symbol={symbol} platform={platform} />
             <div className={styles.actions}>
               <button type="button" className={styles.secondary} onClick={() => setStep({ kind: "editing" })} disabled={step.kind !== "reviewing"}>
                 Edit
@@ -331,7 +331,7 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
 }
 
 /** What the launch will do, with every amount in the unit it is paid in. */
-function ReviewText({ review, symbol }: { review: Review; symbol: string }) {
+function ReviewText({ review, symbol, platform }: { review: Review; symbol: string; platform: PlatformInfo }) {
   const { prepared, quote } = review;
   const ticker = quoteTicker(quote);
   const sol = <strong className="mono">{(review.costLamports / LAMPORTS_PER_SOL).toFixed(4)} SOL</strong>;
@@ -354,9 +354,9 @@ function ReviewText({ review, symbol }: { review: Review; symbol: string }) {
           ) : (
             <>Your wallet pays the {ticker} and about {sol} in network fees and account rent.</>
           )}{" "}
-          Like any trade, the first buy pays the Creator Fee: its{" "}
-          <span className="mono">{formatUnits(firstBuy.fees.creator, quote.decimals, quote.decimals)}</span> {ticker} goes to your own
-          Creator Fee, yours to claim back.
+          Like any trade, the first buy pays the Platform Fee, and half of it,{" "}
+          <span className="mono">{formatUnits(creatorShareOf(platform, firstBuy.fees.platform).toString(), quote.decimals, quote.decimals)}</span> {ticker},
+          comes back to you as the coin&apos;s creator.
         </p>
       ) : (
         <p>

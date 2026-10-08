@@ -3,7 +3,7 @@
 import { test as setup } from "@playwright/test";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
-  claimViaApi, coinBalance, fund, fundedKeypair, fundQuote, graduate, launchViaApi, payAirdropViaApi, runFeeCollector, runRewardRounds, SEED_CREATOR,
+  coinBalance, fund, fundedKeypair, fundQuote, graduate, launchViaApi, payAirdropViaApi, runFeeCollector, runRewardRounds, SEED_CREATOR,
   SEED_HOLDER, tradeViaApi,
   type LaunchFields,
 } from "./fixtures";
@@ -48,18 +48,15 @@ setup("seed the board", async () => {
   await tradeViaApi(await fundedKeypair(5), rewardCoin, "buy", BigInt(0.3 * LAMPORTS_PER_SOL));
   await runRewardRounds();
 
-  // One fixed Creator, so the visual tests can open the Creator Fee page as that Creator.
+  // One fixed Creator, so the visual tests can open the creator earnings page as that Creator.
   const creator = await fundedKeypair(20, SEED_CREATOR);
   const mints = new Map<string, string>();
   for (const coin of SEEDED) mints.set(coin.name, await launchViaApi(creator, coin));
   const trader = await fundedKeypair(5);
   for (const t of TRADES) await tradeViaApi(trader, mints.get("Harbor Lights")!, t.side, t.amount);
-  // The Creator claims the SOL Creator Fee so far, so their page has a claim in its history...
-  await claimViaApi(creator);
-  // ...and what trades after it is theirs to claim next. Signal Fire sells out its curve (the local Graduation Target is
-  // 1 SOL), so a closed trade panel is on show too.
+  // Signal Fire sells out its curve (the local Graduation Target is 1 SOL), so a closed trade panel is on show too.
   await tradeViaApi(trader, mints.get("Signal Fire")!, "buy", BigInt(2 * LAMPORTS_PER_SOL));
-  // Dollar Paired is bought in USDC, so a non-SOL coin page has a trade and the Creator has USDC to claim.
+  // Dollar Paired is bought in USDC, so a non-SOL coin page has a trade and the Creator earns USDC too.
   await fundQuote(trader.publicKey, "USDC", 30_000_000n);
   await tradeViaApi(trader, mints.get("Dollar Paired")!, "buy", 30_000_000n);
 

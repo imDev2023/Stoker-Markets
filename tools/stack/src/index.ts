@@ -8,8 +8,7 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
-import { launchlabPdas } from "@launchpad/chain";
+import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import BN from "bn.js";
 import postgres from "postgres";
 import { runMigrations } from "@launchpad/db/migrate";
@@ -299,10 +298,8 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
     const webUrl = webPort ? `http://127.0.0.1:${webPort}` : null;
     const apiPort = await freePort();
     const apiUrl = `http://127.0.0.1:${apiPort}`;
-    // As the owner would create the webhook: on the PlatformConfig and the creator fee vault authority, nothing else yet.
-    const helius = await startHeliusStandIn(`${apiUrl}/v1/webhooks/helius`, WEBHOOK_SECRET, [
-      platform.platformConfig, launchlabPdas(new PublicKey(platform.launchlab)).creatorFeeVaultAuthority.toBase58(),
-    ]);
+    // As the owner would create the webhook: on the PlatformConfig, nothing else yet.
+    const helius = await startHeliusStandIn(`${apiUrl}/v1/webhooks/helius`, WEBHOOK_SECRET, [platform.platformConfig]);
     cleanups.push(helius.stop);
     const fees = {
       treasury: Keypair.generate().publicKey.toBase58(),

@@ -12,7 +12,7 @@ import { createDb, jobRuns, launchMetadata, operatorAlerts } from "@launchpad/db
 import { apiKeyMiddleware, keyRoutes, operatorKeyRoutes, pruneUsage } from "./apiKeys";
 import { config, operationsKey, quoteMarket, solRoutes, type AppEnv, type Bindings } from "./env";
 import { collectFees } from "./fees/collector";
-import { POOL_FORWARD_SHARE_BPS } from "./fees/creatorShares";
+import { CREATOR_SHARE_BPS } from "./fees/creatorShares";
 import { forwardCreatorShares } from "./fees/forward";
 import { notifyPending, watchGraduations } from "./graduation";
 import { fetchRawTransaction, IndexBatchError, indexTransactions } from "./indexer";
@@ -24,7 +24,7 @@ import { runJob, toJobRun } from "./jobs";
 import { arweaveUrl, metadataDocument, signedItems, signMetadataItems, uploadMetadata } from "./metadata";
 import { refreshQuoteRegistry } from "./quotes/registry";
 import { lockRewardTaxes } from "./rewardTax";
-import { creatorFeeRoutes } from "./routes/creatorFees";
+import { creatorEarningsRoutes } from "./routes/creatorEarnings";
 import { quotes } from "./routes/quotes";
 import { launchRoutes } from "./routes/launches";
 import { launchModeRoutes, operatorAirdropRoutes } from "./routes/launchModes";
@@ -83,10 +83,11 @@ app.get("/v1/platform", async (c) => {
     platformFeeBps: fees.platformFeeBps,
     creatorFeeBps: fees.creatorFeeBps,
     creatorForward: {
-      // The curve match follows the on-chain Creator Fee and is capped by the Platform Fee it comes out of.
-      curveBps: Math.min(fees.creatorFeeBps, fees.platformFeeBps),
-      poolShareBps: POOL_FORWARD_SHARE_BPS,
-      poolBps: (fees.poolCreatorFeeBps * POOL_FORWARD_SHARE_BPS) / 10_000,
+      // Half of what the platform collects on either venue (ADR 0009): of the Platform Fee on the curve, of the pool
+      // creator fee after Graduation, both as the chain has them.
+      shareBps: CREATOR_SHARE_BPS,
+      curveBps: (fees.platformFeeBps * CREATOR_SHARE_BPS) / 10_000,
+      poolBps: (fees.poolCreatorFeeBps * CREATOR_SHARE_BPS) / 10_000,
       minLamports: cfg.creatorForwardMinLamports.toString(),
     },
     referralShareBps: cfg.referralShareBps,
@@ -205,7 +206,7 @@ app.route("/v1", launchRoutes);
 app.route("/v1", launchModeRoutes);
 app.route("/v1", quotes);
 app.route("/v1", tradeRoutes);
-app.route("/v1", creatorFeeRoutes);
+app.route("/v1", creatorEarningsRoutes);
 app.route("/v1", revenueRoutes);
 app.route("/v1", rewardRoutes);
 app.route("/v1", burnRoutes);
@@ -271,7 +272,7 @@ app.post("/v1/operator/jobs/fee-collector", (c) =>
   manualJob(c, "fee-collector", () => collectFees({ db: c.get("db"), cfg: c.get("cfg"), operations: operationsKey(c.env) })),
 );
 
-/** The Creator Forward (ADR 0007). */
+/** The Creator Forward (ADR 0009). */
 app.post("/v1/operator/jobs/creator-forward", (c) =>
   manualJob(c, "creator-forward", () => forwardCreatorShares({ db: c.get("db"), cfg: c.get("cfg"), operations: operationsKey(c.env) })),
 );
@@ -361,7 +362,7 @@ export default {
         await job(runJob(db, "metadata-upload", () => uploadMetadata(uploadDeps(env, db)), { exclusive: true }));
       }
       // Platform revenue into the operations wallet, and on to the treasury (ADR 0004).
-      // Then the Creators' share of what was collected goes on to them (ADR 0007).
+      // Then the Creators' share of what was collected goes on to them (ADR 0009).
       if (run(CRONS.feeCollector)) {
         await job(runJob(db, "fee-collector", () => collectFees({ db, cfg: config(env), operations: operationsKey(env) }), { exclusive: true }));
         await job(runJob(db, "creator-forward", () => forwardCreatorShares({ db, cfg: config(env), operations: operationsKey(env) }), { exclusive: true }));

@@ -134,6 +134,13 @@
       "when": 1791402180523,
       "tag": "0018_quote_issuer",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791432787861,
+      "tag": "0019_creator_earnings_offchain",
+      "breakpoints": true
     }
   ]
 }

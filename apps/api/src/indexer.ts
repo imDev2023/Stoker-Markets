@@ -1,10 +1,10 @@
 import { Connection, type PublicKey } from "@solana/web3.js";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
-  curvePrice, decodeTransaction, initialCurveReserves, poolPrice, RATE_DENOMINATOR, writableAccounts, type CreatorFeeClaimed, type Graduated,
+  curvePrice, decodeTransaction, initialCurveReserves, poolPrice, RATE_DENOMINATOR, writableAccounts, type Graduated,
   type LaunchCreated, type PlatformConfigUpdated, type PoolSwapExecuted, type RawTransaction, type TradeExecuted,
 } from "@launchpad/chain";
-import { creatorFeeClaims, curves, feeAnnouncements, graduations, launchDrafts, launches, operatorAlerts, trades, type Db } from "@launchpad/db";
+import { curves, feeAnnouncements, graduations, launchDrafts, launches, operatorAlerts, trades, type Db } from "@launchpad/db";
 import { indexAirdropPayments } from "./airdrop";
 import type { Config } from "./env";
 import { watchAddresses } from "./helius";
@@ -12,7 +12,7 @@ import { insertTrade, openMarket } from "./market";
 import { relabelQuoteMints } from "./quotes/labels";
 import { recordPlatformFees } from "./routes/operator";
 
-export type IndexResult = { launched: number; traded: number; claimed: number; graduated: number; airdropped: number };
+export type IndexResult = { launched: number; traded: number; graduated: number; airdropped: number };
 
 /** A batch in which some transactions could not be indexed; the rest were, so a retry only needs to bring these back. */
 export class IndexBatchError extends Error {
@@ -22,10 +22,9 @@ export class IndexBatchError extends Error {
 }
 
 /**
- * Writes the Launches, curve trades, Creator Fee claims, Graduations and pool trades in a batch of confirmed transactions.
- * Launches, trades and Graduations count only on our PlatformConfig. A claim names no platform (a Creator's vault serves
- * all of them), so it counts when its Creator has launched on our platform; a pool trade, when its pool is one our
- * Launches graduated into. An airdrop payment counts when its airdrop was prepared through our API.
+ * Writes the Launches, curve trades, Graduations and pool trades in a batch of confirmed transactions. Launches, trades
+ * and Graduations count only on our PlatformConfig; a pool trade, when its pool is one our Launches graduated into. An
+ * airdrop payment counts when its airdrop was prepared through our API.
  * Idempotent: the same transaction delivered twice (webhook retries, the client fast path, backfills) writes one row.
  * One transaction that can't be indexed never stops the others: the batch goes on, and `IndexBatchError` names what
  * failed at the end, so a retry of the batch only has those to bring back.
@@ -35,7 +34,7 @@ export class IndexBatchError extends Error {
  * reason; the Quote Registry refresh re-reads every mint every five minutes.
  */
 export async function indexTransactions(db: Db, cfg: Config, txs: RawTransaction[]): Promise<IndexResult> {
-  const result: IndexResult = { launched: 0, traded: 0, claimed: 0, graduated: 0, airdropped: 0 };
+  const result: IndexResult = { launched: 0, traded: 0, graduated: 0, airdropped: 0 };
   const failed: { signature: string; error: string }[] = [];
   const written = new Set<string>();
   for (const tx of txs) {
@@ -55,10 +54,6 @@ export async function indexTransactions(db: Db, cfg: Config, txs: RawTransaction
 
 async function indexTransaction(db: Db, cfg: Config, tx: RawTransaction, result: IndexResult) {
   for (const e of decodeTransaction(tx, cfg)) {
-    if (e.kind === "creator_fee_claimed") {
-      result.claimed += await indexClaim(db, e);
-      continue;
-    }
     if (e.kind === "pool_swap") {
       result.traded += await indexPoolTrade(db, e);
       continue;
@@ -119,7 +114,7 @@ export async function indexAccountHistory(
   let newest = until;
   let seen = 0;
   let complete = found.length === listed.length;
-  const indexed: IndexResult = { launched: 0, traded: 0, claimed: 0, graduated: 0, airdropped: 0 };
+  const indexed: IndexResult = { launched: 0, traded: 0, graduated: 0, airdropped: 0 };
   for (let i = 0; i < found.length && seen === i; i += FETCH_BATCH) {
     const batch = found.slice(i, i + FETCH_BATCH);
     const known = new Set((await db.select({ signature: trades.signature }).from(trades).where(inArray(trades.signature, batch))).map((t) => t.signature));
@@ -229,27 +224,6 @@ async function indexTrade(db: Db, e: TradeExecuted) {
       setWhere: sql`excluded.slot > ${curves.slot} or (excluded.slot = ${curves.slot} and ${curves.realBase} = ${e.before.realBase.toString()} and ${curves.realQuote} = ${e.before.realQuote.toString()})`,
     });
   return Number(inserted);
-}
-
-async function indexClaim(db: Db, e: CreatorFeeClaimed) {
-  const creator = e.creator.toBase58();
-  const [ours] = await db.select({ mint: launches.mint }).from(launches).where(eq(launches.creator, creator)).limit(1);
-  if (!ours) return 0;
-  const inserted = await db
-    .insert(creatorFeeClaims)
-    .values({
-      signature: e.signature,
-      eventIndex: e.index,
-      creator,
-      quoteMint: e.quoteMint.toBase58(),
-      quoteDecimals: e.quoteDecimals,
-      amount: e.amount.toString(),
-      slot: e.slot,
-      blockTime: time(e.blockTime),
-    })
-    .onConflictDoNothing()
-    .returning({ signature: creatorFeeClaims.signature });
-  return inserted.length;
 }
 
 /**

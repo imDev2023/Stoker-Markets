@@ -13,10 +13,10 @@ const raw = z.string().regex(/^\d+$/, "must be a whole number of raw units");
 /**
  * What a Ledger entry records.
  * - `platform_fee`: the Platform Fee claimed from LaunchLab's vault for one Quote Asset, paid by every curve trade.
- * - `pool_fee`: a graduated coin's CPMM pool creator fee, which the platform collects after Graduation (ADR 0007).
+ * - `pool_fee`: a graduated coin's CPMM pool creator fee, which the platform collects after Graduation (ADR 0009).
  * - `fee_key`: the LP fees of a graduated pool's locked liquidity, collected with its Fee Key, in both of the pool's tokens.
  * - `sweep`: revenue moved from the operations wallet to the treasury (ADR 0004).
- * - `creator_forward`: a Creator's share of that revenue, paid from the operations wallet to the Creator (ADR 0007).
+ * - `creator_forward`: a Creator's share of that revenue, paid from the operations wallet to the Creator (ADR 0009).
  * - `burn`: SOL spent on the Platform Token and the Platform Token destroyed, two entries of one transaction.
  * - `flywheel`: the same for a top Launch the Flywheel rule picked.
  * - `arweave_top_up`: SOL sent from the operations wallet to ArDrive Turbo for upload credits (#44).
@@ -81,7 +81,7 @@ export const RevenueTotal = RevenueStreams.extend({
   asset: RevenueAsset,
   /** Moved on to the treasury so far. */
   swept: raw,
-  /** Forwarded to Creators so far (ADR 0007): their share of what was collected. */
+  /** Forwarded to Creators so far (ADR 0009): their share of what was collected. */
   creatorForwarded: raw,
   /** Collected for Creators and not forwarded yet: still in the operations wallet, and not the platform's. */
   creatorPending: raw,

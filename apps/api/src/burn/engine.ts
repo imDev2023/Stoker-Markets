@@ -23,7 +23,7 @@ export type BurnDeps = { db: Db; cfg: Config; operations: Keypair; routes: SolRo
 /** What the Burn and Flywheel have to spend, in lamports, from the Ledger. */
 export type Budgets = {
   /**
-   * Every Platform Fee, pool fee and Fee Key collection so far, less what of it is the Creators' (ADR 0007), valued in
+   * Every Platform Fee, pool fee and Fee Key collection so far, less what of it is the Creators' (ADR 0009), valued in
    * SOL at the Quote Registry's latest prices.
    */
   revenueLamports: bigint;
@@ -81,7 +81,7 @@ export async function budgets(db: Db, cfg: Config): Promise<Budgets> {
     (await db.select({ mint: quoteAssets.mint, priceSol: quoteAssets.priceSol, decimals: quoteAssets.decimals }).from(quoteAssets).where(isNotNull(quoteAssets.priceSol)))
       .map((q) => [q.mint, q]),
   );
-  // What was collected for Creators (ADR 0007) is theirs, forwarded or not, and no part of any budget.
+  // What was collected for Creators (ADR 0009) is theirs, forwarded or not, and no part of any budget.
   const creators = await creatorMoney(db);
   let revenue = 0n;
   for (const c of collected) {

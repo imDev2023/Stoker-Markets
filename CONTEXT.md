@@ -1,6 +1,6 @@
 # Stoker
 
-A Solana launchpad where anyone launches a coin paired with any Quote Asset, with no gatekeeper choosing which assets are allowed, and a Creator earns from every trade: part paid by the chain, where nobody can withhold it, and the rest forwarded by us on a public Ledger.
+A Solana launchpad where anyone launches a coin paired with any Quote Asset, with no gatekeeper choosing which assets are allowed, and a Creator earns from every trade: half of what the platform collects on their coin, forwarded by us on a public Ledger, where what is owed can be checked against the indexed trades.
 
 ## Language
 
@@ -11,7 +11,7 @@ A new coin created on our platform together with its bonding curve, from creatio
 _Avoid_: Token, pool, project
 
 **Creator**:
-The wallet that launched a coin and is entitled to its Creator Fee and its Creator Forward.
+The wallet that launched a coin and is entitled to its Creator Earnings.
 _Avoid_: Dev, deployer, owner
 
 **Graduation**:
@@ -48,7 +48,7 @@ _Avoid_: Pair with anything, multi-quote
 **Platform Fee**:
 Our share of every trade on a Launch, collected by the platform.
 On the curve LaunchLab pays it into one vault per Quote Asset; after Graduation it is the CPMM pool's creator fee, since the platform is every graduated pool's creator.
-Part of it is the Creator's, paid on as the Creator Forward.
+Half of it is the Creator's, paid on as the Creator Forward (ADR 0009).
 _Avoid_: Protocol fee (that is Raydium's cut)
 
 **Fee Key**:
@@ -56,13 +56,18 @@ The NFT Raydium mints at Graduation that entitles its holder to the trading fees
 _Avoid_: LP NFT, position NFT
 
 **Creator Fee**:
-The Creator's share of every trade on their Launch's curve before Graduation, paid and claimable on-chain with no action from us.
-_Avoid_: Creator reward, dev fee, royalty
+LaunchLab's on-chain creator share of curve trades, set per platform: 0 on ours (ADR 0009), so nothing ever collects in a Creator's LaunchLab vault and there is nothing to claim.
+The term stays because the chain, the fee-change flow and the announcements name it.
+_Avoid_: using it for what a Creator earns (that is Creator Earnings)
 
 **Creator Forward**:
-What the platform pays a Creator out of the Platform Fee it has collected, straight to the Creator's wallet in the Quote Asset: a match of the Creator Fee on the curve, and half of the pool's creator fee after Graduation (ADR 0007).
+What the platform pays a Creator out of what it has collected on their Launch's trades, straight to the Creator's wallet in the Quote Asset: half of each curve trade's Platform Fee, and half of each pool creator fee collection after Graduation (ADR 0009).
 Also one such payment.
-_Avoid_: Creator Fee (that is the on-chain part), payout, rebate, revenue share
+_Avoid_: Creator Fee (that is LaunchLab's on-chain term), payout, rebate, revenue share, claim
+
+**Creator Earnings**:
+What a Creator's Launches have earned them, the sum of their Creator Forwards: earned, sent and still to be sent, per Quote Asset and per Launch on the creator page.
+_Avoid_: Creator Fee, claimable, rewards (those are for holders)
 
 ### Revenue
 

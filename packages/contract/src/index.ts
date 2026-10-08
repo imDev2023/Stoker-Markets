@@ -8,7 +8,7 @@ import { LaunchModeFields, LaunchModesSummary, RewardTax } from "./launchModes";
 
 export * from "./quotes";
 export * from "./trades";
-export * from "./creatorFees";
+export * from "./creatorEarnings";
 export * from "./board";
 export * from "./launchModes";
 export * from "./revenue";
@@ -93,14 +93,15 @@ export const PlatformInfo = z.object({
   /** Every Launch's Graduation Target is worth this much SOL, in lamports, at the moment it launches. */
   graduationTargetLamports: z.string(),
   platformFeeBps: z.number(),
+  /** LaunchLab's on-chain creator fee on curve trades, as the chain has it: 0 on our platform (ADR 0009). */
   creatorFeeBps: z.number(),
   /**
-   * The Creator Forward (ADR 0007): what the platform pays a Creator from its own revenue, on top of the Creator Fee
-   * the chain pays. On the curve it is `curveBps` of every trade; after Graduation, `poolShareBps` of the pool creator
-   * fee the platform collects, which is `poolBps` of every pool trade at the rate of the CPMM config graduated pools
-   * use. Paid in the Quote Asset once the amount owed is worth `minLamports`.
+   * The Creator Forward (ADR 0009): what the platform pays a Creator, `shareBps` of what it collects on their coin's
+   * trades on either venue. That is `curveBps` of every curve trade (out of the Platform Fee) and `poolBps` of every
+   * pool trade (out of the pool creator fee at the rate of the CPMM config graduated pools use). Paid in the Quote
+   * Asset once the amount owed is worth `minLamports`.
    */
-  creatorForward: z.object({ curveBps: z.number(), poolShareBps: z.number().int(), poolBps: z.number(), minLamports: z.string() }),
+  creatorForward: z.object({ shareBps: z.number().int(), curveBps: z.number(), poolBps: z.number(), minLamports: z.string() }),
   /** What a referred curve trade pays its referrer, in basis points, where the Quote Asset allows a share fee. */
   referralShareBps: z.number().int(),
   /** Where buys paid with SOL on a Launch paired with anything else get their Quote Asset; null when this deployment has no route. */

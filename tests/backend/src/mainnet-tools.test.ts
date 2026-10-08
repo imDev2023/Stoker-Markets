@@ -1,15 +1,18 @@
 // The mainnet scripts (tools/mainnet, runbook sections 2 and 3), proven against the local chain: the PlatformConfig
-// creation transaction built unsigned for the cold admin key lands and decodes as the runbook's check expects, and the
-// Platform Lookup Table is created and then extended from a list of quote mints with the operations keypair.
+// creation transaction built unsigned for the cold admin key lands and decodes as the runbook's check expects, the
+// Platform Lookup Table is created and then extended from a list of quote mints with the operations keypair, and a fee
+// change is announced and, once due, applied with a file admin keypair as on the devnet rehearsal.
 import { describe, expect, it } from "vitest";
 import { Keypair, PublicKey, Transaction } from "@solana/web3.js";
 import { launchlabPdas, platformLookupAddresses, WSOL_MINT } from "@launchpad/chain";
-import { CPSWAP_CONFIG, LOCAL_QUOTES } from "@launchpad/localnet";
+import { PlatformInfo } from "@launchpad/contract";
+import { CPSWAP_CONFIG, LOCAL_QUOTES, localnetKeys } from "@launchpad/localnet";
 import {
   buildPlatformConfigTransaction, checkPlatformConfig, decodePlatformConfig, DEFAULT_CREATOR_FEE_BPS, DEFAULT_PLATFORM_FEE_BPS,
   signAndSendPlatformConfig, type PlatformConfigArgs,
 } from "@launchpad/mainnet/platform-config";
 import { ensurePlatformLookupTable, platformLookupTableAddresses } from "@launchpad/mainnet/lookup-table";
+import { announceFeeChange, applyFeeChange } from "@launchpad/mainnet/fee-change";
 import { connection, env, fundedWallet } from "./client";
 
 describe("tools/mainnet/platform-config", () => {
@@ -35,7 +38,7 @@ describe("tools/mainnet/platform-config", () => {
     await signAndSendPlatformConfig(connection(), built.transaction, built.lastValidBlockHeight, admin);
     const view = (await decodePlatformConfig(connection(), "localnet", admin.publicKey))!;
     expect(view).toMatchObject({
-      address: built.platformConfig.toBase58(), platformFeeBps: 75, creatorFeeBps: 25, feeRate: 7500, creatorFeeRate: 2500,
+      address: built.platformConfig.toBase58(), platformFeeBps: 100, creatorFeeBps: 0, feeRate: 10_000, creatorFeeRate: 0,
       name: args.name, web: args.web, img: args.img, feeWallet: operations.toBase58(), nftWallet: operations.toBase58(),
       transferFeeExtensionAuth: operations.toBase58(), vestingWallet: operations.toBase58(), platformCpCreator: operations.toBase58(),
       curveRuleManager: operations.toBase58(), restrictCurveParam: true, cpswapConfig: CPSWAP_CONFIG.toBase58(),
@@ -43,14 +46,14 @@ describe("tools/mainnet/platform-config", () => {
     });
     expect(checkPlatformConfig(view, args)).toEqual([]);
     // The check names every field that differs from what was decided.
-    expect(checkPlatformConfig(view, { ...args, platformFeeBps: 100, operations: Keypair.generate().publicKey })).toEqual(
-      expect.arrayContaining([expect.stringMatching(/^fee_rate is 7500, expected 10000$/), expect.stringMatching(/^fee_wallet is /), expect.stringMatching(/^curve_rule_manager is /)]),
+    expect(checkPlatformConfig(view, { ...args, platformFeeBps: 75, operations: Keypair.generate().publicKey })).toEqual(
+      expect.arrayContaining([expect.stringMatching(/^fee_rate is 10000, expected 7500$/), expect.stringMatching(/^fee_wallet is /), expect.stringMatching(/^curve_rule_manager is /)]),
     );
   });
 
   it("decodes the platform's own PlatformConfig as bootstrapPlatform created it", async () => {
     const view = (await decodePlatformConfig(connection(), "localnet", new PublicKey(env().platform.admin)))!;
-    expect(view).toMatchObject({ address: env().platform.platformConfig, platformFeeBps: 75, creatorFeeBps: 25, curveRuleManager: env().platform.operationsWallet, restrictCurveParam: true });
+    expect(view).toMatchObject({ address: env().platform.platformConfig, platformFeeBps: 100, creatorFeeBps: 0, curveRuleManager: env().platform.operationsWallet, restrictCurveParam: true });
     expect(checkPlatformConfig(view, {
       operations: new PublicKey(env().platform.operationsWallet), cpswapConfig: CPSWAP_CONFIG, name: view.name, web: view.web, img: view.img, platformFeeBps: DEFAULT_PLATFORM_FEE_BPS, creatorFeeBps: DEFAULT_CREATOR_FEE_BPS,
     })).toEqual([]);
@@ -89,4 +92,32 @@ describe("tools/mainnet/lookup-table", () => {
     expect(() => platformLookupTableAddresses("mainnet", Keypair.generate().publicKey, many)).toThrow(/a lookup table holds 256/);
     expect(platformLookupTableAddresses("mainnet", Keypair.generate().publicKey, many.slice(0, 60))).toHaveLength(11 + 4 * 61);
   });
+});
+
+describe("tools/mainnet/fee-change", () => {
+  it("announces a fee change as the operator and, once it is due, applies it with the admin keypair", async () => {
+    const api = { url: env().apiUrl, token: env().operatorToken };
+    const lead = env().feeChangeLeadSeconds * 1000;
+    const { admin } = localnetKeys();
+    const platform = async () => PlatformInfo.parse(await (await fetch(`${env().apiUrl}/v1/platform`)).json());
+    const indexed = (signature: string) => fetch(`${env().apiUrl}/v1/transactions/${signature}`, { method: "POST" });
+
+    const announced = await announceFeeChange(api, { platformFeeBps: 80, creatorFeeBps: 20, effectiveAt: new Date(Date.now() + lead + 1_500), note: "rehearsal" });
+    expect(announced).toMatchObject({ platformFeeBps: 80, creatorFeeBps: 20 });
+    // Not before it is due, and never with a keypair that is not the admin's.
+    await expect(applyFeeChange(api, connection(), announced.id, admin)).rejects.toThrow(/422/);
+    await new Promise((r) => setTimeout(r, lead + 2_000));
+    await expect(applyFeeChange(api, connection(), announced.id, Keypair.generate())).rejects.toThrow(/is for admin/);
+    const signature = await applyFeeChange(api, connection(), announced.id, admin);
+    expect(await decodePlatformConfig(connection(), "localnet", admin.publicKey)).toMatchObject({ platformFeeBps: 80, creatorFeeBps: 20 });
+    // The webhook delivers the change like any transaction on the PlatformConfig; here the fast path stands in for it.
+    expect((await indexed(signature)).status).toBe(200);
+    expect(await platform()).toMatchObject({ platformFeeBps: 80, creatorFeeBps: 20 });
+
+    // Back to the rates the platform started with, the same way, for the other files.
+    const back = await announceFeeChange(api, { platformFeeBps: DEFAULT_PLATFORM_FEE_BPS, creatorFeeBps: DEFAULT_CREATOR_FEE_BPS, effectiveAt: new Date(Date.now() + lead + 1_500) });
+    await new Promise((r) => setTimeout(r, lead + 2_000));
+    expect((await indexed(await applyFeeChange(api, connection(), back.id, admin))).status).toBe(200);
+    expect(await platform()).toMatchObject({ platformFeeBps: DEFAULT_PLATFORM_FEE_BPS, creatorFeeBps: DEFAULT_CREATOR_FEE_BPS });
+  }, 60_000);
 });

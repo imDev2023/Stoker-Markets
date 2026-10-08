@@ -115,31 +115,6 @@ export const trades = pgTable(
   ],
 );
 
-/**
- * One row per Creator Fee claim by a Creator of our platform, written by the Indexer from the claim transaction: the
- * public history of what each Creator has taken out of their Creator Fee vaults.
- */
-export const creatorFeeClaims = pgTable(
-  "creator_fee_claims",
-  {
-    signature: text("signature").notNull(),
-    /** Position among the claims in the transaction. */
-    eventIndex: integer("event_index").notNull(),
-    creator: text("creator").notNull(),
-    quoteMint: text("quote_mint").notNull(),
-    quoteDecimals: integer("quote_decimals").notNull(),
-    /** Raw units of the Quote Asset paid out of the vault. */
-    amount: numeric("amount", { precision: 40, scale: 0 }).notNull(),
-    slot: bigint("slot", { mode: "number" }).notNull(),
-    blockTime: timestamp("block_time", { withTimezone: true }).notNull(),
-    indexedAt: timestamp("indexed_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [
-    primaryKey({ columns: [t.signature, t.eventIndex] }),
-    index("creator_fee_claims_creator_slot_idx").on(t.creator, t.slot),
-  ],
-);
-
 /** The latest indexed state of each Launch's curve: what it has raised toward its Graduation Target, and its price. */
 export const curves = pgTable("curves", {
   mint: text("mint").primaryKey(),
@@ -354,7 +329,7 @@ export const jobTransactions = pgTable("job_transactions", {
 });
 
 /**
- * The Creator Forward (ADR 0007): one row per payment of a Creator's share of platform revenue in one Quote Asset,
+ * The Creator Forward (ADR 0009): one row per payment of a Creator's share of platform revenue in one Quote Asset,
  * written with its transaction's signature before the transaction is sent. What a Creator is owed is what they earned
  * less every row that is `sending` or `paid`, so a run that dies, or a retry, never pays the same share twice; only a
  * `failed` or `expired` row frees its amount to be paid again.

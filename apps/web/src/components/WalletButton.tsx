@@ -60,7 +60,7 @@ export function WalletButton({ variant = "header" }: { variant?: "header" | "inl
         {open && (
           <div className={styles.menu} role="menu" aria-label={wallet ? `Connected with ${wallet.adapter.name}` : "Wallet"}>
             <Link href={`/creator/${publicKey.toBase58()}`} role="menuitem" className={styles.menuLink} onClick={() => setOpen(false)}>
-              Your Creator Fee
+              Your earnings
             </Link>
             <button type="button" role="menuitem" onClick={() => { setOpen(false); void disconnect(); }}>
               Disconnect

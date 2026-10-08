@@ -2,24 +2,25 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { creatorForwards, launches, ledgerEntries, trades, type Db } from "@launchpad/db";
 
 /**
- * What Creators earn from the platform's own revenue (ADR 0007), on top of the Creator Fee the chain pays them:
- * - on the curve, a match of each trade's on-chain Creator Fee, out of that trade's Platform Fee and never more than it;
- * - after Graduation, a share of the pool creator fee the platform collected from the coin's pool.
- * Both are in the Launch's Quote Asset. Everything here is a sum over indexed trades and the Ledger, so anyone can redo it.
+ * What Creators earn (ADR 0009): half of what the platform collects on their Launches' trades, on either venue.
+ * - on the curve, half of each trade's Platform Fee;
+ * - after Graduation, half of each pool creator fee collection from the coin's pool.
+ * Both are in the Launch's Quote Asset, and each half is rounded down on its own, so a sum per Creator, per Launch or
+ * per asset is the same whichever way the fees are grouped. Everything here is a sum over indexed trades and the
+ * Ledger, so anyone can redo it.
  */
 
-/** The Creator's share of a graduated pool's creator fee, in basis points: half. */
-export const POOL_FORWARD_SHARE_BPS = 5_000;
+/** The Creator's share of what the platform collects on their coin's trades, in basis points: half. */
+export const CREATOR_SHARE_BPS = 5_000;
 
 /** A Creator's share in one Quote Asset, by where it was earned; raw units. */
 export type CreatorShare = { creator: string; mint: string; curve: bigint; pool: bigint };
 
-/**
- * What a curve trade earns its Creator from the platform, as SQL over `trades`. The match is capped by the Platform Fee
- * the trade paid, so the platform never forwards more than a trade brought in.
- */
-const curveMatch = sql`least(${trades.creatorFee}, ${trades.platformFee})`;
-const poolShare = sql`floor(sum(${ledgerEntries.amount}) * ${POOL_FORWARD_SHARE_BPS} / 10000)`;
+const half = (amount: unknown) => sql`floor(${amount} * ${CREATOR_SHARE_BPS} / 10000)`;
+/** What a curve trade earns its Creator, as SQL over `trades`. */
+const curveShare = sql`coalesce(sum(${half(trades.platformFee)}), 0)::text`;
+/** What the pool fee collections of a coin earn its Creator, as SQL over `ledger_entries`. */
+const poolShare = sql`coalesce(sum(${half(ledgerEntries.amount)}), 0)::text`;
 
 /**
  * A curve trade's fee has been collected once a Platform Fee claim for its Quote Asset landed at or after the trade:
@@ -39,13 +40,13 @@ export async function creatorShares(db: Db, scope: Scope): Promise<CreatorShare[
   const mine = scope.creator ? sql`and ${launches.creator} = ${scope.creator}` : sql``;
   const [curve, pool] = await Promise.all([
     db
-      .select({ creator: launches.creator, mint: launches.quoteMint, amount: sql<string>`coalesce(sum(${curveMatch}), 0)::text` })
+      .select({ creator: launches.creator, mint: launches.quoteMint, amount: sql<string>`${curveShare}` })
       .from(trades)
       .innerJoin(launches, eq(launches.mint, trades.mint))
       .where(sql`${trades.venue} = 'curve' ${mine} ${scope.collectedOnly ? sql`and ${collected}` : sql``}`)
       .groupBy(launches.creator, launches.quoteMint),
     db
-      .select({ creator: launches.creator, mint: ledgerEntries.assetMint, amount: sql<string>`${poolShare}::text` })
+      .select({ creator: launches.creator, mint: ledgerEntries.assetMint, amount: sql<string>`${poolShare}` })
       .from(ledgerEntries)
       .innerJoin(launches, eq(launches.mint, ledgerEntries.launchMint))
       .where(sql`${ledgerEntries.kind} = 'pool_fee' and ${ledgerEntries.assetMint} = ${launches.quoteMint} ${mine}`)
@@ -62,17 +63,17 @@ export async function creatorShares(db: Db, scope: Scope): Promise<CreatorShare[
   return [...shares.values()].filter((s) => s.curve + s.pool > 0n).sort((a, b) => a.creator.localeCompare(b.creator) || a.mint.localeCompare(b.mint));
 }
 
-/** One Creator's share per Launch, counting every indexed curve trade: for the Creator Fee page. */
+/** One Creator's share per Launch, counting every indexed curve trade: for the creator page. */
 export async function creatorSharesByLaunch(db: Db, creator: string) {
   const [curve, pool] = await Promise.all([
     db
-      .select({ mint: launches.mint, amount: sql<string>`coalesce(sum(${curveMatch}), 0)::text` })
+      .select({ mint: launches.mint, amount: sql<string>`${curveShare}` })
       .from(trades)
       .innerJoin(launches, eq(launches.mint, trades.mint))
       .where(and(eq(trades.venue, "curve"), eq(launches.creator, creator)))
       .groupBy(launches.mint),
     db
-      .select({ mint: launches.mint, amount: sql<string>`${poolShare}::text` })
+      .select({ mint: launches.mint, amount: sql<string>`${poolShare}` })
       .from(ledgerEntries)
       .innerJoin(launches, eq(launches.mint, ledgerEntries.launchMint))
       .where(sql`${ledgerEntries.kind} = 'pool_fee' and ${ledgerEntries.assetMint} = ${launches.quoteMint} and ${launches.creator} = ${creator}`)

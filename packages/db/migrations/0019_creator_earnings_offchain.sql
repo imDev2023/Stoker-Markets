@@ -1,0 +1,1 @@
+DROP TABLE "creator_fee_claims" CASCADE;

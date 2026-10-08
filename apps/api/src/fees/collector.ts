@@ -175,7 +175,7 @@ async function poolsTradedSinceLastFeeKeyCollection(db: Db, pools: string[]) {
  * budgets) once it holds more than the threshold above that, and
  * of every other token, the revenue the Ledger shows it collected and has not swept yet. Anything else the wallet holds
  * in that token (a Reward Round's harvested tax, or a Quote Asset payout's pot, say) stays, and so does what Creators
- * are owed and have not been forwarded yet (ADR 0007), in SOL or any token, and the SOL that Reward Sales brought in
+ * are owed and have not been forwarded yet (ADR 0009), in SOL or any token, and the SOL that Reward Sales brought in
  * for holders (ADR 0006). Tokens go in batches that fit a transaction.
  */
 async function sweep(

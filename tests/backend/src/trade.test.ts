@@ -55,7 +55,8 @@ describe("buying on the curve", () => {
     expect(25 + rates.platform + rates.creator).toBe(125);
 
     const fees = await feesOnChain(pool, creator);
-    const newVaults = (await Promise.all(feeVaults(creator).map((v) => connection().getAccountInfo(v)))).filter((a) => !a).length;
+    const missingVaults = async () => (await Promise.all(feeVaults(creator).map((v) => connection().getAccountInfo(v)))).filter((a) => !a).length;
+    const missing = await missingVaults();
     const sol = await solOf(trader);
     const { quote: q, signature } = await trade(trader, mint, "buy", SOL(0.1));
     expect(q).toEqual(shown);
@@ -63,10 +64,11 @@ describe("buying on the curve", () => {
     expect(diff(await feesOnChain(pool, creator), fees)).toEqual(quotedFees(q));
     expect(await coinsOf(mint, trader)).toBe(BigInt(q.amountOut));
     // The trader pays the quoted amount, the network fee, and rent for their new coin account and for any fee vault this
-    // trade opens (the first trade on a Creator's coins opens their Creator Fee vault). The wrapped-SOL account is refunded.
+    // trade opened (LaunchLab opens the Creator's vault on the first trade that names it, even with no Creator Fee to
+    // pay into it). The wrapped-SOL account is refunded.
     const rent = BigInt(await connection().getMinimumBalanceForRentExemption(ACCOUNT_SIZE));
-    expect(newVaults).toBeGreaterThan(0);
-    expect(sol - (await solOf(trader))).toBe(BigInt(q.amountIn) + (await networkFee(signature)) + rent * BigInt(1 + newVaults));
+    const opened = missing - (await missingVaults());
+    expect(sol - (await solOf(trader))).toBe(BigInt(q.amountIn) + (await networkFee(signature)) + rent * BigInt(1 + opened));
   });
 
   it("needs only the trader's signature", async () => {
@@ -148,14 +150,14 @@ describe("curve progress, trade history and candles", () => {
 
     const trader = await fundedWallet();
     const buy = await trade(trader, mint, "buy", SOL(0.25));
-    expect(await (await deliverWebhook([buy.signature])).json()).toEqual({ launched: 0, traded: 1, claimed: 0, graduated: 0, airdropped: 0 });
+    expect(await (await deliverWebhook([buy.signature])).json()).toEqual({ launched: 0, traded: 1, graduated: 0, airdropped: 0 });
     let curve = (await getLaunch(mint)).launch!.curve;
     expect(curve).toEqual({ status: "live", raised: (await poolState(pool)).real_quote.toString(), price: buy.quote.priceAfter, completedAt: null });
 
     const sell = await trade(trader, mint, "sell", (await coinsOf(mint, trader)) / 4n);
     // The fast path the web app uses after a trade confirms indexes it the same way.
     const fast = await fetch(`${env().apiUrl}/v1/transactions/${sell.signature}`, { method: "POST" });
-    expect(await fast.json()).toEqual({ launched: 0, traded: 1, claimed: 0, graduated: 0, airdropped: 0 });
+    expect(await fast.json()).toEqual({ launched: 0, traded: 1, graduated: 0, airdropped: 0 });
     curve = (await getLaunch(mint)).launch!.curve;
     expect(curve.raised).toBe((await poolState(pool)).real_quote.toString());
     expect(curve.price).toBe(sell.quote.priceAfter);
@@ -191,11 +193,11 @@ describe("curve progress, trade history and candles", () => {
     const trader = await fundedWallet();
     const buy = await trade(trader, mint, "buy", SOL(0.1));
     const sell = await trade(trader, mint, "sell", (await coinsOf(mint, trader)) / 2n);
-    expect(await (await deliverWebhook([sell.signature, buy.signature])).json()).toEqual({ launched: 0, traded: 2, claimed: 0, graduated: 0, airdropped: 0 });
+    expect(await (await deliverWebhook([sell.signature, buy.signature])).json()).toEqual({ launched: 0, traded: 2, graduated: 0, airdropped: 0 });
     const latest = (await getLaunch(mint)).launch!.curve;
     expect(latest.price).toBe(sell.quote.priceAfter);
 
-    expect(await (await deliverWebhook([buy.signature, sell.signature, buy.signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 0, airdropped: 0 });
+    expect(await (await deliverWebhook([buy.signature, sell.signature, buy.signature])).json()).toEqual({ launched: 0, traded: 0, graduated: 0, airdropped: 0 });
     expect(await trades(mint)).toHaveLength(2);
     expect((await getLaunch(mint)).launch!.curve).toEqual(latest);
   });
@@ -227,7 +229,7 @@ describe("curve progress, trade history and candles", () => {
       program, curve, trader: other.publicKey, side: "buy", amountIn: new BN(SOL(0.01).toString()), minAmountOut: new BN(0),
     });
     const signature = await signAndSend(p, other);
-    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 0, airdropped: 0 });
+    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 0, traded: 0, graduated: 0, airdropped: 0 });
     expect(await trades(mint.publicKey.toBase58())).toEqual([]);
   });
 });

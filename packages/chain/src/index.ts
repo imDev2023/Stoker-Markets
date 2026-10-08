@@ -8,13 +8,10 @@ export {
 } from "./shape";
 export { listGlobalConfigs, readCurveRuleGroups, readCurveRules, readQuoteMints, type GlobalConfigInfo, type MintControls, type QuoteMintInfo } from "./quotes";
 export {
-  createPlatformConfigIx, updatePlatformConfigIx, createCurveRuleIx, updateCurveRuleIx, initializeV2Ix, initializeWithToken2022Ix, claimCreatorFeeIx,
-  type InitializeParams, type PlatformSettings, type PlatformConfigUpdate, type PlatformConfigInfo, type ClaimCreatorFeeParams,
+  createPlatformConfigIx, updatePlatformConfigIx, createCurveRuleIx, updateCurveRuleIx, initializeV2Ix, initializeWithToken2022Ix,
+  type InitializeParams, type PlatformSettings, type PlatformConfigUpdate, type PlatformConfigInfo,
 } from "./instructions";
-export {
-  prepareCreatorFeeClaim, readCreatorFeeVaults, readFeeVaults, NothingToClaimError,
-  type CreatorFeeClaimRequest, type CreatorFeeVault, type FeeVault, type PreparedCreatorFeeClaim,
-} from "./claim";
+export { readFeeVaults, type FeeVault } from "./vaults";
 export {
   firstBuyTakesCurve, prepareLaunch, quoteFirstBuy, REWARD_TAX_MAXIMUM_FEE, rewardTaxFee,
   type FirstBuyQuote, type LaunchPairing, type LaunchRequest, type PreparedLaunch,
@@ -54,7 +51,7 @@ export {
 export { JUPITER_API, jupiterSwapIn, type JupiterSwapIn } from "./jupiter";
 export {
   decodeTransaction, writableAccounts,
-  type RawTransaction, type ChainEvent, type LaunchCreated, type TradeExecuted, type CreatorFeeClaimed, type Graduated,
+  type RawTransaction, type ChainEvent, type LaunchCreated, type TradeExecuted, type Graduated,
   type PoolSwapExecuted, type PlatformConfigUpdated,
 } from "./decode";
 export {

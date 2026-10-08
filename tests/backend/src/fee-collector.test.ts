@@ -1,7 +1,7 @@
 // The Fee Collector: on its schedule it claims the platform's revenue into the operations wallet (the Platform Fee from
 // LaunchLab's vaults, and after Graduation the pool creator fee and the Fee Key's LP fees), sweeps the wallet into the
 // treasury (ADR 0004), and records every movement on the public Ledger. Tests trigger its Cron Trigger and check each
-// Ledger entry against what moved on-chain. The same Cron Trigger then runs the Creator Forward (ADR 0007), which pays
+// Ledger entry against what moved on-chain. The same Cron Trigger then runs the Creator Forward (ADR 0009), which pays
 // Creators their share of what was collected; the sweep leaves that share behind for it.
 import { beforeAll, describe, expect, it } from "vitest";
 import { PublicKey, type Keypair } from "@solana/web3.js";
@@ -132,8 +132,8 @@ async function graduatedCoin(opts: { quoteMint?: PublicKey } = {}) {
   const migration = await migrateCurve(connection(), new PublicKey(prepared.pool));
   await deliverWebhook([buyout.signature, migration.signature]);
   for (let i = 0; i < 40 && !(await quote(prepared.mint, { side: "buy", amount: "1000000" })).ok; i++) await new Promise((r) => setTimeout(r, 250));
-  // The buyout is the coin's only curve trade, so its Creator Fee is all the chain paid the Creator on the curve.
-  return { mint: prepared.mint, curve: new PublicKey(prepared.pool), pool: migration.pool, trader, quoteMint, creator, curveCreatorFee: BigInt(buyout.quote.fees.creator) };
+  // The buyout is the coin's only curve trade, so half of its Platform Fee is all the Creator earned on the curve (ADR 0009).
+  return { mint: prepared.mint, curve: new PublicKey(prepared.pool), pool: migration.pool, trader, quoteMint, creator, curveShare: BigInt(buyout.quote.fees.platform) / 2n };
 }
 
 /** Trades in a graduated coin's pool, indexed; returns the pool creator fees the trades paid. */
@@ -165,8 +165,9 @@ describe("the Platform Fee", () => {
     const paid = BigInt(launched.prepared.firstBuy!.fees.platform) + sum(trades.map((t) => BigInt(t.quote.fees.platform)));
     expect(BigInt(launched.prepared.firstBuy!.fees.platform)).toBe(feeAt(SOL(0.2), (await feeRates()).platform));
     await deliverWebhook(trades.map((t) => t.signature));
-    // The platform matches the Creator Fee the chain paid on each of those trades (ADR 0007).
-    const share = BigInt(launched.prepared.firstBuy!.fees.creator) + sum(trades.map((t) => BigInt(t.quote.fees.creator)));
+    // Half of each trade's Platform Fee is the Creator's (ADR 0009); the chain itself paid the Creator nothing.
+    expect([launched.prepared.firstBuy!.fees.creator, ...trades.map((t) => t.quote.fees.creator)]).toEqual(["0", "0", "0", "0"]);
+    const share = BigInt(launched.prepared.firstBuy!.fees.platform) / 2n + sum(trades.map((t) => BigInt(t.quote.fees.platform) / 2n));
     const creatorSol = await lamportsOf(creator.publicKey);
     const vault = platformFeeVault(WSOL_MINT);
     expect(await tokenBalance(vault)).toBe(paid);
@@ -205,7 +206,7 @@ describe("the Platform Fee", () => {
     const paid = sum(buys.map((t) => BigInt(t.quote.fees.platform)));
     const rates = await feeRates();
     expect(paid).toBe(feeAt(usdc(40), rates.platform) + feeAt(usdc(12.5), rates.platform));
-    const share = sum(buys.map((t) => BigInt(t.quote.fees.creator)));
+    const share = sum(buys.map((t) => BigInt(t.quote.fees.platform) / 2n));
     expect(await tokenBalance(vault)).toBe(dust + paid);
     const inTreasury = await tokensOf(treasury(), USDC);
     const surplus = await surplusOf(USDC);
@@ -271,10 +272,10 @@ describe("after Graduation", () => {
     const solIn = sum((await entriesOf(sent.map((s) => s.signature))).filter((e) => e.asset.mint === WSOL && e.kind !== "sweep").map((e) => BigInt(e.amount)));
     expect(solIn).toBe(platformFee + paid + BigInt(keySol.amount));
     const rent = BigInt(await connection().getMinimumBalanceForRentExemption(ACCOUNT_SIZE));
-    // The Creator's share of it (ADR 0007) went on to the Creator: the match on the curve, and half of the pool fee.
+    // The Creator's share of it (ADR 0009) went on to the Creator: half of the curve's Platform Fee, and half of the pool fee.
     const forwards = await forwarded();
     expect(forwards).toEqual([
-      { creator: coin.creator.publicKey.toBase58(), mint: WSOL, amount: (coin.curveCreatorFee + paid / 2n).toString(), signature: expect.any(String), outcome: "paid" },
+      { creator: coin.creator.publicKey.toBase58(), mint: WSOL, amount: (coin.curveShare + paid / 2n).toString(), signature: expect.any(String), outcome: "paid" },
     ]);
     expect((await lamportsOf(ops())) - sol).toBe(
       solIn - forwardedIn(forwards, WSOL) - (await networkFees([...sent, ...forwards].map((s) => s.signature))) - 2n * rent,
@@ -307,9 +308,9 @@ describe("after Graduation", () => {
     expect(entries.filter((e) => e.kind === "fee_key").map((e) => e.asset.mint).sort()).toEqual([coin.mint, USDC.toBase58()].sort());
     expect(await quoteCreatorFee(coin.pool, USDC)).toBe(0n);
     // Every USDC collected (the buyout's Platform Fee, the pool fee, the Fee Key's share) went on to the treasury in the
-    // same run, but for the Creator's share: the match on the curve and half of the pool fee, which the Creator got.
+    // same run, but for the Creator's share: half of the curve's Platform Fee and half of the pool fee, which the Creator got.
     const usdcOf = (kinds: string[]) => sum(entries.filter((e) => e.asset.mint === USDC.toBase58() && kinds.includes(e.kind)).map((e) => BigInt(e.amount)));
-    const share = coin.curveCreatorFee + paid / 2n;
+    const share = coin.curveShare + paid / 2n;
     expect(usdcOf(["sweep"])).toBe(usdcOf(["platform_fee", "pool_fee", "fee_key"]) - share);
     expect((await tokensOf(treasury(), USDC)) - inTreasury).toBe(usdcOf(["sweep"]));
     expect((await forwarded()).find((f) => f.creator === coin.creator.publicKey.toBase58())).toMatchObject({ mint: USDC.toBase58(), amount: share.toString(), outcome: "paid" });
@@ -355,7 +356,7 @@ describe("the sweep", () => {
     // SOL the Burn and Flywheel have not spent yet stays behind with the float (ADR 0006).
     const budgets = BurnsPage.parse(await (await fetch(`${env().apiUrl}/v1/burns`)).json()).budgets;
     const reserved = BigInt(budgets.burn.available) + BigInt(budgets.flywheel.available);
-    // So does SOL owed to Creators (ADR 0007): what the Creator Forward then paid, and what still waits for its minimum.
+    // So does SOL owed to Creators (ADR 0009): what the Creator Forward then paid, and what still waits for its minimum.
     const forwards = await forwarded();
     expect(forwards.every((f) => f.mint === WSOL)).toBe(true);
     const waiting = await pendingForCreators(WSOL_MINT);

@@ -5,7 +5,7 @@ import BN from "bn.js";
 import { launchlabCoder, launchlabPdas, standardLaunchConstraints, updateCurveRuleIx, WSOL_MINT } from "@launchpad/chain";
 import { LOCAL_QUOTES, localnetKeys, mintLocalQuote, send } from "@launchpad/localnet";
 import {
-  AirdropCreators, AirdropStatus, CreatorFees, FirstBuyQuote, HolderList, LaunchPermissions, PreparedAirdrop, PreparedLaunch, TradeList,
+  AirdropCreators, AirdropStatus, CreatorEarnings, FirstBuyQuote, HolderList, LaunchPermissions, PreparedAirdrop, PreparedLaunch, TradeList,
 } from "@launchpad/contract";
 import {
   connection, deliverWebhook, env, fundedWallet, getLaunch, launch, listLaunches, prepare, refreshQuoteRegistry, signAndSend, confirmOutcome,
@@ -65,13 +65,11 @@ describe("a first buy", () => {
     const bought = BigInt(quote.firstBuy.amountOut);
     expect(await coinsOf(prepared.mint, creator.publicKey)).toBe(bought);
     expect(BigInt((await poolState(prepared.pool))!.real_base.toString())).toBe(bought);
-    // A First Buy is a curve trade, so it pays the Creator Fee too: into the Creator's own vault, theirs to claim back.
-    const vault = launchlabPdas(new PublicKey(env().platform.launchlab)).creatorFeeVault(creator.publicKey, WSOL_MINT);
-    const vaultBalance = await connection().getTokenAccountBalance(vault, "confirmed");
-    expect(vaultBalance.value.amount).toBe(quote.firstBuy.fees.creator);
+    // A First Buy is a curve trade, so it pays the Platform Fee like any other; the chain pays the Creator nothing (ADR 0009).
+    expect(quote.firstBuy.fees.creator).toBe("0");
 
     // One transaction created the coin and made the buy.
-    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 1, traded: 1, claimed: 0, graduated: 0, airdropped: 0 });
+    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 1, traded: 1, graduated: 0, airdropped: 0 });
     const { trades } = TradeList.parse(await (await api(`/v1/launches/${prepared.mint}/trades`)).json());
     expect(trades).toMatchObject([
       { signature, trader: creator.publicKey.toBase58(), side: "buy", baseAmount: quote.firstBuy.amountOut, fees: quote.firstBuy.fees },
@@ -82,10 +80,11 @@ describe("a first buy", () => {
     expect(market.price).toBe(quote.firstBuy.priceAfter);
     expect(market.marketCap?.quote).toBeCloseTo(quote.firstBuy.priceAfter * 1_000_000_000, 6);
     expect(market.volume24h.raw).toBe(quote.firstBuy.amountIn);
-    // The Creator's Creator Fee page counts it like any other trade's fee.
-    const fees = CreatorFees.parse(await (await api(`/v1/creators/${creator.publicKey.toBase58()}/fees`)).json());
-    expect(fees.assets).toMatchObject([{ quote: { mint: WSOL_MINT.toBase58() }, claimable: quote.firstBuy.fees.creator, earned: quote.firstBuy.fees.creator }]);
-    expect(fees.launches).toMatchObject([{ mint: prepared.mint, earned: quote.firstBuy.fees.creator }]);
+    // The creator page counts half of its Platform Fee as the Creator's, like any other trade's.
+    const share = (BigInt(quote.firstBuy.fees.platform) / 2n).toString();
+    const earnings = CreatorEarnings.parse(await (await api(`/v1/creators/${creator.publicKey.toBase58()}/earnings`)).json());
+    expect(earnings.assets).toMatchObject([{ quote: { mint: WSOL_MINT.toBase58() }, earned: share, forwarded: "0", pending: share }]);
+    expect(earnings.launches).toMatchObject([{ mint: prepared.mint, curve: share, pool: "0" }]);
   });
 
   it("can't be separated from its launch: if the buy fails, no coin is created", async () => {
@@ -125,7 +124,7 @@ describe("a first buy", () => {
     expect(await coinsOf(prepared.mint, creator.publicKey)).toBe(BigInt(quote.firstBuy.amountOut));
     const usdcLeft = await connection().getTokenAccountBalance(getAssociatedTokenAddressSync(usdc, creator.publicKey), "confirmed");
     expect(BigInt(usdcLeft.value.amount)).toBe(USDC(30));
-    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 1, traded: 1, claimed: 0, graduated: 0, airdropped: 0 });
+    expect(await (await deliverWebhook([signature])).json()).toEqual({ launched: 1, traded: 1, graduated: 0, airdropped: 0 });
     expect((await getLaunch(prepared.mint)).launch).toMatchObject({ quote: { mint: usdc.toBase58(), symbol: "USDC", decimals: 6 } });
   });
 

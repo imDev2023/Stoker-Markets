@@ -2,8 +2,6 @@
 // graduated pool when it indexes the Graduation, so pool swaps keep arriving without anyone editing the webhook. It never
 // adds a quote mint. The stack stands in for Helius's API.
 import { describe, expect, it } from "vitest";
-import { PublicKey } from "@solana/web3.js";
-import { launchlabPdas } from "@launchpad/chain";
 import { migrateCurve } from "@launchpad/localnet";
 import { connection, deliverWebhook, env, fundedWallet, launchedCoin, listQuotes, refreshQuoteRegistry, SOL, trade } from "./client";
 
@@ -18,9 +16,8 @@ async function webhook(apiKey = env().heliusApiKey): Promise<{ status: number; w
 describe("the Helius webhook's addresses", () => {
   it("never gain a quote mint: the Quote Registry refresh leaves the webhook as it was", async () => {
     const before = (await webhook()).webhook!;
-    const program = new PublicKey(env().platform.launchlab);
-    // As the owner created it: our PlatformConfig and the creator fee vault authority.
-    expect(before.accountAddresses).toEqual(expect.arrayContaining([env().platform.platformConfig, launchlabPdas(program).creatorFeeVaultAuthority.toBase58()]));
+    // As the owner created it: our PlatformConfig, and nothing else until a pool graduates.
+    expect(before.accountAddresses).toEqual(expect.arrayContaining([env().platform.platformConfig]));
     await refreshQuoteRegistry();
     // Watching a mint would deliver every transaction that names it, which for SOL is much of the chain.
     const after = (await webhook()).webhook!;

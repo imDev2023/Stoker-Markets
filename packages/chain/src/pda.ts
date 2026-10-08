@@ -20,9 +20,8 @@ export function launchlabPdas(program: PublicKey) {
     platformFeeVault: (platformConfig: PublicKey, quoteMint: PublicKey) => find([platformConfig.toBuffer(), quoteMint.toBuffer()], program),
     /** Owns every Platform Fee vault; the PlatformConfig's fee wallet claims through it. */
     platformFeeVaultAuthority: find([seed("platform_fee_vault_auth_seed")], program),
+    /** Every trade names it, though our platform pays no Creator Fee into it (ADR 0009). */
     creatorFeeVault: (creator: PublicKey, quoteMint: PublicKey) => find([creator.toBuffer(), quoteMint.toBuffer()], program),
-    /** Owns every Creator Fee vault; one address for all Creators, so a webhook on it sees every Creator Fee claim. */
-    creatorFeeVaultAuthority: find([seed("creator_fee_vault_auth_seed")], program),
   };
 }
 

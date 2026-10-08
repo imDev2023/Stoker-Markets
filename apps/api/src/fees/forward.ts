@@ -32,7 +32,7 @@ export type ForwardSummary = {
 };
 
 /**
- * The Creator Forward (ADR 0007), run by its Cron Trigger right after the Fee Collector: pays every Creator what the
+ * The Creator Forward (ADR 0009), run by its Cron Trigger right after the Fee Collector: pays every Creator what the
  * platform has collected for them and not forwarded yet, per Quote Asset, once it is worth the minimum. Each forward is
  * written down with its signature before it is sent, and what a Creator is owed counts every forward that landed or
  * may still land, so a run that dies half way, or is retried, never pays the same share twice. A landed forward goes

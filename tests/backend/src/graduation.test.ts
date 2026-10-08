@@ -12,7 +12,7 @@ import {
   prepareTrade as prepareCurveTrade, preparePoolTrade, programsFor, quoteTrade, sortMints, WSOL_MINT,
 } from "@launchpad/chain";
 import { CPSWAP_CONFIG, LOCAL_QUOTES, SOL_GLOBAL_CONFIG, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
-import { CandleList, CreatorFees, OperatorAlertList, TradeQuote } from "@launchpad/contract";
+import { CandleList, CreatorEarnings, OperatorAlertList, TradeQuote } from "@launchpad/contract";
 import {
   SOL, coinsOf, connection, deliverWebhook, env, fundedWallet, getLaunch, launch, launchedCoin, networkFee, prepared, quote, signAndSend,
   solOf, tokenBalance, trade, trades, confirmOutcome,
@@ -101,7 +101,7 @@ describe("Graduation", () => {
     expect(((await refused.json()) as { error: string }).error).toMatch(/Raydium is moving it to its pool/);
 
     const migration = await migrateCurve(connection(), curve);
-    expect(await (await deliverWebhook([migration.signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 1, airdropped: 0 });
+    expect(await (await deliverWebhook([migration.signature])).json()).toEqual({ launched: 0, traded: 0, graduated: 1, airdropped: 0 });
     const graduated = (await getLaunch(mint)).launch!;
     expect(graduated.curve).toEqual({ ...graduating.curve, status: "graduated" });
     expect(graduated.graduation).toEqual({
@@ -125,7 +125,7 @@ describe("Graduation", () => {
     ).toBe(true);
 
     // Replays change nothing.
-    expect(await (await deliverWebhook([migration.signature, buyout.signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 0, airdropped: 0 });
+    expect(await (await deliverWebhook([migration.signature, buyout.signature])).json()).toEqual({ launched: 0, traded: 0, graduated: 0, airdropped: 0 });
     expect((await getLaunch(mint)).launch).toEqual(graduated);
   });
 
@@ -199,10 +199,10 @@ describe("trading after Graduation", () => {
     const { mint, trader, buyout } = await graduatedCoin();
     const buy = await trade(trader, mint, "buy", SOL(0.05));
     const sell = await trade(trader, mint, "sell", (await coinsOf(mint, trader)) / 10n);
-    expect(await (await deliverWebhook([buy.signature])).json()).toEqual({ launched: 0, traded: 1, claimed: 0, graduated: 0, airdropped: 0 });
+    expect(await (await deliverWebhook([buy.signature])).json()).toEqual({ launched: 0, traded: 1, graduated: 0, airdropped: 0 });
     const fast = await fetch(`${env().apiUrl}/v1/transactions/${sell.signature}`, { method: "POST" });
-    expect(await fast.json()).toEqual({ launched: 0, traded: 1, claimed: 0, graduated: 0, airdropped: 0 });
-    expect(await (await deliverWebhook([buy.signature, sell.signature])).json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 0, airdropped: 0 });
+    expect(await fast.json()).toEqual({ launched: 0, traded: 1, graduated: 0, airdropped: 0 });
+    expect(await (await deliverWebhook([buy.signature, sell.signature])).json()).toEqual({ launched: 0, traded: 0, graduated: 0, airdropped: 0 });
 
     const history = await trades(mint);
     expect(history).toMatchObject([
@@ -242,7 +242,7 @@ describe("trading after Graduation", () => {
         uri: "https://example.invalid/first.json", graduationTargetRaw: new BN(env().platform.graduationTargetLamports),
       }),
     ), [creator, mint], { commitment: "confirmed" });
-    expect(await (await deliverWebhook([launched])).json()).toEqual({ launched: 1, traded: 0, claimed: 0, graduated: 0, airdropped: 0 });
+    expect(await (await deliverWebhook([launched])).json()).toEqual({ launched: 1, traded: 0, graduated: 0, airdropped: 0 });
     const coin = mint.publicKey.toBase58();
     const curve = launchlabPdas(programs.launchlab).pool(mint.publicKey, WSOL_MINT);
     const trader = await fundedWallet(10);
@@ -260,7 +260,7 @@ describe("trading after Graduation", () => {
     );
 
     const signatures = [buyout.signature, migration.signature, buy.signature, sell.signature];
-    expect(await (await deliverWebhook(signatures)).json()).toEqual({ launched: 0, traded: 3, claimed: 0, graduated: 1, airdropped: 0 });
+    expect(await (await deliverWebhook(signatures)).json()).toEqual({ launched: 0, traded: 3, graduated: 1, airdropped: 0 });
     expect((await trades(coin)).map((t) => [t.venue, t.side, t.price])).toEqual([
       ["pool", "sell", sell.quote.priceAfter],
       ["pool", "buy", buy.quote.priceAfter],
@@ -283,7 +283,7 @@ describe("trading after Graduation", () => {
     const migration = await migrateCurve(connection(), new PublicKey(coin.pool));
     const p = await cpmmPool(migration.pool);
     expect([p.token_0_mint, p.token_1_mint].some((m) => m.equals(usdc))).toBe(true);
-    expect(await (await deliverWebhook([buyout.signature, migration.signature])).json()).toEqual({ launched: 0, traded: 1, claimed: 0, graduated: 1, airdropped: 0 });
+    expect(await (await deliverWebhook([buyout.signature, migration.signature])).json()).toEqual({ launched: 0, traded: 1, graduated: 1, airdropped: 0 });
     await poolOpen(coin.mint);
 
     const usdcBefore = await usdcOf(trader);
@@ -296,7 +296,7 @@ describe("trading after Graduation", () => {
 
     const sell = await trade(trader, coin.mint, "sell", coinsBefore / 2n);
     expect(await usdcOf(trader)).toBe(usdcBefore - USDC(20) + BigInt(sell.quote.amountOut));
-    expect(await (await deliverWebhook([buy.signature, sell.signature])).json()).toEqual({ launched: 0, traded: 2, claimed: 0, graduated: 0, airdropped: 0 });
+    expect(await (await deliverWebhook([buy.signature, sell.signature])).json()).toEqual({ launched: 0, traded: 2, graduated: 0, airdropped: 0 });
 
     const launched = (await getLaunch(coin.mint)).launch!;
     expect(launched).toMatchObject({ quote: { symbol: "USDC", decimals: 6 }, curve: { status: "graduated" } });
@@ -310,12 +310,14 @@ describe("trading after Graduation", () => {
     ]);
   });
 
-  it("pays no Creator Fee on pool trades: the Creator's earnings stop at Graduation", async () => {
+  it("pays the Creator nothing on-chain, on the curve or in the pool: their share is the platform's to forward", async () => {
     const { creator, mint, trader, buyout } = await graduatedCoin();
-    const fees = async () => CreatorFees.parse(await (await fetch(`${env().apiUrl}/v1/creators/${creator.publicKey.toBase58()}/fees`)).json());
-    const before = await fees();
-    expect(before.launches).toEqual([expect.objectContaining({ mint, status: "graduated", earned: buyout.quote.fees.creator })]);
-    const vault = before.assets.find((a) => a.quote.mint === WSOL_MINT.toBase58())!;
+    const earnings = async () => CreatorEarnings.parse(await (await fetch(`${env().apiUrl}/v1/creators/${creator.publicKey.toBase58()}/earnings`)).json());
+    // The curve's share is half of the buyout's Platform Fee (ADR 0009); the chain itself paid the Creator nothing.
+    expect(buyout.quote.fees.creator).toBe("0");
+    const curveShare = (BigInt(buyout.quote.fees.platform) / 2n).toString();
+    const before = await earnings();
+    expect(before.launches).toEqual([expect.objectContaining({ mint, status: "graduated", curve: curveShare, pool: "0" })]);
 
     const buy = await trade(trader, mint, "buy", SOL(0.2));
     const sell = await trade(trader, mint, "sell", (await coinsOf(mint, trader)) / 3n);
@@ -323,10 +325,11 @@ describe("trading after Graduation", () => {
     expect(sell.quote.fees.creator).toBe("0");
     await deliverWebhook([buy.signature, sell.signature]);
 
-    const after = await fees();
+    // The pool's creator fee is the platform's to collect; the Creator's half of it counts once the Fee Collector has
+    // (creator-forward.test.ts), so indexing the trades alone changes nothing on the creator page.
+    const after = await earnings();
     expect(after.launches).toEqual(before.launches);
-    // Nothing reached the Creator's vault either: after Graduation the pool's creator fee is the platform's (ADR 0001).
-    expect(after.assets.find((a) => a.quote.mint === WSOL_MINT.toBase58())).toEqual(vault);
+    expect(after.assets).toEqual(before.assets);
   });
 
   it("ignores migrations and pool trades of other platforms' coins", async () => {
@@ -368,7 +371,7 @@ describe("trading after Graduation", () => {
       cpmm: programs.cpmm, pool: pool!, baseMint: mint.publicKey, trader: other.publicKey, side: "buy",
       amountIn: new BN(SOL(0.01).toString()), minAmountOut: new BN(0),
     }), other);
-    expect(await (await deliverWebhook([migration.signature, swap])).json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 0, airdropped: 0 });
+    expect(await (await deliverWebhook([migration.signature, swap])).json()).toEqual({ launched: 0, traded: 0, graduated: 0, airdropped: 0 });
     expect(await trades(mint.publicKey.toBase58())).toEqual([]);
   });
 });

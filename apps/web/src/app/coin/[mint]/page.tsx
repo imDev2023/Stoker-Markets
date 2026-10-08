@@ -94,8 +94,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
             <dt>Creator earns</dt>
             <dd>
               {earns.summary}
-              <span className={styles.verified}>{earns.chain}% on the curve, paid by the chain</span>
-              <span>The platform sends the rest to the Creator&apos;s wallet.</span>
+              <span>Half of what the platform collects on this coin, sent to the Creator&apos;s wallet with nothing to claim.</span>
               <Link href={`/creator/${launch.creator}`} className={styles.factLink}>See what the Creator earned and was paid</Link>
             </dd>
           </div>
