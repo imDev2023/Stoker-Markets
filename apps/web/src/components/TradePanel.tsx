@@ -308,7 +308,10 @@ export function TradePanel({
           : [
               { label: "Raydium", pct: shown.feeBps.raydium / 100, raw: shown.fees.raydium, unit: "quote" as const },
               { label: "Platform fee", pct: shown.feeBps.platform / 100, raw: shown.fees.platform, unit: "quote" as const },
-              { label: "Creator fee", pct: shown.feeBps.creator / 100, raw: shown.fees.creator, unit: "quote" as const },
+              // Our platform pays no Creator Fee on-chain (ADR 0009); the row only appears if the admin ever sets one.
+              ...(shown.feeBps.creator > 0
+                ? [{ label: "Creator fee", pct: shown.feeBps.creator / 100, raw: shown.fees.creator, unit: "quote" as const }]
+                : []),
             ]),
         ...(shown.referral?.applies ? [{ label: "Referral fee", pct: shown.referral.bps / 100, raw: shown.referral.fee, unit: "quote" as const }] : []),
       ];

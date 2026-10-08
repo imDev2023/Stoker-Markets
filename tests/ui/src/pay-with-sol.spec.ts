@@ -71,7 +71,8 @@ test("a trader holding only SOL buys a JTO-paired coin, and ends up with the coi
   await expect(quote.filter({ hasText: /^0\.1 SOL$/ })).toBeVisible();
   await expect(quote.filter({ hasText: /^5\.96\d+ JTO$/ })).toBeVisible();
   await expect(quote.filter({ hasText: /^0\.0179\d+ JTO$/ })).toBeVisible();
-  for (const fee of ["Swap to JTO", "Raydium", "Platform fee", "Creator fee"]) await expect(panel(page).getByText(fee, { exact: false }).first()).toBeVisible();
+  for (const fee of ["Swap to JTO", "Raydium", "Platform fee"]) await expect(panel(page).getByText(fee, { exact: false }).first()).toBeVisible();
+  await expect(panel(page).getByText("Creator fee")).toHaveCount(0);
   await expect(
     panel(page).getByText(
       "Swapped through Raydium CPMM. The swap may deliver up to 0.3% less JTO than the price gives now, so the buy spends only what is sure to arrive and the rest stays in your wallet as JTO.",
