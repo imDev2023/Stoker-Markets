@@ -151,7 +151,7 @@ test("a trader buys and sells a USDC-paired coin in USDC", async ({ page, wallet
   await expect(panel.getByText("Paid in USDC, fees included.")).toBeVisible();
   for (const preset of ["15 USDC", "75 USDC", "150 USDC"]) await expect(panel.getByRole("button", { name: preset })).toBeVisible();
   await panel.getByRole("button", { name: "15 USDC" }).click();
-  // 1.25% of 15 USDC: 0.0375 to Raydium, the rest split between the Platform Fee and the Creator Fee.
+  // 1.25% of 15 USDC: 0.0375 to Raydium and 0.15 as the Platform Fee.
   await expect(panel.getByRole("definition").filter({ hasText: /^0\.1875 USDC$/ })).toBeVisible();
   await panel.getByRole("button", { name: "Review buy" }).click();
   await acceptDisclaimer(page, "trade");

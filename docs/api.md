@@ -8,7 +8,7 @@ Base URL: `PUBLIC_API_URL` (locally `http://localhost:8791`). Everything below i
 
 | Endpoint | What it answers |
 | --- | --- |
-| `GET /platform` | Cluster, RPC for browsers, program and PlatformConfig addresses, the Graduation Target in lamports, the Platform Fee and Creator Fee as the chain has them now, the referral share rate, and `creatorForward`: what the platform forwards to a Creator on top of the Creator Fee (ADR 0007), in basis points of curve and pool volume, with its minimum. |
+| `GET /platform` | Cluster, RPC for browsers, program and PlatformConfig addresses, the Graduation Target in lamports, the Platform Fee and Creator Fee as the chain has them now (the latter 0 on our platform), the referral share rate, and `creatorForward`: the Creator's share of what the platform collects on their coin's trades (ADR 0009), `shareBps`, also as basis points of curve and pool volume, with its minimum. |
 | `GET /quotes`, `GET /quotes/:mint` | The Quote Registry: every Quote Asset with its price, Graduation Target, whether it can be launched against, whether a referral share fee applies on it, and its Quote Risk Labels (`labels`: `kind`, `severity`, `title`, `detail`, `source`; null until the Quote Registry refresh has checked the mint, an empty list when there is nothing to flag). Labels come from the mint's authorities and Token-2022 extensions and from the token list; they inform and never block. |
 | `GET /launches` | The board. `sort` (`new`, `trending`, `market_cap`, `graduation`), `q` (a search: name or ticker containing it in any case, or a mint address starting with it; up to 64 characters), `quote`, `category` (`sol`, `stablecoin`, `tokenized_stock`, `leveraged`, `collectible`, `community`), `issuer` (`xstocks`, `prestocks`, `tessera`, `backpack`: the stock issuer of the Quote Asset, finer than `category=tokenized_stock`), `status`, `limit`, `offset`. |
 | `GET /launches/quotes` | The Quote Assets that have Launches, for filters; each with its `category` and, for a tokenized stock, its `issuer`. |
@@ -17,7 +17,7 @@ Base URL: `PUBLIC_API_URL` (locally `http://localhost:8791`). Everything below i
 | `GET /launches/:mint/quote` | A trade quote. `side`, `amount`, `slippageBps`, `payWith` (`quote` or `sol`), `referrer`. A buy paid with SOL on a coin paired with another asset carries `route`: the swap takes exactly `solIn`, the trade spends `quoteOut` (the least the swap may deliver, `slippageBps.route` under the current price), and about `kept` of the Quote Asset stays in the trader's wallet. |
 | `GET /launches/:mint/airdrop` | An Airdrop's recipients and which are paid. |
 | `GET /launches/:mint/rewards`, `GET /rewards/rules`, `GET /rewards/rounds/:id`, `GET /wallets/:address/rewards` | Holder Rewards: the Payout Asset, tax waiting, the pot, the rules in force and announced, every round, a wallet's payouts; for a Quote Asset payout also the Reward Sales (`sales`: the bounds, totals, and the latest sales with their transactions). Amounts of a pot or payout are in the round's `payout` asset. |
-| `GET /creators/:address/fees`, `/claims`, `/forwards` | A Creator's fee vaults and claims, and the Creator Forward: per Quote Asset what was earned, forwarded and is still pending, per Launch what its curve and pool earned, and every forward with its transaction. |
+| `GET /creators/:address/earnings`, `/forwards` | Creator Earnings (ADR 0009): per Quote Asset what the Creator's Launches earned (half of what the platform collected on their trades), what was forwarded to their wallet and what is still pending; per Launch what its curve and pool earned; and every forward with its transaction. Nothing to claim. |
 | `GET /creators/:address/launch-permissions` | What the launch form offers this wallet: `airdrop` is true only for wallets the operator has allowed. |
 | `GET /revenue`, `GET /ledger` | Platform revenue per asset and per day, with what of it was forwarded to Creators and what is still owed them, and the Ledger page by page (`kind`, `limit`, `before`; a `creator_forward` entry is a payment to a Creator, an `arweave_top_up` SOL sent to ArDrive Turbo for upload credits, a `metadata_upload` what one Launch's permanent metadata cost in those credits, in lamports, against its launch transaction, a `reward_sale` a Reward Launch's tax sold for its holders: the coins out and the Quote Asset in, two entries of one transaction). |
 | `GET /burns` | Burn and Flywheel: shares, rule, budgets, picks, every buy and burn. |
@@ -33,7 +33,6 @@ Each returns an unsigned transaction (base64) for the user's wallet to sign and 
 | `GET /launch-quote` | What a First Buy would get before anything is prepared. |
 | `POST /launches/:mint/airdrop/prepare` | The Creator's airdrop payments, however many transactions they take. |
 | `POST /trades/prepare` | A buy or sell, on the curve or in the pool: `mint`, `trader`, `side`, `amount`, `slippageBps`, `payWith`, `referrer`. |
-| `POST /creator-fees/prepare` | A Creator Fee claim. |
 | `POST /transactions/:signature` | Reports a confirmed transaction so it shows up without waiting for the webhook. |
 
 ## Referrals

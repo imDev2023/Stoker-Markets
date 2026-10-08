@@ -8,12 +8,12 @@ import {
 } from "@solana/spl-token";
 import bs58 from "bs58";
 import BN from "bn.js";
-import { readFeeVaults, type FeeVault } from "./claim";
 import { cpmmCoder, launchlabCoder, lockCoder } from "./coder";
 import type { PoolKeys } from "./cpmm";
 import type { RawTransaction } from "./decode";
 import { cpmmPdas, launchlabPdas, lockPdas } from "./pda";
 import { WSOL_MINT, type Programs } from "./programs";
+import { readFeeVaults, type FeeVault } from "./vaults";
 
 /**
  * The Fee Collector's side of the chain: the platform's revenue arrives in three streams, all claimed by the operations
@@ -285,7 +285,7 @@ export function sweepInstructions(from: PublicKey, treasury: PublicKey, lamports
 }
 
 /**
- * A Creator Forward (ADR 0007): pays a Creator their share of platform revenue in one Quote Asset. SOL goes as plain SOL;
+ * A Creator Forward (ADR 0009): pays a Creator their share of platform revenue in one Quote Asset. SOL goes as plain SOL;
  * anything else into the Creator's associated token account, opened if needed and paid for by the sender.
  */
 export function creatorForwardInstructions(from: PublicKey, creator: PublicKey, asset: SweepToken) {

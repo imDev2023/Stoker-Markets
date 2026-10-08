@@ -57,9 +57,9 @@ test("a Creator launches with a first buy and an airdrop, then sends the airdrop
   const launch = await prepared;
   await expect(review(page)).toContainText(/Launching PARTY paired with SOL, with your first buy of 0\.2 SOL for [\d,]+ PARTY/);
   await expect(review(page)).toContainText("Then send the airdrop from your coin's page: 3 wallets get 4,000,000.5 PARTY.");
-  // A First Buy is a curve trade, so it pays the Creator Fee: into the Creator's own vault.
-  const firstBuyFee = sol(BigInt(launch.firstBuy!.fees.creator));
-  await expect(review(page)).toContainText(`Like any trade, the first buy pays the Creator Fee: its ${firstBuyFee} SOL goes to your own Creator Fee`);
+  // A First Buy is a curve trade, so it pays the Platform Fee, half of which is the Creator's own (ADR 0009).
+  const firstBuyShare = sol(BigInt(launch.firstBuy!.fees.platform) / 2n);
+  await expect(review(page)).toContainText(`Like any trade, the first buy pays the Platform Fee, and half of it, ${firstBuyShare} SOL, comes back to you as the coin's creator.`);
   expect(wallet.requests).toHaveLength(0);
 
   await review(page).getByRole("button", { name: "Sign and launch" }).click();
@@ -88,9 +88,9 @@ test("a Creator launches with a first buy and an airdrop, then sends the airdrop
   await card.getByText("Show the 3 wallets").click();
   await expect(card.getByRole("link", { name: "Paid" })).toHaveCount(3);
 
-  // The Creator Fee the first buy paid is on the Creator's page, theirs to claim.
-  await page.goto(`/creator/${wallet.keypair.publicKey.toBase58()}`);
-  await expect(page.getByRole("region", { name: "SOL" })).toContainText(`${firstBuyFee} SOL`);
+  // The Creator's share of the first buy is on their own page, to be sent by the platform.
+  await page.goto("/creator");
+  await expect(page.getByRole("region", { name: "SOL" })).toContainText(`${firstBuyShare} SOL`);
   await expect(page.getByRole("link", { name: /PARTY\s*Party Favors/ })).toContainText("Earning");
 });
 

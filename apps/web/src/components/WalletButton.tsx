@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletReadyState } from "@solana/wallet-adapter-base";
 import { useEffect, useRef, useState } from "react";
+import { listLaunches } from "@/lib/api";
 import { shortAddress } from "@/lib/format";
 import styles from "./WalletButton.module.css";
 
@@ -14,6 +15,24 @@ export function WalletButton({ variant = "header" }: { variant?: "header" | "inl
   const [pending, setPending] = useState<string | null>(null);
   const menu = useRef<HTMLDivElement>(null);
   const installed = wallets.filter((w) => w.readyState === WalletReadyState.Installed || w.readyState === WalletReadyState.Loadable);
+
+  // The earnings page is a Creator's own (owner, 2026-10-08): the menu offers it only to a wallet that has launched a
+  // coin here, which is asked once per connected wallet.
+  const address = publicKey?.toBase58() ?? null;
+  const [launched, setLaunched] = useState<{ address: string; yes: boolean } | null>(null);
+  useEffect(() => {
+    if (!address) return;
+    let gone = false;
+    listLaunches({ creator: address, limit: 1 })
+      .then((list) => {
+        if (!gone) setLaunched({ address, yes: list.launches.length > 0 });
+      })
+      .catch(() => undefined);
+    return () => {
+      gone = true;
+    };
+  }, [address]);
+  const hasLaunched = launched?.address === address && launched.yes;
 
   useEffect(() => {
     if (!open) return;
@@ -59,9 +78,11 @@ export function WalletButton({ variant = "header" }: { variant?: "header" | "inl
         </button>
         {open && (
           <div className={styles.menu} role="menu" aria-label={wallet ? `Connected with ${wallet.adapter.name}` : "Wallet"}>
-            <Link href={`/creator/${publicKey.toBase58()}`} role="menuitem" className={styles.menuLink} onClick={() => setOpen(false)}>
-              Your Creator Fee
-            </Link>
+            {hasLaunched && (
+              <Link href="/creator" role="menuitem" className={styles.menuLink} onClick={() => setOpen(false)}>
+                Your earnings
+              </Link>
+            )}
             <button type="button" role="menuitem" onClick={() => { setOpen(false); void disconnect(); }}>
               Disconnect
             </button>

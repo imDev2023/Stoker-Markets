@@ -23,29 +23,29 @@
   line-height: 1.05;
 }
 
-.who {
+/* The one card shown without a wallet, or to one that has launched nothing: as wide as the heading's text. */
+.connect,
+.lone {
+  max-width: 44em;
+}
+
+.connect {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 14px 16px;
   flex-wrap: wrap;
-  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+
+.connect p {
   margin: 0;
-  font-weight: 500;
-}
-
-.whoLabel {
-  color: var(--ink-3);
-  font-size: 0.875rem;
-  font-weight: 400;
-}
-
-.who a {
-  text-decoration: none;
-  border-bottom: 1px solid var(--line);
-}
-
-.who a:hover {
-  color: var(--cobalt);
-  border-color: var(--cobalt);
+  flex: 1 1 260px;
+  color: var(--ink-2);
+  font-size: 0.9375rem;
 }
 
 .lede {
@@ -72,8 +72,7 @@
 
 .card,
 .rule,
-.emptyCard,
-.access {
+.emptyCard {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -101,7 +100,6 @@
 
 .rule p,
 .muted,
-.access p,
 .emptyCard p {
   margin: 0;
   font-size: 0.9375rem;
@@ -109,19 +107,6 @@
 
 .muted {
   color: var(--ink-3);
-}
-
-.access {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px 16px;
-}
-
-.access p {
-  flex: 1 1 260px;
-  color: var(--ink-2);
 }
 
 .emptyCard {
@@ -240,7 +225,94 @@
   color: var(--verified);
 }
 
-.claims {
+.asset {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  min-width: 0;
+}
+
+.assetHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.assetSymbol {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-stretch: 125%;
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+}
+
+.assetLabel {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.assetAmount {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.assetAmount :global(.mono) {
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.assetUnit {
+  font-family: var(--font-display);
+  font-stretch: 125%;
+  font-weight: 800;
+  font-size: 1.125rem;
+  color: var(--ink-2);
+}
+
+.assetFacts {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 0.875rem;
+}
+
+.assetFacts > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.assetFacts dt {
+  color: var(--ink-2);
+}
+
+.assetFacts dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.payments {
   display: flex;
   flex-direction: column;
   margin: 0;
@@ -249,7 +321,7 @@
 }
 
 /* A fixed grid rather than a table, so a longer date never shifts the columns. */
-.claims li {
+.payments li {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
@@ -258,45 +330,38 @@
   font-size: 0.875rem;
 }
 
-.claims li:first-child {
+.payments li:first-child {
   padding-top: 0;
 }
 
-.claims li:last-child {
+.payments li:last-child {
   padding-bottom: 0;
 }
 
-.claims li + li {
+.payments li + li {
   border-top: 1px solid var(--line);
 }
 
-.claimAmount {
+.paymentAmount {
   font-weight: 500;
 }
 
-.claims a {
+.payments a {
   color: var(--ink-2);
   font-size: 0.8125rem;
   text-decoration: none;
   border-bottom: 1px solid var(--line);
 }
 
-.claims a:hover {
+.payments a:hover {
   color: var(--cobalt);
   border-color: var(--cobalt);
 }
 
-.claimTime {
+.paymentTime {
   grid-column: 1 / -1;
   color: var(--ink-3);
   font-size: 0.8125rem;
-}
-
-.docsLink {
-  align-self: flex-start;
-  color: var(--cobalt-strong);
-  font-weight: 600;
-  font-size: 0.9375rem;
 }
 
 @media (max-width: 900px) {
@@ -307,9 +372,11 @@
 
 @media (max-width: 560px) {
   .card,
-  .rule,
-  .access {
+  .rule {
     padding: 16px;
+  }
+  .asset {
+    padding: 18px;
   }
   .emptyCard {
     padding: 20px;

@@ -4,24 +4,27 @@ import type { PlatformInfo } from "@launchpad/contract";
 const pct = (bps: number) => Number((bps / 100).toFixed(3));
 
 /**
- * What a Creator earns, from the platform facts the chain and the API give (ADR 0007): on the curve the Creator Fee the
- * chain pays plus what the platform forwards; after Graduation, the platform's forward out of the pool's creator fee.
+ * What a Creator earns, from the platform facts the chain and the API give (ADR 0009): the platform's share of what it
+ * collects on their coin's trades, on the curve out of the Platform Fee and after Graduation out of the pool's creator
+ * fee, sent to their wallet. The chain's own Creator Fee is 0 on our platform; were the admin ever to set one, the
+ * chain would pay it on top, so it is counted here.
  */
 export function creatorEarnings(platform: PlatformInfo) {
   const curve = pct(platform.creatorFeeBps + platform.creatorForward.curveBps);
   const pool = pct(platform.creatorForward.poolBps);
   return {
-    /** Paid by the chain on every curve trade, into the Creator's vault. */
-    chain: pct(platform.creatorFeeBps),
-    /** Forwarded by the platform on every curve trade. */
-    forward: pct(platform.creatorForward.curveBps),
     curve,
     pool,
-    /** The share of the pool's creator fee the platform sends on, in percent. */
-    poolShare: pct(platform.creatorForward.poolShareBps),
+    /** The share of what the platform collects that goes on to the Creator, in percent. */
+    share: pct(platform.creatorForward.shareBps),
     /** "about 0.5% of every trade, on the curve and after graduation", or each figure when the two differ. */
     summary: curve === pool
       ? `~${curve}% of every trade, on the curve and after graduation`
       : `~${curve}% of every trade on the curve and ~${pool}% after graduation`,
   };
+}
+
+/** The Creator's share of one trade's Platform Fee, in raw units, as the Creator Forward counts it: rounded down. */
+export function creatorShareOf(platform: PlatformInfo, platformFee: string) {
+  return (BigInt(platformFee) * BigInt(platform.creatorForward.shareBps)) / 10_000n;
 }

@@ -1,6 +1,6 @@
 # Creators earn about 0.5% on the curve and after Graduation: half paid by the chain, the rest forwarded
 
-Status: accepted by the owner on 2026-10-02 (#53, #42), implemented on the local chain.
+Status: superseded by ADR 0009 on 2026-10-08 (#85); accepted by the owner on 2026-10-02 (#53, #42) and implemented on the local chain until then.
 Supersedes ADR 0001.
 
 ADR 0001 gave the Creator 0.5% on the curve, all of it on-chain, and nothing after Graduation.

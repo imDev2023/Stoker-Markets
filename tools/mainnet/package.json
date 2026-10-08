@@ -5,11 +5,13 @@
   "exports": {
     "./platform-config": "./platform-config.ts",
     "./lookup-table": "./lookup-table.ts",
+    "./fee-change": "./fee-change.ts",
     "./jupiter-route": "./jupiter-route.ts"
   },
   "scripts": {
     "platform-config": "tsx platform-config.ts",
     "lookup-table": "tsx lookup-table.ts",
+    "fee-change": "tsx fee-change.ts",
     "jupiter-route": "tsx jupiter-route.ts",
     "typecheck": "tsc -p ."
   },

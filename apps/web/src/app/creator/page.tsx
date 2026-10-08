@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { getPlatform } from "@/lib/api";
-import { CreatorHome } from "@/components/CreatorHome";
+import { CreatorDashboard } from "@/components/CreatorDashboard";
 
-export const metadata: Metadata = { title: "Your Creator Fee" };
+// The connected Creator's own page: nothing for a search engine to list.
+export const metadata: Metadata = { title: "Your creator earnings", robots: { index: false, follow: false } };
 
-export default async function CreatorHomePage() {
+export default async function CreatorPage() {
   const platform = await getPlatform();
-  return <CreatorHome platform={platform} />;
+  return <CreatorDashboard platform={platform} />;
 }

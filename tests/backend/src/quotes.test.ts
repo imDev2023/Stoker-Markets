@@ -129,7 +129,7 @@ describe("launching against a non-SOL Quote Asset", () => {
     expect(vault!.owner.toBase58()).toBe(TOKEN_2022_PROGRAM_ID.toBase58());
 
     const res = await fetch(`${env().apiUrl}/v1/transactions/${signature}`, { method: "POST" });
-    expect(await res.json()).toEqual({ launched: 1, traded: 0, claimed: 0, graduated: 0, airdropped: 0 });
+    expect(await res.json()).toEqual({ launched: 1, traded: 0, graduated: 0, airdropped: 0 });
     expect((await getLaunch(prepared.mint)).launch?.quote).toMatchObject({ symbol: "NVDAx", name: "NVIDIA xStock", decimals: 8 });
   });
 });
@@ -171,7 +171,7 @@ describe("a GlobalConfig our curve rules don't cover yet", () => {
 
     const signature = await launchDirectly(jto.mint, TOKEN_PROGRAM_ID, new BN(jto.raw), offShape);
     const res = await deliverWebhook([signature]);
-    expect(await res.json()).toEqual({ launched: 0, traded: 0, claimed: 0, graduated: 0, airdropped: 0 });
+    expect(await res.json()).toEqual({ launched: 0, traded: 0, graduated: 0, airdropped: 0 });
 
     await refreshQuoteRegistry();
     await expect(launchDirectly(jto.mint, TOKEN_PROGRAM_ID, new BN(jto.raw), offShape)).rejects.toThrow(/0x1789|CurveParamNotMatchPlatformRule/);

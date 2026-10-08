@@ -150,8 +150,8 @@ export function RevenueDashboard({ revenue, ledger, platform }: { revenue: Reven
           <section className={styles.card} aria-labelledby="wallets-title">
             <h2 id="wallets-title" className={styles.cardTitle}>Where it goes</h2>
             <p className={styles.muted}>
-              Part of it is the Creators&apos;: {earns.forward}% of every curve trade and {earns.poolShare}% of what a pool pays.
-              It is sent to each Creator&apos;s wallet within the hour of being collected and never goes to the treasury.
+              {earns.share}% of what the curves and pools bring in is the Creators&apos;, {earns.summary}. It is sent to each
+              Creator&apos;s wallet within the hour of being collected and never goes to the treasury.
             </p>
             <dl className={styles.wallets}>
               <div>

@@ -48,7 +48,9 @@ test("a trader buys, then sells half, and sees both in the history and the chart
   await panel(page).getByRole("button", { name: "0.1 SOL" }).click();
   await expect(panel(page).getByLabel("You pay")).toHaveValue("0.1");
   await expect(panel(page).getByText("You get about")).toBeVisible();
-  for (const fee of ["Raydium", "Platform fee", "Creator fee"]) await expect(panel(page).getByText(fee)).toBeVisible();
+  for (const fee of ["Raydium", "Platform fee"]) await expect(panel(page).getByText(fee)).toBeVisible();
+  // The chain pays no Creator Fee on our platform (ADR 0009): no row for one.
+  await expect(panel(page).getByText("Creator fee")).toHaveCount(0);
   await panel(page).getByRole("button", { name: "Review buy" }).click();
   await expect(disclaimer(page)).toBeVisible();
   await disclaimer(page).getByRole("checkbox").check();

@@ -1,9 +1,9 @@
 import {
-  API_KEY_HEADER, AirdropStatus, ApiError, ApiKeyList, BurnsPage, CandleList, CoinRewards, CreatorFeeClaimList, CreatorFees, CreatorForwardList, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
+  API_KEY_HEADER, AirdropStatus, ApiError, ApiKeyList, BurnsPage, CandleList, CoinRewards, CreatorEarnings, CreatorForwardList, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
   HolderList, IssuedApiKey, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PreparedAirdrop,
-  PreparedCreatorFeeClaim, PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAsset, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, TradeList,
+  PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAsset, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, TradeList,
   TradeQuote, WalletRewards,
-  type AnnounceFeeChange, type CandleInterval, type CreateApiKey, type CurveStatus, type LaunchSort, type PrepareCreatorFeeClaimRequest, type PrepareTradeRequest,
+  type AnnounceFeeChange, type CandleInterval, type CreateApiKey, type CurveStatus, type LaunchSort, type PrepareTradeRequest,
   type QuoteCategory, type QuoteIssuer, type TradeQuoteQuery,
 } from "@launchpad/contract";
 
@@ -60,9 +60,9 @@ export const BOARD_SIZE = 60;
 /** The board's sort and filters, as both the API and the page's URL take them. */
 export type BoardQuery = { sort: LaunchSort; category: QuoteCategory | null; issuer: QuoteIssuer | null; quote: string | null; q: string };
 
-export async function listLaunches(q: Partial<BoardQuery> & { status?: CurveStatus; limit?: number } = {}, signal?: AbortSignal) {
+export async function listLaunches(q: Partial<BoardQuery> & { status?: CurveStatus; creator?: string; limit?: number } = {}, signal?: AbortSignal) {
   const query = new URLSearchParams({ limit: String(q.limit ?? BOARD_SIZE) });
-  for (const key of ["sort", "category", "issuer", "quote", "status", "q"] as const) {
+  for (const key of ["sort", "category", "issuer", "quote", "status", "creator", "q"] as const) {
     const value = q[key];
     if (value) query.set(key, value);
   }
@@ -137,27 +137,16 @@ export async function getCandles(mint: string, interval: CandleInterval) {
   return read(await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/candles?interval=${interval}`, { cache: "no-store" }), CandleList);
 }
 
-/** A Creator's Creator Fee per Quote Asset and per Launch; null if the address isn't a valid wallet address. */
-export async function getCreatorFees(creator: string): Promise<CreatorFees | null> {
-  const res = await apiFetch(`${API_URL}/v1/creators/${encodeURIComponent(creator)}/fees`, { cache: "no-store" });
+/** A Creator's earnings per Quote Asset and per Launch (ADR 0009); null if the address isn't a valid wallet address. */
+export async function getCreatorEarnings(creator: string): Promise<CreatorEarnings | null> {
+  const res = await apiFetch(`${API_URL}/v1/creators/${encodeURIComponent(creator)}/earnings`, { cache: "no-store" });
   if (res.status === 400) return null;
-  return read(res, CreatorFees);
+  return read(res, CreatorEarnings);
 }
 
-export async function listCreatorFeeClaims(creator: string) {
-  return read(await apiFetch(`${API_URL}/v1/creators/${encodeURIComponent(creator)}/claims?limit=100`, { cache: "no-store" }), CreatorFeeClaimList);
-}
-
-/** What the platform has sent a Creator from its own revenue (ADR 0007), newest first. */
+/** What the platform has sent a Creator (ADR 0009), newest first. */
 export async function listCreatorForwards(creator: string) {
   return read(await apiFetch(`${API_URL}/v1/creators/${encodeURIComponent(creator)}/forwards?limit=100`, { cache: "no-store" }), CreatorForwardList);
-}
-
-export async function prepareCreatorFeeClaim(body: PrepareCreatorFeeClaimRequest) {
-  return read(
-    await apiFetch(`${API_URL}/v1/creator-fees/prepare`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
-    PreparedCreatorFeeClaim,
-  );
 }
 
 /** Platform revenue per asset and per day, summed from the Ledger. */

@@ -99,23 +99,6 @@ export type TradeExecuted = {
   quoteDecimals: number;
 };
 
-/** A Creator moved their Creator Fee for one Quote Asset out of its vault. */
-export type CreatorFeeClaimed = {
-  kind: "creator_fee_claimed";
-  signature: string;
-  slot: number;
-  blockTime: number | null;
-  /** Position among the events in this transaction. */
-  index: number;
-  creator: PublicKey;
-  quoteMint: PublicKey;
-  vault: PublicKey;
-  /** Raw units of the Quote Asset that left the vault. */
-  amount: BN;
-  quoteDecimals: number;
-};
-
-
 /** Raydium's migrate wallet moved a sold-out curve into its CPMM pool: the Launch has graduated. */
 export type Graduated = {
   kind: "graduated";
@@ -174,7 +157,7 @@ export type PlatformConfigUpdated = {
   creatorFeeRate: BN | null;
 };
 
-export type ChainEvent = LaunchCreated | TradeExecuted | CreatorFeeClaimed | Graduated | PoolSwapExecuted | PlatformConfigUpdated;
+export type ChainEvent = LaunchCreated | TradeExecuted | Graduated | PoolSwapExecuted | PlatformConfigUpdated;
 
 const INITIALIZE_IXS = new Set(["initialize", "initialize_v2", "initialize_with_token_2022"]);
 // Account positions shared by all three initialize instructions.
@@ -192,16 +175,6 @@ const TRADE_ACCOUNTS_WITH_SHARE = 18;
 const UPDATE_PLATFORM_ACCOUNT = { platformConfig: 1 } as const;
 // Account positions shared by all four trade instructions.
 const TRADE_ACCOUNT = { trader: 0, platformConfig: 3, pool: 4, baseMint: 9, quoteMint: 10 } as const;
-
-// Account positions in claim_creator_fee.
-const CLAIM_ACCOUNT = { creator: 0, vault: 2, quoteMint: 4 } as const;
-// The token programs a claim pays out through, and their Transfer and TransferChecked instruction tags.
-const TOKEN_PROGRAMS = new Set([
-  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-  "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
-]);
-const TOKEN_TRANSFER = 3;
-const TOKEN_TRANSFER_CHECKED = 12;
 
 // Anchor's `emit_cpi!` invokes the program itself with this tag, followed by the event's discriminator and data.
 const EVENT_IX_TAG = Buffer.from("e445a52e51cb9a1d", "hex");
@@ -281,21 +254,7 @@ export function decodeTransaction(raw: RawTransaction, programs: Pick<Programs, 
   let swapEventIndex = 0;
   for (const group of groups) {
     let trade: TradeAccounts | null = null;
-    // A claim instruction waiting for the token transfer out of its vault, which says how much it paid.
-    let claim: Pick<CreatorFeeClaimed, "creator" | "quoteMint" | "vault"> | null = null;
     for (const ix of group) {
-      if (claim && TOKEN_PROGRAMS.has(keys[ix.programIdIndex]!)) {
-        const amount = vaultTransfer(ix, keys, claim.vault.toBase58());
-        if (amount) {
-          if (!amount.isZero())
-            events.push({
-              kind: "creator_fee_claimed", signature, slot: raw.slot, blockTime: raw.blockTime, index: eventIndex++, ...claim, amount,
-              quoteDecimals: decimalsOf(claim.quoteMint),
-            });
-          claim = null;
-        }
-        continue;
-      }
       const acct = (i: number) => new PublicKey(keys[ix.accounts[i]!]!);
       if (keys[ix.programIdIndex] === cpmm) {
         const swap = safeDecodeCpmmIx(Buffer.from(bs58.decode(ix.data)));
@@ -359,10 +318,6 @@ export function decodeTransaction(raw: RawTransaction, programs: Pick<Programs, 
       }
       const decoded = safeDecodeIx(bytes);
       if (!decoded) continue;
-      if (decoded.name === "claim_creator_fee") {
-        claim = { creator: acct(CLAIM_ACCOUNT.creator), quoteMint: acct(CLAIM_ACCOUNT.quoteMint), vault: acct(CLAIM_ACCOUNT.vault) };
-        continue;
-      }
       if (decoded.name === "update_platform_config") {
         const param = (decoded.data as { param: Record<string, Record<string, unknown>> }).param;
         const [variant, value] = Object.entries(param)[0] ?? ["", {}];
@@ -456,14 +411,6 @@ export function decodeTransaction(raw: RawTransaction, programs: Pick<Programs, 
     }
   }
   return events;
-}
-
-/** The amount of a token Transfer or TransferChecked out of `source`; null for any other token instruction. */
-function vaultTransfer(ix: RawInstruction, keys: string[], source: string): BN | null {
-  const data = Buffer.from(bs58.decode(ix.data));
-  if ((data[0] !== TOKEN_TRANSFER && data[0] !== TOKEN_TRANSFER_CHECKED) || data.length < 9) return null;
-  if (keys[ix.accounts[0]!] !== source) return null;
-  return new BN(data.subarray(1, 9), "le");
 }
 
 /**

@@ -13,9 +13,8 @@ export function Hero({ latest, platform }: { latest: LaunchSummary | null; platf
       <div className={styles.copy}>
         <h1 className={styles.title}>Launch a coin. Earn from every trade.</h1>
         <p className={styles.lede}>
-          Creators get {earns.summary}. On the curve the chain pays {earns.chain}% into a vault only the creator can
-          claim, so nobody, including us, can hold it back. The platform sends the rest to the creator&apos;s wallet, every
-          payment on the public ledger.
+          Creators get {earns.summary}: half of what the platform collects on their coin, sent straight to their wallet
+          with nothing to claim, every payment on the public ledger.
         </p>
         <Link href="/launch" className={styles.cta}>Launch a coin</Link>
       </div>

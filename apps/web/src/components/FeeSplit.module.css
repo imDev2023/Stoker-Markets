@@ -55,22 +55,6 @@
   font-size: 0.8125rem;
 }
 
-.note {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: var(--verified-bg);
-  color: var(--verified);
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.note::before {
-  content: "✓";
-}
-
 .aside {
   color: var(--ink-3);
   font-size: 0.75rem;

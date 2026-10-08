@@ -13,7 +13,7 @@ All launches run through third-party programs, mainly **Raydium LaunchLab** (`La
 - StonkFun's on-chain footprint is configuration plus wallets: two LaunchLab `PlatformConfig` accounts named "StonkFun" (standard `4E876qZTE9FJMrBzgVtBrSrzz2TLivB5Y5QXPjB4gZL7`, reward `6BwHHDg3u1854jC8PDLXvR4spTcLNaoBxLJNGC4nTESt`), 568 `PlatformCurveRule` accounts per config, and one fee wallet `5CEbueQnq1Ym2uSSx2xXds3jQAqT1BDnkA59RZobSPAG`.
 - Earlier launch paths (July to August 2026) used Raydium CLMM plus the Raydium locker (Fee Key NFTs split between platform and creator), and pump.fun with the StonkFun wallet as on-chain coin creator.
 - $STONK (`6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx`) is a plain SPL token launched through that early CLMM path on 2026-07-23, paired against SPYx (xStocks S&P 500).
-- LaunchLab fee model: 0.25% to Raydium plus **1.00% to StonkFun** on every bonding-curve trade, 0% creator fee on the curve.
+- LaunchLab fee model: 0.25% to Raydium plus **1.00% to StonkFun** on every bonding-curve trade, 0% creator fee on the curve. The same split as ours since ADR 0009 (#85, 2026-10-08); the difference is that our creator share is on a public Ledger.
 After graduation StonkFun owns 100% of the locked CPMM LP fee rights and also collects the **1% CPMM creator fee**.
 - StonkFun converts fees into $STONK through Jupiter and burns it; 13 burns totalling 35,537.7 STONK happened in one 37-minute window, and total supply is down 18.35% from 1B.
 - Launch count on LaunchLab: **131,734 pools** (32,802 standard + 98,932 reward), **3,126 graduated**, first launch 2026-08-28 20:07:57 UTC, still launching at snapshot time.

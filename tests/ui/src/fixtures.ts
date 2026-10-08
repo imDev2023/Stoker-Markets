@@ -7,7 +7,7 @@ import {
   Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, VersionedTransaction, sendAndConfirmTransaction,
 } from "@solana/web3.js";
 import { createAssociatedTokenAccountIdempotentInstruction, createTransferInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { LaunchList, PreparedAirdrop, PreparedCreatorFeeClaim, PreparedLaunch, PreparedTrade, type TradeSide } from "@launchpad/contract";
+import { LaunchList, PreparedAirdrop, PreparedLaunch, PreparedTrade, type TradeSide } from "@launchpad/contract";
 import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
 import { swapThroughSolRoute } from "@launchpad/localnet/routes";
 import { FEE_COLLECTOR_CRON, type StackEnv } from "@launchpad/stack";
@@ -41,7 +41,7 @@ export async function fundedKeypair(sol = 5, kp = Keypair.generate()) {
 
 /**
  * The Creator of the seeded coins. A fixed key, since the chain is new every run, so the visual tests can open the
- * Creator Fee page as that Creator.
+ * creator earnings page as that Creator.
  */
 export const SEED_CREATOR = Keypair.fromSeed(new Uint8Array(32).fill(7));
 
@@ -188,25 +188,6 @@ export async function fundQuote(owner: PublicKey, quote: Exclude<keyof typeof QU
 export async function moveSolRoute(quote: "USDC" | "JTO", lamports: bigint) {
   const whale = await fundedKeypair(Number(lamports / BigInt(LAMPORTS_PER_SOL)) + 2);
   await swapThroughSolRoute(connection(), whale, QUOTES[quote], lamports);
-}
-
-/** Claims a Creator's Creator Fee in one Quote Asset the way any API client would. */
-export async function claimViaApi(creator: Keypair, quote: keyof typeof QUOTES = "SOL") {
-  const res = await fetch(`${stackEnv().apiUrl}/v1/creator-fees/prepare`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ creator: creator.publicKey.toBase58(), quoteMint: QUOTES[quote].toBase58() }),
-  });
-  if (!res.ok) throw new Error(`prepare claim failed: ${res.status} ${await res.text()}`);
-  return signSendReport(PreparedCreatorFeeClaim.parse(await res.json()), creator);
-}
-
-/** The Creator's Creator Fee vault for a Quote Asset, derived the way the public docs describe, and what it holds on-chain. */
-export async function creatorFeeVault(creator: PublicKey, quote: keyof typeof QUOTES = "SOL") {
-  const program = new PublicKey(stackEnv().platform.launchlab);
-  const [vault] = PublicKey.findProgramAddressSync([creator.toBuffer(), QUOTES[quote].toBuffer()], program);
-  const balance = await connection().getTokenAccountBalance(vault, "confirmed").catch(() => null);
-  return { vault, balance: BigInt(balance?.value.amount ?? 0) };
 }
 
 /**
