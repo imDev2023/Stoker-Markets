@@ -34,7 +34,8 @@ The launch form's picker and the assets page show an asset's kind beside its nam
 
 ## Alternatives considered
 
-- CoinGecko's categories (Meme, AI, Gaming, Liquid Staking...): richer, but a second API with one request per coin at about ten a minute on the free plan, and it lists only the better-known half of the registry; useful as a check on Jupiter's tags, not as the source.
+- CoinGecko's categories (Meme, AI, Gaming, Liquid Staking...): richer, but a second API with one request per coin at about ten a minute on the free plan, and it lists only 349 of the 605.
+  Measured on 2026-10-10 as a check: it agrees with Jupiter's `meme` tag on 106 of the 118 memes it lists, and it calls 61 of the community tokens memes that Jupiter has not tagged (ZCAT, SI and other StonkFun and pump.fun coins), so the Community group holds memes Jupiter is behind on; each moves to Memes as Jupiter tags it.
 - A hand-kept list of the 605 mints: exact on the day and wrong at the next GlobalConfig Raydium creates.
 - Names and tickers: ruled out since the spike found a pump.fun coin called "GoPro - Backpack Securities"; anyone can call a token "Bitcoin" or "USD".
 
