@@ -30,7 +30,7 @@
   padding: 0 13px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--surface);
+  background: var(--bg);
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
@@ -125,7 +125,7 @@
   padding: 11px 13px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--surface);
+  background: var(--bg);
   font-family: var(--font-mono);
   font-size: 0.8125rem;
   line-height: 1.7;
@@ -164,7 +164,6 @@
   min-width: 0;
 }
 
-.typeLabel,
 .ratesLabel {
   font-size: 0.875rem;
   font-weight: 600;
@@ -185,7 +184,7 @@
   padding: 12px 13px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--surface);
+  background: var(--bg);
   cursor: pointer;
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
@@ -275,7 +274,7 @@
   padding: 0.35rem 0.75rem;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--surface);
+  background: var(--bg);
   color: inherit;
   font: inherit;
   cursor: pointer;

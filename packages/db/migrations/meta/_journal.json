@@ -141,6 +141,13 @@
       "when": 1791432787861,
       "tag": "0019_creator_earnings_offchain",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1791650418613,
+      "tag": "0020_quote_liquidity",
+      "breakpoints": true
     }
   ]
 }

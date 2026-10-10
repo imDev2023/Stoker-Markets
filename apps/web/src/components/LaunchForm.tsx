@@ -6,17 +6,19 @@ import {
 } from "@solana/web3.js";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { LAUNCH_IMAGE_MAX_BYTES, type PlatformInfo, type PreparedLaunch, type QuoteAsset } from "@launchpad/contract";
 import { ApiRequestError, prepareLaunch, reportTransaction, retryLaunch } from "@/lib/api";
 import { landedError } from "@/lib/transactions";
 import { creatorEarnings, creatorShareOf } from "@/lib/fees";
-import { COIN_DECIMALS, formatAmount, formatUnits, isSol, quoteTicker, SOL_DECIMALS } from "@/lib/format";
+import { COIN_DECIMALS, COIN_SUPPLY, formatAmount, formatUnits, isSol, quoteTicker, SOL_DECIMALS } from "@/lib/format";
+import { quoteKind } from "@/lib/landing";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
 import { LaunchOptions, LaunchType, supplyShare, useLaunchOptions } from "./LaunchOptions";
 import { PairMark } from "./PairMark";
 import { QuoteLabelList } from "./QuoteLabels";
-import { QuotePicker } from "./QuotePicker";
+import { QuoteChooser, QuoteSearch } from "./QuoteChooser";
+import { QuoteLogo } from "./QuoteLogo";
 import { WalletButton } from "./WalletButton";
 import styles from "./LaunchForm.module.css";
 
@@ -52,6 +54,7 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
   const [quoteMint, setQuoteMint] = useState(
     () => quotes.find((q) => q.mint === initialQuote && q.launchable)?.mint ?? quotes.find((q) => q.launchable)?.mint ?? null,
   );
+  const [quoteQuery, setQuoteQuery] = useState("");
   const [step, setStep] = useState<Step>({ kind: "editing" });
   const [error, setError] = useState<string | null>(null);
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
@@ -166,97 +169,131 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
   const review = step.kind === "reviewing" || step.kind === "signing" || step.kind === "confirming" ? step.review : null;
   const failed = step.kind === "failed" ? step : step.kind === "preparing" ? (step.retrying ?? null) : null;
 
+  const launchable = quotes.filter((q) => q.launchable).length;
+  const platformFeePct = Number((platform.platformFeeBps / 100).toFixed(3));
+  const ticker = quote ? quoteTicker(quote) : null;
+
   return (
-    <div className={`shell ${styles.page}`}>
-      <form className={styles.form} onSubmit={onSubmit} aria-busy={busy}>
-        <h1 className={styles.title}>Stoke a coin</h1>
+    <form className={`shell ${styles.page}`} onSubmit={onSubmit} aria-busy={busy}>
+      <div className={styles.main}>
+        <header className={styles.head}>
+          <h1 className={styles.title}>Stoke a coin</h1>
+          <p className={styles.lede}>
+            A fixed-supply coin on a Raydium curve, priced in any of the {launchable.toLocaleString("en-US")} assets Raydium quotes. It moves to
+            its own Raydium pool at its target, and you earn {earns.summary}.
+          </p>
+        </header>
 
-        <fieldset className={styles.fields} disabled={busy}>
-          <LaunchType options={options} coin={symbol} />
+        {/* One card, five numbered sections: what the coin is, what it is paired with, then the options; the action follows the card. */}
+        <fieldset className={styles.card} disabled={busy}>
+          <section className={styles.block} aria-labelledby="block-type">
+            <SectionHead id="block-type" index="01" title="Launch type" hint="A standard coin, or a Reward Launch that withholds a tax on every transfer and pays it to the coin's holders." />
+            <LaunchType options={options} coin={symbol} labelId="block-type" />
+          </section>
 
-          <div className={styles.imageRow}>
-            <label className={styles.drop}>
-              {imageUrl ? <img src={imageUrl} alt="Coin image preview" /> : <span>Add image</span>}
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
-                className="visually-hidden"
-                onChange={(e) => pickImage(e.target.files?.[0])}
-              />
-            </label>
-            <p className={styles.hint}>PNG, JPEG, WebP or GIF, up to 2 MB. Square images look best.</p>
-          </div>
-
-          <div className={styles.pairRow}>
+          <section className={styles.block} aria-labelledby="block-coin">
+            <SectionHead
+              id="block-coin"
+              index="02"
+              title="Your coin"
+              hint="The name and ticker go on-chain at launch and never change; the image and description are stored for good on Arweave."
+            />
+            <div className={styles.coinRow}>
+              <label className={styles.drop}>
+                {imageUrl ? (
+                  <img src={imageUrl} alt="Coin image preview" />
+                ) : (
+                  <span className={styles.dropEmpty}>
+                    <span className={styles.dropPlus} aria-hidden />
+                    Add image
+                  </span>
+                )}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  className="visually-hidden"
+                  onChange={(e) => pickImage(e.target.files?.[0])}
+                />
+              </label>
+              <div className={styles.coinFields}>
+                <label className={styles.field}>
+                  <span>Name</span>
+                  <input value={name} onChange={(e) => setName(e.target.value)} maxLength={32} required placeholder="Tracer Bullet" />
+                </label>
+                <label className={styles.field}>
+                  <span>Ticker</span>
+                  <input
+                    value={symbol}
+                    onChange={(e) => setSymbol(e.target.value.toUpperCase().replace(/[^A-Z0-9$]/g, ""))}
+                    maxLength={10}
+                    required
+                    placeholder="TRCR"
+                    className={styles.ticker}
+                  />
+                </label>
+                <p className={styles.hint}>PNG, JPEG, WebP or GIF up to 2 MB, square. A name up to 32 characters, a ticker up to 10.</p>
+              </div>
+            </div>
             <label className={styles.field}>
-              <span>Name</span>
-              <input value={name} onChange={(e) => setName(e.target.value)} maxLength={32} required placeholder="Tracer Bullet" />
+              <span>
+                Description <em>optional</em>
+              </span>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={DESCRIPTION_MAX} rows={3} />
+              <small className={styles.counter} aria-hidden>{description.length} / {DESCRIPTION_MAX}</small>
             </label>
-            <label className={styles.field}>
-              <span>Ticker</span>
-              <input
-                value={symbol}
-                onChange={(e) => setSymbol(e.target.value.toUpperCase().replace(/[^A-Z0-9$]/g, ""))}
-                maxLength={10}
-                required
-                placeholder="TRCR"
-                className={styles.ticker}
-              />
-            </label>
-          </div>
+          </section>
 
-          <QuotePicker quotes={quotes} value={quoteMint} onChange={setQuoteMint} />
+          <section className={styles.block} aria-labelledby="block-pair">
+            <SectionHead
+              id="block-pair"
+              index="03"
+              title="Paired with"
+              hint="The asset your coin is priced and traded in. Every trade pays in it, and so does your share."
+              tools={<QuoteSearch value={quoteQuery} onChange={setQuoteQuery} />}
+            />
+            <QuoteChooser quotes={quotes} value={quoteMint} query={quoteQuery} onChange={setQuoteMint} />
+            {quote && (
+              <details className={styles.labels}>
+                <summary>Further information on {ticker}</summary>
+                <p className={styles.labelsNote}>
+                  What {ticker}&apos;s mint and the token list say about it. Each fact informs; none stops a launch.
+                </p>
+                <QuoteLabelList quote={quote} />
+                <Link href={`/assets/${quote.mint}`} className={styles.labelsLink}>Everything about {ticker}</Link>
+              </details>
+            )}
+          </section>
 
-          <label className={styles.field}>
-            <span>
-              Description <em>optional</em>
-            </span>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={DESCRIPTION_MAX} rows={3} />
-            <small className={styles.counter} aria-hidden>{description.length} / {DESCRIPTION_MAX}</small>
-          </label>
+          <section className={styles.block} aria-labelledby="block-links">
+            <SectionHead id="block-links" index="04" title="Links" optional hint="Saved in the coin's permanent metadata and shown on its page." />
+            <div className={styles.links}>
+              <label className={styles.field}>
+                <span>Website</span>
+                <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" />
+              </label>
+              <label className={styles.field}>
+                <span>X</span>
+                <input type="url" value={x} onChange={(e) => setX(e.target.value)} placeholder="https://x.com/" />
+              </label>
+              <label className={styles.field}>
+                <span>Telegram</span>
+                <input type="url" value={telegram} onChange={(e) => setTelegram(e.target.value)} placeholder="https://t.me/" />
+              </label>
+            </div>
+          </section>
 
-          <div className={styles.links}>
-            <label className={styles.field}>
-              <span>Website <em>optional</em></span>
-              <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" />
-            </label>
-            <label className={styles.field}>
-              <span>X <em>optional</em></span>
-              <input type="url" value={x} onChange={(e) => setX(e.target.value)} placeholder="https://x.com/" />
-            </label>
-            <label className={styles.field}>
-              <span>Telegram <em>optional</em></span>
-              <input type="url" value={telegram} onChange={(e) => setTelegram(e.target.value)} placeholder="https://t.me/" />
-            </label>
-          </div>
-
-          <LaunchOptions options={options} coin={symbol} />
+          <section className={styles.block} aria-labelledby="block-options">
+            <SectionHead
+              id="block-options"
+              index="05"
+              title="Launch options"
+              hint="A first buy inside the launch transaction itself, and for allowed creators an airdrop paid from it."
+            />
+            <LaunchOptions options={options} coin={symbol} />
+          </section>
         </fieldset>
 
-        <dl className={styles.terms}>
-          <div>
-            <dt>Graduates at</dt>
-            <dd>{quote ? <GraduationTerms quote={quote} /> : "Choose a Quote Asset to see what your coin must raise."}</dd>
-          </div>
-          <div>
-            <dt>You earn</dt>
-            <dd>
-              {earns.summary}: half of what the platform collects on your coin, sent to your wallet with nothing to claim.
-            </dd>
-          </div>
-        </dl>
-
-        {quote && (
-          <details className={styles.labels}>
-            <summary>Further information on {quoteTicker(quote)}</summary>
-            <p className={styles.labelsNote}>
-              What {quoteTicker(quote)}&apos;s mint and the token list say about it. Each fact informs; none stops a launch.
-            </p>
-            <QuoteLabelList quote={quote} />
-            <Link href={`/assets/${quote.mint}`} className={styles.labelsLink}>Everything about {quoteTicker(quote)}</Link>
-          </details>
-        )}
-
+      <div className={styles.action}>
         {error && (
           <p className={styles.error} role="alert">
             {error}
@@ -308,19 +345,97 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
           What you earn is approximate and depends on trading that may never happen. A coin can lose all of its value, and nothing
           here is investment advice.
         </p>
-      </form>
+      </div>
+      </div>
 
-      <aside className={styles.preview} aria-label="Preview">
-        <span className={styles.previewLabel}>How it will look</span>
-        <div className={styles.previewCard}>
-          <div className={styles.previewTop}>
+      {/* The summary stays in view while the form scrolls: what the coin is and the terms it launches on, short enough to fit a laptop's screen. */}
+      <aside className={styles.summary} aria-label="Launch summary">
+        <div className={styles.summaryCard}>
+          <p className={styles.eyebrow} aria-hidden>Launch summary</p>
+          <div className={styles.preview}>
             {imageUrl ? <img src={imageUrl} alt="" /> : <div className={styles.previewImage} aria-hidden />}
             <div className={styles.previewTitles}>
-              <PairMark base={symbol || "TICKER"} quote={quote ? quoteTicker(quote) : "SOL"} size="lg" />
+              <PairMark base={symbol || "TICKER"} quote={ticker ?? "SOL"} size="lg" />
               <p className={styles.previewName}>{name || "Coin name"}</p>
             </div>
           </div>
-          {description && <p className={styles.previewDescription}>{description}</p>}
+
+          <dl className={styles.facts}>
+            <div>
+              <dt>Priced in</dt>
+              <dd>
+                {quote ? (
+                  <>
+                    <span className={styles.pricedIn}>
+                      <QuoteLogo quote={quote} size={18} />
+                      {ticker}
+                      <span className={styles.factNote}>{quoteKind(quote)}</span>
+                    </span>
+                    <Link href={`/assets/${quote.mint}`} className={styles.factLink}>About {ticker}</Link>
+                  </>
+                ) : (
+                  "Choose a Quote Asset"
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt>Graduates at</dt>
+              <dd>{quote ? <GraduationTerms quote={quote} /> : "Choose a Quote Asset to see what your coin must raise."}</dd>
+            </div>
+            <div>
+              <dt>Supply</dt>
+              <dd>
+                {COIN_SUPPLY.toLocaleString("en-US")} {symbol || "coins"}, fixed
+              </dd>
+            </div>
+            <div>
+              <dt>Platform fee</dt>
+              <dd>
+                {platformFeePct}% of every trade
+                <span className={styles.factNote}>set on-chain, plus Raydium&apos;s own fee</span>
+              </dd>
+            </div>
+            <div>
+              <dt>Reward tax</dt>
+              <dd>
+                {options.rewardTax === null
+                  ? "None"
+                  : `${options.rewardTax / 100}% of every transfer, paid to holders in ${options.rewardPayout === "coin" ? symbol || "the coin" : (ticker ?? "the Quote Asset")}`}
+              </dd>
+            </div>
+            <div>
+              <dt>You earn</dt>
+              <dd className={styles.heat}>
+                {earns.summary}
+                <span className={styles.factNote}>half of what the platform collects, nothing to claim</span>
+              </dd>
+            </div>
+            <div>
+              <dt>Launch cost</dt>
+              <dd>
+                {review ? (
+                  <>
+                    <span className="mono">{(review.costLamports / LAMPORTS_PER_SOL).toFixed(4)} SOL</span>
+                    <span className={styles.factNote}>
+                      {review.prepared.firstBuy && isSol(review.quote) ? "your first buy, network fees and account rent" : "network fees and account rent"}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    Network fees and rent only
+                    <span className={styles.factNote}>no platform fee to launch; the figure comes with the review</span>
+                  </>
+                )}
+              </dd>
+            </div>
+          </dl>
+
+          <ul className={styles.trust}>
+            <li>Liquidity locked for good once it graduates</li>
+            <li>Image and metadata stored permanently on Arweave</li>
+            <li>Every payment to you on the public ledger</li>
+          </ul>
+
         </div>
       </aside>
 
@@ -332,6 +447,23 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
           void prepare();
         }}
       />
+    </form>
+  );
+}
+
+/** A section's head: its number, its title (the section's accessible name) and a line of hint, with room beside them for a tool. */
+function SectionHead({ id, index, title, hint, optional = false, tools }: { id: string; index: string; title: string; hint: string; optional?: boolean; tools?: ReactNode }) {
+  return (
+    <div className={styles.blockHead}>
+      <div className={styles.blockTitles}>
+        <h2 id={id}>
+          <span className={styles.index} aria-hidden>{index}</span>
+          {title}
+          {optional && <em>optional</em>}
+        </h2>
+        <p>{hint}</p>
+      </div>
+      {tools}
     </div>
   );
 }

@@ -27,7 +27,7 @@ export type Bindings = {
   /** "jupiter" on mainnet; "static" reads QUOTE_PRICES_USD. */
   PRICE_SOURCE: "jupiter" | "static";
   /** JSON object of USD prices by mint, for the static price source. */
-  QUOTE_PRICES_USD: string;
+  QUOTE_PRICES_USD?: string;
   /**
    * The static price source's token list, for Quote Risk Labels (#11): JSON of `{ "<mint>": { "verified": bool,
    * "liquidityUsd": number } }`; a mint left out is unverified with unknown liquidity. Mainnet reads Jupiter's list.
@@ -35,6 +35,16 @@ export type Bindings = {
   QUOTE_TOKEN_LIST?: string;
   /** Optional; without it the free Jupiter host is used, for prices and for SOL routes. */
   JUPITER_API_KEY?: string;
+  /**
+   * Local only: another host for Jupiter's APIs, the stand-in from `pnpm stand-ins` that answers from the mainnet
+   * snapshot the local chain quotes (tools/localnet/fixtures/mainnet). Refused on mainnet.
+   */
+  JUPITER_API_URL?: string;
+  /**
+   * Curve rule writes per Quote Registry refresh, most urgent first (default 120): a first run over mainnet's hundreds
+   * of Quote Assets completes over a few runs. The local chain sets it high enough for one run.
+   */
+  QUOTE_RULE_WRITES_MAX?: string;
   /**
    * Where buys paid with SOL get their Quote Asset: "jupiter" on mainnet, "raydium-cpmm" through the pools in
    * SOL_ROUTE_POOLS (the local chain, devnet), or "none" to offer no SOL payment on non-SOL Launches.
@@ -156,6 +166,7 @@ export type Config = {
   feeChangeLeadSeconds: number;
   anonRateLimitPerMinute: number;
   anonPrepareRateLimitPerMinute: number;
+  quoteRuleWritesMax: number;
   solRoute: SolRouteConfig | null;
   arweave: ArweaveConfig;
 };
@@ -202,6 +213,8 @@ const REWARD_RULES_LEAD_DEFAULT_SECONDS = 24 * 60 * 60;
 const BURN_MIN_SPEND_DEFAULT_LAMPORTS = 10_000_000n;
 const CREATOR_FORWARD_MIN_DEFAULT_LAMPORTS = 10_000_000n;
 const FEE_CHANGE_LEAD_DEFAULT_SECONDS = 24 * 60 * 60;
+/** Curve rule writes per Quote Registry refresh; a first run over mainnet's hundreds of Quote Assets completes over a few runs. */
+const QUOTE_RULE_WRITES_DEFAULT = 120;
 /** On mainnet a fee change to every live curve is announced at least this long ahead, whatever the setting says. */
 const FEE_CHANGE_LEAD_MAINNET_MIN_SECONDS = 60 * 60;
 
@@ -248,6 +261,7 @@ function refuseLocalOnlySettingsOnMainnet(env: Bindings) {
   if (env.PRICE_SOURCE !== "jupiter") throw new Error(`PRICE_SOURCE must be "jupiter" on mainnet, not "${env.PRICE_SOURCE}": static prices would set every Graduation Target wrong`);
   if (env.SOL_ROUTE_SOURCE === "raydium-cpmm") throw new Error('SOL_ROUTE_SOURCE "raydium-cpmm" names the local chain\'s pools, which do not exist on mainnet; use "jupiter" or "none"');
   if (!env.RPC_URL.startsWith("https://")) throw new Error(`RPC_URL must be https on mainnet (got ${env.RPC_URL})`);
+  if (env.JUPITER_API_URL) throw new Error("JUPITER_API_URL names the local stand-in; on mainnet Jupiter's own host is chosen by the key, so leave it unset");
   if (env.FEE_CHANGE_LEAD_SECONDS && seconds(env.FEE_CHANGE_LEAD_SECONDS, "FEE_CHANGE_LEAD_SECONDS") < FEE_CHANGE_LEAD_MAINNET_MIN_SECONDS)
     throw new Error(`FEE_CHANGE_LEAD_SECONDS must be at least ${FEE_CHANGE_LEAD_MAINNET_MIN_SECONDS} on mainnet: a fee change hits every live curve at once`);
 }
@@ -317,6 +331,7 @@ export function config(env: Bindings): Config {
     anonRateLimitPerMinute: perMinute(env.ANON_RATE_LIMIT_PER_MINUTE, "ANON_RATE_LIMIT_PER_MINUTE", 300),
     anonPrepareRateLimitPerMinute: perMinute(env.ANON_PREPARE_RATE_LIMIT_PER_MINUTE, "ANON_PREPARE_RATE_LIMIT_PER_MINUTE", 25),
     feeChangeLeadSeconds: env.FEE_CHANGE_LEAD_SECONDS ? seconds(env.FEE_CHANGE_LEAD_SECONDS, "FEE_CHANGE_LEAD_SECONDS") : FEE_CHANGE_LEAD_DEFAULT_SECONDS,
+    quoteRuleWritesMax: env.QUOTE_RULE_WRITES_MAX ? seconds(env.QUOTE_RULE_WRITES_MAX, "QUOTE_RULE_WRITES_MAX") : QUOTE_RULE_WRITES_DEFAULT,
     solRoute: solRouteConfig(env),
     arweave: arweaveConfig(env),
   };
@@ -354,13 +369,13 @@ function solRouteConfig(env: Bindings): SolRouteConfig | null {
 export function solRoutes(env: Bindings, cfg: Config, connection: Connection): SolRoutes | null {
   const r = cfg.solRoute;
   if (!r) return null;
-  if (r.source === "jupiter") return jupiterSolRoutes(env.JUPITER_API_KEY || undefined);
+  if (r.source === "jupiter") return jupiterSolRoutes(env.JUPITER_API_KEY || undefined, env.JUPITER_API_URL || undefined);
   return cpmmSolRoutes(connection, cfg.cpmm, r.pools);
 }
 
 export function quoteMarket(env: Bindings): QuoteMarket {
-  if (env.PRICE_SOURCE === "jupiter") return jupiterMarket(env.JUPITER_API_KEY || undefined);
-  if (env.PRICE_SOURCE === "static") return staticMarket(env.QUOTE_PRICES_USD, env.QUOTE_TOKEN_LIST);
+  if (env.PRICE_SOURCE === "jupiter") return jupiterMarket(env.JUPITER_API_KEY || undefined, env.JUPITER_API_URL || undefined);
+  if (env.PRICE_SOURCE === "static") return staticMarket(env.QUOTE_PRICES_USD ?? "", env.QUOTE_TOKEN_LIST);
   throw new Error(`unknown PRICE_SOURCE: ${env.PRICE_SOURCE}`);
 }
 

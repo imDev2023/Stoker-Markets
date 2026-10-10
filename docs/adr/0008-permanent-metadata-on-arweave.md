@@ -37,4 +37,4 @@ StonkFun promises permanent metadata on Arweave, and the owner decided to match 
 - A wallet or explorer reads the document from `arweave.net`, which serves a fresh item only once Turbo has bundled it onto Arweave (minutes); `turbo-gateway.com` serves it at once.
   Our site never waits: it reads the image from R2 and the fields from Postgres.
 - The operations wallet's secret key now also signs data items; the key custody of ADR 0004 is unchanged, and the items it signs are public documents.
-- Local development and tests run against the stand-in in `tools/stack` (`pnpm arweave-stand-in`), which plays the upload service, the payment service and the gateway on one port and sells credits for SOL sent on the local chain.
+- Local development and tests run against the stand-in in `tools/stack` (`pnpm stand-ins`), which plays the upload service, the payment service and the gateway on one port and sells credits for SOL sent on the local chain.

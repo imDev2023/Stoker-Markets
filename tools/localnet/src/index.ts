@@ -18,8 +18,8 @@ import { createHash } from "node:crypto";
 import BN from "bn.js";
 import bs58 from "bs58";
 import {
-  createPlatformConfigIx, launchlabCoder, launchlabPdas, platformLookupAddresses, prepareMigration, programsFor, sharedMigrationAccounts,
-  updatePlatformConfigIx, WSOL_MINT,
+  createPlatformConfigIx, launchlabCoder, launchlabPdas, metadataPda, platformLookupAddresses, prepareMigration, programsFor,
+  sharedMigrationAccounts, updatePlatformConfigIx, WSOL_MINT,
 } from "@launchpad/chain";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -79,6 +79,52 @@ export const LOCAL_QUOTE_PRICES_USD: Record<string, string> = {
   [LOCAL_QUOTES.TAXQ.toBase58()]: "1",
 };
 
+/**
+ * Which Quote Assets the chain quotes: the six cases the tests pin (`fixtures/quotes`, each one case the Quote Registry
+ * must handle, plus the taxed one), or mainnet's whole set from the snapshot in `fixtures/mainnet` (`pnpm snapshot`),
+ * which is what development runs on so the site shows what it will show on mainnet. The cases are in the mainnet set
+ * too, so anything that works on the test chain works on the development chain.
+ */
+export type QuoteSet = "cases" | "mainnet";
+
+type SnapshotAccount = AccountFixture["account"] & { lamports: number };
+type SnapshotQuote = { mint: string; maxShareFeeRate: string; mintAccount: SnapshotAccount; metadataAccount: SnapshotAccount | null };
+type Snapshot = { takenAt: string; quotes: SnapshotQuote[]; liquidityUsd: Map<string, number> };
+
+/**
+ * What Jupiter said about mainnet's Quote Assets on the day of the snapshot (`fixtures/mainnet/market.json`), in the
+ * shapes of its Price API v3 and Tokens API v2, which the Jupiter stand-in in tools/stack serves to the API.
+ */
+export type MarketSnapshot = {
+  takenAt: string;
+  prices: Record<string, { usdPrice: number; scaledUiConfig?: { usdPricePrescaled?: number } }>;
+  tokens: Record<string, { name: string | null; symbol: string | null; icon: string | null; isVerified: boolean; liquidity: number | null; tags: string[]; launchpad: string | null }>;
+};
+
+export function mainnetMarketSnapshot(): MarketSnapshot {
+  return JSON.parse(readFileSync(join(FIXTURES, "mainnet", "market.json"), "utf8")) as MarketSnapshot;
+}
+
+let snapshot: Snapshot | undefined;
+
+/** The mainnet snapshot, read once: the quotes, and each mint's liquidity from Jupiter's list for choosing the lookup tables' quotes. */
+function mainnetSnapshot(): Snapshot {
+  if (snapshot) return snapshot;
+  const quotes = JSON.parse(readFileSync(join(FIXTURES, "mainnet", "quotes.json"), "utf8")) as { takenAt: string; quotes: SnapshotQuote[] };
+  const market = mainnetMarketSnapshot();
+  const liquidityUsd = new Map(Object.entries(market.tokens).flatMap(([mint, t]) => (t.liquidity === null ? [] : [[mint, t.liquidity] as const])));
+  // Wrapped SOL is every chain's own; the validator makes its mint, and SOL's GlobalConfig is the template below.
+  snapshot = { takenAt: quotes.takenAt, quotes: quotes.quotes.filter((q) => q.mint !== SOL_QUOTE_MINT.toBase58()), liquidityUsd };
+  return snapshot;
+}
+
+/**
+ * How many of mainnet's Quote Assets the local lookup tables list beyond the cases: the deepest markets, as mainnet's
+ * Platform Lookup Table will list SOL and the busiest Quote Assets (a table holds 256 addresses, a launch needs four
+ * per Quote Asset). A coin paired with any other asset still launches; only a launch with a First Buy needs the table.
+ */
+const LOOKUP_QUOTES_FROM_SNAPSHOT = 40;
+
 
 /**
  * `migrate` stands in for Raydium's migrate wallet (its crank), the only key allowed to graduate a curve. It is kept
@@ -97,6 +143,9 @@ export type LocalnetState = {
   admin: string;
   operationsWallet: string;
   graduationTargetLamports: string;
+  /** Which Quote Assets the chain quotes, and how many mints that is, SOL included. */
+  quotes: QuoteSet;
+  quoteMints: number;
 };
 
 /** Local keys persist between runs so addresses stay stable; they are git-ignored and only ever used on the local chain. */
@@ -122,27 +171,30 @@ const readFixture = (path: string) => JSON.parse(readFileSync(path, "utf8")) as 
 
 /**
  * The local chain's GlobalConfigs, written to `dir` as account files keyed by address.
- * Devnet's SOL GlobalConfig is the template. Raydium's admin creates GlobalConfigs, so for every quote mint in `fixtures/quotes`
+ * Devnet's SOL GlobalConfig is the template. Raydium's admin creates GlobalConfigs, so for every quote mint of the set
  * the local chain plants a copy of the template at that mint's PDA with only the quote mint changed.
  * Only a GlobalConfig's migrate wallet may migrate a graduated pool, and there is no Raydium crank locally,
  * so every copy names a local stand-in key as its migrate wallet.
  */
-function globalConfigFixtures(dir: string, migrateWallet: PublicKey): Map<string, string> {
+function globalConfigFixtures(dir: string, migrateWallet: PublicKey, set: QuoteSet): Map<string, string> {
   const template = readFixture(join(FIXTURES, "accounts", `${SOL_GLOBAL_CONFIG.toBase58()}.json`));
   const decoded = launchlabCoder.accounts.decode("GlobalConfig", Buffer.from(template.account.data[0], "base64")) as {
     quote_mint: PublicKey; migrate_to_cpswap_wallet: PublicKey;
   };
   const program = programsFor("localnet").launchlab;
+  // SOL's config allows a 1% share (referral) fee; most mainnet configs, every stock's among them, allow none. On the
+  // test chain JTO stands in for those, so tests see both; on the development chain each config allows what mainnet's does.
+  const shareFeeRates = new Map(set === "mainnet" ? mainnetSnapshot().quotes.map((q) => [q.mint, BigInt(q.maxShareFeeRate)] as const) : []);
+  if (set === "cases") shareFeeRates.set(LOCAL_QUOTES.JTO.toBase58(), 0n);
   const out = new Map<string, string>();
-  for (const quoteMint of [decoded.quote_mint, ...localQuoteMints()]) {
+  for (const quoteMint of [decoded.quote_mint, ...localQuoteMints(set)]) {
     const data = Buffer.from(template.account.data[0], "base64");
     patchKey(data, QUOTE_MINT_OFFSET, decoded.quote_mint, quoteMint);
     patchKey(data, MIGRATE_TO_CPSWAP_WALLET_OFFSET, decoded.migrate_to_cpswap_wallet, migrateWallet);
-    // SOL's config allows a 1% share (referral) fee; most mainnet configs, every stock's among them, allow none. JTO
-    // stands in for those, so tests see both.
-    if (quoteMint.equals(LOCAL_QUOTES.JTO)) {
+    const shareFeeRate = shareFeeRates.get(quoteMint.toBase58());
+    if (shareFeeRate !== undefined) {
       if (data.readBigUInt64LE(MAX_SHARE_FEE_RATE_OFFSET) !== 10_000n) throw new Error("GlobalConfig layout changed; update the offsets");
-      data.writeBigUInt64LE(0n, MAX_SHARE_FEE_RATE_OFFSET);
+      data.writeBigUInt64LE(shareFeeRate, MAX_SHARE_FEE_RATE_OFFSET);
     }
     const address = launchlabPdas(program).globalConfig(quoteMint).toBase58();
     // rentEpoch is u64::MAX in the dump, which JSON.parse turns into a float the validator rejects; 0 means the same (rent-exempt).
@@ -162,38 +214,79 @@ function patchKey(data: Buffer, offset: number, expected: PublicKey, value: Publ
 const TOKEN_PROGRAMS = new Set([TOKEN_PROGRAM_ID.toBase58(), TOKEN_2022_PROGRAM_ID.toBase58()]);
 
 /**
- * The cloned quote mints, written to `dir` with `authority` as their mint authority, so tests can hand wallets USDC or a
- * stock to trade with. Both token programs keep the mint authority as a COption<Pubkey> at the start of the mint.
+ * The cloned quote mints, written to `dir`. The cases get `authority` as their mint authority, so tests (and anyone on
+ * the development chain) can hand wallets USDC or a stock to trade with (`mintLocalQuote`); both token programs keep
+ * it as a COption<Pubkey> at the start of the mint. Mainnet's other mints and their Metaplex metadata accounts are
+ * written as they are, authorities included, since the Quote Registry reads an asset's kind from them (ADR 0010); the
+ * cases' own fixtures go over the snapshot's copies of them.
  */
-function quoteMintFixtures(dir: string, authority: PublicKey): Map<string, string> {
+function quoteMintFixtures(dir: string, authority: PublicKey, set: QuoteSet): Map<string, string> {
   const out = new Map<string, string>();
-  for (const f of readdirSync(join(FIXTURES, "quotes")).filter((f) => f.endsWith(".json"))) {
-    const fixture = readFixture(join(FIXTURES, "quotes", f));
-    if (!TOKEN_PROGRAMS.has(fixture.account.owner)) continue;
+  const write = (fixture: AccountFixture, mintable: boolean) => {
     const data = Buffer.from(fixture.account.data[0], "base64");
-    data.writeUInt32LE(1, 0);
-    authority.toBuffer().copy(data, 4);
+    if (mintable) {
+      data.writeUInt32LE(1, 0);
+      authority.toBuffer().copy(data, 4);
+    }
     const path = join(dir, `quote_mint_${fixture.pubkey}.json`);
     // As for GlobalConfigs: a JSON round-trip turns rentEpoch u64::MAX into a float the validator rejects.
     writeFileSync(path, JSON.stringify({ ...fixture, account: { ...fixture.account, data: [data.toString("base64"), "base64"], rentEpoch: 0 } }));
     out.set(fixture.pubkey, path);
+  };
+  if (set === "mainnet") {
+    for (const q of mainnetSnapshot().quotes) {
+      write({ pubkey: q.mint, account: q.mintAccount }, false);
+      if (q.metadataAccount) {
+        const address = metadataPda(new PublicKey(q.mint)).toBase58();
+        const path = join(dir, `metadata_${address}.json`);
+        writeFileSync(path, JSON.stringify({ pubkey: address, account: q.metadataAccount }));
+        out.set(address, path);
+      }
+    }
+  }
+  for (const f of readdirSync(join(FIXTURES, "quotes")).filter((f) => f.endsWith(".json"))) {
+    const fixture = readFixture(join(FIXTURES, "quotes", f));
+    if (TOKEN_PROGRAMS.has(fixture.account.owner)) write(fixture, true);
   }
   return out;
 }
 
+/** The quote mints cloned from mainnet into `fixtures/quotes`, the cases the tests pin. */
+function caseQuoteMints(): PublicKey[] {
+  return readdirSync(join(FIXTURES, "quotes"))
+    .filter((f) => f.endsWith(".json"))
+    .map((f) => readFixture(join(FIXTURES, "quotes", f)))
+    .filter((f) => TOKEN_PROGRAMS.has(f.account.owner))
+    .map((f) => new PublicKey(f.pubkey));
+}
+
 /**
- * Every quote mint on the local chain: the ones cloned from mainnet into `fixtures/quotes` (their Metaplex metadata
- * accounts sit beside them) and the taxed one the chain makes itself.
+ * Every quote mint on the local chain besides SOL: the set's mints (the cases cloned from mainnet into `fixtures/quotes`,
+ * their Metaplex metadata accounts beside them, or mainnet's whole snapshot, which includes them) and the taxed one the
+ * chain makes itself.
  */
-export function localQuoteMints(): PublicKey[] {
-  return [
-    ...readdirSync(join(FIXTURES, "quotes"))
-      .filter((f) => f.endsWith(".json"))
-      .map((f) => readFixture(join(FIXTURES, "quotes", f)))
-      .filter((f) => TOKEN_PROGRAMS.has(f.account.owner))
-      .map((f) => new PublicKey(f.pubkey)),
-    LOCAL_QUOTES.TAXQ,
-  ];
+export function localQuoteMints(set: QuoteSet = "cases"): PublicKey[] {
+  const cases = caseQuoteMints();
+  if (set === "cases") return [...cases, LOCAL_QUOTES.TAXQ];
+  const seen = new Set(cases.map((m) => m.toBase58()));
+  const rest = mainnetSnapshot().quotes.filter((q) => !seen.has(q.mint)).map((q) => new PublicKey(q.mint));
+  return [...cases, ...rest, LOCAL_QUOTES.TAXQ];
+}
+
+/**
+ * The quote mints the lookup tables list: all of them on the test chain; on the development chain the cases and the
+ * deepest markets of the snapshot, as mainnet's table will list SOL and the busiest Quote Assets.
+ */
+function lookupQuoteMints(set: QuoteSet): PublicKey[] {
+  if (set === "cases") return localQuoteMints(set);
+  const cases = new Set(caseQuoteMints().map((m) => m.toBase58()));
+  const { quotes, liquidityUsd } = mainnetSnapshot();
+  const deepest = quotes
+    .filter((q) => !cases.has(q.mint))
+    .sort((a, b) => (liquidityUsd.get(b.mint) ?? -1) - (liquidityUsd.get(a.mint) ?? -1))
+    .slice(0, LOOKUP_QUOTES_FROM_SNAPSHOT)
+    .map((q) => new PublicKey(q.mint));
+  return [...caseQuoteMints(), ...deepest, LOCAL_QUOTES.TAXQ];
 }
 
 /**
@@ -293,10 +386,16 @@ export function localnetRuntime(): LocalnetRuntime {
   return hasTestValidator() ? "solana-test-validator" : "surfpool";
 }
 
-/** The account files the chain loads besides programs: fixtures as they are, the quote mints and GlobalConfigs as patched. */
-function accountFiles(dir: string) {
+/**
+ * The account files the chain loads besides programs, by address: the fixtures as they are, and the ones written for
+ * this chain into `generated` (the quote mints and GlobalConfigs as patched, and for mainnet's set its hundreds of
+ * mints and metadata accounts), which the validator loads as one directory.
+ */
+function accountFiles(dir: string, set: QuoteSet) {
   const { admin, migrate } = localnetKeys();
-  const quoteMints = quoteMintFixtures(dir, admin.publicKey);
+  const generated = join(dir, "accounts");
+  mkdirSync(generated, { recursive: true });
+  const quoteMints = quoteMintFixtures(generated, admin.publicKey, set);
   const files = new Map<string, string>();
   for (const folder of ["accounts", "quotes"]) {
     for (const f of readdirSync(join(FIXTURES, folder))) {
@@ -306,20 +405,23 @@ function accountFiles(dir: string) {
     }
   }
   for (const [address, path] of quoteMints) files.set(address, path);
-  for (const [address, path] of globalConfigFixtures(dir, migrate.publicKey)) files.set(address, path);
-  return files;
+  for (const [address, path] of globalConfigFixtures(generated, migrate.publicKey, set)) files.set(address, path);
+  return { files, generated };
 }
+
+export type LocalnetOptions = { rpcPort?: number; quotes?: QuoteSet };
 
 /**
  * Starts a fresh local chain with the Raydium devnet programs and accounts from fixtures: a `solana-test-validator`
  * when one is installed, otherwise Surfpool embedded in this process (see `localnetRuntime`).
  * Without an `rpcPort` the validator takes a free block of ports; with one, it refuses to start if anything already
- * holds them. Surfpool picks its own ports.
+ * holds them. Surfpool picks its own ports. The chain quotes the six cases unless `quotes` asks for mainnet's set.
  */
-export async function startLocalnet(opts: { rpcPort?: number } = {}): Promise<Localnet> {
-  if (localnetRuntime() !== "surfpool") return startTestValidator(opts);
+export async function startLocalnet(opts: LocalnetOptions = {}): Promise<Localnet> {
+  const set = opts.quotes ?? "cases";
+  if (localnetRuntime() !== "surfpool") return startTestValidator(set, opts);
   if (opts.rpcPort !== undefined) throw new Error("Surfpool picks its own ports; RPC_PORT and TEST_RPC_PORT only apply to solana-test-validator");
-  return startSurfpool();
+  return startSurfpool(set);
 }
 
 /**
@@ -328,7 +430,7 @@ export async function startLocalnet(opts: { rpcPort?: number } = {}): Promise<Lo
  * Surfpool picks its own ports, and web3.js expects the websocket one port above the RPC, so the chain is reached
  * through two forwarded ports that sit side by side.
  */
-async function startSurfpool(): Promise<Localnet> {
+async function startSurfpool(set: QuoteSet): Promise<Localnet> {
   const { Surfnet } = await import("@solana/surfpool");
   const surfnet = Surfnet.startWithConfig({ offline: true, blockProductionMode: "clock", slotTimeMs: 400 });
   // Keyed by Surfpool's own port, so two chains started side by side never write over each other's account files.
@@ -344,7 +446,7 @@ async function startSurfpool(): Promise<Localnet> {
   try {
     for (const f of readdirSync(join(FIXTURES, "programs")))
       surfnet.deploy({ programId: f.replace(/\.so$/, ""), soPath: join(FIXTURES, "programs", f) });
-    for (const [address, path] of accountFiles(dir)) {
+    for (const [address, path] of accountFiles(dir, set).files) {
       const fixture = JSON.parse(readFileSync(path, "utf8")) as AccountFixture & { account: { lamports: number } };
       surfnet.setAccount(address, fixture.account.lamports, Uint8Array.from(Buffer.from(fixture.account.data[0], "base64")), fixture.account.owner);
     }
@@ -383,7 +485,7 @@ function forwardPort(port: number, target: number) {
   });
 }
 
-async function startTestValidator(opts: { rpcPort?: number } = {}): Promise<Localnet> {
+async function startTestValidator(set: QuoteSet, opts: { rpcPort?: number }): Promise<Localnet> {
   const rpcPort = opts.rpcPort ?? (await freeRpcPort());
   if (opts.rpcPort !== undefined && !(await portsFree(rpcPort)))
     throw new Error(`port ${rpcPort} or one of the validator ports derived from it is in use; is another local chain running there?`);
@@ -398,7 +500,10 @@ async function startTestValidator(opts: { rpcPort?: number } = {}): Promise<Loca
     "--gossip-port", String(ports.gossip), "--dynamic-port-range", ports.dynamicRange,
   ];
   for (const f of readdirSync(join(FIXTURES, "programs"))) args.push("--bpf-program", f.replace(/\.so$/, ""), join(FIXTURES, "programs", f));
-  for (const [address, path] of accountFiles(dir)) args.push("--account", address, path);
+  // The fixtures one by one, the generated files (hundreds for mainnet's set) as the directory they were written to.
+  const { files, generated } = accountFiles(dir, set);
+  for (const [address, path] of files) if (!path.startsWith(generated)) args.push("--account", address, path);
+  args.push("--account-dir", generated);
 
   const proc: ChildProcess = spawn("solana-test-validator", args, { stdio: ["ignore", "pipe", "pipe"] });
   let stderr = "";
@@ -478,7 +583,8 @@ export async function mintLocalQuote(connection: Connection, mint: PublicKey, ow
  * The curve rules themselves are written by the API's Quote Registry refresh.
  * Idempotent: an existing PlatformConfig is left as it is.
  */
-export async function bootstrapPlatform(connection: Connection, rpcUrl: string, graduationTargetLamports: BN): Promise<LocalnetState> {
+export async function bootstrapPlatform(connection: Connection, rpcUrl: string, graduationTargetLamports: BN, opts: { quotes?: QuoteSet } = {}): Promise<LocalnetState> {
+  const set = opts.quotes ?? "cases";
   const { admin, operations, migrate } = localnetKeys();
   const program = programsFor("localnet").launchlab;
   const platformConfig = launchlabPdas(program).platformConfig(admin.publicKey);
@@ -503,10 +609,10 @@ export async function bootstrapPlatform(connection: Connection, rpcUrl: string, 
       updatePlatformConfigIx(program, admin.publicKey, { RestrictCurveParam: [new BN(1)] }),
       updatePlatformConfigIx(program, admin.publicKey, { CurveRuleManager: [operations.publicKey] }),
     ], [admin]);
-    await createMigrationLookupTable(connection, platformConfig);
+    await createMigrationLookupTable(connection, platformConfig, set);
   }
   // SOL first: a SOL launch with a First Buy only fits a transaction with SOL's accounts in the table.
-  const quotes = [WSOL_MINT, ...localQuoteMints()].map((quoteMint) => ({ quoteMint, globalConfig: launchlabPdas(program).globalConfig(quoteMint) }));
+  const quotes = [WSOL_MINT, ...lookupQuoteMints(set)].map((quoteMint) => ({ quoteMint, globalConfig: launchlabPdas(program).globalConfig(quoteMint) }));
   const lookupTable = await ensureLookupTable(connection, operations, platformLookupAddresses(program, platformConfig, quotes));
   return {
     rpcUrl,
@@ -517,6 +623,8 @@ export async function bootstrapPlatform(connection: Connection, rpcUrl: string, 
     admin: admin.publicKey.toBase58(),
     operationsWallet: operations.publicKey.toBase58(),
     graduationTargetLamports: graduationTargetLamports.toString(),
+    quotes: set,
+    quoteMints: localQuoteMints(set).length + 1,
   };
 }
 
@@ -526,11 +634,11 @@ export async function bootstrapPlatform(connection: Connection, rpcUrl: string, 
  * The validator only resolves a lookup table for new transactions once its last extension is rooted (about 32 slots,
  * 15 s locally), so the table is made once, up front, rather than per migration.
  */
-async function createMigrationLookupTable(connection: Connection, platformConfig: PublicKey) {
+async function createMigrationLookupTable(connection: Connection, platformConfig: PublicKey, set: QuoteSet) {
   const { migrate } = localnetKeys();
   const programs = programsFor("localnet");
   const shared = new Map<string, PublicKey>();
-  for (const quoteMint of [SOL_QUOTE_MINT, ...localQuoteMints()]) {
+  for (const quoteMint of [SOL_QUOTE_MINT, ...lookupQuoteMints(set)]) {
     const globalConfig = launchlabPdas(programs.launchlab).globalConfig(quoteMint);
     for (const a of await sharedMigrationAccounts(connection, programs, platformConfig, globalConfig)) shared.set(a.toBase58(), a);
   }

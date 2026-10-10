@@ -40,7 +40,7 @@
     // A Platform Fee or Creator Fee change applies no sooner than this after it is announced.
     "FEE_CHANGE_LEAD_SECONDS": "86400",
     // Permanent metadata (#44): ArDrive Turbo and the Arweave gateway coins' metadata URIs are built from. Locally the
-    // stand-in from `pnpm arweave-stand-in` plays both services and the gateway; mainnet uses https://upload.ardrive.io,
+    // stand-in from `pnpm stand-ins` plays both services and the gateway; mainnet uses https://upload.ardrive.io,
     // https://payment.ardrive.io and https://arweave.net (the defaults when unset), and ARWEAVE_TOP_UP_LAMPORTS 50000000.
     "TURBO_UPLOAD_URL": "http://127.0.0.1:8797",
     "TURBO_PAYMENT_URL": "http://127.0.0.1:8797",
@@ -54,18 +54,19 @@
     // Raydium's crank migrates a sold-out curve within seconds; five minutes without it means something is wrong.
     "GRADUATION_ALERT_AFTER_SECONDS": "300",
     "POOL_BACKFILL_SECONDS": "900",
-    // The local chain's quote fixtures, priced as in tools/localnet LOCAL_QUOTE_PRICES_USD; mainnet uses "jupiter".
-    "PRICE_SOURCE": "static",
+    // Prices, logos and the token list come from Jupiter's APIs as on mainnet; locally the stand-in from `pnpm stand-ins`
+    // answers them from the mainnet snapshot the local chain quotes (tools/localnet/fixtures/mainnet). The tests' stack
+    // uses "static" with the six quote cases' tables instead.
+    "PRICE_SOURCE": "jupiter",
+    "JUPITER_API_URL": "http://127.0.0.1:8798",
+    // Every curve rule in one run of the Quote Registry refresh, so the chain's hundreds of Quote Assets are launchable
+    // after one `curl /__scheduled`; production paces a first run over several (120 a run).
+    "QUOTE_RULE_WRITES_MAX": "1000",
     // Buys paid with SOL route through the local chain's CPMM pools of SOL against USDC and JTO (tools/localnet
     // routes.ts), whose addresses never change and whose accounts it adds to the Platform Lookup Table. Mainnet uses
     // "jupiter".
     "SOL_ROUTE_SOURCE": "raydium-cpmm",
-    "SOL_ROUTE_POOLS": "{\"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v\":\"5xFjKk9ca4K82RgiExkLGHZisPtGkLpWRQoSw3xfLazW\",\"jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL\":\"FHDkeZECVQ2aWkLwhyZtdAsCXeQQop1uNkChDM6cGbYy\"}",
-    "QUOTE_PRICES_USD": "{\"So11111111111111111111111111111111111111112\":\"150\",\"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v\":\"1\",\"Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh\":\"180\",\"jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL\":\"2.5\"}",
-    // The static source's token list for Quote Risk Labels and categories (tools/localnet LOCAL_QUOTE_TOKEN_LIST):
-    // verified, liquidity and Jupiter's tags by mint; a mint left out is unverified with unknown liquidity. Mainnet
-    // reads Jupiter's list.
-    "QUOTE_TOKEN_LIST": "{\"So11111111111111111111111111111111111111112\":{\"verified\":true,\"liquidityUsd\":2500000000,\"tags\":[\"verified\",\"major\"]},\"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v\":{\"verified\":true,\"liquidityUsd\":900000000,\"tags\":[\"verified\",\"stable\"]},\"Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh\":{\"verified\":true,\"liquidityUsd\":4000000,\"tags\":[\"verified\",\"rwa\",\"stocks\",\"xstocks\"]},\"jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL\":{\"verified\":true,\"liquidityUsd\":12000000,\"tags\":[\"verified\",\"defi\"]},\"88SpBWrpbQ6MCdukVbtDBwRYYZAkv4KU4PYdG86ipump\":{\"verified\":false,\"liquidityUsd\":null,\"tags\":[\"meme\"]}}"
+    "SOL_ROUTE_POOLS": "{\"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v\":\"5xFjKk9ca4K82RgiExkLGHZisPtGkLpWRQoSw3xfLazW\",\"jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL\":\"FHDkeZECVQ2aWkLwhyZtdAsCXeQQop1uNkChDM6cGbYy\"}"
   },
   // Scheduled jobs: the graduation watch and the Metadata Upload every minute, the Quote Registry refresh (ADR 0005)
   // every five, the Fee Collector hourly. Locally, `wrangler dev --test-scheduled` runs them on GET /__scheduled?cron=<the cron>, and on a

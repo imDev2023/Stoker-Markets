@@ -82,7 +82,7 @@ test("an asset's page has its facts, the coins priced in it, further information
   // The launch button opens the form on this asset.
   await page.getByRole("link", { name: "Stoke a coin paired with NVDAx" }).click();
   await expect(page).toHaveURL(`/launch?quote=${NVDAX}`);
-  await expect(page.getByRole("button", { name: /^Pair with/ })).toHaveAccessibleName(/^Pair with NVDAx\b/);
+  await expect(page.getByRole("radiogroup", { name: "Pair with" }).getByRole("radio", { name: /^NVDAx\b/ })).toBeChecked();
 });
 
 test("an asset that can't be launched against says why in place of the launch button, and an unknown mint is a 404", async ({ page }) => {

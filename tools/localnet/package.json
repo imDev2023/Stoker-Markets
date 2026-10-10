@@ -8,6 +8,7 @@
   },
   "scripts": {
     "start": "tsx src/cli.ts",
+    "snapshot": "tsx src/snapshot.ts",
     "typecheck": "tsc -p .",
     "refresh-fixtures": "./refresh-fixtures.sh"
   },

@@ -4,7 +4,7 @@ import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import type { Page } from "@playwright/test";
 import { PreparedAirdrop, PreparedLaunch } from "@launchpad/contract";
 import { allowAirdrops, coinBalance, drain, expect, fund, fundQuote, launchViaApi, listLaunches, sol, test } from "./fixtures";
-import { acceptDisclaimer, connectWallet, fillForm, fillOptions, formAlert, notConfirmed, review } from "./launchPage";
+import { acceptDisclaimer, chooseQuote, connectWallet, fillForm, fillOptions, formAlert, notConfirmed, review } from "./launchPage";
 import { connectTestWallet } from "./wallet";
 
 const airdropCard = (page: Page) => page.getByRole("region", { name: "Airdrop" });
@@ -99,9 +99,7 @@ test("a First Buy in USDC is quoted, reviewed and paid in USDC", async ({ page, 
   await page.goto("/launch");
   await connectWallet(page);
   await fillForm(page, { name: "Dollar First", symbol: "DFST" });
-  await page.getByRole("button", { name: /^Pair with/ }).click();
-  await page.getByRole("combobox", { name: "Search Quote Assets" }).fill("USDC");
-  await page.getByRole("listbox", { name: "Quote Assets" }).getByRole("option").filter({ hasText: "USDC" }).click();
+  await chooseQuote(page, "USDC");
 
   // USDC has 6 decimals, so a seventh is refused; the amount field and its quote are in USDC.
   await fillOptions(page, { firstBuy: "20.0000001" });

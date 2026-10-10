@@ -31,6 +31,7 @@ export function toQuoteAsset(cfg: Config, r: Row): QuoteAsset {
     launchable: reason === null,
     reason,
     referralShare: referralShare(cfg, r.maxShareFeeRate),
+    liquidityUsd: r.liquidityUsd,
     labels: r.labels ?? null,
   };
 }
@@ -42,10 +43,14 @@ export function referralShare(cfg: Config, maxShareFeeRate: number) {
   return { allowed: bps > 0, bps };
 }
 
-/** SOL first, then what can be launched against, each alphabetically by ticker. */
+/**
+ * SOL first, then what can be launched against, then the rest; within each, the deepest market first (an asset the
+ * token list doesn't know last), and alphabetically by ticker among equals. With hundreds of Quote Assets, the first
+ * cards a Creator sees are the ones most coins are paired with.
+ */
 export function byPickerOrder(a: QuoteAsset, b: QuoteAsset) {
   const rank = (q: QuoteAsset) => (q.mint === WSOL ? 0 : q.launchable ? 1 : 2);
-  return rank(a) - rank(b) || ticker(a).localeCompare(ticker(b), "en", { sensitivity: "base" });
+  return rank(a) - rank(b) || (b.liquidityUsd ?? -1) - (a.liquidityUsd ?? -1) || ticker(a).localeCompare(ticker(b), "en", { sensitivity: "base" });
 }
 
 export type LaunchQuote = {

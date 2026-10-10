@@ -1,17 +1,28 @@
+/*
+ * The launch page: the form as one surface card in named sections on the left, and a launch summary that stays in
+ * view on the right with the coin's preview, the terms it launches on and the action. Fields sit on the page's ground
+ * inside the card, so the card reads as one object and the fields as its openings.
+ */
 .page {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-  gap: clamp(24px, 5vw, 56px);
+  grid-template-columns: minmax(0, 1fr) 368px;
+  gap: clamp(20px, 3vw, 32px);
   align-items: start;
-  padding-top: clamp(28px, 5vw, 56px);
+  padding-top: clamp(24px, 4vw, 44px);
   padding-bottom: 80px;
 }
 
-.form {
+.main {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 22px;
   min-width: 0;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .title {
@@ -24,45 +35,165 @@
   line-height: 1.05;
 }
 
-.fields {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
+.lede {
   margin: 0;
-  padding: 0;
-  border: 0;
-  min-width: 0;
+  max-width: 60ch;
+  font-size: 1rem;
+  color: var(--ink-2);
+  text-wrap: pretty;
 }
 
-.fields:disabled {
+.card {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.card:disabled {
   opacity: 0.6;
 }
 
-.imageRow {
+.block {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 18px;
+  padding: 24px 28px 26px;
+  border-top: 1px solid var(--line);
+  min-width: 0;
 }
 
+.block:first-child {
+  border-top: 0;
+}
+
+/* The title and its hint on the left; a tool (the chooser's search) on the right, dropping under them on a phone. */
+.blockHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 24px;
+}
+
+.blockTitles {
+  display: flex;
+  flex: 1 1 320px;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.blockHead h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 700;
+  font-size: 1.0625rem;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+/* The section's number: small, mono, in the margin's colour, so the five read as one walk down the form. */
+.index {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+
+.blockHead em,
+.field em {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 0.875rem;
+  color: var(--ink-3);
+}
+
+.blockHead p {
+  margin: 0;
+  max-width: 64ch;
+  font-size: 0.875rem;
+  color: var(--ink-3);
+  text-wrap: pretty;
+}
+
+/* The image beside the name and ticker: one row, the way the coin's page shows them. */
+.coinRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.coinFields {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+}
+
+.coinFields .hint {
+  grid-column: 1 / -1;
+}
+
+/* The image well: a square the size of the coin page's mark, sunken into the card, that fills with the image once chosen. */
 .drop {
   flex: none;
   display: grid;
   place-items: center;
-  width: 104px;
-  height: 104px;
-  border: 1.5px dashed var(--ink-3);
-  border-radius: 18px;
-  background: var(--surface);
+  width: 112px;
+  height: 112px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--sunken);
   color: var(--ink-2);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   overflow: hidden;
-  transition: border-color 120ms ease;
+  transition: border-color 120ms ease, background-color 120ms ease;
 }
 
-.drop:focus-within {
-  border-color: var(--accent);
+.dropEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* A plus drawn from two bars, in the hint's colour until the well is hovered. */
+.dropPlus {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  color: var(--ink-3);
+  transition: color 120ms ease;
+}
+
+.dropPlus::before,
+.dropPlus::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+}
+
+.dropPlus::after {
+  transform: translate(-50%, -50%) rotate(90deg);
 }
 
 /* Hovers only with a real pointer, so a tap on a phone doesn't leave one behind. */
@@ -70,9 +201,13 @@
   .drop:hover {
     border-color: var(--accent);
   }
+  .drop:hover .dropPlus {
+    color: var(--accent);
+  }
 }
 
 .drop:focus-within {
+  border-color: var(--accent);
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -85,25 +220,14 @@
 
 .hint {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: var(--ink-3);
 }
 
-.pairRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-  gap: 14px;
-}
-
-/* A website address runs longer than a handle, so it gets the full row and the two socials share the next. */
 .links {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.links > :first-child {
-  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .field {
@@ -119,20 +243,14 @@
   font-weight: 600;
 }
 
-.field em {
-  font-style: normal;
-  font-weight: 400;
-  color: var(--ink-3);
-}
-
 .field input,
 .field textarea {
   width: 100%;
   padding: 11px 13px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--surface);
-  transition: border-color 120ms ease;
+  background: var(--bg);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
 .field textarea {
@@ -172,55 +290,16 @@
   color: var(--ink-3);
 }
 
-.terms {
-  display: grid;
-  gap: 10px;
-  margin: 0;
-  padding: 18px;
-  border-radius: var(--radius);
-  background: var(--plate);
-}
-
-.terms > div {
-  display: grid;
-  grid-template-columns: 8.5em minmax(0, 1fr);
-  gap: 12px;
-  font-size: 0.9375rem;
-}
-
-.terms dt {
-  color: var(--accent-strong);
-  font-weight: 600;
-}
-
-.terms dd {
-  margin: 0;
-}
-
-.termsNote {
-  display: block;
-  margin-top: 2px;
-  font-size: 0.8125rem;
-  color: var(--ink-2);
-}
-
-.disclaimer {
-  margin: 0;
-  color: var(--ink-2);
-  font-size: 0.8125rem;
-  line-height: 1.5;
-}
-
 .labels {
-  padding: 14px 18px;
+  padding: 12px 16px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
 }
 
 .labels summary {
   cursor: pointer;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 
@@ -242,19 +321,183 @@
   font-weight: 600;
 }
 
+/* The summary column: short enough to sit whole under the header on a laptop, so nothing in it ever scrolls out of reach. */
+.summary {
+  position: sticky;
+  top: 88px;
+  min-width: 0;
+}
+
+.summaryCard {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  min-width: 0;
+}
+
+/* Named the way the status line names its facts: small mono capitals. */
+.eyebrow {
+  margin: 0 0 -6px;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.pricedIn {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.preview {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  min-width: 0;
+}
+
+.previewTitles {
+  flex: 1;
+  min-width: 0;
+}
+
+.preview img,
+.previewImage {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  object-fit: cover;
+  background: var(--sunken);
+}
+
+.previewName {
+  margin: 6px 0 0;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.facts {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  border-top: 1px solid var(--line);
+}
+
+.facts > div {
+  display: grid;
+  grid-template-columns: 7.5em minmax(0, 1fr);
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.875rem;
+}
+
+.facts dt {
+  color: var(--ink-3);
+}
+
+.facts dd {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 0;
+  min-width: 0;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.factNote {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.factLink {
+  color: var(--accent-strong);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+/* The creator's figure is the one live thing on the card. */
+.heat {
+  color: var(--brand);
+}
+
+.termsNote {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.trust {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+.trust li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.trust li::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--up);
+  transform: translateY(-1px);
+}
+
+/* The action follows the card: the review, the button or the connect card, and the one-line disclaimer under it. */
+.action {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.disclaimer {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
 .error {
   margin: 0;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border-radius: var(--radius-sm);
   background: var(--down-bg);
   color: var(--down);
+  font-size: 0.875rem;
   font-weight: 500;
 }
 
 .primary,
 .secondary {
-  height: 48px;
-  padding: 0 24px;
+  height: 46px;
+  padding: 0 22px;
   border-radius: 999px;
   font-weight: 600;
   cursor: pointer;
@@ -335,85 +578,27 @@
   font-size: 0.9375rem;
 }
 
-.preview {
-  position: sticky;
-  top: 88px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 0;
-}
-
-.previewLabel {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--ink-3);
-}
-
-.previewCard {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 22px;
-  border: 1px solid var(--line);
-  border-radius: calc(var(--radius) + 4px);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-  min-width: 0;
-}
-
-.previewTop {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  min-width: 0;
-}
-
-.previewTitles {
-  flex: 1;
-  min-width: 0;
-}
-
-.previewTop img,
-.previewImage {
-  flex: none;
-  width: 72px;
-  height: 72px;
-  border-radius: 16px;
-  object-fit: cover;
-  background: var(--plate);
-}
-
-.previewName {
-  margin: 8px 0 0;
-  color: var(--ink-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.previewDescription {
-  margin: 0;
-  color: var(--ink-2);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-@media (max-width: 900px) {
+@media (max-width: 960px) {
   .page {
     grid-template-columns: minmax(0, 1fr);
   }
-  .preview {
+  .summary {
     position: static;
   }
 }
 
-@media (max-width: 560px) {
-  .pairRow,
+@media (max-width: 640px) {
+  .block {
+    padding: 18px 16px 20px;
+  }
+  .coinRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .coinFields,
   .links {
     grid-template-columns: minmax(0, 1fr);
   }
-  .terms > div {
+  .facts > div {
     grid-template-columns: minmax(0, 1fr);
     gap: 2px;
   }

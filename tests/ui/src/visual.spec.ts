@@ -7,6 +7,7 @@ import {
   SEED_HOLDER, test,
 } from "./fixtures";
 import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, REWARD_QUOTE } from "./seedData";
+import { chooseQuote } from "./launchPage";
 import { connectTestWallet, installTestWallet, openWalletMenu, TEST_WALLET_NAME } from "./wallet";
 
 // The chart's time axis and candle spacing follow the clock, so its canvases are masked like any other time. Only what is
@@ -282,14 +283,6 @@ test("launch form, step by step", async ({ page, wallet }) => {
   await page.getByLabel("Website").fill("https://example.com/tracer");
   await snap(page, "launch-filled.png");
 
-  await page.getByRole("button", { name: /^Pair with/ }).click();
-  await expect(page.getByRole("listbox", { name: "Quote Assets" }).getByRole("option")).toHaveCount(6);
-  // A mask paints an element's whole box even where its scrolling list clips it, so the masks of rows scrolled out of
-  // the list would land on the form around it. The list's balances are hidden for this shot instead of masked.
-  await page.addStyleTag({ content: '[role="listbox"] .mono { visibility: hidden !important; }' });
-  await snap(page, "launch-quote-picker.png");
-  await page.keyboard.press("Escape");
-
   await page.getByRole("button", { name: "Review launch" }).click();
   const dialog = page.getByRole("dialog", { name: "Before you launch" });
   await expect(dialog).toBeVisible();
@@ -308,9 +301,7 @@ test("launch review against a tokenized stock", async ({ page, wallet }) => {
   await page.locator('input[type="file"]').setInputFiles({ name: "coin.png", mimeType: "image/png", buffer: COIN_PNG });
   await page.getByLabel("Name").fill("Chipmaker Pair");
   await page.getByLabel("Ticker").fill("CHPX");
-  await page.getByRole("button", { name: /^Pair with/ }).click();
-  await page.getByRole("combobox", { name: "Search Quote Assets" }).fill("NVDAx");
-  await page.getByRole("option", { name: /NVDAx/ }).click();
+  await chooseQuote(page, "NVDAx");
   await snap(page, "launch-filled-stock.png");
 
   await page.getByRole("button", { name: "Review launch" }).click();

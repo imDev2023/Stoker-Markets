@@ -31,10 +31,11 @@ describe("mainnet configuration", () => {
         GRADUATION_TARGET_LAMPORTS: h.platform.graduationTargetLamports,
         HELIUS_WEBHOOK_SECRET: WEBHOOK_SECRET,
         MINT_KEY_SECRET: "a-test-secret-that-is-at-least-32-characters",
-        // The real Turbo and gateway: wrangler.jsonc's defaults name the local stand-in, which mainnet refuses.
+        // The real Turbo, gateway and Jupiter: wrangler.jsonc's defaults name the local stand-ins, which mainnet refuses.
         TURBO_UPLOAD_URL: "https://upload.ardrive.io",
         TURBO_PAYMENT_URL: "https://payment.ardrive.io",
         ARWEAVE_GATEWAY_URL: "https://arweave.net",
+        JUPITER_API_URL: "",
         ...extra,
       },
     });
@@ -75,7 +76,7 @@ describe("mainnet configuration", () => {
     });
   }, 300_000);
 
-  it("refuses the settings that only work on the local chain: static prices, local route pools, a plain-http RPC, the Turbo stand-in", async () => {
+  it("refuses the settings that only work on the local chain: static prices, local route pools, a plain-http RPC, the Turbo and Jupiter stand-ins", async () => {
     const bads: Record<string, string>[] = [
       { PRICE_SOURCE: "static" },
       { SOL_ROUTE_SOURCE: "raydium-cpmm" },
@@ -83,6 +84,8 @@ describe("mainnet configuration", () => {
       // The gateway is in every coin's on-chain URI for good; a stand-in or a plain-http one must never reach mainnet.
       { ARWEAVE_GATEWAY_URL: "http://127.0.0.1:8797" },
       { TURBO_UPLOAD_URL: "https://127.0.0.1:8797" },
+      // The Jupiter stand-in prices from a snapshot: on mainnet every Graduation Target would be set at the snapshot's day.
+      { JUPITER_API_URL: "http://127.0.0.1:8798" },
     ];
     for (const bad of bads) await onMainnet("https://api.example.com", bad, async (url) => expect(await health(url), JSON.stringify(bad)).toBe(500));
     // Without a SOL route at all is fine: SOL payment is simply not offered.

@@ -12,7 +12,7 @@
     "localnet": "pnpm --filter @launchpad/localnet start",
     "test:backend": "pnpm --filter @launchpad/tests-backend test",
     "test:ui": "pnpm --filter @launchpad/tests-ui test",
-    "arweave-stand-in": "pnpm --filter @launchpad/stack arweave-stand-in"
+    "stand-ins": "pnpm --filter @launchpad/stack stand-ins"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

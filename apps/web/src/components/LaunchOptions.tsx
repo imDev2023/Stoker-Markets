@@ -118,9 +118,10 @@ export type LaunchOptionsState = ReturnType<typeof useLaunchOptions>;
 
 /**
  * The first choice on the launch form: a standard coin, or a Reward Launch with its Payout Asset (the coin itself or the
- * Quote Asset), and then its Reward Tax. All of it is fixed at launch.
+ * Quote Asset), and then its Reward Tax. All of it is fixed at launch. `labelId` names the section's heading, which
+ * the form renders above.
  */
-export function LaunchType({ options: o, coin }: { options: LaunchOptionsState; coin: string }) {
+export function LaunchType({ options: o, coin, labelId }: { options: LaunchOptionsState; coin: string; labelId: string }) {
   const coinLabel = coin || "the coin";
   const quoteLabel = o.quote?.symbol ?? null;
   const reward = o.rewardTax !== null;
@@ -131,8 +132,7 @@ export function LaunchType({ options: o, coin }: { options: LaunchOptionsState; 
 
   return (
     <div className={styles.type}>
-      <span id="launch-type-label" className={styles.typeLabel}>Launch type</span>
-      <div className={styles.types} role="radiogroup" aria-labelledby="launch-type-label">
+      <div className={styles.types} role="radiogroup" aria-labelledby={labelId}>
         <label className={styles.typeCard}>
           <input type="radio" name="launch-type" checked={!reward} onChange={() => o.setRewardTax(null)} />
           <span className={styles.typeName}>Standard coin</span>{" "}

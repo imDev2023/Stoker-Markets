@@ -85,6 +85,11 @@ export const QuoteAsset = QuoteRef.extend({
    */
   referralShare: z.object({ allowed: z.boolean(), bps: z.number().int() }),
   /**
+   * The asset's liquidity in US dollars across the markets the token list routes through, as of the last refresh; null
+   * when the list doesn't know the mint. How prominent an asset is: the launch form's chooser lists the deepest first.
+   */
+  liquidityUsd: z.number().nullable(),
+  /**
    * Its Quote Risk Labels, cautions first: null until the Quote Registry refresh has checked the mint, an empty list
    * when there is nothing to flag. Never a reason to refuse a launch or a trade.
    */

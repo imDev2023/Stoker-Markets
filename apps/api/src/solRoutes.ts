@@ -85,11 +85,11 @@ export function cpmmSolRoutes(connection: Connection, cpmm: PublicKey, pools: Ma
  * `tools/mainnet/jupiter-route.ts` simulates its swap on mainnet, and the local tests exercise `cpmmSolRoutes` through
  * the same code.
  */
-export function jupiterSolRoutes(apiKey: string | undefined): SolRoutes {
+export function jupiterSolRoutes(apiKey: string | undefined, apiUrl?: string): SolRoutes {
   return {
     source: "jupiter",
     async swapIn(quote, lamports, taker) {
-      const j = await jupiterSwapIn({ apiKey }, quote.mint, lamports, taker);
+      const j = await jupiterSwapIn({ apiKey, apiUrl }, quote.mint, lamports, taker);
       return j && { source: "jupiter", via: j.via, solIn: j.solIn, expectedOut: j.expectedOut, minOut: j.minOut, fee: null, feeBps: null, swap: () => Promise.resolve(j.swap) };
     },
   };
