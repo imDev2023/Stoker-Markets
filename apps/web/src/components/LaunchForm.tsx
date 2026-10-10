@@ -4,6 +4,7 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import {
   LAMPORTS_PER_SOL, SendTransactionError, TransactionExpiredBlockheightExceededError, VersionedTransaction,
 } from "@solana/web3.js";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { LAUNCH_IMAGE_MAX_BYTES, type PlatformInfo, type PreparedLaunch, type QuoteAsset } from "@launchpad/contract";
@@ -35,7 +36,8 @@ type Step =
 
 const DESCRIPTION_MAX = 1000;
 
-export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quotes: QuoteAsset[] }) {
+/** `initialQuote` is the asset an asset's page sent the Creator here for; the first launchable one otherwise. */
+export function LaunchForm({ platform, quotes, initialQuote = null }: { platform: PlatformInfo; quotes: QuoteAsset[]; initialQuote?: string | null }) {
   const router = useRouter();
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
@@ -47,7 +49,9 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
   const [x, setX] = useState("");
   const [telegram, setTelegram] = useState("");
   const [image, setImage] = useState<File | null>(null);
-  const [quoteMint, setQuoteMint] = useState(() => quotes.find((q) => q.launchable)?.mint ?? null);
+  const [quoteMint, setQuoteMint] = useState(
+    () => quotes.find((q) => q.mint === initialQuote && q.launchable)?.mint ?? quotes.find((q) => q.launchable)?.mint ?? null,
+  );
   const [step, setStep] = useState<Step>({ kind: "editing" });
   const [error, setError] = useState<string | null>(null);
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
@@ -242,12 +246,14 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
           </div>
         </dl>
 
-        {quote && quote.labels !== null && quote.labels.length > 0 && (
+        {quote && (
           <details className={styles.labels}>
-            <summary>
-              {quoteTicker(quote)} has {quote.labels.length} {quote.labels.length === 1 ? "risk label" : "risk labels"}. They inform; none stops a launch.
-            </summary>
+            <summary>Further information on {quoteTicker(quote)}</summary>
+            <p className={styles.labelsNote}>
+              What {quoteTicker(quote)}&apos;s mint and the token list say about it. Each fact informs; none stops a launch.
+            </p>
             <QuoteLabelList quote={quote} />
+            <Link href={`/assets/${quote.mint}`} className={styles.labelsLink}>Everything about {quoteTicker(quote)}</Link>
           </details>
         )}
 

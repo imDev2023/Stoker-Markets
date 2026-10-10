@@ -19,11 +19,25 @@ test("the empty board shows every control", async ({ page }) => {
   await expect(page.getByRole("searchbox", { name: "Search coins" })).toBeVisible();
   await expect(page.getByRole("group", { name: "Sort coins" }).getByRole("button")).toHaveText(["Market cap", "Newest", "24h volume", "Near graduation"]);
   await expect(page.getByRole("group", { name: "Paired with" }).getByRole("button")).toHaveText([
-    "All", "xStocks", "PreStocks", "Tessera", "Backpack", "Currencies", "Leverage", "Collectibles", "Solana", "Custom",
+    "All", "xStocks", "PreStocks", "Tessera", "Backpack", "Solana", "Currencies", "Wrapped", "DeFi", "Real-world assets", "Leverage", "Collectibles", "Memes", "Community",
   ]);
   await expect(page.getByRole("button", { name: "Quote Asset: all" })).toBeVisible();
   await expectNoHorizontalOverflow(page);
   await expect(page).toHaveScreenshot("board-empty.png", { fullPage: true });
+});
+
+test("the assets page lists every Quote Asset before the first coin", async ({ page }) => {
+  await page.goto("/assets");
+  const assets = page.getByRole("region", { name: "Assets" });
+  // The search and every kind, with its count, are there before the first coin: the registry has its assets from the start.
+  await expect(assets.getByRole("searchbox", { name: "Search assets" })).toBeVisible();
+  await expect(assets.getByRole("group", { name: "Kind" }).getByRole("button")).toHaveText([
+    "All 6", "xStocks 1", "PreStocks 0", "Tessera 0", "Backpack 0", "Solana 1", "Currencies 1", "Wrapped 0", "DeFi 1", "Real-world assets 0",
+    "Leverage 0", "Collectibles 0", "Memes 1", "Community 1",
+  ]);
+  await expect(assets.getByRole("listitem")).toHaveCount(6);
+  await expectNoHorizontalOverflow(page);
+  await expect(page).toHaveScreenshot("assets-empty.png", { fullPage: true });
 });
 
 test("the revenue page before anything is collected", async ({ page }) => {

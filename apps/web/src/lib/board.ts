@@ -16,10 +16,17 @@ export const CATEGORY_LABELS: Record<QuoteCategory, string> = {
   sol: "Solana",
   stablecoin: "Currencies",
   tokenized_stock: "Stocks",
+  rwa: "Real-world assets",
+  wrapped: "Wrapped",
+  defi: "DeFi",
   leveraged: "Leverage",
   collectible: "Collectibles",
-  community: "Custom",
+  meme: "Memes",
+  community: "Community",
 };
+
+/** The categories in the order the site lists them: the money first, then what it buys, the long tail last. */
+export const CATEGORY_ORDER: QuoteCategory[] = ["sol", "stablecoin", "tokenized_stock", "wrapped", "defi", "rwa", "leveraged", "collectible", "meme", "community"];
 
 /** In the order the chips show them. */
 export const ISSUER_LABELS: Record<QuoteIssuer, string> = {
@@ -37,7 +44,7 @@ export type PairedChip = { label: string; category: QuoteCategory | null; issuer
 export const PAIRED_CHIPS: PairedChip[] = [
   { label: "All", category: null, issuer: null },
   ...(Object.keys(ISSUER_LABELS) as QuoteIssuer[]).map((issuer) => ({ label: ISSUER_LABELS[issuer], category: null, issuer })),
-  ...(["stablecoin", "leveraged", "collectible", "sol", "community"] as const).map((category) => ({ label: CATEGORY_LABELS[category], category, issuer: null })),
+  ...CATEGORY_ORDER.filter((c) => c !== "tokenized_stock").map((category) => ({ label: CATEGORY_LABELS[category], category, issuer: null })),
 ];
 
 /** Whether a Quote Asset is within the chosen chip: by issuer when one is chosen, else by category, else always. */

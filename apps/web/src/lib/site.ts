@@ -19,6 +19,7 @@ export const LAUNCH_LINK = { href: "/launch", label: "Stoke a coin" } as const;
 /** The header's plain links, in order; the footer repeats them under "Explore", the launch link among them. */
 export const NAV_LINKS = [
   { href: "/coins", label: "Coins" },
+  { href: "/assets", label: "Assets" },
   { href: "/rewards", label: "Rewards" },
   { href: "/burns", label: "Burns" },
   { href: "/revenue", label: "Revenue" },

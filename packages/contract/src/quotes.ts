@@ -10,11 +10,14 @@ export const GraduationTarget = z.object({ raw: rawAmount, lamports: rawAmount }
 export type GraduationTarget = z.infer<typeof GraduationTarget>;
 
 /**
- * The kinds of Quote Asset the board filters by. A stablecoin, a leveraged token (Hylo's 3x tokens) and a collectible are
- * each one of a known list of mints; a tokenized stock is a mint whose freeze authority or permanent delegate belongs to a
- * known stock issuer (xStocks, PreStocks, Tessera, Backpack); everything else is a community token.
+ * The kinds of Quote Asset the board filters by and the assets page groups by (ADR 0010). SOL; a stablecoin; a tokenized
+ * stock (a mint whose freeze authority or permanent delegate belongs to a known stock issuer: xStocks, PreStocks, Tessera,
+ * Backpack); a real-world asset that is not a stock (gold, silver); a coin of another chain wrapped on Solana (BTC, ETH,
+ * BNB); a DeFi protocol's token, staked SOL included; one of Hylo's leveraged tokens; a collectible; a meme coin; and
+ * everything else, a community token. Read from the mint's address and authorities and from Jupiter's token tags, never
+ * from a name.
  */
-export const QUOTE_CATEGORIES = ["sol", "stablecoin", "tokenized_stock", "leveraged", "collectible", "community"] as const;
+export const QUOTE_CATEGORIES = ["sol", "stablecoin", "tokenized_stock", "rwa", "wrapped", "defi", "leveraged", "collectible", "meme", "community"] as const;
 export const QuoteCategory = z.enum(QUOTE_CATEGORIES);
 export type QuoteCategory = z.infer<typeof QuoteCategory>;
 

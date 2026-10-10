@@ -1,7 +1,7 @@
 import type { BurnsPage, QuoteAsset, Revenue } from "@launchpad/contract";
 import { ISSUER_LABELS } from "./board";
 
-/** What the hero's card calls an asset, one or two words beside its ticker. */
+/** What the hero's card and the board call an asset, one or two words beside its ticker. */
 export function quoteKind(q: Pick<QuoteAsset, "category" | "issuer">) {
   switch (q.category) {
     case "sol":
@@ -10,12 +10,40 @@ export function quoteKind(q: Pick<QuoteAsset, "category" | "issuer">) {
       return "stablecoin";
     case "tokenized_stock":
       return q.issuer ? ISSUER_LABELS[q.issuer] : "tokenized stock";
+    case "rwa":
+      return "real-world asset";
+    case "wrapped":
+      return "wrapped";
+    case "defi":
+      return "DeFi";
     case "leveraged":
       return "leveraged";
     case "collectible":
       return "collectible";
+    case "meme":
+      return "meme";
     case "community":
       return "community";
+  }
+}
+
+/** The same kinds in the plural, for a sentence that lists them. */
+function kindPlural(q: Pick<QuoteAsset, "category" | "issuer">) {
+  switch (q.category) {
+    case "rwa":
+      return "real-world assets";
+    case "wrapped":
+      return "wrapped assets";
+    case "defi":
+      return "DeFi tokens";
+    case "collectible":
+      return "collectibles";
+    case "meme":
+      return "memes";
+    case "community":
+      return "community tokens";
+    default:
+      return quoteKind(q);
   }
 }
 
@@ -48,7 +76,7 @@ export function otherKinds(launchable: QuoteAsset[], featured: QuoteAsset[]): st
   const kinds: string[] = [];
   for (const q of launchable) {
     const kind = quoteKind(q);
-    const word = q.category === "collectible" ? "collectibles" : q.category === "community" ? "community tokens" : kind;
+    const word = kindPlural(q);
     if (!named.has(kind) && !kinds.includes(word)) kinds.push(word);
   }
   return kinds;

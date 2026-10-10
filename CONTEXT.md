@@ -27,9 +27,14 @@ The existing token a Launch is priced and traded against, such as SOL, a communi
 _Avoid_: Pair token, base, collateral
 
 **Quote Risk Label**:
-A fact shown next to a Quote Asset that a Creator or trader should know before using it, such as an unverified issuer, an issuer's power to freeze or move tokens, a transfer fee, or no reliable price.
-Labels inform rather than block.
+A fact about a Quote Asset that a Creator or trader should know before using it, such as an unverified issuer, an issuer's power to freeze or move tokens, a transfer fee, or no reliable price.
+Labels inform rather than block, and are shown as further information (the asset's page, the launch form, a coin's page), never beside the asset's name (owner, 2026-10-10).
 _Avoid_: Warning, verification status, badge
+
+**Asset category**:
+What kind of asset a Quote Asset is, one of ten (SOL, stablecoin, tokenized stock, real-world asset, wrapped, DeFi, leveraged, collectible, meme, community), read from its mint's address and authorities and from Jupiter's token tags, never from its name (ADR 0010).
+The board filters by it and the assets page groups by it; a tokenized stock also carries its issuer.
+_Avoid_: Type, sector, class
 
 **First Buy**:
 The Creator's own buy of their coin, made inside the launch transaction right after the curve is created, so no other trade can come before it.

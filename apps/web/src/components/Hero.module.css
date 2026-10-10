@@ -130,6 +130,14 @@
   text-wrap: pretty;
 }
 
+.all {
+  align-self: flex-start;
+  margin-top: 12px;
+  color: var(--accent-strong);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
 @media (max-width: 860px) {
   .hero {
     grid-template-columns: minmax(0, 1fr);

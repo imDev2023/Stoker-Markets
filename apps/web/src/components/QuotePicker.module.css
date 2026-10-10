@@ -187,6 +187,14 @@
   font-size: 0.875rem;
 }
 
+/* What kind of asset it is, after the name: a fact, never a verdict. */
+.kind {
+  flex: none;
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+
 .reason {
   font-size: 0.8125rem;
   line-height: 1.4;

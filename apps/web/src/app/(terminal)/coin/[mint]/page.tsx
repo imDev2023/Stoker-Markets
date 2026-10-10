@@ -154,6 +154,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
               and none stops a trade.
             </p>
             <QuoteLabelList quote={quoteAsset} />
+            <Link href={`/assets/${quoteAsset.mint}`} className={styles.factLink}>Everything about {quote}</Link>
           </section>
         )}
         {rewards && <div className={styles.wide}><RewardsCard rewards={rewards} symbol={launch.symbol} platform={platform} /></div>}

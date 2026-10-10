@@ -138,11 +138,14 @@
   margin-bottom: 16px;
 }
 
+/* Fourteen chips (ADR 0010) wrap onto two lines on a laptop; they take the width the Quote Asset filter leaves, so it stays on the row. */
 .paired {
   display: flex;
+  flex: 1 1 0;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px;
+  min-width: 0;
 }
 
 .pairedLabel {
