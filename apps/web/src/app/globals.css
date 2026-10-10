@@ -1,9 +1,9 @@
 /*
-  Colour is one set of role tokens, one block per direction and mode (docs/design/principles.md, 2026-10-10): A Cobalt
-  is the recommended direction, B Violet and C Teal ride along for the owner's elimination. `data-theme` on <html> picks
-  the block (src/lib/theme.ts), and light and dark follow the visitor. The heat ramp, the direction colours and the
-  caution are the same in every direction, so the mark and the live data are identical across them; what changes is
-  the neutral's tint and the signature accent.
+  Colour is one set of role tokens, one block per direction and mode (docs/design/principles.md, 2026-10-10): C Teal is
+  the owner's pick (2026-10-10, seen on the real site in all three), A Cobalt and B Violet ride along as alternates.
+  `data-theme` on <html> picks the block (src/lib/theme.ts), and light and dark follow the visitor. The heat ramp, the
+  direction colours and the caution are the same in every direction, so the mark and the live data are identical across
+  them; what changes is the neutral's tint and the signature accent.
 
   Surfaces, a ladder by tone before any border (principle 2):
     sunken     a well: an input, a ticker bar, the footer       bg         the page
@@ -23,7 +23,6 @@
 */
 
 /* A Cobalt: a blue-shifted near-black and an electric cobalt for action, the ember's complement. */
-:root,
 :root[data-theme="cobalt"] {
   --bg: #f6f8fc;
   --surface: #ffffff;
@@ -54,7 +53,6 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root,
   :root[data-theme="cobalt"] {
     --bg: #070a12;
     --surface: #0e1320;
@@ -144,7 +142,8 @@
   }
 }
 
-/* C Teal: the terminal canon, a near-black canvas with a mint-teal accent and dark text on its fill. */
+/* C Teal, the pick: the terminal canon, a near-black canvas with a mint-teal accent and dark text on its fill. */
+:root,
 :root[data-theme="teal"] {
   --bg: #f5f8f9;
   --surface: #ffffff;
@@ -175,6 +174,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
+  :root,
   :root[data-theme="teal"] {
     --bg: #05090e;
     --surface: #0b1219;
