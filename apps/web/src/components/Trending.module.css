@@ -1,0 +1,226 @@
+.section {
+  padding-bottom: clamp(48px, 6vw, 80px);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chips a {
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: border-color 120ms ease;
+}
+
+.chips a:hover {
+  border-color: var(--ink-3);
+}
+
+.chips a:first-child {
+  border-color: var(--button);
+  background: var(--button);
+  color: var(--on-button);
+}
+
+.all {
+  margin-left: auto;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.all:hover {
+  color: var(--accent);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  text-decoration: none;
+  min-width: 0;
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.card:hover {
+  border-color: var(--ink-3);
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.image {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: var(--sunken);
+}
+
+.titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.name {
+  font-size: 0.875rem;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pair {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--sunken);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+/* A stock pairing is the wedge, so its chip takes a trace of heat. */
+.stock {
+  background: var(--plate);
+  color: var(--accent-strong);
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.price {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 1.0625rem;
+}
+
+.meta {
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+.track {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--sunken);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: 999px;
+  background: var(--heat);
+}
+
+.tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--caution-bg);
+  color: var(--caution);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: clamp(36px, 6vw, 64px) 20px;
+  border: 1px dashed var(--line);
+  border-radius: 18px;
+  text-align: center;
+}
+
+.empty p {
+  margin: 0;
+  font-size: 1.125rem;
+  color: var(--ink-2);
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  background: var(--button);
+  color: var(--on-button);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cta:hover {
+  background: var(--button-hover);
+}
+
+@media (max-width: 860px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .all {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

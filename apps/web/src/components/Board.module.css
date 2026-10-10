@@ -1,6 +1,7 @@
+/* The board in the terminal look: one row a coin, the controls in a line above, everything numeric in mono. */
 .section {
-  padding-top: 8px;
-  padding-bottom: 72px;
+  padding-top: 18px;
+  padding-bottom: 64px;
 }
 
 .head {
@@ -8,15 +9,15 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .title {
   margin: 0;
   font-family: var(--font-display);
-  font-stretch: 125%;
-  font-weight: 800;
-  font-size: 1.375rem;
+  font-stretch: 112%;
+  font-weight: 700;
+  font-size: 1.125rem;
   letter-spacing: -0.01em;
 }
 
@@ -24,7 +25,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.8125rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
   color: var(--ink-3);
 }
 
@@ -33,7 +35,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--verified);
+  background: var(--up);
   animation: pulse 2.4s ease-in-out infinite;
 }
 
@@ -47,29 +49,29 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px 24px;
-  padding-bottom: 16px;
-  margin-bottom: 16px;
+  gap: 10px 24px;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
   border-bottom: 1px solid var(--line);
 }
 
 .search {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex: 0 1 440px;
+  gap: 8px;
+  flex: 0 1 400px;
   min-width: 0;
-  height: 44px;
-  padding: 0 14px;
+  height: 36px;
+  padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--paper);
+  background: var(--surface);
   color: var(--ink-3);
   transition: border-color 120ms ease;
 }
 
 .search:focus-within {
-  border-color: var(--cobalt);
+  border-color: var(--accent);
 }
 
 .search input {
@@ -80,7 +82,8 @@
   background: transparent;
   color: var(--ink);
   font: inherit;
-  font-size: 0.9375rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
   outline: none;
 }
 
@@ -100,27 +103,29 @@
 
 .sortLabel {
   margin-right: 8px;
-  font-size: 0.875rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
   color: var(--ink-3);
 }
 
 .sorts button {
-  height: 36px;
-  padding: 0 14px;
+  height: 30px;
+  padding: 0 11px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--ink-2);
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
   transition: background-color 120ms ease, color 120ms ease;
 }
 
 .sorts button[aria-pressed="true"] {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--button);
+  color: var(--on-button);
 }
 
 /* Row two: what the coins are paired with, then a Quote Asset within that. */
@@ -129,41 +134,43 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
 .paired {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .pairedLabel {
   margin-right: 6px;
-  font-size: 0.875rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
   color: var(--ink-3);
 }
 
 .paired button {
-  height: 34px;
-  padding: 0 13px;
+  height: 28px;
+  padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--ink-2);
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
   transition: border-color 120ms ease, color 120ms ease, background-color 120ms ease;
 }
 
 .paired button[aria-pressed="true"] {
-  border-color: var(--cobalt);
-  background: var(--plate);
-  color: var(--cobalt-strong);
+  border-color: var(--button);
+  background: var(--button);
+  color: var(--on-button);
 }
 
 /* Hover only where there is a real pointer, and never on the chosen option, so a tap leaves nothing behind. */
@@ -177,19 +184,21 @@
   }
 }
 
-.grid[aria-busy="true"],
+.rows[aria-busy="true"],
 .empty[aria-busy="true"] {
   opacity: 0.55;
   transition: opacity 120ms ease 150ms;
 }
 
 .reset {
-  height: 40px;
-  padding: 0 18px;
+  height: 34px;
+  padding: 0 14px;
   border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--paper);
-  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -199,55 +208,79 @@
   }
 }
 
-.grid {
+/* The column plan, shared by the header line and every row (CoinRow.module.css reads it). */
+.table {
+  --cols: minmax(220px, 2.4fr) 80px minmax(96px, 1.1fr) minmax(96px, 1.1fr) 140px minmax(96px, 1.1fr) 76px 96px;
+  border-top: 1px solid var(--line);
+}
+
+.columns {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
+  grid-template-columns: var(--cols);
+  gap: 0 14px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* Price, market cap and 24h volume sit right-aligned under their names. */
+.columns span:nth-child(3),
+.columns span:nth-child(4),
+.columns span:nth-child(6),
+.columns span:nth-child(7) {
+  text-align: right;
+}
+
+.rows {
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.grid > li {
-  display: flex;
-  min-width: 0;
-}
-
-.grid > li > * {
-  flex: 1;
 }
 
 .empty {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 16px;
-  padding: 40px;
+  gap: 14px;
+  padding: 32px;
   border: 1px dashed var(--line);
   border-radius: var(--radius);
-  background: var(--paper);
+  background: var(--surface);
 }
 
 .empty p {
   margin: 0;
-  font-size: 1.0625rem;
+  font-size: 1rem;
   color: var(--ink-2);
 }
 
 .cta {
   display: inline-flex;
   align-items: center;
-  height: 44px;
-  padding: 0 20px;
+  height: 40px;
+  padding: 0 18px;
   border-radius: 999px;
-  background: var(--cobalt);
-  color: var(--on-cobalt);
+  background: var(--button);
+  color: var(--on-button);
   font-weight: 600;
   text-decoration: none;
 }
 
 .cta:hover {
-  background: var(--cobalt-strong);
+  background: var(--button-hover);
+}
+
+/* Narrow windows: the column names go, each row labels its own figures (CoinRow.module.css). */
+@media (max-width: 760px) {
+  .columns {
+    display: none;
+  }
 }
 
 /* One column of controls: the search takes the full width, the sorts sit two by two, the chips wrap. */
@@ -266,8 +299,8 @@
     gap: 3px;
     padding: 3px;
     border: 1px solid var(--line);
-    border-radius: 22px;
-    background: var(--paper);
+    border-radius: var(--radius);
+    background: var(--surface);
   }
   .sortLabel {
     display: none;
@@ -277,15 +310,9 @@
     margin: 0 0 2px;
   }
   .paired button {
-    padding: 0 10px;
-  }
-}
-
-@media (max-width: 480px) {
-  .grid {
-    grid-template-columns: minmax(0, 1fr);
+    padding: 0 9px;
   }
   .empty {
-    padding: 24px;
+    padding: 20px;
   }
 }

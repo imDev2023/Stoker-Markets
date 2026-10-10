@@ -1,0 +1,31 @@
+.line {
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 22px;
+  margin: 0;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+
+.facts div {
+  display: flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.facts dt {
+  margin: 0;
+}
+
+.facts dd {
+  margin: 0;
+  color: var(--ink);
+}

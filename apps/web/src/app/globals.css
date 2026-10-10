@@ -1,54 +1,202 @@
+/*
+  Colour is one set of role tokens, one block per scheme and mode (owner, 2026-10-09): E Graphite is the primary, and
+  K Oxblood and M Midnight and Ice ride along as alternates. `data-theme` on <html> picks the block (src/lib/theme.ts),
+  and light and dark follow the visitor. The values are the colour candidate page's, so the mark, the share images and
+  the pixel baselines agree with the site to the digit.
+
+  Roles: bg (the page), surface (a card), sunken (a well, an input, a table head), line; ink, ink-2, ink-3 (text, all AA
+  on surface); accent (a link, the active section; in Graphite the ember, only where something is live), accent-strong,
+  on-accent, plate (a tinted plate behind the accent); button and on-button (the primary button: ink in Graphite, never a
+  coloured fill); brand (the mark's glow as text); up and down with their chip grounds; caution; heat-low to heat-high
+  (the heat ramp: a curve filling towards Graduation, a burn, the hero's one emphasised phrase).
+*/
+:root,
+:root[data-theme="graphite"] {
+  --bg: #f4f3f0;
+  --surface: #ffffff;
+  --sunken: #eae8e4;
+  --line: #dcdad5;
+  --ink: #161514;
+  --ink-2: #555350;
+  --ink-3: #6f6c67;
+  --accent: #c23c0a;
+  --accent-strong: #9c2f06;
+  --on-accent: #ffffff;
+  --plate: #f9e6de;
+  --button: #161514;
+  --on-button: #f4f3f0;
+  --brand: #c23c0a;
+  --up: #0b7c54;
+  --up-bg: #e3f6ed;
+  --down: #c62d35;
+  --down-bg: #fce8ea;
+  --caution: #9a5d05;
+  --caution-bg: #fef5df;
+  --heat-low: #ffb020;
+  --heat-high: #e8431a;
+  --shadow: 0 1px 2px rgb(22 21 20 / 6%), 0 8px 24px -12px rgb(22 21 20 / 18%);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root,
+  :root[data-theme="graphite"] {
+    --bg: #141312;
+    --surface: #1c1b19;
+    --sunken: #0e0d0c;
+    --line: #2d2b28;
+    --ink: #f1efea;
+    --ink-2: #b1aea7;
+    --ink-3: #8a8780;
+    --accent: #ff8d57;
+    --accent-strong: #ffa97a;
+    --on-accent: #141312;
+    --plate: #3a241a;
+    --button: #f1efea;
+    --on-button: #141312;
+    --brand: #ff8d57;
+    --up: #3ddc97;
+    --up-bg: #15352a;
+    --down: #ff5d6c;
+    --down-bg: #3e1a20;
+    --caution: #ffc94a;
+    --caution-bg: #3a2d12;
+    --heat-low: #ffb020;
+    --heat-high: #ff6a2a;
+    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 12px 28px -14px rgb(0 0 0 / 60%);
+    color-scheme: dark;
+  }
+}
+
+/* K Oxblood: embers gone dark, warm without a flame; the loss red is a coral so a loss and the brand never share a hue. */
+:root[data-theme="oxblood"] {
+  --bg: #f6f3f0;
+  --surface: #ffffff;
+  --sunken: #ede8e4;
+  --line: #e0d9d4;
+  --ink: #1a1416;
+  --ink-2: #574d50;
+  --ink-3: #71676a;
+  --accent: #7a1e2e;
+  --accent-strong: #5e1522;
+  --on-accent: #ffffff;
+  --plate: #f6e1e3;
+  --button: #7a1e2e;
+  --on-button: #ffffff;
+  --brand: #7a1e2e;
+  --up: #0b7c54;
+  --up-bg: #e3f6ed;
+  --down: #c4362c;
+  --down-bg: #fde6e3;
+  --caution: #9a5d05;
+  --caution-bg: #fef5df;
+  --heat-low: #e0a3ad;
+  --heat-high: #7a1e2e;
+  --shadow: 0 1px 2px rgb(26 20 22 / 6%), 0 8px 24px -12px rgb(26 20 22 / 18%);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="oxblood"] {
+    --bg: #110e10;
+    --surface: #1a1518;
+    --sunken: #0b090a;
+    --line: #2e2529;
+    --ink: #f3eeef;
+    --ink-2: #b4a9ad;
+    --ink-3: #8b7f84;
+    --accent: #c9485b;
+    --accent-strong: #e07a8a;
+    --on-accent: #ffffff;
+    --plate: #3a1a22;
+    --button: #c9485b;
+    --on-button: #ffffff;
+    --brand: #e07a8a;
+    --up: #3ddc97;
+    --up-bg: #15352a;
+    --down: #ff7a66;
+    --down-bg: #3e1f1a;
+    --caution: #ffc94a;
+    --caution-bg: #3a2d12;
+    --heat-low: #e07a8a;
+    --heat-high: #c9485b;
+    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 12px 28px -14px rgb(0 0 0 / 60%);
+    color-scheme: dark;
+  }
+}
+
+/* M Midnight and Ice: a navy that behaves like black, and the brightness is the white. */
+:root[data-theme="midnight"] {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --sunken: #e6ebf3;
+  --line: #d5dce8;
+  --ink: #0d1426;
+  --ink-2: #46506a;
+  --ink-3: #626c84;
+  --accent: #142a5c;
+  --accent-strong: #0e1f45;
+  --on-accent: #ffffff;
+  --plate: #dfe7f7;
+  --button: #142a5c;
+  --on-button: #ffffff;
+  --brand: #142a5c;
+  --up: #0b7c54;
+  --up-bg: #e3f6ed;
+  --down: #c62d35;
+  --down-bg: #fce8ea;
+  --caution: #9a5d05;
+  --caution-bg: #fef5df;
+  --heat-low: #9cc4ff;
+  --heat-high: #142a5c;
+  --shadow: 0 1px 2px rgb(13 20 38 / 6%), 0 8px 24px -12px rgb(13 20 38 / 18%);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="midnight"] {
+    --bg: #0a0e1a;
+    --surface: #121829;
+    --sunken: #06080f;
+    --line: #222a40;
+    --ink: #edf1fa;
+    --ink-2: #a7b0c6;
+    --ink-3: #7c869f;
+    --accent: #dbe9ff;
+    --accent-strong: #ffffff;
+    --on-accent: #0a0e1a;
+    --plate: #1b2a4a;
+    --button: #dbe9ff;
+    --on-button: #0a0e1a;
+    --brand: #dbe9ff;
+    --up: #3ddc97;
+    --up-bg: #15352a;
+    --down: #ff5d6c;
+    --down-bg: #3e1a20;
+    --caution: #ffc94a;
+    --caution-bg: #3a2d12;
+    --heat-low: #4c6fb3;
+    --heat-high: #dbe9ff;
+    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 12px 28px -14px rgb(0 0 0 / 60%);
+    color-scheme: dark;
+  }
+}
+
 :root {
-  --fog: #eef0f4;
-  --paper: #ffffff;
-  --ink: #121826;
-  --ink-2: #4a5468;
-  --ink-3: #7b8498;
-  --line: #d5dae3;
-  --cobalt: #2b45ff;
-  --cobalt-strong: #1b2fd1;
-  --on-cobalt: #ffffff;
-  --plate: #dfe3ff;
-  --verified: #0e7f59;
-  --verified-bg: #ddf3ea;
-  --danger: #c62d35;
-  --danger-bg: #fbe4e5;
-  --caution: #8a5a00;
-  --caution-bg: #fbeed3;
-  --shadow: 0 1px 2px rgb(18 24 38 / 6%), 0 8px 24px -12px rgb(18 24 38 / 18%);
+  /* The heat ramp as one stroke: a curve's fill, a burn's bar, the emphasised phrase. */
+  --heat: linear-gradient(90deg, var(--heat-low), var(--heat-high));
+  /* The primary button's hover: a step towards the page in either mode. */
+  --button-hover: color-mix(in srgb, var(--button), var(--bg) 14%);
 
   --font-display: var(--font-archivo), system-ui, sans-serif;
   --font-body: var(--font-public-sans), system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 
+  /* The landing's soft corners; the terminal's pages set their own, tighter ones. */
   --radius: 14px;
   --radius-sm: 10px;
   --gutter: clamp(16px, 4vw, 40px);
   --max: 1180px;
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --fog: #0e1220;
-    --paper: #161b2c;
-    --ink: #e8ebf3;
-    --ink-2: #a3abbe;
-    --ink-3: #7a8398;
-    --line: #283049;
-    --cobalt: #7086ff;
-    --cobalt-strong: #8fa0ff;
-    --on-cobalt: #0b0f1c;
-    --plate: #232a4c;
-    --verified: #3cc794;
-    --verified-bg: #13302a;
-    --danger: #ff6b72;
-    --danger-bg: #3a1a20;
-    --caution: #f0b64a;
-    --caution-bg: #3a2c12;
-    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 12px 28px -14px rgb(0 0 0 / 60%);
-    color-scheme: dark;
-  }
 }
 
 *,
@@ -69,7 +217,7 @@ body {
   flex-direction: column;
   min-height: 100dvh;
   margin: 0;
-  background: var(--fog);
+  background: var(--bg);
   color: var(--ink);
   font-family: var(--font-body);
   font-size: 1rem;
@@ -99,7 +247,7 @@ textarea {
 }
 
 :focus-visible {
-  outline: 2px solid var(--cobalt);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -127,6 +275,14 @@ textarea {
   max-width: var(--max);
   margin: 0 auto;
   padding: 0 var(--gutter);
+}
+
+/* The terminal (every page past the home): tight corners, a wider column, rows that fit sixty coins on a laptop screen. */
+.terminal {
+  --radius: 6px;
+  --radius-sm: 4px;
+  --max: 1320px;
+  --row: 34px;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -5,7 +5,7 @@
   padding: 20px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--paper);
+  background: var(--surface);
   min-width: 0;
 }
 
@@ -25,14 +25,14 @@
   margin: 0;
   padding: 10px 12px;
   border-radius: var(--radius-sm);
-  background: var(--fog);
+  background: var(--bg);
   font-size: 0.875rem;
   font-weight: 500;
 }
 
 .sold {
-  background: var(--danger-bg);
-  color: var(--danger);
+  background: var(--down-bg);
+  color: var(--down);
 }
 
 .list {
@@ -79,8 +79,8 @@
 
 @media (hover: hover) {
   .who a:hover {
-    color: var(--cobalt);
-    border-color: var(--cobalt);
+    color: var(--accent);
+    border-color: var(--accent);
   }
 }
 
@@ -92,7 +92,7 @@
   padding: 1px 8px;
   border-radius: 999px;
   background: var(--plate);
-  color: var(--cobalt-strong);
+  color: var(--accent-strong);
   font-size: 0.75rem;
   font-weight: 600;
 }

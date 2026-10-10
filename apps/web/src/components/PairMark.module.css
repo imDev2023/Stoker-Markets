@@ -20,7 +20,7 @@
 }
 
 .slash {
-  color: var(--cobalt);
+  color: var(--accent);
   font-weight: 700;
   font-stretch: 100%;
   transform: skewX(-8deg) scaleY(1.18);

@@ -7,7 +7,7 @@
   padding: 0 10px 0 14px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--paper);
+  background: var(--surface);
   color: var(--ink-3);
   font: inherit;
   cursor: pointer;
@@ -21,8 +21,8 @@
 
 .trigger:focus-visible {
   outline: none;
-  border-color: var(--cobalt);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cobalt) 22%, transparent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .word {
@@ -40,7 +40,7 @@
   padding: 4px 6px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: var(--fog);
+  background: var(--bg);
   color: var(--ink-3);
 }
 
@@ -65,7 +65,7 @@
   align-items: flex-start;
   justify-content: center;
   padding: 12vh 16px 16px;
-  background: color-mix(in srgb, var(--fog) 72%, transparent);
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
   backdrop-filter: blur(6px);
 }
 
@@ -76,7 +76,7 @@
   max-height: calc(100dvh - 12vh - 16px);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--paper);
+  background: var(--surface);
   box-shadow: var(--shadow);
   overflow: hidden;
 }

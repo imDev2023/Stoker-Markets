@@ -5,7 +5,7 @@
   padding: 20px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--paper);
+  background: var(--surface);
   min-width: 0;
 }
 
@@ -52,7 +52,7 @@
 .amount {
   font-weight: 500;
   text-align: right;
-  color: var(--verified);
+  color: var(--up);
   overflow-wrap: anywhere;
 }
 
@@ -74,8 +74,8 @@
 
 .origin a:hover,
 .tx:hover {
-  color: var(--cobalt);
-  border-color: var(--cobalt);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .tx {
@@ -95,8 +95,8 @@
   margin: 0;
   padding: 12px 14px;
   border-radius: var(--radius-sm);
-  background: var(--danger-bg);
-  color: var(--danger);
+  background: var(--down-bg);
+  color: var(--down);
   font-weight: 500;
   font-size: 0.9375rem;
 }
@@ -107,15 +107,15 @@
   padding: 0 18px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--paper);
+  background: var(--surface);
   font-weight: 600;
   font-size: 0.9375rem;
   cursor: pointer;
 }
 
 .more:hover:not(:disabled) {
-  border-color: var(--cobalt);
-  color: var(--cobalt);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .more:disabled {

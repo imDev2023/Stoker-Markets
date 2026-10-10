@@ -5,24 +5,29 @@ import { FeeChangeBanner } from "@/components/FeeChangeBanner";
 import { Providers } from "@/components/Providers";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { ThemeOverride } from "@/components/ThemeOverride";
 import { getPlatform, listAnnouncements } from "@/lib/api";
+import { THEME_GROUNDS, themeFrom } from "@/lib/theme";
 import "./globals.css";
 
 const archivo = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-archivo", display: "swap" });
 const publicSans = Public_Sans({ subsets: ["latin"], variable: "--font-public-sans", display: "swap" });
 const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-plex-mono", display: "swap" });
 
+/** The scheme this build is made with; `?theme=` on a page can show another (src/lib/theme.ts). */
+const theme = themeFrom(process.env.NEXT_PUBLIC_THEME);
+
 export const metadata: Metadata = {
   title: { default: "Stoker", template: "%s · Stoker" },
-  description: "Launch a coin on Solana, paired with any asset. Creators earn from every trade, on the curve and after graduation.",
+  description: "No one picks your pair. You do. Launch a coin on Solana priced in SOL, a stablecoin, a tokenized stock or any asset Raydium quotes; creators earn from every trade.",
   // The same file the PlatformConfig's `img` names on-chain (runbook, section 2), so it must stay at this address.
   icons: { icon: "/icon.png" },
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#eef0f4" },
-    { media: "(prefers-color-scheme: dark)", color: "#0e1220" },
+    { media: "(prefers-color-scheme: light)", color: THEME_GROUNDS[theme].light },
+    { media: "(prefers-color-scheme: dark)", color: THEME_GROUNDS[theme].dark },
   ],
 };
 
@@ -33,8 +38,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const [platform, announcements] = await Promise.all([getPlatform(), listAnnouncements().catch(() => null)]);
   const upcoming = announcements?.announcements.find((a) => a.appliedSignature === null && new Date(a.effectiveAt).getTime() > Date.now() - 24 * 3600_000) ?? null;
   return (
-    <html lang="en" className={`${archivo.variable} ${publicSans.variable} ${plexMono.variable}`}>
+    // `?theme=` may change `data-theme` after hydration (ThemeOverride), which is intended, not a mismatch.
+    <html lang="en" data-theme={theme} className={`${archivo.variable} ${publicSans.variable} ${plexMono.variable}`} suppressHydrationWarning>
       <body>
+        <ThemeOverride />
         <Providers rpcUrl={platform.rpcUrl}>
           <SiteHeader cluster={platform.cluster} />
           {upcoming && <FeeChangeBanner announcement={upcoming} platform={platform} />}

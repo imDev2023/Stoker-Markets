@@ -57,14 +57,14 @@
   padding: 4px 12px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--paper);
+  background: var(--surface);
   font-size: 0.875rem;
   font-weight: 500;
   text-decoration: none;
 }
 
 .links a:hover {
-  border-color: var(--cobalt);
+  border-color: var(--accent);
 }
 
 .description {
@@ -98,7 +98,7 @@
   padding: 20px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--paper);
+  background: var(--surface);
 }
 
 .facts dt,
@@ -123,8 +123,8 @@
 }
 
 .addresses a:hover {
-  color: var(--cobalt);
-  border-color: var(--cobalt);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .verified {
@@ -133,8 +133,8 @@
   gap: 4px;
   padding: 1px 8px;
   border-radius: 999px;
-  background: var(--verified-bg);
-  color: var(--verified);
+  background: var(--up-bg);
+  color: var(--up);
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -145,7 +145,7 @@
 
 .factLink {
   flex-basis: 100%;
-  color: var(--cobalt-strong);
+  color: var(--accent-strong);
   font-size: 0.875rem;
   font-weight: 600;
 }
@@ -157,7 +157,7 @@
   padding: 20px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--paper);
+  background: var(--surface);
 }
 
 .quoteLabelsTitle {

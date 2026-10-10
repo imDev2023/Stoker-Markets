@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FOOTER_GROUPS } from "@/lib/site";
+import { Mark } from "./Mark";
 import { SocialLinks } from "./SocialLinks";
 import styles from "./SiteFooter.module.css";
 
@@ -12,7 +13,7 @@ export function SiteFooter({ cluster }: { cluster: string }) {
       <div className={`shell ${styles.inner}`}>
         <div className={styles.brand}>
           <Link href="/" className={styles.wordmark}>
-            <img className={styles.mark} src="/icon.png" alt="" width="28" height="28" />
+            <Mark className={styles.mark} />
             Stoker
           </Link>
           <p className={styles.tagline}>Launch a coin on Solana, paired with any asset. Creators earn from every trade.</p>

@@ -104,7 +104,7 @@ test("a coin graduates from the curve to its Raydium pool and keeps trading on t
   await expect(history.nth(3)).toContainText("Buy");
 
   // The board shows it graduated too.
-  await page.goto("/");
+  await page.goto("/coins");
   const card = page.getByRole("link", { name: /Summit Push/ });
   await expect(card).toContainText("Graduated");
   const [launch] = (await listLaunches()).filter((l) => l.mint === mint);

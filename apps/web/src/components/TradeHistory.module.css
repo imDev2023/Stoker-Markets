@@ -5,7 +5,7 @@
   padding: 20px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--paper);
+  background: var(--surface);
   min-width: 0;
 }
 
@@ -71,8 +71,8 @@
 }
 
 .table a:hover {
-  color: var(--cobalt);
-  border-color: var(--cobalt);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .side {
@@ -90,11 +90,11 @@
 }
 
 .buy::before {
-  background: var(--verified);
+  background: var(--up);
 }
 
 .sell::before {
-  background: var(--danger);
+  background: var(--down);
 }
 
 .table .milestone td {
@@ -105,7 +105,7 @@
 }
 
 .table .milestone a {
-  color: var(--verified);
+  color: var(--up);
   border-bottom-color: transparent;
 }
 

@@ -1,7 +1,7 @@
 .footer {
   margin-top: 64px;
   border-top: 1px solid var(--line);
-  background: color-mix(in srgb, var(--paper) 55%, var(--fog));
+  background: color-mix(in srgb, var(--surface) 55%, var(--bg));
 }
 
 .inner {
@@ -98,7 +98,7 @@
 
 .cluster {
   font-family: var(--font-mono);
-  color: var(--cobalt-strong);
+  color: var(--accent-strong);
 }
 
 @media (max-width: 880px) {

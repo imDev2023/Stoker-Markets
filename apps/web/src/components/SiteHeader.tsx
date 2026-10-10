@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LAUNCH_LINK } from "@/lib/site";
+import { Mark } from "./Mark";
 import { NavLinks } from "./NavLinks";
 import { SearchPalette } from "./SearchPalette";
 import { SocialLinks } from "./SocialLinks";
@@ -12,8 +13,8 @@ export function SiteHeader({ cluster }: { cluster: string }) {
     <header className={styles.header}>
       <div className={styles.bar}>
         <Link href="/" className={styles.wordmark}>
-          {/* The same mark the PlatformConfig names on-chain; served from /icon.png (runbook, section 2). */}
-          <img className={styles.mark} src="/icon.png" alt="" width="28" height="28" />
+          {/* The same mark the PlatformConfig names on-chain, /icon.png (runbook, section 2), drawn inline. */}
+          <Mark className={styles.mark} />
           Stoker
           {cluster !== "mainnet" && <span className={styles.cluster}>{cluster}</span>}
         </Link>

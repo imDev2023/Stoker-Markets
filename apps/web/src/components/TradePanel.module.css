@@ -2,7 +2,7 @@
   padding: 20px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--paper);
+  background: var(--surface);
   min-width: 0;
 }
 
@@ -30,7 +30,7 @@
   gap: 3px;
   padding: 3px;
   border-radius: 999px;
-  background: var(--fog);
+  background: var(--bg);
 }
 
 .sides button {
@@ -52,17 +52,17 @@
 }
 
 .sides button[aria-pressed="true"] {
-  background: var(--paper);
+  background: var(--surface);
   color: var(--ink);
   box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgb(18 24 38 / 12%);
 }
 
 .sides .buy[aria-pressed="true"] {
-  color: var(--verified);
+  color: var(--up);
 }
 
 .sides .sell[aria-pressed="true"] {
-  color: var(--danger);
+  color: var(--down);
 }
 
 .fields {
@@ -108,7 +108,7 @@
   padding: 0 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--paper);
+  background: var(--surface);
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
@@ -119,12 +119,12 @@
 }
 
 .amount:focus-within {
-  border-color: var(--cobalt);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cobalt) 22%, transparent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .amount.invalid {
-  border-color: var(--danger);
+  border-color: var(--down);
 }
 
 .amount input {
@@ -167,7 +167,7 @@
 }
 
 .hintError {
-  color: var(--danger);
+  color: var(--down);
 }
 
 .presets {
@@ -182,7 +182,7 @@
   padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--paper);
+  background: var(--surface);
   color: var(--ink-2);
   font-size: 0.8125rem;
   font-weight: 600;
@@ -230,9 +230,9 @@
 }
 
 .option button[aria-pressed="true"] {
-  border-color: var(--cobalt);
+  border-color: var(--accent);
   background: var(--plate);
-  color: var(--cobalt-strong);
+  color: var(--accent-strong);
 }
 
 .quote {
@@ -241,7 +241,7 @@
   gap: 10px;
   padding: 14px 16px;
   border-radius: var(--radius-sm);
-  background: var(--fog);
+  background: var(--bg);
   font-size: 0.875rem;
 }
 
@@ -322,14 +322,14 @@
 }
 
 .quoteError {
-  color: var(--danger);
+  color: var(--down);
   font-weight: 500;
 }
 
 .completes {
   padding-top: 8px;
   border-top: 1px solid var(--line);
-  color: var(--cobalt-strong);
+  color: var(--accent-strong);
 }
 
 .error,
@@ -342,13 +342,13 @@
 }
 
 .error {
-  background: var(--danger-bg);
-  color: var(--danger);
+  background: var(--down-bg);
+  color: var(--down);
 }
 
 .done {
-  background: var(--verified-bg);
-  color: var(--verified);
+  background: var(--up-bg);
+  color: var(--up);
 }
 
 .done a {
@@ -368,13 +368,13 @@
 
 .primary {
   border: 0;
-  background: var(--cobalt);
-  color: var(--on-cobalt);
+  background: var(--button);
+  color: var(--on-button);
 }
 
 @media (hover: hover) {
   .primary:hover:not(:disabled) {
-    background: var(--cobalt-strong);
+    background: var(--button-hover);
   }
 }
 
@@ -390,7 +390,7 @@
 
 .secondary {
   border: 1px solid var(--line);
-  background: var(--paper);
+  background: var(--surface);
 }
 
 @media (hover: hover) {
@@ -404,7 +404,7 @@
   flex-direction: column;
   gap: 14px;
   padding: 16px;
-  border: 1px solid var(--cobalt);
+  border: 1px solid var(--accent);
   border-radius: var(--radius-sm);
 }
 

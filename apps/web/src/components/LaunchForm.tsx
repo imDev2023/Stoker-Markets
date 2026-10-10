@@ -165,7 +165,7 @@ export function LaunchForm({ platform, quotes }: { platform: PlatformInfo; quote
   return (
     <div className={`shell ${styles.page}`}>
       <form className={styles.form} onSubmit={onSubmit} aria-busy={busy}>
-        <h1 className={styles.title}>Launch a coin</h1>
+        <h1 className={styles.title}>Stoke a coin</h1>
 
         <fieldset className={styles.fields} disabled={busy}>
           <LaunchType options={options} coin={symbol} />

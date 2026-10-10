@@ -24,11 +24,11 @@
 
 .info {
   background: var(--plate);
-  color: var(--cobalt-strong);
+  color: var(--accent-strong);
 }
 
 .more {
-  background: var(--fog);
+  background: var(--bg);
   color: var(--ink-2);
 }
 

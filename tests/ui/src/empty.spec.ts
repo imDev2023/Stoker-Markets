@@ -1,8 +1,19 @@
 // A fresh platform: nothing launched yet. Runs before any test launches a coin.
 import { expect, expectNoHorizontalOverflow, test } from "./fixtures";
 
-test("the empty board invites the first launch", async ({ page }) => {
+test("the empty landing invites the first launch", async ({ page }) => {
   await page.goto("/");
+  await expect(page.getByRole("heading", { name: "No one picks your pair. You do." })).toBeVisible();
+  // The card beside the slogan and the figures are live even before the first coin: the registry has its assets.
+  await expect(page.getByRole("heading", { name: /^Priced in any of \d+ assets$/ })).toBeVisible();
+  await expect(page.getByText("assets to pair with")).toBeVisible();
+  await expect(page.getByText("No coins yet. The first one could be yours.")).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+  await expect(page).toHaveScreenshot("home-empty.png", { fullPage: true });
+});
+
+test("the empty board shows every control", async ({ page }) => {
+  await page.goto("/coins");
   await expect(page.getByText("No coins yet. The first one could be yours.")).toBeVisible();
   // The search, the sorts and every "Paired with" chip are there before the first coin, so a visitor sees what the board does.
   await expect(page.getByRole("searchbox", { name: "Search coins" })).toBeVisible();
@@ -11,7 +22,6 @@ test("the empty board invites the first launch", async ({ page }) => {
     "All", "xStocks", "PreStocks", "Tessera", "Backpack", "Currencies", "Leverage", "Collectibles", "Solana", "Custom",
   ]);
   await expect(page.getByRole("button", { name: "Quote Asset: all" })).toBeVisible();
-  await expect(page.getByText("Your coin")).toBeVisible();
   await expectNoHorizontalOverflow(page);
   await expect(page).toHaveScreenshot("board-empty.png", { fullPage: true });
 });
