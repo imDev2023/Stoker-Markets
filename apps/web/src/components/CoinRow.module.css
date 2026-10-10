@@ -120,8 +120,10 @@
 
 /* Narrow windows: two lines a coin, the figures labelled by their column name, so nothing scrolls sideways. */
 @media (max-width: 760px) {
+  /* The price column is the widest: a curve price has up to nine leading zeros and four digits (0.0000000005925), which
+     an even third of a phone's width can't hold. */
   .row {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 0.9fr);
     grid-template-areas:
       "coin coin paired"
       "price mcap curve"
@@ -132,7 +134,8 @@
   }
   .coin { grid-area: coin; }
   .paired { grid-area: paired; text-align: right; }
-  .price { grid-area: price; text-align: left; }
+  .price { grid-area: price; text-align: left; overflow-wrap: anywhere; }
+  .track { width: 48px; }
   .mcap { grid-area: mcap; text-align: left; }
   .vol { grid-area: vol; text-align: left; }
   .curve { grid-area: curve; }

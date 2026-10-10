@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import type { LedgerPage, PlatformInfo, Revenue, RevenueAsset } from "@launchpad/contract";
 import { creatorEarnings } from "@/lib/fees";
-import { explorerUrl, formatUnits, formatUtcDay, quoteTicker, shortAddress, SOL_DECIMALS } from "@/lib/format";
+import { explorerUrl, formatAmount, formatUnits, formatUtcDay, quoteTicker, shortAddress, SOL_DECIMALS } from "@/lib/format";
 import { CopyButton } from "./CopyButton";
 import { LedgerList } from "./LedgerList";
 import { Ring } from "./Mark";
@@ -11,6 +11,8 @@ import styles from "./RevenueDashboard.module.css";
 /** Totals show up to six decimals; the Ledger shows every one. */
 const TOTAL_DECIMALS = 6;
 const total = (raw: string, asset: RevenueAsset) => formatUnits(raw, asset.decimals, Math.min(asset.decimals, TOTAL_DECIMALS));
+/** The tile's one big figure is read at a glance, so it is rounded short (404,386.56, 0.0876); the streams under it carry the exact totals. */
+const headline = (raw: string, asset: RevenueAsset) => formatAmount(raw, asset.decimals);
 
 /**
  * The public revenue page: what the platform has collected in each asset, all time and per day, where it went (to
@@ -53,7 +55,7 @@ export function RevenueDashboard({ revenue, ledger, platform }: { revenue: Reven
                       {t.asset.name && <span className={styles.name}>{t.asset.name}</span>}
                     </p>
                     <p className={styles.amount}>
-                      <span className="mono">{total(t.total, t.asset)}</span>
+                      <span className="mono">{headline(t.total, t.asset)}</span>
                       <span className={styles.amountLabel}>collected, all time</span>
                     </p>
                     <dl className={styles.streams}>

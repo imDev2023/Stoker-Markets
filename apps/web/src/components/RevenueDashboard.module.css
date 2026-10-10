@@ -53,6 +53,8 @@
   gap: 12px;
   padding: 24px;
   min-width: 0;
+  /* A grid cell, so the tile has a width of its own for the figure to size against. */
+  container-type: inline-size;
 }
 
 .cardTitle {
@@ -140,8 +142,10 @@
   font-size: 0.8125rem;
 }
 
+/* Sized to the tile as well as the window: three tiles share the column at desktop width, and a figure in the hundreds of
+   thousands (a coin a Fee Key pays in) must still sit on one line. */
 .amount :global(.mono) {
-  font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.25rem);
+  font-size: min(clamp(1.75rem, 1.4rem + 1.2vw, 2.25rem), 12cqi);
   font-weight: 500;
   line-height: 1;
   letter-spacing: -0.02em;
