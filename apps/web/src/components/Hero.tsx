@@ -45,6 +45,7 @@ export function Hero({ quotes, platform }: { quotes: QuoteAsset[]; platform: Pla
         <p className={styles.more}>
           {others.length > 0 ? `and every other asset Raydium quotes: ${others.join(", ")}.` : "and every other asset Raydium quotes."}
         </p>
+        <Link href="/assets" className={styles.all}>All {count} assets, grouped</Link>
       </aside>
     </section>
   );

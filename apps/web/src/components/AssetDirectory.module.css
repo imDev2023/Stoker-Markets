@@ -1,0 +1,344 @@
+/* The assets page in the terminal look: the kinds as chips above, one row an asset, grouped by kind, figures in mono. */
+.section {
+  padding-top: 18px;
+  padding-bottom: 64px;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 6px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 700;
+  font-size: 1.125rem;
+  letter-spacing: -0.01em;
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.lead {
+  margin: 0 0 16px;
+  max-width: 60ch;
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+/* The search on its own line, the chips wrapping under it: there are enough kinds to need two lines on a laptop. */
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(100%, 440px);
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink-3);
+  transition: border-color 120ms ease;
+}
+
+.search:focus-within {
+  border-color: var(--accent);
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  outline: none;
+}
+
+.search input::placeholder {
+  color: var(--ink-3);
+}
+
+.search input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.chips button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease, background-color 120ms ease;
+}
+
+.chips button[aria-pressed="true"] {
+  border-color: var(--button);
+  background: var(--button);
+  color: var(--on-button);
+}
+
+.chipCount {
+  font-size: 0.6875rem;
+  color: var(--ink-3);
+}
+
+.chips button[aria-pressed="true"] .chipCount {
+  color: var(--on-button);
+  opacity: 0.7;
+}
+
+@media (hover: hover) {
+  .chips button:not([aria-pressed="true"]):hover {
+    border-color: var(--ink-3);
+    color: var(--ink);
+  }
+}
+
+/* The column plan, shared by the header line and every row. */
+.table {
+  --cols: minmax(220px, 2.2fr) minmax(130px, 1.1fr) minmax(90px, 0.9fr) minmax(150px, 1.3fr) 64px 110px;
+  border-top: 1px solid var(--line);
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: var(--cols);
+  gap: 0 14px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.columns span:nth-child(3),
+.columns span:nth-child(4),
+.columns span:nth-child(5) {
+  text-align: right;
+}
+
+.group {
+  border-bottom: 1px solid var(--line);
+}
+
+.groupHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  padding: 18px 10px 8px;
+}
+
+.groupTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  letter-spacing: -0.01em;
+}
+
+.groupCount {
+  margin-left: 4px;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+
+.groupNote {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: var(--cols);
+  align-items: center;
+  gap: 0 14px;
+  min-height: var(--row);
+  padding: 0 10px;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 80ms ease;
+}
+
+.rows li:first-child .row {
+  border-top: 0;
+}
+
+.row:hover {
+  background: var(--surface);
+}
+
+/* The ticker and the name share a line; a long name wraps under the ticker rather than being cut. */
+.asset {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-width: 0;
+}
+
+.ticker {
+  font-weight: 600;
+}
+
+.name {
+  flex: 1 1 120px;
+  min-width: 0;
+  color: var(--ink-3);
+  white-space: normal;
+}
+
+.kind {
+  color: var(--ink-2);
+  white-space: normal;
+}
+
+.num {
+  text-align: right;
+}
+
+.status {
+  text-align: right;
+  font-size: 0.75rem;
+}
+
+.open {
+  color: var(--up);
+}
+
+.closed {
+  color: var(--ink-3);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 32px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.empty p {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--ink-2);
+}
+
+.reset {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .reset:hover {
+    border-color: var(--ink-3);
+  }
+}
+
+/* Narrow windows: the column names go, each row labels its own figures over three lines, so nothing scrolls sideways. */
+@media (max-width: 860px) {
+  .columns {
+    display: none;
+  }
+  .row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "asset asset"
+      "kind status"
+      "price coins"
+      "target target";
+    gap: 4px 12px;
+    padding: 10px;
+    white-space: normal;
+  }
+  .asset { grid-area: asset; }
+  .kind { grid-area: kind; }
+  .status { grid-area: status; }
+  .price { grid-area: price; text-align: left; }
+  .coins { grid-area: coins; }
+  .target { grid-area: target; text-align: left; }
+  .num::before {
+    content: attr(data-label) " ";
+    color: var(--ink-3);
+  }
+}
+
+@media (max-width: 640px) {
+  .head {
+    flex-direction: column;
+    gap: 2px;
+  }
+  .search {
+    width: 100%;
+  }
+  .empty {
+    padding: 20px;
+  }
+}

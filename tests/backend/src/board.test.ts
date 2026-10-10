@@ -91,14 +91,16 @@ async function chainPrice(pool: string) {
 const mints = (l: LaunchList) => l.launches.map((x) => x.mint);
 
 describe("Quote Asset categories", () => {
-  it("puts every local Quote Asset in its category, by mint address or issuer authority", async () => {
+  it("puts every local Quote Asset in its category, by mint address, issuer authority or the token list's tags", async () => {
     const byMint = new Map((await listQuotes()).map((q) => [q.mint, q.category]));
     expect(byMint.get(WSOL_MINT.toBase58())).toBe("sol");
     expect(byMint.get(LOCAL_QUOTES.USDC.toBase58())).toBe("stablecoin");
     // NVDAx's freeze authority and permanent delegate are Backed's, the xStocks issuer.
     expect(byMint.get(LOCAL_QUOTES.NVDAx.toBase58())).toBe("tokenized_stock");
-    expect(byMint.get(LOCAL_QUOTES.JTO.toBase58())).toBe("community");
-    expect(byMint.get(LOCAL_QUOTES.BULLWHALE.toBase58())).toBe("community");
+    // The token list tags JTO `defi` and BULLWHALE `meme` (ADR 0010); TAXQ is listed with no tag and no authority of note.
+    expect(byMint.get(LOCAL_QUOTES.JTO.toBase58())).toBe("defi");
+    expect(byMint.get(LOCAL_QUOTES.BULLWHALE.toBase58())).toBe("meme");
+    expect(byMint.get(LOCAL_QUOTES.TAXQ.toBase58())).toBe("community");
   });
 });
 
@@ -268,7 +270,7 @@ describe("sorting and filtering the board", () => {
   });
 
   it("refuses a query it doesn't understand instead of ignoring it", async () => {
-    for (const q of ["sort=hot", "category=memes", "status=dead", "limit=0", "limit=101", "offset=-1", "quote=not-a-mint"]) {
+    for (const q of ["sort=hot", "category=stonks", "status=dead", "limit=0", "limit=101", "offset=-1", "quote=not-a-mint"]) {
       const res = await fetch(`${env().apiUrl}/v1/launches?${q}`);
       expect(res.status, q).toBe(400);
     }

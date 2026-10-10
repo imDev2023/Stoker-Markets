@@ -3,8 +3,8 @@
 import type { Page } from "@playwright/test";
 import { LedgerPage, Revenue } from "@launchpad/contract";
 import {
-  allowAirdrops, COIN_PNG, drain, expect, expectNoHorizontalOverflow, expectNoTruncatedText, fixedKeypair, giveCoins, listLaunches, SEED_CREATOR, SEED_HOLDER,
-  test,
+  allowAirdrops, COIN_PNG, drain, expect, expectNoHorizontalOverflow, expectNoTruncatedText, fixedKeypair, giveCoins, listLaunches, QUOTES, SEED_CREATOR,
+  SEED_HOLDER, test,
 } from "./fixtures";
 import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, REWARD_QUOTE } from "./seedData";
 import { connectTestWallet, installTestWallet, openWalletMenu, TEST_WALLET_NAME } from "./wallet";
@@ -84,6 +84,16 @@ test("board sorted by market cap, stablecoin pairs only", async ({ page }) => {
   await expect(page.getByRole("list", { name: "Coins" }).getByRole("listitem").first()).toContainText("USDC");
   await expect(page.locator("ul li img").first()).toHaveJSProperty("complete", true);
   await snap(page, "board-filtered.png");
+});
+
+test("assets page", async ({ page }) => {
+  await page.goto("/assets");
+  await snap(page, "assets.png");
+});
+
+test("asset page of a tokenized stock, with the coins priced in it", async ({ page }) => {
+  await page.goto(`/assets/${QUOTES.NVDAx.toBase58()}`);
+  await snap(page, "asset.png");
 });
 
 test("board Quote Asset filter, open", async ({ page }) => {

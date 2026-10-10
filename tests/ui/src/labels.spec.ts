@@ -1,36 +1,34 @@
-// Quote Risk Labels in the web app (#11): chips in the Quote Asset picker, the full list on the launch form, and a section
-// on the coin page of every Launch paired with something other than SOL. Labels inform; none stops a launch or a trade.
+// Quote Risk Labels in the web app (#11): never beside an asset's name (owner, 2026-10-10), only as further information:
+// the launch form's details, a section on the coin page of every Launch paired with something other than SOL, and the
+// asset's own page (assets.spec.ts). Labels inform; none stops a launch or a trade.
 import type { Page } from "@playwright/test";
-import { expect, fundedKeypair, launchViaApi, test } from "./fixtures";
+import { expect, fundedKeypair, launchViaApi, QUOTES, test } from "./fixtures";
 import { connectWallet } from "./launchPage";
 
 const picker = (page: Page) => page.getByRole("button", { name: /^Pair with/ });
 const options = (page: Page) => page.getByRole("listbox", { name: "Quote Assets" }).getByRole("option");
 const search = (page: Page) => page.getByRole("combobox", { name: "Search Quote Assets" });
-const chips = (page: Page, ticker: string) => options(page).filter({ hasText: ticker }).getByLabel("Quote Risk Labels");
+const option = (page: Page, ticker: string) => options(page).filter({ has: page.getByText(ticker, { exact: true }) });
 
-test("the picker shows each Quote Asset's labels, and the launch form lists them without stopping a launch", async ({ page, wallet }) => {
+test("the picker names each Quote Asset's kind and never a label; the form's further information lists them without stopping a launch", async ({ page, wallet }) => {
   await page.goto("/launch");
   await picker(page).click();
   await expect(options(page)).toHaveCount(6);
 
-  // A tokenized stock carries its issuer's controls; three fit the row and the rest are counted, all of them in the tooltip.
-  const stock = chips(page, "NVDAx");
-  await expect(stock).toHaveText("Can freeze walletsIssuer can move tokensCan pause transfers+3");
-  await expect(stock).toHaveAttribute("title", /Can freeze wallets · Issuer can move tokens · Can pause transfers · Can add a transfer hook · Can freeze new wallets by default · Scaled balances/);
-  // A stablecoin's issuer can freeze; a plain SPL token with no authorities and on the verified list has nothing to flag.
-  await expect(chips(page, "USDC")).toHaveText("Can freeze wallets");
-  await expect(chips(page, "JTO")).toHaveCount(0);
-  await expect(chips(page, "SOL")).toHaveCount(0);
-  // An unpriced pump.fun coin: not verified, no liquidity known; the taxed quote: its fee, and thin liquidity.
-  await expect(chips(page, "BULLWHALE")).toHaveText("Not on the verified listUnknown liquidity");
-  await expect(chips(page, "TAXQ")).toHaveText("Not on the verified listLow liquidity1% transfer fee");
+  // No warning sits under an asset's name: each option says what kind of asset it is (ADR 0010), a fact and not a verdict.
+  await expect(page.getByLabel("Quote Risk Labels")).toHaveCount(0);
+  await expect(page.getByText("Can freeze wallets")).toHaveCount(0);
+  await expect(option(page, "NVDAx")).toContainText("xStocks");
+  await expect(option(page, "USDC")).toContainText("stablecoin");
+  await expect(option(page, "JTO")).toContainText("DeFi");
+  await expect(option(page, "BULLWHALE")).toContainText("meme");
+  await expect(option(page, "TAXQ")).toContainText("community");
 
-  // Choosing a labelled asset is like choosing any other, and the form then lists every label with its source.
+  // Choosing a labelled asset is like choosing any other, and the form's further information lists every label with its source.
   await search(page).fill("nvdax");
   await options(page).click();
   await expect(picker(page)).toHaveAccessibleName(/^Pair with NVDAx\b/);
-  const details = page.locator("details").filter({ hasText: "NVDAx has 6 risk labels. They inform; none stops a launch." });
+  const details = page.locator("details").filter({ hasText: "Further information on NVDAx" });
   await expect(details).toBeVisible();
   await details.locator("summary").click();
   const list = page.getByRole("list", { name: "NVDAx risk labels" });
@@ -39,6 +37,7 @@ test("the picker shows each Quote Asset's labels, and the launch form lists them
   await expect(list.getByRole("listitem").first()).toContainText("The issuer (JDq1…xJNs) can freeze any wallet's NVDAx");
   await expect(list.getByRole("listitem").first()).toContainText("Read from the mint on-chain");
   await expect(list.getByRole("listitem").last()).toContainText("Scaled balances");
+  await expect(details.getByRole("link", { name: "Everything about NVDAx" })).toHaveAttribute("href", `/assets/${QUOTES.NVDAx.toBase58()}`);
 
   await connectWallet(page);
   await expect(page.getByRole("button", { name: "Review launch" })).toBeEnabled();
@@ -59,6 +58,7 @@ test("a coin page shows what is known about its Quote Asset, and a SOL-paired co
   await expect(labels.nth(2)).toContainText("1% transfer fee");
   await expect(labels.nth(2)).toContainText("The issuer withholds 1% of every transfer of TAXQ");
   await expect(labels.nth(2)).toContainText("Read from the mint on-chain");
+  await expect(section.getByRole("link", { name: "Everything about TAXQ" })).toHaveAttribute("href", `/assets/${QUOTES.TAXQ.toBase58()}`);
 
   const plain = await launchViaApi(creator, { name: "Plain Pair", symbol: "PLN" });
   await page.goto(`/coin/${plain}`);

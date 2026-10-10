@@ -49,8 +49,11 @@ export function graduationTargetRaw(lamports: bigint, decimals: number, quoteUsd
   return (numerator * 2n + denominator) / (2n * denominator);
 }
 
-/** What a token list says about a mint: whether it is on the list's verified set, and the market liquidity it tracks, in USD. */
-export type TokenListing = { verified: boolean; liquidityUsd: number | null };
+/**
+ * What a token list says about a mint: whether it is on the list's verified set, the market liquidity it tracks, in USD,
+ * and its tags (Jupiter's `meme`, `defi`, `stocks`, `lst`, `major`...), which help place a Quote Asset in its category (ADR 0010).
+ */
+export type TokenListing = { verified: boolean; liquidityUsd: number | null; tags: string[] };
 
 /** Where Quote Asset prices, logos and token-list facts (Quote Risk Labels, #11) come from. */
 export interface QuoteMarket {
@@ -66,7 +69,7 @@ export interface QuoteMarket {
 
 /**
  * A fixed table of USD prices by mint (JSON), for chains with no market: the local chain and devnet. The token list is
- * a fixed table too (`{ "<mint>": { "verified": true, "liquidityUsd": 5000000 } }`).
+ * a fixed table too (`{ "<mint>": { "verified": true, "liquidityUsd": 5000000, "tags": ["defi"] } }`).
  */
 export function staticMarket(pricesJson: string, tokenListJson = "{}"): QuoteMarket {
   const table = new Map<string, Decimal>();
@@ -76,10 +79,13 @@ export function staticMarket(pricesJson: string, tokenListJson = "{}"): QuoteMar
     table.set(mint, d);
   }
   const listings = new Map<string, TokenListing>();
-  for (const [mint, entry] of Object.entries(JSON.parse(tokenListJson || "{}") as Record<string, { verified?: boolean; liquidityUsd?: number | null }>)) {
+  type Entry = { verified?: boolean; liquidityUsd?: number | null; tags?: string[] };
+  for (const [mint, entry] of Object.entries(JSON.parse(tokenListJson || "{}") as Record<string, Entry>)) {
     if (entry.liquidityUsd != null && !(Number.isFinite(entry.liquidityUsd) && entry.liquidityUsd >= 0))
       throw new Error(`QUOTE_TOKEN_LIST: ${mint} has an invalid liquidityUsd ${String(entry.liquidityUsd)}`);
-    listings.set(mint, { verified: entry.verified === true, liquidityUsd: entry.liquidityUsd ?? null });
+    if (entry.tags !== undefined && !(Array.isArray(entry.tags) && entry.tags.every((t) => typeof t === "string")))
+      throw new Error(`QUOTE_TOKEN_LIST: ${mint} has tags that are not a list of strings`);
+    listings.set(mint, { verified: entry.verified === true, liquidityUsd: entry.liquidityUsd ?? null, tags: entry.tags ?? [] });
   }
   return {
     usdPrices: async (mints) => new Map(mints.flatMap((m) => (table.has(m) ? [[m, table.get(m)!] as const] : []))),
@@ -92,12 +98,13 @@ export function staticMarket(pricesJson: string, tokenListJson = "{}"): QuoteMar
 const JUPITER_PRICE_IDS_MAX = 50;
 const JUPITER_TOKEN_IDS_MAX = 100;
 
-type JupiterToken = { id: string; icon?: string; isVerified?: boolean; liquidity?: number | null };
+type JupiterToken = { id: string; icon?: string; isVerified?: boolean; liquidity?: number | null; tags?: string[] | null };
 
 /**
  * Jupiter's Price API v3, which leaves out tokens it can't price reliably, and its Tokens API v2 for logos and for what
- * its list says about a mint: `isVerified` (Jupiter's verified set) and `liquidity` (USD across the markets it routes).
- * Uses the keyed host when an API key is configured, the free one otherwise.
+ * its list says about a mint: `isVerified` (Jupiter's verified set), `liquidity` (USD across the markets it routes) and
+ * `tags` (its categories: `meme`, `defi`, `stocks`, `lst`, `major`, `stable`...). Uses the keyed host when an API key is
+ * configured, the free one otherwise.
  */
 export function jupiterMarket(apiKey: string | undefined): QuoteMarket {
   const host = apiKey ? "https://api.jup.ag" : "https://lite-api.jup.ag";
@@ -130,7 +137,11 @@ export function jupiterMarket(apiKey: string | undefined): QuoteMarket {
     async listings(mints) {
       const out = new Map<string, TokenListing>();
       for (const t of await tokens(mints))
-        out.set(t.id, { verified: t.isVerified === true, liquidityUsd: typeof t.liquidity === "number" && Number.isFinite(t.liquidity) ? t.liquidity : null });
+        out.set(t.id, {
+          verified: t.isVerified === true,
+          liquidityUsd: typeof t.liquidity === "number" && Number.isFinite(t.liquidity) ? t.liquidity : null,
+          tags: Array.isArray(t.tags) ? t.tags.filter((tag): tag is string => typeof tag === "string") : [],
+        });
       return out;
     },
     listName: "Jupiter's token list",

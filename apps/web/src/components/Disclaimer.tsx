@@ -38,6 +38,10 @@ export function Disclaimer({
         Coins launched here are created by their creators, not by us. Their prices can fall to zero. Nothing on this
         site is investment advice.
       </p>
+      <p>
+        Each coin is priced in an asset its creator chose. Some of those assets are issued by companies that can freeze
+        or move them, and some trade thinly; what is known about each one is on its page under Assets.
+      </p>
       <label className={styles.check}>
         <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
         <span>I&apos;m not in an excluded country, and I understand the risks.</span>

@@ -2,31 +2,14 @@
 
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { QuoteAsset } from "@launchpad/contract";
+import { searchQuotes } from "@/lib/assets";
 import { formatAmount, quoteTicker } from "@/lib/format";
-import { QuoteLabelChips } from "./QuoteLabels";
+import { quoteKind } from "@/lib/landing";
 import { QuoteLogo } from "./QuoteLogo";
 import styles from "./QuotePicker.module.css";
 
 /** Enough rows to scan; with hundreds of Quote Assets, searching is the way to the rest. */
 const RESULT_LIMIT = 50;
-
-/** Filters by ticker, name or mint address, closest ticker matches first, otherwise keeping the API's order. */
-function search(quotes: QuoteAsset[], query: string) {
-  const q = query.trim().toLowerCase();
-  if (!q) return quotes;
-  const rank = (a: QuoteAsset) => {
-    const ticker = (a.symbol ?? "").toLowerCase();
-    if (ticker === q || a.mint.toLowerCase() === q) return 0;
-    if (ticker.startsWith(q)) return 1;
-    if (ticker.includes(q) || (a.name ?? "").toLowerCase().includes(q) || a.mint.toLowerCase().startsWith(q)) return 2;
-    return -1;
-  };
-  return quotes
-    .map((a, i) => ({ a, i, r: rank(a) }))
-    .filter((x) => x.r >= 0)
-    .sort((x, y) => x.r - y.r || x.i - y.i)
-    .map((x) => x.a);
-}
 
 /** The name, unless it only repeats the ticker (common for memecoins). */
 const distinctName = (q: QuoteAsset) => (q.name && q.name.toLowerCase() !== q.symbol?.toLowerCase() ? q.name : null);
@@ -36,7 +19,9 @@ const graduationAmount = (q: QuoteAsset) =>
 
 /**
  * The Quote Asset picker: a button showing the choice, opening a searchable list. Assets that can't be launched against
- * stay in the list with their reason, but can't be chosen.
+ * stay in the list with their reason, but can't be chosen. Each option says what kind of asset it is; what its issuer
+ * can do and what the token list says of it is further information on the form and the asset's page, never a chip
+ * under its name (owner, 2026-10-10).
  */
 export function QuotePicker({ quotes, value, onChange }: { quotes: QuoteAsset[]; value: string | null; onChange: (mint: string) => void }) {
   const id = useId();
@@ -46,7 +31,7 @@ export function QuotePicker({ quotes, value, onChange }: { quotes: QuoteAsset[];
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const selected = quotes.find((q) => q.mint === value) ?? null;
-  const matches = useMemo(() => search(quotes, query), [quotes, query]);
+  const matches = useMemo(() => searchQuotes(quotes, query), [quotes, query]);
   const shown = matches.slice(0, RESULT_LIMIT);
   const optionId = (mint: string) => `${id}-option-${mint}`;
 
@@ -159,9 +144,9 @@ export function QuotePicker({ quotes, value, onChange }: { quotes: QuoteAsset[];
                   <span className={styles.optionTitle}>
                     <span className={styles.ticker}>{quoteTicker(q)}</span>
                     {distinctName(q) && <span className={styles.name}>{distinctName(q)}</span>}
+                    <span className={styles.kind}>{quoteKind(q)}</span>
                   </span>
                   {q.launchable ? null : <span className={styles.reason}>{q.reason}</span>}
-                  <QuoteLabelChips labels={q.labels} />
                 </span>
                 {q.launchable && <span className={`mono ${styles.target}`}>{graduationAmount(q)}</span>}
               </li>

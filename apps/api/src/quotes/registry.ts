@@ -86,7 +86,7 @@ export async function refreshQuoteRegistry({ db, cfg, market, operations }: Refr
       symbol: q.mint.symbol,
       name: q.mint.name,
       logo: logos.get(mint) ?? known.get(mint) ?? null,
-      category: quoteCategory(q.mint),
+      category: quoteCategory(q.mint, listings.get(mint)),
       issuer: quoteIssuer(q.mint),
       priceUsd: q.quoteUsd ? formatDecimal(q.quoteUsd) : null,
       priceSol: q.priceSol ? formatDecimal(q.priceSol) : null,
