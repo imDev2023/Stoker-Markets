@@ -2,7 +2,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  background: color-mix(in srgb, var(--fog) 88%, transparent);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
   backdrop-filter: saturate(140%) blur(10px);
   border-bottom: 1px solid var(--line);
 }
@@ -44,7 +44,7 @@
   padding: 2px 7px;
   border-radius: 999px;
   background: var(--plate);
-  color: var(--cobalt-strong);
+  color: var(--accent-strong);
 }
 
 .nav {
@@ -84,7 +84,7 @@
   bottom: -1px;
   height: 2px;
   border-radius: 2px 2px 0 0;
-  background: var(--cobalt);
+  background: var(--accent);
 }
 
 .actions {
@@ -104,8 +104,8 @@
   height: 40px;
   padding: 0 16px 0 14px;
   border-radius: 999px;
-  background: var(--cobalt);
-  color: var(--on-cobalt);
+  background: var(--button);
+  color: var(--on-button);
   font-weight: 600;
   font-size: 0.9375rem;
   white-space: nowrap;
@@ -114,7 +114,7 @@
 }
 
 .launch:hover {
-  background: var(--cobalt-strong);
+  background: var(--button-hover);
 }
 
 /*

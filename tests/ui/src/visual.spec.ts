@@ -63,15 +63,23 @@ async function mintOf(name: string) {
   return launch.mint;
 }
 
-test("board", async ({ page }) => {
+test("home", async ({ page }) => {
   await page.goto("/");
+  await expect(page.getByRole("heading", { name: "No one picks your pair. You do." })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Trending coins" }).getByRole("link").first()).toBeVisible();
+  await expect(page.locator("ul li img").first()).toHaveJSProperty("complete", true);
+  await snap(page, "home.png");
+});
+
+test("board", async ({ page }) => {
+  await page.goto("/coins");
   await expect(page.getByRole("heading", { name: "Coins", exact: true })).toBeVisible();
   await expect(page.locator("ul li img").first()).toHaveJSProperty("complete", true);
   await snap(page, "board.png");
 });
 
 test("board sorted by market cap, stablecoin pairs only", async ({ page }) => {
-  await page.goto("/?sort=market_cap&category=stablecoin");
+  await page.goto("/coins?sort=market_cap&category=stablecoin");
   await expect(page.getByRole("button", { name: "Market cap", pressed: true })).toBeVisible();
   await expect(page.getByRole("list", { name: "Coins" }).getByRole("listitem").first()).toContainText("USDC");
   await expect(page.locator("ul li img").first()).toHaveJSProperty("complete", true);
@@ -79,7 +87,7 @@ test("board sorted by market cap, stablecoin pairs only", async ({ page }) => {
 });
 
 test("board Quote Asset filter, open", async ({ page }) => {
-  await page.goto("/?sort=trending");
+  await page.goto("/coins?sort=trending");
   const trigger = page.getByRole("button", { name: /^Quote Asset: / });
   await trigger.click();
   const list = page.getByRole("listbox", { name: "Quote Assets" });
@@ -249,7 +257,7 @@ test("coin not found", async ({ page }) => {
 
 test("launch form, step by step", async ({ page, wallet }) => {
   await page.goto("/launch");
-  await expect(page.getByRole("heading", { name: "Launch a coin" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Stoke a coin" })).toBeVisible();
   await snap(page, "launch-disconnected.png");
 
   await openWalletMenu(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));

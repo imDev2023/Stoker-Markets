@@ -16,10 +16,10 @@ test("the web server calls the API with its own key, and the browser never sees 
   page.on("request", (r) => {
     if (r.url().startsWith(stack.apiUrl) && r.headers()["x-api-key"]) fromBrowser.push(r.url());
   });
-  await page.goto("/");
+  await page.goto("/coins");
   await expect(page.getByRole("heading", { name: "Coins", exact: true })).toBeVisible();
   await page.goto("/launch");
-  await expect(page.getByRole("heading", { name: "Launch a coin" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Stoke a coin" })).toBeVisible();
   await page.waitForLoadState("networkidle");
 
   // Each read of the usage is itself one request with the key; the pages' server-side reads come on top of those.

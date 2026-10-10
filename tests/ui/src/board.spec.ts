@@ -48,7 +48,7 @@ test("a trader sorts and filters the board, and the address keeps the choice", a
   await fundQuote(trader.publicKey, "USDC", 20_000_000n);
   await tradeViaApi(trader, dollar, "buy", 20_000_000n);
 
-  await page.goto("/");
+  await page.goto("/coins");
   await expect(sorts(page).getByRole("button", { name: "Market cap", pressed: true })).toBeVisible();
   await expectBoard(page, { sort: "market_cap" });
 
@@ -107,7 +107,7 @@ test("a trader sorts and filters the board, and the address keeps the choice", a
 test("a trader finds a coin by name, ticker or contract address, and the address keeps the search", async ({ page }) => {
   const creator = await fundedKeypair(5);
   const needle = await launchViaApi(creator, { name: "Needle In Stack", symbol: "NEEDL" });
-  await page.goto("/");
+  await page.goto("/coins");
   await expectBoard(page, { sort: "market_cap" });
 
   // By name, in any case; the search is in the address once typed.
@@ -133,14 +133,14 @@ test("a trader finds a coin by name, ticker or contract address, and the address
   await expectBoard(page, { sort: "market_cap" });
 
   // A shared link opens with the search filled in.
-  await page.goto("/?q=NEEDL");
+  await page.goto("/coins?q=NEEDL");
   await expect(search(page)).toHaveValue("NEEDL");
   await expect(cards(page)).toHaveCount(1);
 });
 
 test("a filter nothing matches says so, and one click shows every coin again", async ({ page }) => {
   // BULLWHALE has no price, so no coin can be paired with it.
-  await page.goto(`/?sort=trending&quote=${QUOTES.BULLWHALE.toBase58()}`);
+  await page.goto(`/coins?sort=trending&quote=${QUOTES.BULLWHALE.toBase58()}`);
   await expect(page.getByText("No coins match these filters.")).toBeVisible();
   await page.getByRole("button", { name: "Show all coins" }).click();
   await expect(page).toHaveURL(/\/\?sort=trending$/);

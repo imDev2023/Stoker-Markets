@@ -38,7 +38,7 @@
   padding: 16px 18px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--paper);
+  background: var(--surface);
 }
 
 .connect p {
@@ -79,7 +79,7 @@
   padding: 20px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--paper);
+  background: var(--surface);
   min-width: 0;
 }
 
@@ -95,7 +95,7 @@
 }
 
 .rule .cardTitle {
-  color: var(--cobalt-strong);
+  color: var(--accent-strong);
 }
 
 .rule p,
@@ -126,14 +126,14 @@
   height: 44px;
   padding: 0 20px;
   border-radius: 999px;
-  background: var(--cobalt);
-  color: var(--on-cobalt);
+  background: var(--button);
+  color: var(--on-button);
   font-weight: 600;
   text-decoration: none;
 }
 
 .cta:hover {
-  background: var(--cobalt-strong);
+  background: var(--button-hover);
 }
 
 .coins {
@@ -191,7 +191,7 @@
 }
 
 .coin:hover .coinSymbol {
-  color: var(--cobalt);
+  color: var(--accent);
 }
 
 .coinName {
@@ -221,8 +221,8 @@
 }
 
 .earning {
-  background: var(--verified-bg);
-  color: var(--verified);
+  background: var(--up-bg);
+  color: var(--up);
 }
 
 .asset {
@@ -232,7 +232,7 @@
   padding: 22px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--paper);
+  background: var(--surface);
   min-width: 0;
 }
 
@@ -354,8 +354,8 @@
 }
 
 .payments a:hover {
-  color: var(--cobalt);
-  border-color: var(--cobalt);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .paymentTime {

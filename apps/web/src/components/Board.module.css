@@ -33,7 +33,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--verified);
+  background: var(--up);
   animation: pulse 2.4s ease-in-out infinite;
 }
 
@@ -63,13 +63,13 @@
   padding: 0 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--paper);
+  background: var(--surface);
   color: var(--ink-3);
   transition: border-color 120ms ease;
 }
 
 .search:focus-within {
-  border-color: var(--cobalt);
+  border-color: var(--accent);
 }
 
 .search input {
@@ -120,7 +120,7 @@
 
 .sorts button[aria-pressed="true"] {
   background: var(--ink);
-  color: var(--paper);
+  color: var(--surface);
 }
 
 /* Row two: what the coins are paired with, then a Quote Asset within that. */
@@ -161,9 +161,9 @@
 }
 
 .paired button[aria-pressed="true"] {
-  border-color: var(--cobalt);
+  border-color: var(--accent);
   background: var(--plate);
-  color: var(--cobalt-strong);
+  color: var(--accent-strong);
 }
 
 /* Hover only where there is a real pointer, and never on the chosen option, so a tap leaves nothing behind. */
@@ -188,7 +188,7 @@
   padding: 0 18px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--paper);
+  background: var(--surface);
   font-weight: 600;
   cursor: pointer;
 }
@@ -225,7 +225,7 @@
   padding: 40px;
   border: 1px dashed var(--line);
   border-radius: var(--radius);
-  background: var(--paper);
+  background: var(--surface);
 }
 
 .empty p {
@@ -240,14 +240,14 @@
   height: 44px;
   padding: 0 20px;
   border-radius: 999px;
-  background: var(--cobalt);
-  color: var(--on-cobalt);
+  background: var(--button);
+  color: var(--on-button);
   font-weight: 600;
   text-decoration: none;
 }
 
 .cta:hover {
-  background: var(--cobalt-strong);
+  background: var(--button-hover);
 }
 
 /* One column of controls: the search takes the full width, the sorts sit two by two, the chips wrap. */
@@ -267,7 +267,7 @@
     padding: 3px;
     border: 1px solid var(--line);
     border-radius: 22px;
-    background: var(--paper);
+    background: var(--surface);
   }
   .sortLabel {
     display: none;

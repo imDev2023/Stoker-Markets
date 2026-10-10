@@ -23,8 +23,8 @@ function theme() {
   return {
     text: token("--ink-3"),
     line: token("--line"),
-    up: token("--verified"),
-    down: token("--danger"),
+    up: token("--up"),
+    down: token("--down"),
     crosshair: token("--ink-3"),
     font: token("--font-mono"),
   };

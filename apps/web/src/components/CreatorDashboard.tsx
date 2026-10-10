@@ -71,7 +71,7 @@ export function CreatorDashboard({ platform }: { platform: PlatformInfo }) {
       ) : own.earnings.launches.length === 0 ? (
         <div className={`${styles.emptyCard} ${styles.lone}`}>
           <p>You haven&apos;t launched a coin here yet.</p>
-          <Link href="/launch" className={styles.cta}>Launch a coin</Link>
+          <Link href="/launch" className={styles.cta}>Stoke a coin</Link>
         </div>
       ) : (
         <Earnings earnings={own.earnings} forwards={own.forwards} platform={platform} />

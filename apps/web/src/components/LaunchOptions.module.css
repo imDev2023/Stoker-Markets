@@ -30,7 +30,7 @@
   padding: 0 13px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--paper);
+  background: var(--surface);
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
@@ -45,8 +45,8 @@
 .amount:focus-within,
 .list:focus {
   outline: none;
-  border-color: var(--cobalt);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cobalt) 22%, transparent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 /* The height of the form's other inputs: 11px padding around a 1.55 line. */
@@ -87,7 +87,7 @@
 }
 
 .hintError {
-  color: var(--danger);
+  color: var(--down);
 }
 
 .hint :global(.mono) {
@@ -116,7 +116,7 @@
   width: 18px;
   height: 18px;
   margin: 3px 0 0;
-  accent-color: var(--cobalt);
+  accent-color: var(--accent);
   cursor: pointer;
 }
 
@@ -125,7 +125,7 @@
   padding: 11px 13px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--paper);
+  background: var(--surface);
   font-family: var(--font-mono);
   font-size: 0.8125rem;
   line-height: 1.7;
@@ -154,7 +154,7 @@
 
 .amount.invalid,
 .list.invalid {
-  border-color: var(--danger);
+  border-color: var(--down);
 }
 
 .type {
@@ -185,7 +185,7 @@
   padding: 12px 13px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--paper);
+  background: var(--surface);
   cursor: pointer;
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
@@ -203,8 +203,8 @@
 }
 
 .typeCard input:checked {
-  border-color: var(--cobalt);
-  background: radial-gradient(circle, var(--cobalt) 0 4px, transparent 4.5px);
+  border-color: var(--accent);
+  background: radial-gradient(circle, var(--accent) 0 4px, transparent 4.5px);
 }
 
 .typeName {
@@ -217,7 +217,7 @@
 /* The Payout Asset on a line of its own, so the two Reward Launch cards differ where the eye lands. */
 .typeName > span {
   display: block;
-  color: var(--cobalt-strong);
+  color: var(--accent-strong);
 }
 
 .typeHint {
@@ -234,12 +234,12 @@
 }
 
 .typeCard:has(input:checked) {
-  border-color: var(--cobalt);
-  box-shadow: inset 0 0 0 1px var(--cobalt);
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 .typeCard:has(input:focus-visible) {
-  box-shadow: inset 0 0 0 1px var(--cobalt), 0 0 0 3px color-mix(in srgb, var(--cobalt) 22%, transparent);
+  box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .typeCard input:focus-visible {
@@ -275,16 +275,16 @@
   padding: 0.35rem 0.75rem;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--paper);
+  background: var(--surface);
   color: inherit;
   font: inherit;
   cursor: pointer;
 }
 
 .rates button[aria-pressed="true"] {
-  background: var(--cobalt);
-  border-color: var(--cobalt);
-  color: var(--on-cobalt);
+  background: var(--button);
+  border-color: var(--button);
+  color: var(--on-button);
 }
 
 .rates .hint {

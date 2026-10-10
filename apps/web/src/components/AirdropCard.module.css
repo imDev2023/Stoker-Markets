@@ -5,7 +5,7 @@
   padding: 20px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--paper);
+  background: var(--surface);
   min-width: 0;
 }
 
@@ -40,7 +40,7 @@
   height: 100%;
   min-width: 4px;
   border-radius: 999px;
-  background: var(--verified);
+  background: var(--up);
   transition: width 400ms ease;
 }
 
@@ -64,13 +64,13 @@
 }
 
 .error {
-  background: var(--danger-bg);
-  color: var(--danger);
+  background: var(--down-bg);
+  color: var(--down);
 }
 
 .notice {
   background: var(--plate);
-  color: var(--cobalt-strong);
+  color: var(--accent-strong);
 }
 
 .action {
@@ -89,8 +89,8 @@
   padding: 0 22px;
   border: 0;
   border-radius: 999px;
-  background: var(--cobalt);
-  color: var(--on-cobalt);
+  background: var(--button);
+  color: var(--on-button);
   font-weight: 600;
   cursor: pointer;
   transition: background-color 120ms ease;
@@ -99,14 +99,14 @@
 /* Hovers only with a real pointer, so a tap on a phone doesn't leave one behind. */
 @media (hover: hover) {
   .primary:hover:not(:disabled) {
-    background: var(--cobalt-strong);
+    background: var(--button-hover);
   }
   .wallets summary:hover {
-    color: var(--cobalt);
+    color: var(--accent);
   }
   .table a:hover {
-    color: var(--cobalt);
-    border-color: var(--cobalt);
+    color: var(--accent);
+    border-color: var(--accent);
   }
 }
 
@@ -190,23 +190,23 @@
 }
 
 .paid {
-  color: var(--verified);
+  color: var(--up);
 }
 
 .table a.paid {
-  color: var(--verified);
+  color: var(--up);
 }
 
 .paid::before {
-  background: var(--verified);
+  background: var(--up);
 }
 
 .sending {
-  color: var(--cobalt-strong);
+  color: var(--accent-strong);
 }
 
 .sending::before {
-  background: var(--cobalt);
+  background: var(--accent);
 }
 
 .unpaid {

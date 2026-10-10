@@ -1,25 +1,26 @@
-import { getPlatform, listLaunchQuotes, listLaunches } from "@/lib/api";
-import { boardQueryFrom } from "@/lib/board";
-import { Board } from "@/components/Board";
+import { getBurns, getPlatform, getRevenue, listLaunches, listQuotes } from "@/lib/api";
+import { landingFigures } from "@/lib/landing";
 import { Hero } from "@/components/Hero";
+import { Stats } from "@/components/Stats";
+import { Trending } from "@/components/Trending";
 
-type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
-
-export default async function HomePage({ searchParams }: Props) {
-  const query = boardQueryFrom(await searchParams);
-  const [board, newest, quotes, platform] = await Promise.all([
-    listLaunches(query),
-    // The hero's plate shows how a curve trade splits its fee, so it features the newest coin still on its curve, whatever
-    // the board is sorted or filtered by.
-    listLaunches({ status: "live", limit: 1 }),
-    listLaunchQuotes(),
+/**
+ * The home page is the landing (owner, 2026-10-08): the spacious, consumer-facing look, with the board one tap away at
+ * /coins. The figures are left out rather than the page failing when one read is down.
+ */
+export default async function HomePage() {
+  const [quotes, trending, platform, revenue, burns] = await Promise.all([
+    listQuotes(),
+    listLaunches({ sort: "trending", limit: 6 }),
     getPlatform(),
+    getRevenue().catch(() => null),
+    getBurns().catch(() => null),
   ]);
-  const latest = newest.launches[0] ?? null;
   return (
     <>
-      <Hero latest={latest} platform={platform} />
-      <Board initial={board.launches} initialQuery={query} quotes={quotes.quotes} renderedAt={Date.now()} />
+      <Hero quotes={quotes.quotes} platform={platform} />
+      <Stats figures={landingFigures({ quotes: quotes.quotes, revenue, burns })} />
+      <Trending launches={trending.launches} />
     </>
   );
 }

@@ -3,7 +3,7 @@
   padding: 28px;
   border: 1px solid var(--line);
   border-radius: calc(var(--radius) + 4px);
-  background: var(--paper);
+  background: var(--surface);
   color: var(--ink);
   box-shadow: var(--shadow);
 }
@@ -41,7 +41,7 @@
   width: 18px;
   height: 18px;
   margin-top: 3px;
-  accent-color: var(--cobalt);
+  accent-color: var(--accent);
 }
 
 .actions {
@@ -61,8 +61,8 @@
 
 .primary {
   border: 0;
-  background: var(--cobalt);
-  color: var(--on-cobalt);
+  background: var(--button);
+  color: var(--on-button);
 }
 
 .primary:disabled {

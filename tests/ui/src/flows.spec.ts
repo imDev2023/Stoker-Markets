@@ -56,8 +56,7 @@ test("a Creator launches a SOL-paired coin and finds it on the board and its coi
   expect(metadata.image.startsWith(`${stack.turbo.url}/`)).toBe(true);
 
   // The board lists it, and its card leads back to the coin page.
-  await page.goto("/");
-  await expect(page.getByText("Latest coin")).toBeVisible();
+  await page.goto("/coins");
   const card = page.getByRole("link", { name: new RegExp(COIN.name) });
   await expect(card).toBeVisible();
   await card.click();

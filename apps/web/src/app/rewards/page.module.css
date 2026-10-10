@@ -28,7 +28,7 @@
   padding: 20px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--paper);
+  background: var(--surface);
   min-width: 0;
 }
 
@@ -50,7 +50,7 @@
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: var(--paper);
+  background: var(--surface);
   color: inherit;
   font: inherit;
 }
@@ -59,8 +59,8 @@
   padding: 10px 16px;
   border: none;
   border-radius: 10px;
-  background: var(--cobalt);
-  color: #fff;
+  background: var(--button);
+  color: var(--on-button);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -125,13 +125,13 @@
 }
 
 .list a:hover {
-  color: var(--cobalt);
+  color: var(--accent);
 }
 
 .amount {
   text-align: right;
   font-weight: 500;
-  color: var(--verified);
+  color: var(--up);
 }
 
 .pending .amount {

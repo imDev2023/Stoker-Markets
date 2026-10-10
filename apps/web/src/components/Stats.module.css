@@ -1,0 +1,48 @@
+.stats {
+  padding-bottom: clamp(36px, 5vw, 64px);
+}
+
+.list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+  margin: 0;
+}
+
+/* The value above its label, as a figure is read; the dl keeps the pair together for a screen reader. */
+.stat {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 4px;
+  padding-top: 14px;
+  border-top: 2px solid var(--line);
+  min-width: 0;
+}
+
+.value {
+  margin: 0;
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 700;
+  font-size: clamp(1.375rem, 2.2vw, 1.75rem);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* The figure paid to creators is live money moving, so it carries the heat. */
+.heat {
+  color: var(--brand);
+}
+
+.label {
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+}
+
+@media (max-width: 860px) {
+  .list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -7,7 +7,7 @@ import styles from "./SiteHeader.module.css";
 
 /** A coin's page belongs under "Coins"; every other section is its own path and what hangs under it. */
 const isCurrent = (href: string, pathname: string) =>
-  href === "/" ? pathname === "/" || pathname.startsWith("/coin/") : pathname === href || pathname.startsWith(`${href}/`);
+  pathname === href || pathname.startsWith(`${href}/`) || (href === "/coins" && pathname.startsWith("/coin/"));
 
 /** The header's links, the current section marked, and the API docs last since developers look for them here too. */
 export function NavLinks() {

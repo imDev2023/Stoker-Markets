@@ -40,13 +40,13 @@
 
 .connect {
   border: 0;
-  background: var(--ink);
-  color: var(--fog);
+  background: var(--button);
+  color: var(--on-button);
 }
 
 .connect:hover {
-  background: var(--cobalt);
-  color: var(--on-cobalt);
+  background: var(--button-hover);
+  color: var(--on-button);
 }
 
 .connect:disabled {
@@ -58,14 +58,14 @@
 .header .connect,
 .connected {
   border: 1px solid var(--line);
-  background: var(--paper);
+  background: var(--surface);
   color: var(--ink);
 }
 
 .header .connect:hover,
 .connected:hover {
   border-color: var(--ink-3);
-  background: var(--paper);
+  background: var(--surface);
   color: var(--ink);
 }
 
@@ -86,7 +86,7 @@
   padding: 6px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--paper);
+  background: var(--surface);
   box-shadow: var(--shadow);
   z-index: 20;
 }
@@ -109,7 +109,7 @@
 
 .menu button:hover,
 .menu .menuLink:hover {
-  background: var(--fog);
+  background: var(--bg);
 }
 
 .empty {

@@ -130,7 +130,7 @@ export function Board({
       {nothingLaunched ? (
         <div className={styles.empty}>
           <p>No coins yet. The first one could be yours.</p>
-          <Link href="/launch" className={styles.cta}>Launch a coin</Link>
+          <Link href="/launch" className={styles.cta}>Stoke a coin</Link>
         </div>
       ) : launches.length === 0 ? (
         <div className={styles.empty} aria-busy={loading}>

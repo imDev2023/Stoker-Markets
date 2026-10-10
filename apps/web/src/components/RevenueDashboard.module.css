@@ -59,7 +59,7 @@
   padding: 20px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--paper);
+  background: var(--surface);
   min-width: 0;
 }
 
@@ -75,7 +75,7 @@
 }
 
 .rule .cardTitle {
-  color: var(--cobalt-strong);
+  color: var(--accent-strong);
 }
 
 .emptyCard {
@@ -252,8 +252,8 @@
 }
 
 .wallets a:hover {
-  color: var(--cobalt);
-  border-color: var(--cobalt);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .table {

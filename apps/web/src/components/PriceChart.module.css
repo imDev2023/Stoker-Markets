@@ -5,7 +5,7 @@
   padding: 20px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--paper);
+  background: var(--surface);
   min-width: 0;
 }
 
@@ -67,7 +67,7 @@
   gap: 2px;
   padding: 3px;
   border-radius: 999px;
-  background: var(--fog);
+  background: var(--bg);
 }
 
 .intervals button {
@@ -92,7 +92,7 @@
 }
 
 .intervals button[aria-pressed="true"] {
-  background: var(--paper);
+  background: var(--surface);
   color: var(--ink);
   box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgb(18 24 38 / 12%);
 }

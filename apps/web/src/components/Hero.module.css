@@ -1,17 +1,17 @@
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-  gap: clamp(24px, 5vw, 64px);
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+  gap: clamp(28px, 5vw, 72px);
   align-items: center;
-  padding-top: clamp(40px, 7vw, 88px);
-  padding-bottom: clamp(40px, 6vw, 72px);
+  padding-top: clamp(44px, 7vw, 96px);
+  padding-bottom: clamp(36px, 5vw, 64px);
 }
 
 .copy {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 20px;
+  gap: 22px;
 }
 
 .title {
@@ -19,10 +19,16 @@
   font-family: var(--font-display);
   font-stretch: 112%;
   font-weight: 800;
-  font-size: clamp(2.25rem, 5vw, 3.75rem);
-  line-height: 1.02;
-  letter-spacing: -0.025em;
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
   text-wrap: balance;
+}
+
+/* The one emphasised phrase on the page: the only heat in the hero. */
+.heat {
+  font-style: normal;
+  color: var(--brand);
 }
 
 .lede {
@@ -33,42 +39,100 @@
   text-wrap: pretty;
 }
 
-.cta {
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cta,
+.secondary {
   display: inline-flex;
   align-items: center;
-  height: 48px;
-  padding: 0 24px;
+  height: 50px;
+  padding: 0 26px;
   border-radius: 999px;
-  background: var(--cobalt);
-  color: var(--on-cobalt);
   font-weight: 600;
   text-decoration: none;
-  transition: background-color 120ms ease;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.cta {
+  background: var(--button);
+  color: var(--on-button);
 }
 
 .cta:hover {
-  background: var(--cobalt-strong);
+  background: var(--button-hover);
 }
 
-.plate {
+.secondary {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.secondary:hover {
+  border-color: var(--ink-3);
+}
+
+.card {
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  padding: clamp(20px, 3vw, 32px);
-  border-radius: calc(var(--radius) + 6px);
-  background: var(--plate);
+  gap: 4px;
+  padding: clamp(20px, 3vw, 28px);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
   min-width: 0;
-  container-type: inline-size;
 }
 
-.plateLabel {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--cobalt-strong);
+.cardTitle {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 700;
+  font-size: 1.0625rem;
+  letter-spacing: -0.01em;
+}
+
+.assets {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.assets li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+}
+
+.ticker {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.9375rem;
+}
+
+.kind {
+  font-size: 0.875rem;
+  color: var(--ink-3);
+}
+
+.more {
+  margin: 12px 0 0;
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+  text-wrap: pretty;
 }
 
 @media (max-width: 860px) {
   .hero {
     grid-template-columns: minmax(0, 1fr);
+    padding-top: clamp(32px, 7vw, 56px);
   }
 }
