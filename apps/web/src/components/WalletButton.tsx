@@ -56,13 +56,15 @@ export function WalletButton({ variant = "header" }: { variant?: "header" | "inl
   }, [pending, wallet, publicKey, connect]);
 
   const wrap = `${styles.wrap} ${styles[variant]}`;
+  // In the header the launch button is the one filled action, so connecting is a ghost there; inline it is the action.
+  const connectKind = variant === "header" ? "button-ghost" : "button-primary";
 
   if (publicKey) {
     return (
       <div className={wrap} ref={menu}>
         <button
           type="button"
-          className={styles.connected}
+          className={`button button-ghost ${styles.connected}`}
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
           title={wallet ? `Connected with ${wallet.adapter.name}` : undefined}
@@ -94,7 +96,7 @@ export function WalletButton({ variant = "header" }: { variant?: "header" | "inl
 
   return (
     <div className={wrap} ref={menu}>
-      <button type="button" className={styles.connect} onClick={() => setOpen((o) => !o)} aria-expanded={open} disabled={connecting}>
+      <button type="button" className={`button ${connectKind} ${styles.connect}`} onClick={() => setOpen((o) => !o)} aria-expanded={open} disabled={connecting}>
         {connecting ? "Connecting…" : "Connect wallet"}
       </button>
       {open && (

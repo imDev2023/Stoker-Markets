@@ -3,16 +3,11 @@
   flex-direction: column;
   gap: 12px;
   padding: 20px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
   min-width: 0;
 }
 
 .title {
   margin: 0;
-  font-size: 0.875rem;
-  font-weight: 600;
 }
 
 .empty {
@@ -21,18 +16,23 @@
   font-size: 0.9375rem;
 }
 
+/* Dense rows: figures in mono, a hairline between rows, the side told by a square of its colour. */
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums slashed-zero;
 }
 
 .table th {
   padding: 0 8px 8px;
   border-bottom: 1px solid var(--line);
   color: var(--ink-3);
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   text-align: left;
   white-space: nowrap;
 }
@@ -62,12 +62,14 @@
 /* Wider than any "59m ago", so the columns hold still as the times tick over. */
 .table .time {
   width: 5.5em;
+  color: var(--ink-3);
 }
 
 .table a {
   color: var(--ink-2);
   text-decoration: none;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-strong);
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
 
 .table a:hover {
@@ -79,7 +81,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .side::before {
@@ -89,8 +91,16 @@
   border-radius: 2px;
 }
 
+.buy {
+  color: var(--up);
+}
+
 .buy::before {
   background: var(--up);
+}
+
+.sell {
+  color: var(--down);
 }
 
 .sell::before {
@@ -100,6 +110,7 @@
 .table .milestone td {
   padding: 7px 0;
   text-align: center;
+  font-family: var(--font-body);
   font-size: 0.75rem;
   font-weight: 600;
 }

@@ -3,9 +3,6 @@
   flex-direction: column;
   gap: 12px;
   padding: 20px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
 }
 
 .head {
@@ -17,23 +14,24 @@
 
 .title {
   margin: 0;
-  font-size: 0.875rem;
-  font-weight: 600;
 }
 
+/* The progress as a figure, warm with the heat once the curve is filling. */
 .pct {
-  font-family: var(--font-display);
-  font-stretch: 125%;
-  font-weight: 800;
+  font-family: var(--font-mono);
+  font-weight: 500;
   font-size: 1.5rem;
   line-height: 1;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums slashed-zero;
 }
 
+/* The curve filling towards Graduation: the heat ramp in a well. */
 .track {
   height: 10px;
   border-radius: 999px;
   background: var(--sunken);
+  box-shadow: inset 0 0 0 1px var(--line);
   overflow: hidden;
 }
 
@@ -43,13 +41,22 @@
   min-width: 4px;
   border-radius: 999px;
   background: var(--heat);
-  transition: width 400ms ease;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--heat-high) 45%, transparent);
+  transition: width 400ms var(--ease);
 }
 
 .amounts,
 .note {
   margin: 0;
   font-size: 0.875rem;
+}
+
+.amounts {
+  color: var(--ink-2);
+}
+
+.amounts :global(.mono) {
+  color: var(--ink);
 }
 
 .note {
@@ -66,6 +73,7 @@
 
 .fillDone {
   background: var(--up);
+  box-shadow: none;
 }
 
 .graduated {

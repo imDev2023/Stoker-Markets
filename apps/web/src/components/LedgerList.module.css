@@ -1,18 +1,14 @@
+/* The Ledger: one entry a row, what came in or went out on the left, the amount and the transaction on the right. */
 .card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 20px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
+  gap: 14px;
+  padding: 24px;
   min-width: 0;
 }
 
 .title {
   margin: 0;
-  font-size: 0.875rem;
-  font-weight: 600;
 }
 
 .entries {
@@ -29,7 +25,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
   gap: 2px 16px;
-  padding: 11px 0;
+  padding: 10px 0;
   font-size: 0.875rem;
 }
 
@@ -49,11 +45,18 @@
   font-weight: 600;
 }
 
+/* What came in is the stronger figure, what went out the lighter; the sign says which, never a colour. */
 .amount {
   font-weight: 500;
   text-align: right;
-  color: var(--up);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
+}
+
+.amount :global(.mono) {
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .out .amount {
@@ -69,7 +72,8 @@
 .tx {
   color: var(--ink-2);
   text-decoration: none;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-strong);
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
 
 .origin a:hover,
@@ -103,29 +107,11 @@
 
 .more {
   align-self: flex-start;
-  height: 40px;
-  padding: 0 18px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface);
-  font-weight: 600;
-  font-size: 0.9375rem;
-  cursor: pointer;
-}
-
-.more:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.more:disabled {
-  color: var(--ink-3);
-  cursor: progress;
 }
 
 @media (max-width: 560px) {
   .card {
-    padding: 16px;
+    padding: 18px;
   }
   .entries li {
     grid-template-columns: minmax(0, 1fr);

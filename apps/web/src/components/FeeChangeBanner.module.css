@@ -12,4 +12,5 @@
 .inner a {
   margin-left: 4px;
   color: var(--accent-strong);
+  font-weight: 600;
 }

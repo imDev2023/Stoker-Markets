@@ -29,8 +29,8 @@ function creatorLine(h: HolderList) {
  */
 export function Holders({ holders, platform }: { holders: HolderList | null; platform: { cluster: string; rpcUrl: string } }) {
   return (
-    <section className={styles.card} aria-labelledby="holders-title">
-      <h2 id="holders-title" className={styles.title}>Top holders</h2>
+    <section className={`card ${styles.card}`} aria-labelledby="holders-title">
+      <h2 id="holders-title" className={`t-h3 ${styles.title}`}>Top holders</h2>
       {holders === null ? (
         <p className={styles.note}>Couldn&rsquo;t read the holders from the chain. Retrying.</p>
       ) : (

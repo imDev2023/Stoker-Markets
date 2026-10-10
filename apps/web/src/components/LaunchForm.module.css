@@ -1,7 +1,8 @@
 /*
- * The launch page: the form as one surface card in named sections on the left, and a launch summary that stays in
- * view on the right with the coin's preview, the terms it launches on and the action. Fields sit on the page's ground
- * inside the card, so the card reads as one object and the fields as its openings.
+ * The launch page (docs/design/principles.md, section 7): the form as one surface card in named sections on the left,
+ * its fields as wells on sunken with the ring on focus, and a launch summary on a raised card that stays in view on
+ * the right with the coin's preview, the terms it launches on, the Creator's figure in the heat and the trust lines.
+ * The buttons, chips and type steps are the primitives in globals.css; this file only places them.
  */
 .page {
   display: grid;
@@ -15,24 +16,18 @@
 .main {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 24px;
   min-width: 0;
 }
 
 .head {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .title {
   margin: 0;
-  font-family: var(--font-display);
-  font-stretch: 112%;
-  font-weight: 800;
-  font-size: clamp(2rem, 4vw, 2.75rem);
-  letter-spacing: -0.02em;
-  line-height: 1.05;
 }
 
 .lede {
@@ -43,15 +38,14 @@
   text-wrap: pretty;
 }
 
+/* The card is the primitive; the fieldset only has to lose its own box. */
 .card {
   display: flex;
   flex-direction: column;
   margin: 0;
   padding: 0;
   min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
+  transition: opacity var(--base) var(--ease);
 }
 
 .card:disabled {
@@ -62,7 +56,7 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding: 24px 28px 26px;
+  padding: 24px;
   border-top: 1px solid var(--line);
   min-width: 0;
 }
@@ -84,30 +78,24 @@
   display: flex;
   flex: 1 1 320px;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 
 .blockHead h2 {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 10px;
   margin: 0;
-  font-family: var(--font-display);
-  font-stretch: 112%;
-  font-weight: 700;
-  font-size: 1.0625rem;
-  letter-spacing: -0.01em;
-  line-height: 1.3;
 }
 
-/* The section's number: small, mono, in the margin's colour, so the five read as one walk down the form. */
+/* The section's number: small, mono, in the accent, so the five read as one walk down the form. */
 .index {
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.06em;
-  color: var(--ink-3);
+  color: var(--accent);
 }
 
 .blockHead em,
@@ -115,6 +103,7 @@
   font-style: normal;
   font-weight: 400;
   font-size: 0.875rem;
+  letter-spacing: 0;
   color: var(--ink-3);
 }
 
@@ -122,6 +111,7 @@
   margin: 0;
   max-width: 64ch;
   font-size: 0.875rem;
+  line-height: 1.5;
   color: var(--ink-3);
   text-wrap: pretty;
 }
@@ -152,7 +142,7 @@
   place-items: center;
   width: 112px;
   height: 112px;
-  border: 1px solid var(--line);
+  border: 1px dashed var(--line-strong);
   border-radius: var(--radius);
   background: var(--sunken);
   color: var(--ink-2);
@@ -160,7 +150,7 @@
   font-weight: 600;
   cursor: pointer;
   overflow: hidden;
-  transition: border-color 120ms ease, background-color 120ms ease;
+  transition: border-color var(--fast) var(--ease), background-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
 }
 
 .dropEmpty {
@@ -176,7 +166,7 @@
   width: 22px;
   height: 22px;
   color: var(--ink-3);
-  transition: color 120ms ease;
+  transition: color var(--fast) var(--ease);
 }
 
 .dropPlus::before,
@@ -200,6 +190,7 @@
 @media (hover: hover) {
   .drop:hover {
     border-color: var(--accent);
+    background: var(--hover);
   }
   .drop:hover .dropPlus {
     color: var(--accent);
@@ -207,9 +198,9 @@
 }
 
 .drop:focus-within {
+  border-style: solid;
   border-color: var(--accent);
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  box-shadow: var(--ring);
 }
 
 .drop img {
@@ -221,6 +212,7 @@
 .hint {
   margin: 0;
   font-size: 0.8125rem;
+  line-height: 1.5;
   color: var(--ink-3);
 }
 
@@ -240,17 +232,20 @@
 
 .field > span {
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 500;
+  color: var(--ink-2);
 }
 
+/* A field is a well on sunken with the line on its edge and the ring when it has focus (the input primitive's rules). */
 .field input,
 .field textarea {
   width: 100%;
-  padding: 11px 13px;
+  padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--bg);
-  transition: border-color 120ms ease, box-shadow 120ms ease;
+  background: var(--sunken);
+  color: var(--ink);
+  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
 }
 
 .field textarea {
@@ -259,9 +254,9 @@
 }
 
 @media (hover: hover) {
-  .field input:hover,
-  .field textarea:hover {
-    border-color: var(--ink-3);
+  .field input:hover:not(:focus),
+  .field textarea:hover:not(:focus) {
+    border-color: var(--line-strong);
   }
 }
 
@@ -269,7 +264,7 @@
 .field textarea:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: var(--ring);
 }
 
 /* Mono like every ticker on the site, at the size of the fields beside it. */
@@ -281,26 +276,40 @@
 .field input::placeholder,
 .field textarea::placeholder {
   color: var(--ink-3);
-  opacity: 0.7;
+  opacity: 0.8;
 }
 
 .counter {
   align-self: flex-end;
+  font-family: var(--font-mono);
   font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
   color: var(--ink-3);
 }
 
+/* Further information on the chosen Quote Asset: a well that opens under the chooser. */
 .labels {
   padding: 12px 16px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--bg);
+  background: var(--sunken);
 }
 
 .labels summary {
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 600;
+  transition: color var(--fast) var(--ease);
+}
+
+.labels summary:hover {
+  color: var(--accent);
+}
+
+.labels summary:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: 4px;
 }
 
 .labels[open] summary {
@@ -316,9 +325,16 @@
 .labelsLink {
   display: inline-block;
   margin-top: 12px;
-  color: var(--accent-strong);
+  color: var(--accent);
   font-size: 0.875rem;
   font-weight: 600;
+  text-decoration: none;
+}
+
+.labelsLink:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 /* The summary column: short enough to sit whole under the header on a laptop, so nothing in it ever scrolls out of reach. */
@@ -328,27 +344,17 @@
   min-width: 0;
 }
 
+/* A raised card (the primitive); this only lays it out. */
 .summaryCard {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding: 18px 20px 20px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow);
+  padding: 20px;
   min-width: 0;
 }
 
-/* Named the way the status line names its facts: small mono capitals. */
-.eyebrow {
+.summaryEyebrow {
   margin: 0 0 -6px;
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-3);
 }
 
 .pricedIn {
@@ -389,6 +395,7 @@
   white-space: nowrap;
 }
 
+/* The terms, label beside value, each a step smaller and lighter than the value it names. */
 .facts {
   display: grid;
   gap: 0;
@@ -406,6 +413,7 @@
 }
 
 .facts dt {
+  font-size: 0.8125rem;
   color: var(--ink-3);
 }
 
@@ -419,6 +427,10 @@
   overflow-wrap: anywhere;
 }
 
+.facts dd :global(.mono) {
+  font-size: 0.875rem;
+}
+
 .factNote {
   font-size: 0.8125rem;
   font-weight: 400;
@@ -426,14 +438,21 @@
 }
 
 .factLink {
-  color: var(--accent-strong);
+  color: var(--accent);
   font-size: 0.8125rem;
   font-weight: 600;
+  text-decoration: none;
 }
 
-/* The creator's figure is the one live thing on the card. */
+.factLink:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* The creator's figure is the one live thing on the card: the heat as a text fill. */
 .heat {
-  color: var(--brand);
+  font-weight: 600;
 }
 
 .termsNote {
@@ -443,31 +462,47 @@
   color: var(--ink-3);
 }
 
+/* The trust lines, each with a tick in the gain colour. */
 .trust {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
   font-size: 0.8125rem;
+  line-height: 1.5;
   color: var(--ink-2);
 }
 
 .trust li {
+  position: relative;
   display: flex;
-  gap: 8px;
-  align-items: baseline;
+  gap: 10px;
+  align-items: flex-start;
 }
 
+/* A disc in the gain's ground, with a tick drawn from two borders centred in it. */
 .trust li::before {
   content: "";
   flex: none;
-  width: 6px;
-  height: 6px;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
   border-radius: 50%;
-  background: var(--up);
-  transform: translateY(-1px);
+  background: var(--up-bg);
+}
+
+.trust li::after {
+  content: "";
+  position: absolute;
+  left: 5.5px;
+  top: 5px;
+  width: 4px;
+  height: 7.5px;
+  border: solid var(--up);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
 }
 
 /* The action follows the card: the review, the button or the connect card, and the one-line disclaimer under it. */
@@ -494,54 +529,23 @@
   font-weight: 500;
 }
 
-.primary,
-.secondary {
-  height: 46px;
-  padding: 0 22px;
-  border-radius: 999px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 120ms ease, border-color 120ms ease;
-}
-
+/* The buttons are the primitives; the one on its own keeps to the left, and a busy one shows progress. */
 .primary {
   align-self: flex-start;
-  border: 0;
-  background: var(--button);
-  color: var(--on-button);
-}
-
-@media (hover: hover) {
-  .primary:hover:not(:disabled) {
-    background: var(--button-hover);
-  }
 }
 
 .primary:disabled,
 .secondary:disabled {
-  opacity: 0.6;
   cursor: progress;
 }
 
-.secondary {
-  border: 1px solid var(--line);
-  background: var(--surface);
-}
-
-@media (hover: hover) {
-  .secondary:hover:not(:disabled) {
-    border-color: var(--ink-3);
-  }
-}
-
-.review {
+/* The review: a raised card edged in the accent, since it is the step that asks for a signature. */
+.action .review {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 18px;
-  border: 1px solid var(--accent);
-  border-radius: var(--radius);
-  background: var(--surface);
+  padding: 20px;
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
 }
 
 .review p {
@@ -551,6 +555,7 @@
 /* An amount and its unit stay on one line. */
 .review :global(.mono) {
   white-space: nowrap;
+  font-size: 0.9375rem;
 }
 
 .actions {
@@ -565,10 +570,7 @@
   justify-content: space-between;
   gap: 14px 16px;
   flex-wrap: wrap;
-  padding: 16px 18px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
+  padding: 16px 20px;
 }
 
 .connect p {
@@ -604,5 +606,8 @@
   }
   .primary {
     align-self: stretch;
+  }
+  .actions > * {
+    flex: 1 1 auto;
   }
 }

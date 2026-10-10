@@ -15,9 +15,9 @@ export function RewardsCard({ rewards, symbol, platform }: { rewards: CoinReward
   const rules = rewards.rules;
   const rate = rewards.rewardTaxBps / 100;
   return (
-    <section className={styles.card} aria-labelledby="rewards-title">
+    <section className={`card ${styles.card}`} aria-labelledby="rewards-title">
       <div className={styles.head}>
-        <h2 id="rewards-title" className={styles.title}>Holder rewards</h2>
+        <h2 id="rewards-title" className={`t-h3 ${styles.title}`}>Holder rewards</h2>
         <span className={styles.rate}>{rate}%</span>
       </div>
       <p className={styles.note}>

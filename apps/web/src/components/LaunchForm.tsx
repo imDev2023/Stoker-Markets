@@ -177,7 +177,7 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
     <form className={`shell ${styles.page}`} onSubmit={onSubmit} aria-busy={busy}>
       <div className={styles.main}>
         <header className={styles.head}>
-          <h1 className={styles.title}>Stoke a coin</h1>
+          <h1 className={`t-h1 ${styles.title}`}>Stoke a coin</h1>
           <p className={styles.lede}>
             A fixed-supply coin on a Raydium curve, priced in any of the {launchable.toLocaleString("en-US")} assets Raydium quotes. It moves to
             its own Raydium pool at its target, and you earn {earns.summary}.
@@ -185,7 +185,7 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
         </header>
 
         {/* One card, five numbered sections: what the coin is, what it is paired with, then the options; the action follows the card. */}
-        <fieldset className={styles.card} disabled={busy}>
+        <fieldset className={`card ${styles.card}`} disabled={busy}>
           <section className={styles.block} aria-labelledby="block-type">
             <SectionHead id="block-type" index="01" title="Launch type" hint="A standard coin, or a Reward Launch that withholds a tax on every transfer and pays it to the coin's holders." />
             <LaunchType options={options} coin={symbol} labelId="block-type" />
@@ -301,7 +301,7 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
         )}
 
         {failed ? (
-          <div className={styles.review} role="region" aria-label="Launch not confirmed">
+          <div className={`card card-raised ${styles.review}`} role="region" aria-label="Launch not confirmed">
             <p>
               {failed.uncertain
                 ? "Trying again checks the chain first: if your coin did launch, you go straight to it. It can never launch twice."
@@ -309,33 +309,33 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
             </p>
             <div className={styles.actions}>
               {!failed.uncertain && (
-                <button type="button" className={styles.secondary} onClick={() => { setError(null); setStep({ kind: "editing" }); }} disabled={step.kind !== "failed"}>
+                <button type="button" className={`button button-ghost button-lg ${styles.secondary}`} onClick={() => { setError(null); setStep({ kind: "editing" }); }} disabled={step.kind !== "failed"}>
                   Edit
                 </button>
               )}
-              <button type="button" className={styles.primary} onClick={() => retry(failed)} disabled={step.kind !== "failed"}>
+              <button type="button" className={`button button-primary button-lg ${styles.primary}`} onClick={() => retry(failed)} disabled={step.kind !== "failed"}>
                 {step.kind === "preparing" ? "Checking…" : "Try again"}
               </button>
             </div>
           </div>
         ) : review ? (
-          <div className={styles.review} role="region" aria-label="Review your launch">
+          <div className={`card card-raised ${styles.review}`} role="region" aria-label="Review your launch">
             <ReviewText review={review} symbol={symbol} platform={platform} />
             <div className={styles.actions}>
-              <button type="button" className={styles.secondary} onClick={() => setStep({ kind: "editing" })} disabled={step.kind !== "reviewing"}>
+              <button type="button" className={`button button-ghost button-lg ${styles.secondary}`} onClick={() => setStep({ kind: "editing" })} disabled={step.kind !== "reviewing"}>
                 Edit
               </button>
-              <button type="button" className={styles.primary} onClick={() => signAndLaunch(review)} disabled={step.kind !== "reviewing"}>
+              <button type="button" className={`button button-primary button-lg ${styles.primary}`} onClick={() => signAndLaunch(review)} disabled={step.kind !== "reviewing"}>
                 {step.kind === "signing" ? "Confirm in your wallet…" : step.kind === "confirming" ? "Launching…" : "Sign and launch"}
               </button>
             </div>
           </div>
         ) : publicKey ? (
-          <button type="submit" className={styles.primary} disabled={busy || !quote?.launchable}>
+          <button type="submit" className={`button button-primary button-lg ${styles.primary}`} disabled={busy || !quote?.launchable}>
             {step.kind === "preparing" ? "Preparing…" : "Review launch"}
           </button>
         ) : (
-          <div className={styles.connect}>
+          <div className={`card ${styles.connect}`}>
             <p>Connect a wallet to launch. It pays the network fees and becomes the coin&apos;s creator.</p>
             <WalletButton variant="inline" />
           </div>
@@ -350,8 +350,8 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
 
       {/* The summary stays in view while the form scrolls: what the coin is and the terms it launches on, short enough to fit a laptop's screen. */}
       <aside className={styles.summary} aria-label="Launch summary">
-        <div className={styles.summaryCard}>
-          <p className={styles.eyebrow} aria-hidden>Launch summary</p>
+        <div className={`card card-raised ${styles.summaryCard}`}>
+          <p className={`eyebrow ${styles.summaryEyebrow}`} aria-hidden>Launch summary</p>
           <div className={styles.preview}>
             {imageUrl ? <img src={imageUrl} alt="" /> : <div className={styles.previewImage} aria-hidden />}
             <div className={styles.previewTitles}>
@@ -385,13 +385,17 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
             <div>
               <dt>Supply</dt>
               <dd>
-                {COIN_SUPPLY.toLocaleString("en-US")} {symbol || "coins"}, fixed
+                <span>
+                  <span className="mono">{COIN_SUPPLY.toLocaleString("en-US")}</span> {symbol || "coins"}, fixed
+                </span>
               </dd>
             </div>
             <div>
               <dt>Platform fee</dt>
               <dd>
-                {platformFeePct}% of every trade
+                <span>
+                  <span className="mono">{platformFeePct}%</span> of every trade
+                </span>
                 <span className={styles.factNote}>set on-chain, plus Raydium&apos;s own fee</span>
               </dd>
             </div>
@@ -405,8 +409,8 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
             </div>
             <div>
               <dt>You earn</dt>
-              <dd className={styles.heat}>
-                {earns.summary}
+              <dd>
+                <span className={`heat-text ${styles.heat}`}>{earns.summary}</span>
                 <span className={styles.factNote}>half of what the platform collects, nothing to claim</span>
               </dd>
             </div>
@@ -456,7 +460,7 @@ function SectionHead({ id, index, title, hint, optional = false, tools }: { id: 
   return (
     <div className={styles.blockHead}>
       <div className={styles.blockTitles}>
-        <h2 id={id}>
+        <h2 id={id} className="t-h3">
           <span className={styles.index} aria-hidden>{index}</span>
           {title}
           {optional && <em>optional</em>}

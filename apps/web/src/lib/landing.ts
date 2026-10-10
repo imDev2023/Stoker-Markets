@@ -27,59 +27,15 @@ export function quoteKind(q: Pick<QuoteAsset, "category" | "issuer">) {
   }
 }
 
-/** The same kinds in the plural, for a sentence that lists them. */
-function kindPlural(q: Pick<QuoteAsset, "category" | "issuer">) {
-  switch (q.category) {
-    case "rwa":
-      return "real-world assets";
-    case "wrapped":
-      return "wrapped assets";
-    case "defi":
-      return "DeFi tokens";
-    case "collectible":
-      return "collectibles";
-    case "meme":
-      return "memes";
-    case "community":
-      return "community tokens";
-    default:
-      return quoteKind(q);
-  }
-}
-
 /**
- * The assets the hero's card names: SOL, a stablecoin, two tokenized stocks from different issuers and a leveraged
- * token, each the first the registry lists of its kind; whatever kind is missing is filled from the rest, so a young
- * registry still fills the card.
+ * The assets the hero's strip shows: the deepest markets first, by the registry's liquidity (the order the launch
+ * form's chooser uses too), and the rest in the registry's order when the registry has no depth for them, so a young
+ * registry still fills the strip.
  */
-export function featuredQuotes(launchable: QuoteAsset[], count = 5): QuoteAsset[] {
-  const picked: QuoteAsset[] = [];
-  const take = (match: (q: QuoteAsset) => boolean) => {
-    const q = launchable.find((c) => !picked.includes(c) && match(c));
-    if (q) picked.push(q);
-  };
-  take((q) => q.category === "sol");
-  take((q) => q.category === "stablecoin");
-  take((q) => q.category === "tokenized_stock");
-  take((q) => q.category === "tokenized_stock" && q.issuer !== picked[picked.length - 1]?.issuer);
-  take((q) => q.category === "leveraged");
-  for (const q of launchable) {
-    if (picked.length >= count) break;
-    if (!picked.includes(q)) picked.push(q);
-  }
-  return picked.slice(0, count);
-}
-
-/** The kinds the card has not named, as words for its last line: the other stock issuers, then the other categories. */
-export function otherKinds(launchable: QuoteAsset[], featured: QuoteAsset[]): string[] {
-  const named = new Set(featured.map(quoteKind));
-  const kinds: string[] = [];
-  for (const q of launchable) {
-    const kind = quoteKind(q);
-    const word = kindPlural(q);
-    if (!named.has(kind) && !kinds.includes(word)) kinds.push(word);
-  }
-  return kinds;
+export function deepestQuotes(launchable: QuoteAsset[], count = 8): QuoteAsset[] {
+  return [...launchable]
+    .sort((a, b) => (b.liquidityUsd ?? -1) - (a.liquidityUsd ?? -1))
+    .slice(0, count);
 }
 
 /** Raw amounts of several assets, added up in SOL at the registry's latest prices; an asset without a price is left out. */

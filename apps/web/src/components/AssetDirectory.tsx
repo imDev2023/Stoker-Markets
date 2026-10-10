@@ -6,6 +6,7 @@ import type { LaunchQuote, QuoteAsset } from "@launchpad/contract";
 import { assetKind, assetsSearch, ASSETS_SEARCH_MAX, DEFAULT_ASSETS, filterAssets, formatUsd, graduationInWords, groupAssets, type AssetsQuery } from "@/lib/assets";
 import { inChip, PAIRED_CHIPS, type PairedChip } from "@/lib/board";
 import { quoteTicker } from "@/lib/format";
+import { Ring } from "./Mark";
 import { QuoteLogo } from "./QuoteLogo";
 import styles from "./AssetDirectory.module.css";
 
@@ -66,7 +67,7 @@ export function AssetDirectory({ quotes, inUse, initialQuery }: { quotes: QuoteA
   return (
     <section className={`shell ${styles.section}`} aria-labelledby="assets-title">
       <div className={styles.head}>
-        <h1 id="assets-title" className={styles.title}>Assets</h1>
+        <h1 id="assets-title" className={`t-h1 ${styles.title}`}>Assets</h1>
         <span className={styles.count}>
           {quotes.length.toLocaleString("en-US")} assets, {launchable.toLocaleString("en-US")} launchable
         </span>
@@ -76,7 +77,7 @@ export function AssetDirectory({ quotes, inUse, initialQuery }: { quotes: QuoteA
         see what is known about it and the coins paired with it.
       </p>
       <div className={styles.toolbar}>
-        <label className={styles.search}>
+        <label className={`input ${styles.search}`}>
           <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
             <circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
             <path d="m13 13 4.5 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -94,7 +95,7 @@ export function AssetDirectory({ quotes, inUse, initialQuery }: { quotes: QuoteA
         </label>
         <div className={styles.chips} role="group" aria-label="Kind">
           {PAIRED_CHIPS.map((c) => (
-            <button key={c.label} type="button" aria-pressed={c === chosen} onClick={() => chip(c)}>
+            <button key={c.label} type="button" className="chip" aria-pressed={c === chosen} onClick={() => chip(c)}>
               {c.label} <span className={styles.chipCount}>{counts.get(c) ?? 0}</span>
             </button>
           ))}
@@ -102,12 +103,13 @@ export function AssetDirectory({ quotes, inUse, initialQuery }: { quotes: QuoteA
       </div>
 
       {shown.length === 0 ? (
-        <div className={styles.empty}>
+        <div className={`card card-raised ${styles.empty}`}>
+          <Ring size={72} className={styles.ring} />
           <p>{query.q ? `No asset matches "${query.q}".` : `No ${chosen.label.toLowerCase()} asset is quoted yet.`}</p>
-          <button type="button" className={styles.reset} onClick={() => change(DEFAULT_ASSETS)}>Show every asset</button>
+          <button type="button" className="button button-ghost" onClick={() => change(DEFAULT_ASSETS)}>Show every asset</button>
         </div>
       ) : (
-        <div className={styles.table}>
+        <div className={`card ${styles.table}`}>
           <div className={styles.columns} aria-hidden>
             {COLUMNS.map((c, i) => (
               <span key={i}>{c}</span>

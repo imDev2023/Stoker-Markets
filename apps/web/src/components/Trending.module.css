@@ -1,60 +1,37 @@
 .section {
-  padding-bottom: clamp(48px, 6vw, 80px);
+  padding-bottom: clamp(64px, 8vw, 96px);
 }
 
 .head {
   display: flex;
-  align-items: baseline;
-  gap: 18px;
+  align-items: center;
+  gap: 20px;
   flex-wrap: wrap;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .title {
   margin: 0;
-  font-family: var(--font-display);
-  font-stretch: 112%;
-  font-weight: 700;
-  font-size: 1.5rem;
-  letter-spacing: -0.02em;
 }
 
 .chips {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
-}
-
-.chips a {
-  padding: 5px 12px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface);
-  font-size: 0.875rem;
-  font-weight: 500;
-  text-decoration: none;
-  transition: border-color 120ms ease;
-}
-
-.chips a:hover {
-  border-color: var(--ink-3);
-}
-
-.chips a:first-child {
-  border-color: var(--button);
-  background: var(--button);
-  color: var(--on-button);
 }
 
 .all {
   margin-left: auto;
   font-size: 0.9375rem;
-  font-weight: 500;
-  color: var(--ink-2);
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
 }
 
 .all:hover {
-  color: var(--accent);
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .grid {
@@ -66,24 +43,29 @@
   list-style: none;
 }
 
+/* A coin as a card: a raised card that lifts a step on hover. */
 .card {
   display: flex;
   flex-direction: column;
   gap: 12px;
   height: 100%;
-  padding: 18px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--surface);
+  padding: 20px;
   text-decoration: none;
   min-width: 0;
-  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+  transition: border-color var(--base) var(--ease), box-shadow var(--base) var(--ease), transform var(--base) var(--ease);
 }
 
-.card:hover {
-  border-color: var(--ink-3);
-  box-shadow: var(--shadow);
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .card:hover {
+    border-color: var(--line-strong);
+    box-shadow: var(--highlight), var(--shadow);
+    transform: translateY(-2px);
+  }
+}
+
+.card:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
 }
 
 .top {
@@ -119,17 +101,6 @@
 
 .pair {
   margin-left: auto;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: var(--sunken);
-  font-size: 0.75rem;
-  white-space: nowrap;
-}
-
-/* A stock pairing is the wedge, so its chip takes a trace of heat. */
-.stock {
-  background: var(--plate);
-  color: var(--accent-strong);
 }
 
 .row {
@@ -138,12 +109,9 @@
   justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
-  font-variant-numeric: tabular-nums;
 }
 
 .price {
-  font-family: var(--font-mono);
-  font-weight: 500;
   font-size: 1.0625rem;
 }
 
@@ -152,6 +120,7 @@
   color: var(--ink-2);
 }
 
+/* The curve's progress as a heat bar, the one thing drawn on the card. */
 .track {
   display: block;
   height: 6px;
@@ -168,46 +137,24 @@
   background: var(--heat);
 }
 
-.tag {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--caution-bg);
-  color: var(--caution);
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
+/* The invitation: the ring at size, one line and the action. */
 .empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  padding: clamp(36px, 6vw, 64px) 20px;
-  border: 1px dashed var(--line);
-  border-radius: 18px;
+  gap: 18px;
+  padding: clamp(40px, 7vw, 72px) 20px;
   text-align: center;
+}
+
+.ring {
+  margin-bottom: 6px;
 }
 
 .empty p {
   margin: 0;
   font-size: 1.125rem;
   color: var(--ink-2);
-}
-
-.cta {
-  display: inline-flex;
-  align-items: center;
-  height: 44px;
-  padding: 0 20px;
-  border-radius: 999px;
-  background: var(--button);
-  color: var(--on-button);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.cta:hover {
-  background: var(--button-hover);
 }
 
 @media (max-width: 860px) {

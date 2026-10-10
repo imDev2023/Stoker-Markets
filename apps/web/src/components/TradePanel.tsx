@@ -264,8 +264,8 @@ export function TradePanel({
   // A buy that sells out the curve lands here too, so its confirmation stays on screen until the pool opens.
   if (launch.curve.status === "graduating") {
     return (
-      <section className={`${styles.card} ${styles.form}`} aria-labelledby="trade-title">
-        <h2 id="trade-title" className={styles.title}>Trade</h2>
+      <section className={`card card-raised ${styles.card} ${styles.form}`} aria-labelledby="trade-title">
+        <h2 id="trade-title" className={`t-h3 ${styles.title}`}>Trade</h2>
         {confirmation}
         <p className={styles.closed}>
           Trading pauses while Raydium moves the coin to its pool, and opens here again in a few seconds.
@@ -325,7 +325,7 @@ export function TradePanel({
     );
 
   return (
-    <section className={styles.card} aria-labelledby="trade-title">
+    <section className={`card card-raised ${styles.card}`} aria-labelledby="trade-title">
       <h2 id="trade-title" className="visually-hidden">Trade {launch.symbol}</h2>
       <form className={styles.form} onSubmit={onSubmit} aria-busy={busy}>
         <div className={styles.sides} role="group" aria-label="Buy or sell">
@@ -352,6 +352,7 @@ export function TradePanel({
                   <button
                     key={p}
                     type="button"
+                    className="chip"
                     aria-pressed={payWith === p}
                     onClick={() =>
                       edit(() => {
@@ -375,7 +376,7 @@ export function TradePanel({
               </span>
             )}
           </div>
-          <div className={`${styles.amount} ${invalidAmount || overBalance ? styles.invalid : ""}`}>
+          <div className={`input ${styles.amount} ${invalidAmount || overBalance ? "invalid" : ""}`}>
             <input
               id="trade-amount"
               className="mono"
@@ -407,7 +408,7 @@ export function TradePanel({
           <div className={styles.presets}>
             {side === "buy"
               ? (paysSol ? BUY_PRESETS_SOL.map(String) : buyPresets(launch, platform)).map((p) => (
-                  <button key={p} type="button" onClick={() => edit(() => setAmountText(p))}>
+                  <button key={p} type="button" className="chip" onClick={() => edit(() => setAmountText(p))}>
                     {p} {paySymbol}
                   </button>
                 ))
@@ -415,6 +416,7 @@ export function TradePanel({
                   <button
                     key={pct}
                     type="button"
+                    className="chip"
                     disabled={!balances || balances.coins === 0n}
                     onClick={() => edit(() => setAmountText(formatUnits(((balances!.coins * BigInt(pct)) / 100n).toString(), COIN_DECIMALS, COIN_DECIMALS).replace(/,/g, "")))}
                   >
@@ -427,7 +429,7 @@ export function TradePanel({
             <span id="slippage-label">Slippage</span>
             <div role="group" aria-labelledby="slippage-label">
               {SLIPPAGE_BPS.map((bps) => (
-                <button key={bps} type="button" aria-pressed={slippageBps === bps} onClick={() => edit(() => setSlippageBps(bps))}>
+                <button key={bps} type="button" className="chip" aria-pressed={slippageBps === bps} onClick={() => edit(() => setSlippageBps(bps))}>
                   {bps / 100}%
                 </button>
               ))}
@@ -575,16 +577,16 @@ export function TradePanel({
                 : `If the price moves more than ${slippageBps / 100}% first, the trade fails and nothing is traded.`}
             </p>
             <div className={styles.actions}>
-              <button type="button" className={styles.secondary} onClick={() => setStep({ kind: "editing" })} disabled={step.kind !== "reviewing"}>
+              <button type="button" className="button button-ghost button-lg" onClick={() => setStep({ kind: "editing" })} disabled={step.kind !== "reviewing"}>
                 Edit
               </button>
-              <button type="button" className={styles.primary} onClick={() => signAndSend(r)} disabled={step.kind !== "reviewing"}>
+              <button type="button" className={`button button-primary button-lg ${styles.primary}`} onClick={() => signAndSend(r)} disabled={step.kind !== "reviewing"}>
                 {step.kind === "signing" ? "Confirm in your wallet…" : step.kind === "confirming" ? "Confirming…" : side === "buy" ? "Sign and buy" : "Sign and sell"}
               </button>
             </div>
           </div>
         ) : publicKey ? (
-          <button type="submit" className={styles.primary} disabled={busy || amount === null || overBalance || !quote}>
+          <button type="submit" className={`button button-primary button-lg ${styles.primary}`} disabled={busy || amount === null || overBalance || !quote}>
             {step.kind === "preparing" ? "Preparing…" : side === "buy" ? "Review buy" : "Review sell"}
           </button>
         ) : (

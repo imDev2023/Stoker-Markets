@@ -18,8 +18,8 @@ export function TradeHistory({
   // Graduation is marked where the curve's trades end and the pool's begin.
   const lastCurveTrade = graduation ? trades.findIndex((t) => t.venue === "curve") : -1;
   return (
-    <section className={styles.card} aria-labelledby="trades-title">
-      <h2 id="trades-title" className={styles.title}>Trades</h2>
+    <section className={`card ${styles.card}`} aria-labelledby="trades-title">
+      <h2 id="trades-title" className={`t-h3 ${styles.title}`}>Trades</h2>
       {trades.length === 0 ? (
         <p className={styles.empty}>No trades yet. Be the first to buy.</p>
       ) : (

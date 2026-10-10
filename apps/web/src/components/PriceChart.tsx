@@ -103,7 +103,7 @@ export function PriceChart({
   const shown = hovered ?? candles.at(-1) ?? null;
 
   return (
-    <section className={styles.card} aria-labelledby="chart-title">
+    <section className={`card ${styles.card}`} aria-labelledby="chart-title">
       <div className={styles.head}>
         <div className={styles.headline}>
           <h2 id="chart-title" className={styles.title}>Price</h2>
@@ -118,7 +118,7 @@ export function PriceChart({
             </p>
           )}
         </div>
-        <div className={styles.intervals} role="group" aria-label="Candle interval">
+        <div className={`segmented ${styles.intervals}`} role="group" aria-label="Candle interval">
           {CANDLE_INTERVALS.map((i) => (
             <button
               key={i}

@@ -1,8 +1,9 @@
+/* The revenue page: the totals as panels with their key figure, the days as a table, the Ledger, and the rules aside. */
 .page {
   display: flex;
   flex-direction: column;
   gap: 28px;
-  padding-top: clamp(28px, 5vw, 56px);
+  padding-top: clamp(28px, 4vw, 40px);
   padding-bottom: 80px;
 }
 
@@ -15,18 +16,13 @@
 
 .title {
   margin: 0;
-  font-family: var(--font-display);
-  font-stretch: 112%;
-  font-weight: 800;
-  font-size: clamp(2rem, 4vw, 2.75rem);
-  letter-spacing: -0.02em;
-  line-height: 1.05;
 }
 
 .lede {
   margin: 0;
   font-size: 1.0625rem;
   color: var(--ink-2);
+  text-wrap: pretty;
 }
 
 .layout {
@@ -51,52 +47,56 @@
 
 .card,
 .rule,
-.emptyCard,
 .asset {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 20px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
+  padding: 24px;
   min-width: 0;
 }
 
 .cardTitle {
   margin: 0;
-  font-size: 0.875rem;
-  font-weight: 600;
 }
 
-.rule {
-  border-color: transparent;
-  background: var(--plate);
-}
-
+/* The explainer: a panel like the others, its title in the accent. */
 .rule .cardTitle {
-  color: var(--accent-strong);
+  color: var(--accent);
 }
 
+/* Nothing collected yet: the ring at size and one line. */
 .emptyCard {
-  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: clamp(36px, 6vw, 56px) 24px;
+  text-align: center;
 }
 
 .emptyCard p {
   margin: 0;
+  max-width: 44ch;
   font-size: 1.0625rem;
   color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.ring {
+  margin-bottom: 4px;
 }
 
 .muted {
   margin: 0;
   font-size: 0.9375rem;
+  line-height: 1.55;
   color: var(--ink-3);
+  text-wrap: pretty;
 }
 
 .totals {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
   gap: 16px;
   margin: 0;
   padding: 0;
@@ -113,9 +113,9 @@
 
 .ticker {
   font-family: var(--font-display);
-  font-stretch: 125%;
-  font-weight: 800;
-  font-size: 0.9375rem;
+  font-stretch: 112%;
+  font-weight: 600;
+  font-size: 1rem;
   overflow-wrap: anywhere;
 }
 
@@ -126,10 +126,11 @@
   overflow-wrap: anywhere;
 }
 
+/* The asset's one key figure over its label. */
 .amount {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: column-reverse;
+  gap: 6px;
   margin: 0;
   line-height: 1.1;
 }
@@ -140,8 +141,9 @@
 }
 
 .amount :global(.mono) {
-  font-size: 1.75rem;
+  font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.25rem);
   font-weight: 500;
+  line-height: 1;
   letter-spacing: -0.02em;
   overflow-wrap: anywhere;
 }
@@ -180,6 +182,18 @@
   font-weight: 500;
 }
 
+.streams dd:global(.mono) {
+  font-size: 0.875rem;
+}
+
+/* What went to Creators is the brand's moment on this page. */
+.creators dd:first-of-type {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 .sweptBlock {
   display: flex;
   flex-direction: column;
@@ -210,10 +224,7 @@
 }
 
 .swept dt {
-  font-family: var(--font-display);
-  font-stretch: 125%;
-  font-weight: 800;
-  font-size: 0.8125rem;
+  font-weight: 600;
 }
 
 .swept dd {
@@ -221,8 +232,12 @@
   font-weight: 500;
 }
 
+.swept dd:global(.mono) {
+  font-size: 0.875rem;
+}
+
 .explain {
-  gap: 10px;
+  gap: 12px;
   font-size: 0.9375rem;
 }
 
@@ -231,8 +246,9 @@
 }
 
 .explain dd {
-  margin: 0;
+  margin: 2px 0 0;
   color: var(--ink-2);
+  text-wrap: pretty;
 }
 
 .wallets {
@@ -248,7 +264,8 @@
 
 .wallets a {
   text-decoration: none;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-strong);
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
 
 .wallets a:hover {
@@ -266,8 +283,10 @@
   padding: 0 8px 8px;
   border-bottom: 1px solid var(--line);
   color: var(--ink-3);
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   text-align: left;
   white-space: nowrap;
 }
@@ -278,11 +297,17 @@
   white-space: nowrap;
 }
 
+.table td:global(.mono) {
+  font-size: 0.8125rem;
+}
+
 .table tbody th {
   border-bottom: 0;
   color: var(--ink);
   font-size: 0.875rem;
   font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
   vertical-align: top;
 }
 
@@ -329,10 +354,10 @@
   .card,
   .rule,
   .asset {
-    padding: 16px;
+    padding: 18px;
   }
   .emptyCard {
-    padding: 20px;
+    padding: 28px 18px;
   }
   .table .wide {
     display: none;

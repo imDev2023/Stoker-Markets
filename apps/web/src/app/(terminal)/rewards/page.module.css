@@ -1,96 +1,156 @@
+/*
+  The terminal's plain pages (rewards, a wallet's rewards, a round, burns, fee changes): a title, a lead, panels on
+  surface with their figures in mono, dense rows parted by hairlines. The panel itself is the `card` primitive.
+*/
 .page {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding-block: 32px 48px;
+  gap: 20px;
+  padding-block: clamp(28px, 4vw, 40px) 48px;
 }
 
 .title {
   margin: 0;
-  font-family: var(--font-display);
-  font-stretch: 125%;
-  font-weight: 800;
-  font-size: clamp(1.75rem, 4vw, 2.5rem);
-  line-height: 1.05;
-  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.title a:hover {
+  color: var(--accent);
+}
+
+/* A wallet's address in the title keeps the title's size, in mono. */
+.title :global(.mono) {
+  font-size: 0.8em;
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
 .lead {
-  margin: 0;
-  max-width: 60ch;
+  margin: -4px 0 4px;
+  max-width: 64ch;
+  font-size: 1.0625rem;
   color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.lead a {
+  color: var(--accent);
 }
 
 .card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 20px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
+  gap: 14px;
+  padding: 24px;
   min-width: 0;
 }
 
 .cardTitle {
   margin: 0;
-  font-size: 0.875rem;
-  font-weight: 600;
 }
 
+/* The wallet lookup: a field and its action on one line, the error under them. */
 .lookup {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.lookup input {
+.lookup > :first-child {
   flex: 1 1 280px;
-  min-width: 0;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface);
-  color: inherit;
-  font: inherit;
+  width: auto;
 }
 
-.lookup button {
-  padding: 10px 16px;
-  border: none;
-  border-radius: 10px;
-  background: var(--button);
-  color: var(--on-button);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
+.lookup input {
+  height: 38px;
+  font-size: 0.875rem;
 }
 
+.lookup [role="alert"] {
+  flex-basis: 100%;
+  color: var(--down);
+}
+
+/* A panel's facts: the label a step smaller and two steps lighter than its value. */
 .rules {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px 20px;
   margin: 0;
 }
 
 .rules dt {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--ink-3);
 }
 
 .rules dd {
-  margin: 2px 0 0;
-  font-size: 0.875rem;
+  margin: 4px 0 0;
+  font-size: 0.9375rem;
   font-weight: 500;
   overflow-wrap: anywhere;
+}
+
+.rules dd :global(.mono) {
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+/* The page's one key figure (the burns' revenue, a round's pot) at figure-xl, its unit beside it. */
+.key dd {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.key dd :global(.mono) {
+  font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.25rem);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* The burn budget's bar: what it spent, in the heat, over what is waiting. */
+.budget {
+  grid-column: 1 / -1;
+}
+
+.bar {
+  display: block;
+  height: 6px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: var(--sunken);
+  overflow: hidden;
+}
+
+.bar span {
+  display: block;
+  height: 100%;
+  min-width: 3px;
+  border-radius: 999px;
+  background: var(--heat);
 }
 
 .note {
   margin: 0;
   font-size: 0.875rem;
+  line-height: 1.55;
   color: var(--ink-3);
+  text-wrap: pretty;
 }
 
+.note a {
+  color: var(--accent);
+}
+
+/* Dense rows: what happened on the left, the figure on the right, hairlines between. */
 .list {
   display: flex;
   flex-direction: column;
@@ -104,7 +164,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 2px 16px;
   align-items: baseline;
-  padding: 11px 0;
+  padding: 10px 0;
   font-size: 0.875rem;
 }
 
@@ -121,24 +181,53 @@
 }
 
 .list a {
-  color: var(--ink-2);
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line-strong);
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
 
 .list a:hover {
   color: var(--accent);
+  border-color: var(--accent);
+}
+
+.list :global(.mono) {
+  font-size: 0.875rem;
 }
 
 .amount {
   text-align: right;
   font-weight: 500;
-  color: var(--up);
+  color: var(--ink);
+  white-space: nowrap;
 }
 
-.pending .amount {
-  color: var(--ink-2);
+/* A payout still on its way, or a date beside an announcement, is the lighter figure. */
+.pending .amount,
+.when {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+.when {
+  text-align: right;
+  font-size: 0.8125rem;
 }
 
 .back {
   align-self: flex-start;
-  color: var(--ink-2);
+}
+
+@media (max-width: 560px) {
+  .card {
+    padding: 18px;
+  }
+  .list li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .amount,
+  .when {
+    text-align: left;
+  }
 }

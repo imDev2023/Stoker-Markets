@@ -1,3 +1,5 @@
+// The tokens and primitives come first, so a component's module can override a primitive's defaults on a tied selector.
+import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { Archivo, IBM_Plex_Mono, Public_Sans } from "next/font/google";
 import type { ReactNode } from "react";
@@ -8,7 +10,6 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { ThemeOverride } from "@/components/ThemeOverride";
 import { getPlatform, listAnnouncements } from "@/lib/api";
 import { THEME_GROUNDS, themeFrom } from "@/lib/theme";
-import "./globals.css";
 
 const archivo = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-archivo", display: "swap" });
 const publicSans = Public_Sans({ subsets: ["latin"], variable: "--font-public-sans", display: "swap" });

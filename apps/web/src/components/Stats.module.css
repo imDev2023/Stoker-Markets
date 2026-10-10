@@ -1,11 +1,11 @@
 .stats {
-  padding-bottom: clamp(36px, 5vw, 64px);
+  padding-bottom: clamp(48px, 6vw, 80px);
 }
 
 .list {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 20px;
+  gap: 16px;
   margin: 0;
 }
 
@@ -13,36 +13,29 @@
 .stat {
   display: flex;
   flex-direction: column-reverse;
-  gap: 4px;
-  padding-top: 14px;
-  border-top: 2px solid var(--line);
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 24px;
   min-width: 0;
 }
 
 .value {
   margin: 0;
-  font-family: var(--font-display);
-  font-stretch: 112%;
-  font-weight: 700;
-  font-size: clamp(1.375rem, 2.2vw, 1.75rem);
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
 
-/* The figure paid to creators is live money moving, so it carries the heat. */
-.heat {
-  color: var(--brand);
-}
-
 .label {
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
   color: var(--ink-2);
 }
 
 @media (max-width: 860px) {
   .list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .stat {
+    padding: 20px;
   }
 }

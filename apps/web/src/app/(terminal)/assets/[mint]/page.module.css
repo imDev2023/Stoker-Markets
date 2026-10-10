@@ -1,8 +1,9 @@
+/* One Quote Asset: its head, two panels of facts, the coins priced in it and what is known about it. */
 .page {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  padding-top: clamp(24px, 4vw, 40px);
+  padding-top: clamp(28px, 4vw, 40px);
   padding-bottom: 80px;
 }
 
@@ -23,12 +24,7 @@
 
 .ticker {
   margin: 0;
-  font-family: var(--font-display);
-  font-stretch: 112%;
-  font-weight: 800;
-  font-size: clamp(1.75rem, 3.5vw, 2.25rem);
-  letter-spacing: -0.02em;
-  line-height: 1.05;
+  overflow-wrap: anywhere;
 }
 
 .name {
@@ -41,6 +37,7 @@
   margin: 2px 0 0;
   font-size: 0.875rem;
   color: var(--ink-3);
+  text-wrap: pretty;
 }
 
 .action {
@@ -51,29 +48,13 @@
   max-width: 34ch;
 }
 
-.cta {
-  display: inline-flex;
-  align-items: center;
-  height: 44px;
-  padding: 0 20px;
-  border-radius: 999px;
-  background: var(--button);
-  color: var(--on-button);
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.cta:hover {
-  background: var(--button-hover);
-}
-
+/* Why the asset can't be launched with, where the action would be. */
 .reason {
   margin: 0;
   padding: 10px 14px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
   font-size: 0.875rem;
   color: var(--ink-2);
   text-wrap: pretty;
@@ -94,13 +75,10 @@
 .facts,
 .addresses {
   display: grid;
-  gap: 14px;
+  gap: 16px;
   align-content: start;
   margin: 0;
-  padding: 20px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
+  padding: 24px;
 }
 
 .facts dt,
@@ -115,7 +93,14 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 4px 10px;
-  margin: 2px 0 0;
+  margin: 4px 0 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.facts dd :global(.mono),
+.addresses dd :global(.mono) {
+  font-size: 0.9375rem;
   font-weight: 500;
 }
 
@@ -127,7 +112,8 @@
 
 .addresses a {
   text-decoration: none;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-strong);
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
 
 .addresses a:hover {
@@ -137,31 +123,34 @@
 
 .factLink {
   flex-basis: 100%;
-  color: var(--accent-strong);
+  color: var(--accent);
   font-size: 0.875rem;
   font-weight: 600;
+  text-decoration: none;
+}
+
+.factLink:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .card {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 20px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
+  padding: 24px;
 }
 
 .cardTitle {
   margin: 0;
-  font-size: 0.875rem;
-  font-weight: 600;
 }
 
 .cardNote {
   margin: 0;
   font-size: 0.875rem;
   color: var(--ink-3);
+  text-wrap: pretty;
 }
 
 .coins {
@@ -170,25 +159,32 @@
   list-style: none;
 }
 
+/* One coin a row, the figures in mono, a hairline between rows. */
 .coin {
   display: grid;
   grid-template-columns: 22px auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   min-height: var(--row);
-  padding: 0 4px;
+  margin: 0 -8px;
+  padding: 0 8px;
   border-top: 1px solid var(--line);
+  border-radius: var(--radius-xs);
   font-family: var(--font-mono);
   font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
   text-decoration: none;
+  transition: background-color var(--fast) var(--ease);
 }
 
 .coins li:first-child .coin {
   border-top: 0;
 }
 
-.coin:hover {
-  background: var(--bg);
+@media (hover: hover) {
+  .coin:hover {
+    background: var(--hover);
+  }
 }
 
 .coin img,
@@ -217,8 +213,6 @@
 
 .back {
   align-self: flex-start;
-  color: var(--ink-2);
-  font-weight: 500;
 }
 
 @media (max-width: 900px) {
@@ -236,8 +230,16 @@
     align-items: stretch;
     max-width: none;
   }
-  .cta {
-    justify-content: center;
+  .action > a {
+    height: auto;
+    min-height: 44px;
+    padding-block: 10px;
     white-space: normal;
+    text-align: center;
+  }
+  .facts,
+  .addresses,
+  .card {
+    padding: 18px;
   }
 }

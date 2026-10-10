@@ -1,8 +1,9 @@
+/* The connected Creator's own page: what their coins earned, in the heat, with how it is paid and every payment. */
 .page {
   display: flex;
   flex-direction: column;
   gap: 28px;
-  padding-top: clamp(28px, 5vw, 56px);
+  padding-top: clamp(28px, 4vw, 40px);
   padding-bottom: 80px;
 }
 
@@ -15,12 +16,13 @@
 
 .title {
   margin: 0;
-  font-family: var(--font-display);
-  font-stretch: 112%;
-  font-weight: 800;
-  font-size: clamp(2rem, 4vw, 2.75rem);
-  letter-spacing: -0.02em;
-  line-height: 1.05;
+}
+
+.lede {
+  margin: 0;
+  font-size: 1.0625rem;
+  color: var(--ink-2);
+  text-wrap: pretty;
 }
 
 /* The one card shown without a wallet, or to one that has launched nothing: as wide as the heading's text. */
@@ -35,10 +37,7 @@
   justify-content: space-between;
   gap: 14px 16px;
   flex-wrap: wrap;
-  padding: 16px 18px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
+  padding: 18px 20px;
 }
 
 .connect p {
@@ -46,12 +45,6 @@
   flex: 1 1 260px;
   color: var(--ink-2);
   font-size: 0.9375rem;
-}
-
-.lede {
-  margin: 0;
-  font-size: 1.0625rem;
-  color: var(--ink-2);
 }
 
 .layout {
@@ -71,69 +64,67 @@
 }
 
 .card,
-.rule,
-.emptyCard {
+.rule {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 20px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
+  padding: 24px;
   min-width: 0;
 }
 
 .cardTitle {
   margin: 0;
-  font-size: 0.875rem;
-  font-weight: 600;
 }
 
-.rule {
-  border-color: transparent;
-  background: var(--plate);
-}
-
+/* The explainer: a panel like the others, its title in the accent. */
 .rule .cardTitle {
-  color: var(--accent-strong);
+  color: var(--accent);
 }
 
 .rule p,
-.muted,
-.emptyCard p {
+.muted {
   margin: 0;
   font-size: 0.9375rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.rule p {
+  color: var(--ink-2);
+}
+
+.rule a {
+  color: var(--accent);
 }
 
 .muted {
   color: var(--ink-3);
 }
 
+/* Nothing yet: the ring at size, one line and, for a wallet that never launched, the action. */
 .emptyCard {
-  align-items: flex-start;
-  gap: 16px;
-  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: clamp(36px, 6vw, 56px) 24px;
+  text-align: center;
 }
 
 .emptyCard p {
+  margin: 0;
+  max-width: 40ch;
   font-size: 1.0625rem;
   color: var(--ink-2);
+  text-wrap: pretty;
 }
 
-.cta {
-  display: inline-flex;
-  align-items: center;
-  height: 44px;
-  padding: 0 20px;
-  border-radius: 999px;
-  background: var(--button);
-  color: var(--on-button);
-  font-weight: 600;
-  text-decoration: none;
+.ring {
+  margin-bottom: 4px;
 }
 
-.cta:hover {
-  background: var(--button-hover);
+.emptyCard a {
+  margin-top: 4px;
 }
 
 .coins {
@@ -152,17 +143,23 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 12px 0;
+  margin: 0 -8px;
+  padding: 12px 8px;
+  border-radius: var(--radius-sm);
   text-decoration: none;
   min-width: 0;
+  transition: background-color var(--fast) var(--ease);
 }
 
-.coins li:first-child .coin {
-  padding-top: 4px;
+@media (hover: hover) {
+  .coin:hover {
+    background: var(--hover);
+  }
 }
 
-.coins li:last-child .coin {
-  padding-bottom: 0;
+.coin:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
 }
 
 .coin img,
@@ -172,7 +169,7 @@
   height: 44px;
   border-radius: 12px;
   object-fit: cover;
-  background: var(--plate);
+  background: var(--sunken);
 }
 
 .coinNames {
@@ -184,14 +181,10 @@
 
 .coinSymbol {
   font-family: var(--font-display);
-  font-stretch: 125%;
-  font-weight: 800;
-  font-size: 0.9375rem;
+  font-stretch: 112%;
+  font-weight: 600;
+  font-size: 1rem;
   overflow-wrap: anywhere;
-}
-
-.coin:hover .coinSymbol {
-  color: var(--accent);
 }
 
 .coinName {
@@ -211,28 +204,28 @@
   text-align: right;
 }
 
+.coinEarned :global(.mono) {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Where a coin earns from is a state, not a direction: the accent's plate. */
 .earning {
   display: inline-flex;
   padding: 1px 8px;
   border-radius: 999px;
+  background: var(--plate);
+  color: var(--accent-strong);
   font-size: 0.75rem;
   font-weight: 600;
   white-space: nowrap;
-}
-
-.earning {
-  background: var(--up-bg);
-  color: var(--up);
 }
 
 .asset {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 22px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
+  padding: 24px;
   min-width: 0;
 }
 
@@ -249,38 +242,43 @@
   gap: 8px;
   margin: 0;
   font-family: var(--font-display);
-  font-stretch: 125%;
-  font-weight: 800;
+  font-stretch: 112%;
+  font-weight: 600;
   font-size: 1rem;
-  letter-spacing: 0.01em;
 }
 
 .assetLabel {
   font-size: 0.8125rem;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ink-3);
 }
 
+/* What the coins earned, the page's key figure, in the heat: the Creator's cut is the brand's moment. */
 .assetAmount {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
   gap: 4px 10px;
   margin: 0;
-  line-height: 1.1;
+  line-height: 1;
 }
 
 .assetAmount :global(.mono) {
-  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.25rem);
   font-weight: 500;
+  line-height: 1;
   letter-spacing: -0.02em;
   overflow-wrap: anywhere;
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .assetUnit {
   font-family: var(--font-display);
-  font-stretch: 125%;
-  font-weight: 800;
+  font-stretch: 112%;
+  font-weight: 600;
   font-size: 1.125rem;
   color: var(--ink-2);
 }
@@ -310,6 +308,11 @@
   text-align: right;
   font-weight: 500;
   white-space: nowrap;
+}
+
+.assetFacts dd :global(.mono) {
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .payments {
@@ -346,11 +349,17 @@
   font-weight: 500;
 }
 
+.paymentAmount :global(.mono) {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
 .payments a {
   color: var(--ink-2);
   font-size: 0.8125rem;
   text-decoration: none;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-strong);
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
 
 .payments a:hover {
@@ -372,18 +381,14 @@
 
 @media (max-width: 560px) {
   .card,
-  .rule {
-    padding: 16px;
-  }
+  .rule,
   .asset {
     padding: 18px;
   }
   .emptyCard {
-    padding: 20px;
+    padding: 28px 18px;
   }
-  .cta {
+  .emptyCard a {
     align-self: stretch;
-    justify-content: center;
-    height: 48px;
   }
 }

@@ -1,200 +1,258 @@
 /*
-  Colour is one set of role tokens, one block per scheme and mode (owner, 2026-10-09): E Graphite is the primary, and
-  K Oxblood and M Midnight and Ice ride along as alternates. `data-theme` on <html> picks the block (src/lib/theme.ts),
-  and light and dark follow the visitor. The values are the colour candidate page's, so the mark, the share images and
-  the pixel baselines agree with the site to the digit.
+  Colour is one set of role tokens, one block per direction and mode (docs/design/principles.md, 2026-10-10): A Cobalt
+  is the recommended direction, B Violet and C Teal ride along for the owner's elimination. `data-theme` on <html> picks
+  the block (src/lib/theme.ts), and light and dark follow the visitor. The heat ramp, the direction colours and the
+  caution are the same in every direction, so the mark and the live data are identical across them; what changes is
+  the neutral's tint and the signature accent.
 
-  Roles: bg (the page), surface (a card), sunken (a well, an input, a table head), line; ink, ink-2, ink-3 (text, all AA
-  on surface); accent (a link, the active section; in Graphite the ember, only where something is live), accent-strong,
-  on-accent, plate (a tinted plate behind the accent); button and on-button (the primary button: ink in Graphite, never a
-  coloured fill); brand (the mark's glow as text); up and down with their chip grounds; caution; heat-low to heat-high
-  (the heat ramp: a curve filling towards Graduation, a burn, the hero's one emphasised phrase).
+  Surfaces, a ladder by tone before any border (principle 2):
+    sunken     a well: an input, a ticker bar, the footer       bg         the page
+    surface    a panel or card                                  surface-2  a hovered row, a nested well, a raised card in dark
+    surface-3  a popover, a menu, a dialog                      raised     a card that stands off the page (surface-2 in dark,
+                                                                           white with shadow-raised in light)
+    line / line-strong   hairlines, ink or white at low alpha so they sit right on every surface
+    highlight  the 1px inner top light on a raised card in dark; none in light
+  Text: ink, ink-2, ink-3, all AA on every surface they sit on (checked by tools/contrast.py from these values).
+  The accent: one hue for action, focus, links and live data (principle 4): accent (text and icons on surface),
+  accent-strong (text on plate, hover), on-accent, plate (a tinted plate behind the accent), button / on-button (the
+  primary fill and its text), glow (the primary action's halo) and ring (the focus ring).
+  Meaning: up / down are direction and nothing else; caution only on label chips; brand is the heat as text, heat-low to
+  heat-high the ramp (a curve filling towards Graduation, a burn, the slogan's emphasised phrase, what a Creator earns).
+  Depth: shadow (a floating surface-3), shadow-raised (a raised card), one light source top-left in both modes.
+  tile is the mark's ground, the direction's dark canvas in both modes, so one mark serves everywhere.
 */
+
+/* A Cobalt: a blue-shifted near-black and an electric cobalt for action, the ember's complement. */
 :root,
-:root[data-theme="graphite"] {
-  --bg: #f4f3f0;
+:root[data-theme="cobalt"] {
+  --bg: #f6f8fc;
   --surface: #ffffff;
-  --sunken: #eae8e4;
-  --line: #dcdad5;
-  --ink: #161514;
-  --ink-2: #555350;
-  --ink-3: #6f6c67;
-  --accent: #c23c0a;
-  --accent-strong: #9c2f06;
+  --surface-2: #f0f3f9;
+  --surface-3: #ffffff;
+  --raised: #ffffff;
+  --sunken: #eceff6;
+  --line: rgb(11 16 32 / 11%);
+  --line-strong: rgb(11 16 32 / 22%);
+  --highlight: none;
+  --ink: #0b1020;
+  --ink-2: #4a5470;
+  --ink-3: #606a86;
+  --accent: #2457f5;
+  --accent-strong: #1a45cc;
+  --accent-rgb: 36 87 245;
   --on-accent: #ffffff;
-  --plate: #f9e6de;
-  --button: #161514;
-  --on-button: #f4f3f0;
-  --brand: #c23c0a;
-  --up: #0b7c54;
-  --up-bg: #e3f6ed;
-  --down: #c62d35;
-  --down-bg: #fce8ea;
-  --caution: #9a5d05;
-  --caution-bg: #fef5df;
-  --heat-low: #ffb020;
-  --heat-high: #e8431a;
-  --shadow: 0 1px 2px rgb(22 21 20 / 6%), 0 8px 24px -12px rgb(22 21 20 / 18%);
+  --plate: #e6edff;
+  --button: #2457f5;
+  --on-button: #ffffff;
+  --tile: #070a12;
+  --lift: black;
+  --shadow: 0 1px 2px rgb(11 16 32 / 6%), 0 12px 32px -12px rgb(36 87 245 / 18%);
+  --shadow-raised: 0 1px 2px rgb(11 16 32 / 6%), 0 8px 24px -12px rgb(36 87 245 / 18%);
+  --glow: 0 0 0 1px rgb(36 87 245 / 25%), 0 8px 24px -8px rgb(36 87 245 / 35%);
+  --ring: 0 0 0 3px rgb(36 87 245 / 35%);
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root,
-  :root[data-theme="graphite"] {
-    --bg: #141312;
-    --surface: #1c1b19;
-    --sunken: #0e0d0c;
-    --line: #2d2b28;
-    --ink: #f1efea;
-    --ink-2: #b1aea7;
-    --ink-3: #8a8780;
-    --accent: #ff8d57;
-    --accent-strong: #ffa97a;
-    --on-accent: #141312;
-    --plate: #3a241a;
-    --button: #f1efea;
-    --on-button: #141312;
-    --brand: #ff8d57;
-    --up: #3ddc97;
-    --up-bg: #15352a;
-    --down: #ff5d6c;
-    --down-bg: #3e1a20;
-    --caution: #ffc94a;
-    --caution-bg: #3a2d12;
-    --heat-low: #ffb020;
-    --heat-high: #ff6a2a;
-    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 12px 28px -14px rgb(0 0 0 / 60%);
-    color-scheme: dark;
-  }
-}
-
-/* K Oxblood: embers gone dark, warm without a flame; the loss red is a coral so a loss and the brand never share a hue. */
-:root[data-theme="oxblood"] {
-  --bg: #f6f3f0;
-  --surface: #ffffff;
-  --sunken: #ede8e4;
-  --line: #e0d9d4;
-  --ink: #1a1416;
-  --ink-2: #574d50;
-  --ink-3: #71676a;
-  --accent: #7a1e2e;
-  --accent-strong: #5e1522;
-  --on-accent: #ffffff;
-  --plate: #f6e1e3;
-  --button: #7a1e2e;
-  --on-button: #ffffff;
-  --brand: #7a1e2e;
-  --up: #0b7c54;
-  --up-bg: #e3f6ed;
-  --down: #c4362c;
-  --down-bg: #fde6e3;
-  --caution: #9a5d05;
-  --caution-bg: #fef5df;
-  --heat-low: #e0a3ad;
-  --heat-high: #7a1e2e;
-  --shadow: 0 1px 2px rgb(26 20 22 / 6%), 0 8px 24px -12px rgb(26 20 22 / 18%);
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root[data-theme="oxblood"] {
-    --bg: #110e10;
-    --surface: #1a1518;
-    --sunken: #0b090a;
-    --line: #2e2529;
-    --ink: #f3eeef;
-    --ink-2: #b4a9ad;
-    --ink-3: #8b7f84;
-    --accent: #c9485b;
-    --accent-strong: #e07a8a;
+  :root[data-theme="cobalt"] {
+    --bg: #070a12;
+    --surface: #0e1320;
+    --surface-2: #141b2c;
+    --surface-3: #1b2338;
+    --raised: #141b2c;
+    --sunken: #04060c;
+    --line: rgb(255 255 255 / 8%);
+    --line-strong: rgb(255 255 255 / 16%);
+    --highlight: inset 0 1px 0 rgb(255 255 255 / 4%);
+    --ink: #eef2ff;
+    --ink-2: #a9b3cc;
+    --ink-3: #7d88a3;
+    --accent: #5b84ff;
+    --accent-strong: #8aa6ff;
+    --accent-rgb: 91 132 255;
     --on-accent: #ffffff;
-    --plate: #3a1a22;
-    --button: #c9485b;
+    --plate: #152650;
+    --button: #3560ff;
     --on-button: #ffffff;
-    --brand: #e07a8a;
-    --up: #3ddc97;
-    --up-bg: #15352a;
-    --down: #ff7a66;
-    --down-bg: #3e1f1a;
-    --caution: #ffc94a;
-    --caution-bg: #3a2d12;
-    --heat-low: #e07a8a;
-    --heat-high: #c9485b;
-    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 12px 28px -14px rgb(0 0 0 / 60%);
+    --lift: white;
+    --shadow: 0 4px 16px rgb(0 0 0 / 50%);
+    --shadow-raised: 0 8px 24px -12px rgb(0 0 0 / 50%);
+    --glow: 0 0 0 1px rgb(91 132 255 / 35%), 0 0 24px rgb(91 132 255 / 25%);
+    --ring: 0 0 0 3px rgb(91 132 255 / 55%);
     color-scheme: dark;
   }
 }
 
-/* M Midnight and Ice: a navy that behaves like black, and the brightness is the white. */
-:root[data-theme="midnight"] {
-  --bg: #f3f5f9;
+/* B Violet: an indigo-shifted neutral and a violet between Stripe's purple and Phantom's periwinkle. */
+:root[data-theme="violet"] {
+  --bg: #f7f6fc;
   --surface: #ffffff;
-  --sunken: #e6ebf3;
-  --line: #d5dce8;
-  --ink: #0d1426;
-  --ink-2: #46506a;
-  --ink-3: #626c84;
-  --accent: #142a5c;
-  --accent-strong: #0e1f45;
+  --surface-2: #f1effa;
+  --surface-3: #ffffff;
+  --raised: #ffffff;
+  --sunken: #ecebf6;
+  --line: rgb(18 15 42 / 11%);
+  --line-strong: rgb(18 15 42 / 22%);
+  --highlight: none;
+  --ink: #120f2a;
+  --ink-2: #4d4870;
+  --ink-3: #68628a;
+  --accent: #5b45e6;
+  --accent-strong: #4633bf;
+  --accent-rgb: 91 69 230;
   --on-accent: #ffffff;
-  --plate: #dfe7f7;
-  --button: #142a5c;
+  --plate: #ebe7ff;
+  --button: #5b45e6;
   --on-button: #ffffff;
-  --brand: #142a5c;
-  --up: #0b7c54;
-  --up-bg: #e3f6ed;
-  --down: #c62d35;
-  --down-bg: #fce8ea;
-  --caution: #9a5d05;
-  --caution-bg: #fef5df;
-  --heat-low: #9cc4ff;
-  --heat-high: #142a5c;
-  --shadow: 0 1px 2px rgb(13 20 38 / 6%), 0 8px 24px -12px rgb(13 20 38 / 18%);
+  --tile: #09081a;
+  --lift: black;
+  --shadow: 0 1px 2px rgb(18 15 42 / 6%), 0 12px 32px -12px rgb(91 69 230 / 18%);
+  --shadow-raised: 0 1px 2px rgb(18 15 42 / 6%), 0 8px 24px -12px rgb(91 69 230 / 18%);
+  --glow: 0 0 0 1px rgb(91 69 230 / 25%), 0 8px 24px -8px rgb(91 69 230 / 35%);
+  --ring: 0 0 0 3px rgb(91 69 230 / 35%);
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root[data-theme="midnight"] {
-    --bg: #0a0e1a;
-    --surface: #121829;
-    --sunken: #06080f;
-    --line: #222a40;
-    --ink: #edf1fa;
-    --ink-2: #a7b0c6;
-    --ink-3: #7c869f;
-    --accent: #dbe9ff;
-    --accent-strong: #ffffff;
-    --on-accent: #0a0e1a;
-    --plate: #1b2a4a;
-    --button: #dbe9ff;
-    --on-button: #0a0e1a;
-    --brand: #dbe9ff;
-    --up: #3ddc97;
-    --up-bg: #15352a;
-    --down: #ff5d6c;
-    --down-bg: #3e1a20;
-    --caution: #ffc94a;
-    --caution-bg: #3a2d12;
-    --heat-low: #4c6fb3;
-    --heat-high: #dbe9ff;
-    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 12px 28px -14px rgb(0 0 0 / 60%);
+  :root[data-theme="violet"] {
+    --bg: #09081a;
+    --surface: #110f26;
+    --surface-2: #181534;
+    --surface-3: #201c42;
+    --raised: #181534;
+    --sunken: #05040f;
+    --line: rgb(255 255 255 / 8%);
+    --line-strong: rgb(255 255 255 / 16%);
+    --highlight: inset 0 1px 0 rgb(255 255 255 / 4%);
+    --ink: #f0eefc;
+    --ink-2: #aca7cc;
+    --ink-3: #8882aa;
+    --accent: #8b7cff;
+    --accent-strong: #aa9fff;
+    --accent-rgb: 139 124 255;
+    --on-accent: #0b0a1f;
+    --plate: #241f55;
+    --button: #8b7cff;
+    --on-button: #0b0a1f;
+    --lift: white;
+    --shadow: 0 4px 16px rgb(0 0 0 / 50%);
+    --shadow-raised: 0 8px 24px -12px rgb(0 0 0 / 50%);
+    --glow: 0 0 0 1px rgb(139 124 255 / 35%), 0 0 24px rgb(139 124 255 / 25%);
+    --ring: 0 0 0 3px rgb(139 124 255 / 55%);
     color-scheme: dark;
+  }
+}
+
+/* C Teal: the terminal canon, a near-black canvas with a mint-teal accent and dark text on its fill. */
+:root[data-theme="teal"] {
+  --bg: #f5f8f9;
+  --surface: #ffffff;
+  --surface-2: #eef3f5;
+  --surface-3: #ffffff;
+  --raised: #ffffff;
+  --sunken: #e9eff2;
+  --line: rgb(10 20 24 / 11%);
+  --line-strong: rgb(10 20 24 / 22%);
+  --highlight: none;
+  --ink: #0a1418;
+  --ink-2: #45565e;
+  --ink-3: #5c6d75;
+  --accent: #077466;
+  --accent-strong: #065c51;
+  --accent-rgb: 7 116 102;
+  --on-accent: #ffffff;
+  --plate: #dcf4ef;
+  --button: #077466;
+  --on-button: #ffffff;
+  --tile: #05090e;
+  --lift: black;
+  --shadow: 0 1px 2px rgb(10 20 24 / 6%), 0 12px 32px -12px rgb(7 116 102 / 18%);
+  --shadow-raised: 0 1px 2px rgb(10 20 24 / 6%), 0 8px 24px -12px rgb(7 116 102 / 18%);
+  --glow: 0 0 0 1px rgb(7 116 102 / 25%), 0 8px 24px -8px rgb(7 116 102 / 35%);
+  --ring: 0 0 0 3px rgb(7 116 102 / 35%);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="teal"] {
+    --bg: #05090e;
+    --surface: #0b1219;
+    --surface-2: #111a24;
+    --surface-3: #17222e;
+    --raised: #111a24;
+    --sunken: #03060a;
+    --line: rgb(255 255 255 / 8%);
+    --line-strong: rgb(255 255 255 / 16%);
+    --highlight: inset 0 1px 0 rgb(255 255 255 / 4%);
+    --ink: #eaf3f5;
+    --ink-2: #a3b4bc;
+    --ink-3: #768a94;
+    --accent: #2fd3c0;
+    --accent-strong: #6fe8d8;
+    --accent-rgb: 47 211 192;
+    --on-accent: #04120f;
+    --plate: #0f3330;
+    --button: #2fd3c0;
+    --on-button: #04120f;
+    --lift: white;
+    --shadow: 0 4px 16px rgb(0 0 0 / 50%);
+    --shadow-raised: 0 8px 24px -12px rgb(0 0 0 / 50%);
+    --glow: 0 0 0 1px rgb(47 211 192 / 35%), 0 0 24px rgb(47 211 192 / 25%);
+    --ring: 0 0 0 3px rgb(47 211 192 / 55%);
+    color-scheme: dark;
+  }
+}
+
+/* The same in every direction: the heat, the direction colours, the caution (principle 4). */
+:root {
+  --brand: #c7410c;
+  --heat-low: #f59e0b;
+  --heat-high: #ea4a1c;
+  --up: #0b7a52;
+  --up-bg: #dff5ea;
+  --down: #c4262f;
+  --down-bg: #fde6e8;
+  --caution: #9a5d05;
+  --caution-bg: #fef5df;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --brand: #ff9a5c;
+    --heat-low: #ffb020;
+    --heat-high: #ff5a1f;
+    --up: #34d399;
+    --up-bg: #0f2b22;
+    --down: #ff5c6c;
+    --down-bg: #3a1a22;
+    --caution: #fbbf24;
+    --caution-bg: #3a2d12;
   }
 }
 
 :root {
-  /* The heat ramp as one stroke: a curve's fill, a burn's bar, the emphasised phrase. */
+  /* The heat ramp as one stroke: a curve's fill, a burn's bar; and as a text fill for the brand's own figures. */
   --heat: linear-gradient(90deg, var(--heat-low), var(--heat-high));
-  /* The primary button's hover: a step towards the page in either mode. */
-  --button-hover: color-mix(in srgb, var(--button), var(--bg) 14%);
+  --brand-gradient: linear-gradient(100deg, var(--heat-low) 0%, var(--heat-high) 70%, var(--brand) 100%);
+  /* The primary button's hover, a step towards the light; a hovered surface, the same at low alpha. */
+  --button-hover: color-mix(in srgb, var(--button), var(--lift) 10%);
+  --hover: color-mix(in srgb, var(--lift) 5%, transparent);
 
   --font-display: var(--font-archivo), system-ui, sans-serif;
   --font-body: var(--font-public-sans), system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 
-  /* The landing's soft corners; the terminal's pages set their own, tighter ones. */
-  --radius: 14px;
-  --radius-sm: 10px;
+  /* Motion constants (principles, section 6): hover and focus at fast, panels and menus at base, page reveals at slow. */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --fast: 120ms;
+  --base: 200ms;
+  --slow: 320ms;
+
+  /* The landing's corners: 16px cards, 12px controls; the terminal sets its own, tighter ones below. */
+  --radius: 16px;
+  --radius-sm: 12px;
+  --radius-xs: 8px;
   --gutter: clamp(16px, 4vw, 40px);
   --max: 1180px;
 }
@@ -241,15 +299,21 @@ img {
 
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
   color: inherit;
 }
 
+/* Every control draws its own ring (below); text links keep an outline in the accent. */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 .visually-hidden {
@@ -264,12 +328,6 @@ textarea {
   border: 0;
 }
 
-.mono {
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
-  letter-spacing: 0;
-}
-
 .shell {
   width: 100%;
   max-width: var(--max);
@@ -277,12 +335,405 @@ textarea {
   padding: 0 var(--gutter);
 }
 
-/* The terminal (every page past the home): tight corners, a wider column, rows that fit sixty coins on a laptop screen. */
+/*
+  The type scale (principles, section 5): one display family, a short modular scale, tight tracking at display sizes,
+  tabular figures on every value that can change. A label sits one step smaller and two steps lighter than its value.
+*/
+.t-display {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 700;
+  font-size: clamp(2.5rem, 1.5rem + 4.2vw, 4.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+
+.t-h1 {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 700;
+  font-size: clamp(2rem, 1.6rem + 1.2vw, 2.5rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.t-h2 {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 600;
+  font-size: 1.75rem;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+}
+
+.t-h3 {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 600;
+  font-size: 1.25rem;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.t-lede {
+  font-size: 1.25rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.t-ui {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.t-caption {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--ink-3);
+}
+
+.t-figure-xl,
+.t-figure,
+.t-figure-row,
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums slashed-zero;
+  letter-spacing: 0;
+}
+
+.t-figure-xl {
+  font-size: clamp(2rem, 1.5rem + 1.6vw, 2.75rem);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.t-figure {
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.t-figure-row,
+.mono {
+  font-size: 0.8125rem;
+  line-height: 1.3;
+}
+
+/* A small-caps label over a card, the one place the site sets type in capitals. */
+.eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* The heat as a text fill: the slogan's emphasised phrase and the figures that are the brand's. */
+.heat-text {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/*
+  The primitives (principles, section 6): every interactive element has designed states, default, hover, focus, active,
+  disabled, each distinct in colour, transition and feel, and never the browser's focus ring.
+*/
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--fast) var(--ease), border-color var(--fast) var(--ease), color var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+
+.button:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button-primary {
+  background: var(--button);
+  color: var(--on-button);
+  box-shadow: var(--glow);
+}
+
+.button-primary:hover:not(:disabled) {
+  background: var(--button-hover);
+}
+
+.button-primary:focus-visible {
+  box-shadow: var(--glow), var(--ring);
+}
+
+.button-ghost {
+  border-color: var(--line-strong);
+}
+
+.button-ghost:hover:not(:disabled) {
+  background: var(--hover);
+  border-color: var(--ink-3);
+}
+
+.button-text {
+  padding: 0 6px;
+  color: var(--accent);
+}
+
+.button-text:hover:not(:disabled) {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.button-lg {
+  height: 50px;
+  padding: 0 26px;
+  font-size: 1rem;
+}
+
+.button-sm {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 0.875rem;
+}
+
+/* A busy primary keeps its colour and shows progress. */
+.button[aria-busy="true"] {
+  cursor: progress;
+}
+
+/* A chip chooses one of a set; chosen, it takes the plate with the accent's text. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--fast) var(--ease), border-color var(--fast) var(--ease), color var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease);
+}
+
+@media (hover: hover) {
+  .chip:not([aria-pressed="true"]):hover {
+    border-color: var(--line-strong);
+    background: var(--hover);
+    color: var(--ink);
+  }
+}
+
+.chip:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.chip[aria-pressed="true"],
+.chip[aria-current] {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: var(--plate);
+  color: var(--accent-strong);
+}
+
+/* A tag states something and is not pressed: a kind, a caution, a result. */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.tag-accent {
+  background: var(--plate);
+  color: var(--accent-strong);
+}
+
+.tag-up {
+  background: var(--up-bg);
+  color: var(--up);
+}
+
+.tag-down {
+  background: var(--down-bg);
+  color: var(--down);
+}
+
+.tag-caution {
+  background: var(--caution-bg);
+  color: var(--caution);
+}
+
+/* A field: a well on sunken, the line on its edge, the ring when it has focus. */
+.input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--sunken);
+  color: var(--ink);
+  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease), background-color var(--fast) var(--ease);
+}
+
+@media (hover: hover) {
+  .input:hover:not(:focus-within) {
+    border-color: var(--line-strong);
+  }
+}
+
+.input:focus-within {
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
+
+.input[aria-invalid="true"],
+.input.invalid {
+  border-color: var(--down);
+}
+
+.input[aria-invalid="true"]:focus-within,
+.input.invalid:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--down) 30%, transparent);
+}
+
+.input > input,
+.input > textarea {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  outline: none;
+}
+
+.input > input::placeholder,
+.input > textarea::placeholder {
+  color: var(--ink-3);
+  opacity: 0.8;
+}
+
+/* A segmented control: the options in a well, the chosen one lifted to surface-3. */
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--sunken);
+}
+
+.segmented > button {
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: calc(var(--radius-sm) - 3px);
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+
+@media (hover: hover) {
+  .segmented > button:not([aria-pressed="true"]):hover:not(:disabled) {
+    color: var(--ink);
+  }
+}
+
+.segmented > button:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.segmented > button[aria-pressed="true"] {
+  background: var(--surface-3);
+  color: var(--ink);
+  box-shadow: var(--highlight), var(--shadow-raised);
+}
+
+/* Cards on the ladder: a panel on surface; a raised card stands off the page; a floating one carries the shadow. */
+.card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--highlight);
+}
+
+.card-raised {
+  background: var(--raised);
+  box-shadow: var(--highlight), var(--shadow-raised);
+}
+
+.card-floating {
+  background: var(--surface-3);
+  box-shadow: var(--highlight), var(--shadow);
+}
+
+/*
+  The terminal (every page past the home): tight corners, a wider column, rows that fit sixty coins on a laptop screen.
+  Panels at 24px, dense rows at 8 to 12px.
+*/
 .terminal {
-  --radius: 6px;
-  --radius-sm: 4px;
+  --radius: 10px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
   --max: 1320px;
-  --row: 34px;
+  --row: 36px;
+}
+
+/* The landing's canvas: a faint dot grid, the only decoration beside the heat's glow behind the headline. */
+.landing {
+  overflow: clip;
+  background-image: radial-gradient(color-mix(in srgb, var(--ink) 6%, transparent) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: 12px 12px;
 }
 
 @media (prefers-reduced-motion: reduce) {

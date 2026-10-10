@@ -1,15 +1,11 @@
+/* The trade panel: a raised card docked beside the chart, its wells one step down, its action the one glow on the page. */
 .card {
   padding: 20px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
   min-width: 0;
 }
 
 .title {
   margin: 0;
-  font-size: 0.875rem;
-  font-weight: 600;
 }
 
 .closed {
@@ -24,24 +20,25 @@
   gap: 16px;
 }
 
+/* Buy or sell: a two-way segmented control, the chosen side lifted and in its direction's colour. */
 .sides {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 3px;
   padding: 3px;
-  border-radius: 999px;
-  background: var(--bg);
+  border-radius: var(--radius-sm);
+  background: var(--sunken);
 }
 
 .sides button {
-  height: 40px;
+  height: 38px;
   border: 0;
-  border-radius: 999px;
+  border-radius: calc(var(--radius-sm) - 3px);
   background: transparent;
   color: var(--ink-2);
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 120ms ease, color 120ms ease;
+  transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
 }
 
 @media (hover: hover) {
@@ -51,10 +48,15 @@
   }
 }
 
+.sides button:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
 .sides button[aria-pressed="true"] {
-  background: var(--surface);
+  background: var(--surface-3);
   color: var(--ink);
-  box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgb(18 24 38 / 12%);
+  box-shadow: var(--highlight), var(--shadow-raised);
 }
 
 .sides .buy[aria-pressed="true"] {
@@ -101,44 +103,15 @@
   color: var(--ink-2);
 }
 
+/* The amount is the field primitive at the size of a key figure. */
 .amount {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   padding: 0 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  transition: border-color 120ms ease, box-shadow 120ms ease;
-}
-
-@media (hover: hover) {
-  .amount:hover {
-    border-color: var(--ink-3);
-  }
-}
-
-.amount:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
-}
-
-.amount.invalid {
-  border-color: var(--down);
+  min-height: 56px;
 }
 
 .amount input {
-  flex: 1;
-  min-width: 0;
-  height: 52px;
-  padding: 0;
-  border: 0;
-  background: transparent;
+  height: 54px;
   font-size: 1.375rem;
-}
-
-.amount input:focus {
-  outline: none;
 }
 
 .amount input::placeholder {
@@ -176,29 +149,7 @@
   gap: 6px;
 }
 
-.presets button,
-.option button {
-  height: 32px;
-  padding: 0 12px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--ink-2);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color 120ms ease, color 120ms ease, background-color 120ms ease;
-}
-
-@media (hover: hover) {
-  .presets button:hover:not(:disabled),
-  .option button:hover:not(:disabled) {
-    border-color: var(--ink-3);
-    color: var(--ink);
-  }
-}
-
-.presets button:disabled {
+.presets .chip:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -229,19 +180,15 @@
   min-width: 64px;
 }
 
-.option button[aria-pressed="true"] {
-  border-color: var(--accent);
-  background: var(--plate);
-  color: var(--accent-strong);
-}
-
+/* The quote: a well with what the trade gives and takes, the figure received leading. */
 .quote {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 14px 16px;
+  border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--bg);
+  background: var(--sunken);
   font-size: 0.875rem;
 }
 
@@ -356,56 +303,24 @@
   font-weight: 600;
 }
 
-.primary,
-.secondary {
-  height: 48px;
-  padding: 0 24px;
-  border-radius: 999px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 120ms ease, border-color 120ms ease;
-}
-
+/* The action fills the panel's width; the primitive gives it its states and the glow. */
 .primary {
-  border: 0;
-  background: var(--button);
-  color: var(--on-button);
-}
-
-@media (hover: hover) {
-  .primary:hover:not(:disabled) {
-    background: var(--button-hover);
-  }
-}
-
-.primary:disabled,
-.secondary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  width: 100%;
 }
 
 .form[aria-busy="true"] .primary:disabled {
   cursor: progress;
 }
 
-.secondary {
-  border: 1px solid var(--line);
-  background: var(--surface);
-}
-
-@media (hover: hover) {
-  .secondary:hover:not(:disabled) {
-    border-color: var(--ink-3);
-  }
-}
-
+/* The review: the trade in words, edged in the accent on the plate. */
 .review {
   display: flex;
   flex-direction: column;
   gap: 14px;
   padding: 16px;
-  border: 1px solid var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
   border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--plate) 55%, transparent);
 }
 
 .review p {

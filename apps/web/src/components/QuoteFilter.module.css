@@ -3,13 +3,14 @@
   min-width: 0;
 }
 
+/* The trigger reads as a control on surface; open, it takes the accent's edge and the ring like a focused field. */
 .trigger {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
   height: 36px;
-  padding: 0 16px 0 10px;
+  padding: 0 14px 0 10px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--surface);
@@ -17,13 +18,14 @@
   font-weight: 600;
   text-align: left;
   cursor: pointer;
-  transition: border-color 120ms ease;
+  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease), background-color var(--fast) var(--ease);
 }
 
 /* Only with a real pointer, so a tap doesn't leave a hover behind; an open list keeps its focus ring under the pointer. */
 @media (hover: hover) {
   .trigger:hover:not([aria-expanded="true"]) {
-    border-color: var(--ink-3);
+    border-color: var(--line-strong);
+    background: var(--hover);
   }
 }
 
@@ -31,7 +33,7 @@
 .trigger[aria-expanded="true"] {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: var(--ring);
 }
 
 .value {
@@ -64,7 +66,7 @@
   border-right: 2px solid var(--ink-2);
   border-bottom: 2px solid var(--ink-2);
   transform: rotate(45deg);
-  transition: transform 140ms ease;
+  transition: transform var(--base) var(--ease);
 }
 
 .trigger[aria-expanded="true"] .chevron {
@@ -72,6 +74,7 @@
   transform: rotate(-135deg);
 }
 
+/* The list floats on surface-3 with the shadow. */
 .popover {
   position: absolute;
   top: calc(100% + 8px);
@@ -80,11 +83,23 @@
   display: flex;
   flex-direction: column;
   width: 340px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow);
+  background: var(--surface-3);
+  box-shadow: var(--highlight), var(--shadow);
   overflow: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .popover {
+    animation: open var(--base) var(--ease);
+  }
+  @keyframes open {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
 }
 
 .search {
@@ -121,12 +136,13 @@
   align-items: center;
   gap: 12px;
   padding: 9px 10px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
+  transition: background-color var(--fast) var(--ease);
 }
 
 .option.active {
-  background: var(--bg);
+  background: var(--hover);
 }
 
 .option[aria-selected="true"] {
@@ -161,6 +177,7 @@
   white-space: nowrap;
   color: var(--ink-3);
   font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .note {

@@ -29,7 +29,7 @@ export function Disclaimer({
 
   return (
     <dialog ref={dialog} className={styles.dialog} onCancel={(e) => { e.preventDefault(); onCancel(); }} aria-labelledby="disclaimer-title">
-      <h2 id="disclaimer-title" className={styles.title}>Before you {action}</h2>
+      <h2 id="disclaimer-title" className={`t-h3 ${styles.title}`}>Before you {action}</h2>
       <p>
         This launchpad is not for people in the United States, the United Kingdom, Canada, or any country under
         sanctions, and it is not offered to anyone where launching or trading these coins is not allowed.
@@ -47,10 +47,10 @@ export function Disclaimer({
         <span>I&apos;m not in an excluded country, and I understand the risks.</span>
       </label>
       <div className={styles.actions}>
-        <button type="button" className={styles.secondary} onClick={onCancel}>Cancel</button>
+        <button type="button" className="button button-ghost" onClick={onCancel}>Cancel</button>
         <button
           type="button"
-          className={styles.primary}
+          className="button button-primary"
           disabled={!agreed}
           onClick={() => {
             try {

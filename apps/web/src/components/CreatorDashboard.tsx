@@ -7,6 +7,7 @@ import type { CreatorEarnings, CreatorEarningsAsset, CreatorForward, CurveStatus
 import { getCreatorEarnings, listCreatorForwards } from "@/lib/api";
 import { creatorEarnings } from "@/lib/fees";
 import { explorerUrl, formatUnits, formatUtc, quoteTicker, SOL_DECIMALS } from "@/lib/format";
+import { Ring } from "./Mark";
 import { QuoteLogo } from "./QuoteLogo";
 import { WalletButton } from "./WalletButton";
 import styles from "./CreatorDashboard.module.css";
@@ -55,23 +56,24 @@ export function CreatorDashboard({ platform }: { platform: PlatformInfo }) {
   return (
     <article className={`shell ${styles.page}`}>
       <header className={styles.head}>
-        <h1 className={styles.title}>Your creator earnings</h1>
+        <h1 className={`t-h1 ${styles.title}`}>Your creator earnings</h1>
         <p className={styles.lede}>
           Your coins earn you {earns.summary}: half of what the platform collects on them, sent straight to your wallet
           with nothing to claim.
         </p>
       </header>
       {!creator ? (
-        <div className={styles.connect}>
+        <div className={`card ${styles.connect}`}>
           <p>Connect the wallet you launched with to see what your coins have earned you.</p>
           <WalletButton variant="inline" />
         </div>
       ) : !own ? (
         <p className={styles.muted} aria-busy="true">Opening your earnings…</p>
       ) : own.earnings.launches.length === 0 ? (
-        <div className={`${styles.emptyCard} ${styles.lone}`}>
+        <div className={`card card-raised ${styles.emptyCard} ${styles.lone}`}>
+          <Ring size={72} className={styles.ring} />
           <p>You haven&apos;t launched a coin here yet.</p>
-          <Link href="/launch" className={styles.cta}>Stoke a coin</Link>
+          <Link href="/launch" className="button button-primary">Stoke a coin</Link>
         </div>
       ) : (
         <Earnings earnings={own.earnings} forwards={own.forwards} platform={platform} />
@@ -91,7 +93,8 @@ function Earnings({ earnings, forwards, platform }: { earnings: CreatorEarnings;
         <section className={styles.section} aria-labelledby="earned-title">
           <h2 id="earned-title" className="visually-hidden">Earned</h2>
           {assets.length === 0 ? (
-            <div className={styles.emptyCard}>
+            <div className={`card card-raised ${styles.emptyCard}`}>
+              <Ring size={72} className={styles.ring} />
               <p>Nothing earned yet. A coin starts earning with its first trade.</p>
             </div>
           ) : (
@@ -99,8 +102,8 @@ function Earnings({ earnings, forwards, platform }: { earnings: CreatorEarnings;
           )}
         </section>
 
-        <section className={styles.card} aria-labelledby="coins-title">
-          <h2 id="coins-title" className={styles.cardTitle}>Coins</h2>
+        <section className={`card ${styles.card}`} aria-labelledby="coins-title">
+          <h2 id="coins-title" className={`t-h3 ${styles.cardTitle}`}>Coins</h2>
           <ul className={styles.coins}>
             {earnings.launches.map((l) => {
               const earned = BigInt(l.curve) + BigInt(l.pool);
@@ -127,8 +130,8 @@ function Earnings({ earnings, forwards, platform }: { earnings: CreatorEarnings;
       </div>
 
       <aside className={styles.side}>
-        <section className={styles.rule} aria-labelledby="rule-title">
-          <h2 id="rule-title" className={styles.cardTitle}>How you are paid</h2>
+        <section className={`card ${styles.rule}`} aria-labelledby="rule-title">
+          <h2 id="rule-title" className={`t-h3 ${styles.cardTitle}`}>How you are paid</h2>
           <p>
             While a coin trades on its curve, every trade pays the Platform Fee, and half of it is yours: ~{earns.curve}% of
             every trade.
@@ -144,8 +147,8 @@ function Earnings({ earnings, forwards, platform }: { earnings: CreatorEarnings;
           </p>
         </section>
 
-        <section className={styles.card} aria-labelledby="forwards-title">
-          <h2 id="forwards-title" className={styles.cardTitle}>Sent by the platform</h2>
+        <section className={`card ${styles.card}`} aria-labelledby="forwards-title">
+          <h2 id="forwards-title" className={`t-h3 ${styles.cardTitle}`}>Sent by the platform</h2>
           {forwards.length === 0 ? (
             <p className={styles.muted}>Nothing sent yet.</p>
           ) : (
@@ -173,7 +176,7 @@ function AssetCard({ asset }: { asset: CreatorEarningsAsset }) {
   const symbol = quoteTicker(quote);
   const units = (raw: string) => formatUnits(raw, quote.decimals, quote.decimals);
   return (
-    <section className={styles.asset} aria-labelledby={`earned-${quote.mint}`}>
+    <section className={`card ${styles.asset}`} aria-labelledby={`earned-${quote.mint}`}>
       <div className={styles.assetHead}>
         <h3 id={`earned-${quote.mint}`} className={styles.assetSymbol}>
           <QuoteLogo quote={quote} size={24} />

@@ -1,7 +1,8 @@
+/* The foot of every page: a well under a hairline, the site's own pages and where to find us. */
 .footer {
   margin-top: 64px;
   border-top: 1px solid var(--line);
-  background: color-mix(in srgb, var(--surface) 55%, var(--bg));
+  background: var(--sunken);
 }
 
 .inner {
@@ -22,7 +23,7 @@
 .wordmark {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   font-family: var(--font-display);
   font-stretch: 125%;
   font-weight: 800;
@@ -56,7 +57,7 @@
   font-family: var(--font-body);
   font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-3);
 }
@@ -75,11 +76,11 @@
   font-size: 0.9375rem;
   text-decoration: none;
   overflow-wrap: anywhere;
+  transition: color var(--fast) var(--ease);
 }
 
 .list a:hover {
-  color: var(--ink);
-  text-decoration: underline;
+  color: var(--accent);
 }
 
 .legal {

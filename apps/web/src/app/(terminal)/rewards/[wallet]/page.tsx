@@ -17,13 +17,13 @@ export default async function WalletRewardsPage({ params }: Props) {
   if (!rewards) notFound();
   return (
     <div className={`shell ${styles.page}`}>
-      <h1 className={styles.title}>Rewards of <span className="mono">{shortAddress(rewards.wallet)}</span></h1>
+      <h1 className={`t-h1 ${styles.title}`}>Rewards of <span className="mono">{shortAddress(rewards.wallet)}</span></h1>
       <p className={styles.lead}>
         Every Holder Reward this wallet was paid, or is owed by a round still paying out, across every Reward Launch.{" "}
         <a href={explorerUrl("address", rewards.wallet, platform)} target="_blank" rel="noreferrer">See the wallet on the explorer</a>.
       </p>
-      <section className={styles.card} aria-labelledby="rewards-list-title">
-        <h2 id="rewards-list-title" className={styles.cardTitle}>Rewards</h2>
+      <section className={`card ${styles.card}`} aria-labelledby="rewards-list-title">
+        <h2 id="rewards-list-title" className={`t-h3 ${styles.cardTitle}`}>Rewards</h2>
         {rewards.rewards.length === 0 ? (
           <p className={styles.note}>
             No rewards for this wallet yet. A wallet is paid when it holds at least the minimum of a Reward Launch&apos;s coin at a round&apos;s snapshot.
@@ -51,7 +51,7 @@ export default async function WalletRewardsPage({ params }: Props) {
           </ul>
         )}
       </section>
-      <Link href="/rewards" className={styles.back}>Rules and lookup</Link>
+      <Link href="/rewards" className={`button button-ghost ${styles.back}`}>Rules and lookup</Link>
     </div>
   );
 }
