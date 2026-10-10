@@ -71,7 +71,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
             <ul className={styles.links}>
               {links.map(([label, href]) => (
                 <li key={label}>
-                  <a href={href} target="_blank" rel="noreferrer nofollow">{label}</a>
+                  <a href={href} className="chip" target="_blank" rel="noreferrer nofollow">{label}</a>
                 </li>
               ))}
             </ul>
@@ -89,7 +89,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
       />
 
       <section className={styles.panels}>
-        <dl className={styles.facts}>
+        <dl className={`card ${styles.facts}`}>
           <div>
             <dt>Creator earns</dt>
             <dd>
@@ -133,7 +133,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
           )}
         </dl>
 
-        <dl className={styles.addresses}>
+        <dl className={`card ${styles.addresses}`}>
           {addresses.map(([label, value, kind]) => (
             <div key={label}>
               <dt>{label}</dt>
@@ -147,8 +147,8 @@ export default async function CoinPage({ params, searchParams }: Props) {
           ))}
         </dl>
         {quoteAsset && (
-          <section className={`${styles.wide} ${styles.quoteLabels}`} aria-labelledby="quote-labels-title">
-            <h2 id="quote-labels-title" className={styles.quoteLabelsTitle}>Paired with {quote}</h2>
+          <section className={`card ${styles.wide} ${styles.quoteLabels}`} aria-labelledby="quote-labels-title">
+            <h2 id="quote-labels-title" className={`t-h3 ${styles.quoteLabelsTitle}`}>Paired with {quote}</h2>
             <p className={styles.quoteLabelsNote}>
               Every trade of {launch.symbol} is paid in {quote}. What its mint and the token list say about {quote}; each label informs
               and none stops a trade.
@@ -161,7 +161,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
         {airdropDone && <div className={styles.wide}>{airdropCard}</div>}
       </section>
 
-      <Link href="/" className={styles.back}>All coins</Link>
+      <Link href="/coins" className={`button button-ghost ${styles.back}`}>All coins</Link>
     </article>
   );
 }

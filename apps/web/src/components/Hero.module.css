@@ -1,41 +1,62 @@
 .hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
-  gap: clamp(28px, 5vw, 72px);
-  align-items: center;
-  padding-top: clamp(44px, 7vw, 96px);
-  padding-bottom: clamp(36px, 5vw, 64px);
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(40px, 6vw, 72px);
+  padding-top: clamp(56px, 8vw, 112px);
+  padding-bottom: clamp(40px, 5vw, 64px);
+}
+
+/* The heat's glow behind the headline: the ring at about 600px, blurred, the landing's one decoration beside the grid. */
+.hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -120px;
+  left: -60px;
+  width: 640px;
+  height: 640px;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--heat-high) var(--glow-heat, 16%), transparent),
+    color-mix(in srgb, var(--heat-low) calc(var(--glow-heat, 16%) / 2), transparent) 50%,
+    transparent 100%
+  );
+  filter: blur(32px);
+  pointer-events: none;
+}
+
+/* Dark is the hero look: the glow carries more on the near-black canvas than on the white. */
+@media (prefers-color-scheme: dark) {
+  .hero::before {
+    --glow-heat: 22%;
+  }
 }
 
 .copy {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 22px;
+  gap: 28px;
+  max-width: 820px;
 }
 
 .title {
   margin: 0;
-  font-family: var(--font-display);
-  font-stretch: 112%;
-  font-weight: 800;
-  font-size: clamp(2.5rem, 5vw, 4rem);
-  line-height: 0.98;
-  letter-spacing: -0.035em;
   text-wrap: balance;
 }
 
-/* The one emphasised phrase on the page: the only heat in the hero. */
+/* The one emphasised phrase on the page: the only heat in the headline, as a gradient fill. */
 .heat {
   font-style: normal;
-  color: var(--brand);
+  padding-right: 0.04em;
 }
 
 .lede {
   margin: 0;
-  max-width: 34em;
-  font-size: 1.125rem;
-  color: var(--ink-2);
+  max-width: 60ch;
   text-wrap: pretty;
 }
 
@@ -43,104 +64,119 @@
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  margin-top: 4px;
 }
 
-.cta,
-.secondary {
-  display: inline-flex;
-  align-items: center;
-  height: 50px;
-  padding: 0 26px;
-  border-radius: 999px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background-color 120ms ease, border-color 120ms ease;
+/* The strip: what a coin can be priced in, the deepest markets as tiles beside the claim. */
+.strip {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(0, 2.2fr);
+  gap: 24px 40px;
+  align-items: start;
+  padding: clamp(20px, 3vw, 32px);
 }
 
-.cta {
-  background: var(--button);
-  color: var(--on-button);
-}
-
-.cta:hover {
-  background: var(--button-hover);
-}
-
-.secondary {
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--ink);
-}
-
-.secondary:hover {
-  border-color: var(--ink-3);
-}
-
-.card {
+.stripCopy {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: clamp(20px, 3vw, 28px);
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  background: var(--surface);
-  box-shadow: var(--shadow);
-  min-width: 0;
+  align-items: flex-start;
+  gap: 10px;
 }
 
-.cardTitle {
-  margin: 0 0 10px;
-  font-family: var(--font-display);
-  font-stretch: 112%;
-  font-weight: 700;
-  font-size: 1.0625rem;
-  letter-spacing: -0.01em;
-}
-
-.assets {
+.stripTitle {
   margin: 0;
-  padding: 0;
-  list-style: none;
 }
 
-.assets li {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 9px 0;
-  border-top: 1px solid var(--line);
-}
-
-.ticker {
-  font-family: var(--font-mono);
-  font-weight: 500;
-  font-size: 0.9375rem;
-}
-
-.kind {
-  font-size: 0.875rem;
-  color: var(--ink-3);
-}
-
-.more {
-  margin: 12px 0 0;
+.stripNote {
+  margin: 0;
   font-size: 0.9375rem;
   color: var(--ink-2);
   text-wrap: pretty;
 }
 
 .all {
-  align-self: flex-start;
-  margin-top: 12px;
-  color: var(--accent-strong);
+  margin-top: 6px;
+  color: var(--accent);
   font-size: 0.9375rem;
   font-weight: 600;
+  text-decoration: none;
 }
 
-@media (max-width: 860px) {
-  .hero {
+.all:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.assets {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* One asset: its logo, its ticker, its kind, in a well of the card. */
+.asset {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--sunken);
+  min-width: 0;
+}
+
+.asset > :first-child {
+  grid-row: 1 / 3;
+}
+
+.ticker {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.9375rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kind {
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 1000px) {
+  .strip {
     grid-template-columns: minmax(0, 1fr);
-    padding-top: clamp(32px, 7vw, 56px);
+  }
+  .assets {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .hero::before {
+    width: 420px;
+    height: 420px;
+    top: -80px;
+    left: -120px;
+  }
+  .assets {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .actions {
+    width: 100%;
+  }
+  .actions > * {
+    flex: 1 1 auto;
   }
 }

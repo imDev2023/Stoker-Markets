@@ -20,15 +20,16 @@ export default async function RewardRoundPage({ params }: Props) {
   const paid = (raw: string) => `${formatUnits(raw, round.payout.decimals, Math.min(round.payout.decimals, 4))} ${round.payout.symbol}`;
   return (
     <div className={`shell ${styles.page}`}>
-      <h1 className={styles.title}>
+      <h1 className={`t-h1 ${styles.title}`}>
         <Link href={`/coin/${round.mint}`}>{symbol}</Link> round of {formatUtc(round.startedAt)}
       </h1>
-      <section className={styles.card} aria-labelledby="round-title">
-        <h2 id="round-title" className={styles.cardTitle}>{round.status === "paid" ? "Paid in full" : "Paying out"}</h2>
+      <section className={`card ${styles.card}`} aria-labelledby="round-title">
+        <h2 id="round-title" className={`t-h3 ${styles.cardTitle}`}>{round.status === "paid" ? "Paid in full" : "Paying out"}</h2>
         <dl className={styles.rules}>
+          {/* The pot is the round's one key figure. */}
           {round.sold !== null ? (
             <>
-              <div>
+              <div className={styles.key}>
                 <dt>Pot</dt>
                 <dd><span className="mono">{paid(round.pot)}</span></dd>
               </div>
@@ -38,7 +39,7 @@ export default async function RewardRoundPage({ params }: Props) {
               </div>
             </>
           ) : (
-            <div>
+            <div className={styles.key}>
               <dt>Collected tax</dt>
               <dd><span className="mono">{coins(round.pot)}</span> {symbol}</dd>
             </div>
@@ -67,8 +68,8 @@ export default async function RewardRoundPage({ params }: Props) {
           )}
         </dl>
       </section>
-      <section className={styles.card} aria-labelledby="payouts-title">
-        <h2 id="payouts-title" className={styles.cardTitle}>Payouts</h2>
+      <section className={`card ${styles.card}`} aria-labelledby="payouts-title">
+        <h2 id="payouts-title" className={`t-h3 ${styles.cardTitle}`}>Payouts</h2>
         <ul className={styles.list}>
           {round.payouts.map((p) => (
             <li key={p.wallet} className={p.status === "paid" ? "" : styles.pending}>
@@ -91,7 +92,7 @@ export default async function RewardRoundPage({ params }: Props) {
           ))}
         </ul>
       </section>
-      <Link href="/rewards" className={styles.back}>Rules and lookup</Link>
+      <Link href="/rewards" className={`button button-ghost ${styles.back}`}>Rules and lookup</Link>
     </div>
   );
 }

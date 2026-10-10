@@ -93,11 +93,11 @@ export function OperatorView({ platform }: { platform: PlatformInfo }) {
   if (!token) {
     return (
       <div className={`shell ${styles.page}`}>
-        <h1 className={styles.title}>Operator</h1>
+        <h1 className={`t-h1 ${styles.title}`}>Operator</h1>
         <form className={styles.signIn} onSubmit={signIn}>
           <label htmlFor="operator-token">Operator token</label>
           <input id="operator-token" type="password" value={tokenText} onChange={(e) => setTokenText(e.target.value)} autoComplete="off" />
-          <button type="submit">Open</button>
+          <button type="submit" className="button button-primary">Open</button>
           {error && <p className={styles.error} role="alert">{error}</p>}
         </form>
       </div>
@@ -110,16 +110,16 @@ export function OperatorView({ platform }: { platform: PlatformInfo }) {
   return (
     <div className={`shell ${styles.page}`}>
       <div className={styles.head}>
-        <h1 className={styles.title}>Operator</h1>
-        <button type="button" className={styles.link} onClick={() => { try { sessionStorage.removeItem(TOKEN_KEY); } catch { /* nothing kept */ } setToken(null); }}>
+        <h1 className={`t-h1 ${styles.title}`}>Operator</h1>
+        <button type="button" className="button button-text" onClick={() => { try { sessionStorage.removeItem(TOKEN_KEY); } catch { /* nothing kept */ } setToken(null); }}>
           Forget the token
         </button>
       </div>
       {error && <p className={styles.error} role="alert">{error}</p>}
 
       {o && (
-        <section className={styles.card} aria-labelledby="glance-title">
-          <h2 id="glance-title" className={styles.cardTitle}>At a glance</h2>
+        <section className={`card ${styles.card}`} aria-labelledby="glance-title">
+          <h2 id="glance-title" className={`t-h3 ${styles.cardTitle}`}>At a glance</h2>
           <dl className={styles.facts}>
             <div><dt>Launches</dt><dd>{o.launches.total} ({o.launches.byStatus.live} live, {o.launches.byStatus.graduating} graduating, {o.launches.byStatus.graduated} graduated; {o.launches.reward} Reward Launches)</dd></div>
             <div><dt>Reward Rounds</dt><dd>{o.rewardRounds.paying} paying, {o.rewardRounds.paid} paid</dd></div>
@@ -131,8 +131,8 @@ export function OperatorView({ platform }: { platform: PlatformInfo }) {
         </section>
       )}
 
-      <section className={styles.card} aria-labelledby="alerts-title">
-        <h2 id="alerts-title" className={styles.cardTitle}>Alerts</h2>
+      <section className={`card ${styles.card}`} aria-labelledby="alerts-title">
+        <h2 id="alerts-title" className={`t-h3 ${styles.cardTitle}`}>Alerts</h2>
         {open.length === 0 ? (
           <p className={styles.note}>Nothing needs attention.</p>
         ) : (
@@ -148,8 +148,8 @@ export function OperatorView({ platform }: { platform: PlatformInfo }) {
       </section>
 
       {o && (
-        <section className={styles.card} aria-labelledby="jobs-title">
-          <h2 id="jobs-title" className={styles.cardTitle}>Jobs</h2>
+        <section className={`card ${styles.card}`} aria-labelledby="jobs-title">
+          <h2 id="jobs-title" className={`t-h3 ${styles.cardTitle}`}>Jobs</h2>
           <ul className={styles.list}>
             {o.jobs.map((j) => (
               <li key={j.id}>
@@ -162,7 +162,7 @@ export function OperatorView({ platform }: { platform: PlatformInfo }) {
           </ul>
           <div className={styles.actions}>
             {JOBS.map((job) => (
-              <button key={job} type="button" disabled={busy !== null} onClick={() => act(job, async () => { await runOperatorJob(token, job); })}>
+              <button key={job} type="button" className="button button-ghost button-sm" disabled={busy !== null} onClick={() => act(job, async () => { await runOperatorJob(token, job); })}>
                 {busy === job ? "Running…" : `Run ${job} now`}
               </button>
             ))}
@@ -170,8 +170,8 @@ export function OperatorView({ platform }: { platform: PlatformInfo }) {
         </section>
       )}
 
-      <section className={styles.card} aria-labelledby="fees-title">
-        <h2 id="fees-title" className={styles.cardTitle}>Fee changes</h2>
+      <section className={`card ${styles.card}`} aria-labelledby="fees-title">
+        <h2 id="fees-title" className={`t-h3 ${styles.cardTitle}`}>Fee changes</h2>
         <p className={styles.note}>
           A change applies to every live curve at once, so it is announced first and can only be prepared once its time has come. The
           platform&apos;s admin key, which this site never holds, signs the prepared transaction.
@@ -195,7 +195,7 @@ export function OperatorView({ platform }: { platform: PlatformInfo }) {
           <label>Creator Fee, bps <input type="number" min={0} max={10000} value={form.creatorFeeBps} onChange={(e) => setForm({ ...form, creatorFeeBps: e.target.value })} /></label>
           <label>Effective at <input type="datetime-local" value={form.effectiveAt} onChange={(e) => setForm({ ...form, effectiveAt: e.target.value })} required /></label>
           <label>Note <input type="text" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} maxLength={500} /></label>
-          <button type="submit" disabled={busy !== null}>{busy === "announce" ? "Announcing…" : "Announce"}</button>
+          <button type="submit" className="button button-primary" disabled={busy !== null}>{busy === "announce" ? "Announcing…" : "Announce"}</button>
         </form>
         {data && data.announcements.length > 0 && (
           <ul className={styles.list}>
@@ -209,7 +209,7 @@ export function OperatorView({ platform }: { platform: PlatformInfo }) {
                     {a.note && <> · {a.note}</>}
                   </span>
                   {due && (
-                    <button type="button" disabled={busy !== null} onClick={() => act(a.id, async () => setPrepared(await prepareFeeChange(token, a.id)))}>
+                    <button type="button" className="button button-ghost button-sm" disabled={busy !== null} onClick={() => act(a.id, async () => setPrepared(await prepareFeeChange(token, a.id)))}>
                       {busy === a.id ? "Preparing…" : "Prepare the admin's transaction"}
                     </button>
                   )}
@@ -232,8 +232,8 @@ export function OperatorView({ platform }: { platform: PlatformInfo }) {
         )}
       </section>
 
-      <section className={styles.card} aria-labelledby="keys-title">
-        <h2 id="keys-title" className={styles.cardTitle}>API keys</h2>
+      <section className={`card ${styles.card}`} aria-labelledby="keys-title">
+        <h2 id="keys-title" className={`t-h3 ${styles.cardTitle}`}>API keys</h2>
         <p className={styles.note}>
           A key identifies an integrator (a bot, a terminal) and bounds it to so many requests a minute; reads need no key. The key is
           shown once, here, when it is issued.
@@ -260,7 +260,7 @@ export function OperatorView({ platform }: { platform: PlatformInfo }) {
               required
             />
           </label>
-          <button type="submit" disabled={busy !== null}>{busy === "issue-key" ? "Issuing…" : "Issue a key"}</button>
+          <button type="submit" className="button button-primary" disabled={busy !== null}>{busy === "issue-key" ? "Issuing…" : "Issue a key"}</button>
         </form>
         {issued && (
           <div className={styles.prepared} role="status">
@@ -280,7 +280,7 @@ export function OperatorView({ platform }: { platform: PlatformInfo }) {
                   {k.revokedAt && <> · revoked {formatUtc(k.revokedAt)}</>}
                 </span>
                 {!k.revokedAt && (
-                  <button type="button" disabled={busy !== null} onClick={() => act(k.id, async () => { await revokeApiKey(token, k.id); })}>
+                  <button type="button" className="button button-ghost button-sm" disabled={busy !== null} onClick={() => act(k.id, async () => { await revokeApiKey(token, k.id); })}>
                     {busy === k.id ? "Revoking…" : "Revoke"}
                   </button>
                 )}

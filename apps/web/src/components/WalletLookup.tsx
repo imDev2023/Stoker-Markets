@@ -20,18 +20,20 @@ export function WalletLookup() {
   }
   return (
     <form className={styles.lookup} onSubmit={onSubmit} aria-label="Look up a wallet's rewards">
-      <input
-        className="mono"
-        value={address}
-        onChange={(e) => setAddress(e.target.value)}
-        placeholder="Wallet address"
-        aria-label="Wallet address"
-        aria-invalid={error !== null}
-        autoComplete="off"
-        spellCheck={false}
-      />
-      <button type="submit">Show rewards</button>
-      {error && <p role="alert" className={styles.note} style={{ flexBasis: "100%" }}>{error}</p>}
+      <span className={`input ${error ? "invalid" : ""}`}>
+        <input
+          className="mono"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          placeholder="Wallet address"
+          aria-label="Wallet address"
+          aria-invalid={error !== null}
+          autoComplete="off"
+          spellCheck={false}
+        />
+      </span>
+      <button type="submit" className="button button-primary">Show rewards</button>
+      {error && <p role="alert" className={styles.note}>{error}</p>}
     </form>
   );
 }

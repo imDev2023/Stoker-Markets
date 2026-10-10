@@ -14,7 +14,8 @@
 
 .field > label {
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 500;
+  color: var(--ink-2);
 }
 
 .field em {
@@ -23,22 +24,23 @@
   color: var(--ink-3);
 }
 
+/* The amount is a well on sunken with the line on its edge and the ring when it has focus (the input primitive's rules). */
 .amount {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 13px;
+  padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--bg);
-  transition: border-color 120ms ease, box-shadow 120ms ease;
+  background: var(--sunken);
+  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
 }
 
 /* Hovers only with a real pointer, so a tap on a phone doesn't leave one behind. */
 @media (hover: hover) {
-  .amount:hover,
-  .list:hover {
-    border-color: var(--ink-3);
+  .amount:hover:not(:focus-within),
+  .list:hover:not(:focus) {
+    border-color: var(--line-strong);
   }
 }
 
@@ -46,17 +48,18 @@
 .list:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: var(--ring);
 }
 
-/* The height of the form's other inputs: 11px padding around a 1.55 line. */
+/* The height of the form's other inputs: 10px padding around a 1.55 line. */
 .amount input {
   flex: 1;
   min-width: 0;
-  height: calc(1.55em + 22px);
+  height: calc(1.55em + 20px);
   padding: 0;
   border: 0;
   background: transparent;
+  color: var(--ink);
   font-size: 1rem;
 }
 
@@ -67,14 +70,14 @@
 .amount input::placeholder,
 .list::placeholder {
   color: var(--ink-3);
-  opacity: 0.7;
+  opacity: 0.8;
 }
 
+/* The unit is a ticker, written as the site writes tickers: mono. */
 .unit {
   flex: none;
-  font-family: var(--font-display);
-  font-stretch: 125%;
-  font-weight: 800;
+  font-family: var(--font-mono);
+  font-weight: 500;
   font-size: 0.875rem;
   color: var(--ink-2);
 }
@@ -83,6 +86,7 @@
 .hintError {
   margin: 0;
   font-size: 0.875rem;
+  line-height: 1.5;
   color: var(--ink-3);
 }
 
@@ -107,7 +111,7 @@
   align-items: flex-start;
   align-self: flex-start;
   font-size: 0.9375rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -120,17 +124,24 @@
   cursor: pointer;
 }
 
+.toggle input:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: 4px;
+}
+
 .list {
   width: 100%;
-  padding: 11px 13px;
+  padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--bg);
+  background: var(--sunken);
+  color: var(--ink);
   font-family: var(--font-mono);
   font-size: 0.8125rem;
   line-height: 1.7;
   resize: vertical;
-  transition: border-color 120ms ease, box-shadow 120ms ease;
+  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
 }
 
 /*
@@ -140,8 +151,8 @@
 @supports (field-sizing: content) {
   .list {
     field-sizing: content;
-    min-height: calc(4lh + 24px);
-    max-height: calc(12lh + 24px);
+    min-height: calc(4lh + 22px);
+    max-height: calc(12lh + 22px);
   }
 }
 
@@ -157,6 +168,11 @@
   border-color: var(--down);
 }
 
+.amount.invalid:focus-within,
+.list.invalid:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--down) 30%, transparent);
+}
+
 .type {
   display: flex;
   flex-direction: column;
@@ -166,7 +182,8 @@
 
 .ratesLabel {
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 500;
+  color: var(--ink-2);
 }
 
 .types {
@@ -175,22 +192,23 @@
   gap: 10px;
 }
 
-/* A whole card is the radio's label: the dot sits beside the name, and the hint runs under both. */
+/* A whole card is the radio's label: a well on sunken; chosen, it is edged in the accent on the plate with a tick. */
 .typeCard {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-content: start;
-  gap: 6px 9px;
-  padding: 12px 13px;
+  gap: 6px 10px;
+  padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--bg);
+  background: var(--sunken);
   cursor: pointer;
-  transition: border-color 120ms ease, box-shadow 120ms ease;
+  transition: border-color var(--fast) var(--ease), background-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
 }
 
 /* Drawn here rather than by the browser, whose unchecked radio is a grey disc on the dark theme. */
 .typeCard input {
+  position: relative;
   appearance: none;
   width: 16px;
   height: 16px;
@@ -199,11 +217,25 @@
   border-radius: 50%;
   background: transparent;
   cursor: inherit;
+  transition: border-color var(--fast) var(--ease), background-color var(--fast) var(--ease);
 }
 
+/* Checked: a disc in the accent with a tick drawn from two borders, so the choice never rests on colour alone. */
 .typeCard input:checked {
   border-color: var(--accent);
-  background: radial-gradient(circle, var(--accent) 0 4px, transparent 4.5px);
+  background: var(--accent);
+}
+
+.typeCard input:checked::after {
+  content: "";
+  position: absolute;
+  top: 1.5px;
+  left: 4.5px;
+  width: 3.5px;
+  height: 7px;
+  border: solid var(--on-accent);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
 }
 
 .typeName {
@@ -216,29 +248,35 @@
 /* The Payout Asset on a line of its own, so the two Reward Launch cards differ where the eye lands. */
 .typeName > span {
   display: block;
-  color: var(--accent-strong);
+  color: var(--accent);
 }
 
 .typeHint {
   grid-column: 1 / -1;
   font-size: 0.8125rem;
+  line-height: 1.45;
   color: var(--ink-3);
   overflow-wrap: anywhere;
 }
 
 @media (hover: hover) {
-  .typeCard:hover {
-    border-color: var(--ink-3);
+  .typeCard:not(:has(input:checked)):not(:has(input:disabled)):hover {
+    border-color: var(--line-strong);
+    background: var(--hover);
   }
 }
 
 .typeCard:has(input:checked) {
   border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
+  background: var(--plate);
+}
+
+.typeCard:has(input:checked) .typeName > span {
+  color: var(--accent-strong);
 }
 
 .typeCard:has(input:focus-visible) {
-  box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: var(--ring);
 }
 
 .typeCard input:focus-visible {
@@ -261,6 +299,7 @@
   }
 }
 
+/* The rates are chips (the primitive); this lays the row out and lets its hints take the full width. */
 .rates {
   display: flex;
   flex-wrap: wrap;
@@ -269,21 +308,11 @@
   margin-top: 4px;
 }
 
-.rates button {
+.rates :global(.chip) {
   min-width: 3.5rem;
-  padding: 0.35rem 0.75rem;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--bg);
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-
-.rates button[aria-pressed="true"] {
-  background: var(--button);
-  border-color: var(--button);
-  color: var(--on-button);
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .rates .hint {

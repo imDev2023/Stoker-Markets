@@ -77,7 +77,7 @@ export function QuoteChooser({ quotes, value, query, onChange }: { quotes: Quote
     <div className={styles.chooser}>
       <div className={styles.chips} role="group" aria-label="Kind">
         {chips.map(({ chip: c, count }) => (
-          <button key={c.label} type="button" aria-pressed={c === chip} onClick={() => { setChip(c); setAll(false); }}>
+          <button key={c.label} type="button" className="chip" aria-pressed={c === chip} onClick={() => { setChip(c); setAll(false); }}>
             {c.label} <span className={styles.count}>{count.toLocaleString("en-US")}</span>
           </button>
         ))}
@@ -110,7 +110,7 @@ export function QuoteChooser({ quotes, value, query, onChange }: { quotes: Quote
       </div>
       {shown.length === 0 && <p className={styles.note}>No Quote Asset matches &ldquo;{query.trim()}&rdquo;.</p>}
       {!searching && matches.length > SHOWN && (
-        <button type="button" className={styles.more} aria-expanded={all} onClick={() => setAll(!all)}>
+        <button type="button" className={`button button-ghost ${styles.more}`} aria-expanded={all} onClick={() => setAll(!all)}>
           {all ? "Show fewer" : `Show all ${matches.length.toLocaleString("en-US")}`}
           <span className={styles.chevron} aria-hidden />
         </button>

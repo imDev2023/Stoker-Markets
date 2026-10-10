@@ -45,7 +45,7 @@ export default async function AssetPage({ params }: Props) {
       <header className={styles.head}>
         <QuoteLogo quote={quote} size={64} />
         <div className={styles.titles}>
-          <h1 className={styles.ticker}>{ticker}</h1>
+          <h1 className={`t-h1 ${styles.ticker}`}>{ticker}</h1>
           <p className={styles.name}>
             {quote.name && quote.name.toLowerCase() !== quote.symbol?.toLowerCase() ? `${quote.name} · ` : ""}
             {assetKind(quote)}
@@ -54,7 +54,7 @@ export default async function AssetPage({ params }: Props) {
         </div>
         <div className={styles.action}>
           {quote.launchable ? (
-            <Link href={`/launch?quote=${quote.mint}`} className={styles.cta}>Stoke a coin paired with {ticker}</Link>
+            <Link href={`/launch?quote=${quote.mint}`} className="button button-primary">Stoke a coin paired with {ticker}</Link>
           ) : (
             <p className={styles.reason}>{quote.reason}</p>
           )}
@@ -62,7 +62,7 @@ export default async function AssetPage({ params }: Props) {
       </header>
 
       <section className={styles.panels}>
-        <dl className={styles.facts} aria-label={`${ticker} facts`}>
+        <dl className={`card ${styles.facts}`} aria-label={`${ticker} facts`}>
           <div>
             <dt>Price</dt>
             <dd>
@@ -107,7 +107,7 @@ export default async function AssetPage({ params }: Props) {
           </div>
         </dl>
 
-        <dl className={styles.addresses} aria-label={`${ticker} addresses`}>
+        <dl className={`card ${styles.addresses}`} aria-label={`${ticker} addresses`}>
           {addresses.map(([label, value]) => (
             <div key={label}>
               <dt>{label}</dt>
@@ -128,8 +128,8 @@ export default async function AssetPage({ params }: Props) {
           </div>
         </dl>
 
-        <section className={`${styles.wide} ${styles.card}`} aria-labelledby="paired-coins-title">
-          <h2 id="paired-coins-title" className={styles.cardTitle}>Coins priced in {ticker}</h2>
+        <section className={`card ${styles.wide} ${styles.card}`} aria-labelledby="paired-coins-title">
+          <h2 id="paired-coins-title" className={`t-h3 ${styles.cardTitle}`}>Coins priced in {ticker}</h2>
           {paired.launches.length === 0 ? (
             <p className={styles.cardNote}>
               {quote.launchable ? `None yet. The first coin paired with ${ticker} could be yours.` : `None yet.`}
@@ -153,8 +153,8 @@ export default async function AssetPage({ params }: Props) {
           )}
         </section>
 
-        <section className={`${styles.wide} ${styles.card}`} aria-labelledby="further-title">
-          <h2 id="further-title" className={styles.cardTitle}>Further information</h2>
+        <section className={`card ${styles.wide} ${styles.card}`} aria-labelledby="further-title">
+          <h2 id="further-title" className={`t-h3 ${styles.cardTitle}`}>Further information</h2>
           <p className={styles.cardNote}>
             What {ticker}&apos;s mint and the token list say about it, read again at every Quote Registry refresh. Each fact informs a Creator or
             trader; none stops a launch or a trade.
@@ -163,7 +163,7 @@ export default async function AssetPage({ params }: Props) {
         </section>
       </section>
 
-      <Link href="/assets" className={styles.back}>All assets</Link>
+      <Link href="/assets" className={`button button-ghost ${styles.back}`}>All assets</Link>
     </article>
   );
 }

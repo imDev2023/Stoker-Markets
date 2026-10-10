@@ -3,6 +3,7 @@ import type { LaunchSummary } from "@launchpad/contract";
 import { formatMarketValue } from "@/lib/board";
 import { formatPrice, quoteTicker } from "@/lib/format";
 import { LAUNCH_LINK } from "@/lib/site";
+import { Ring } from "./Mark";
 import { PairMark } from "./PairMark";
 import styles from "./Trending.module.css";
 
@@ -29,7 +30,7 @@ function CoinCard({ launch }: { launch: LaunchSummary }) {
   const live = launch.curve.status === "live";
   return (
     <li>
-      <Link href={`/coin/${launch.mint}`} className={styles.card}>
+      <Link href={`/coin/${launch.mint}`} className={`card card-raised ${styles.card}`}>
         <div className={styles.top}>
           {launch.image ? (
             <img className={styles.image} src={launch.image} alt="" width={44} height={44} loading="lazy" />
@@ -40,10 +41,10 @@ function CoinCard({ launch }: { launch: LaunchSummary }) {
             <PairMark base={launch.symbol} quote={quote} size="sm" />
             <span className={styles.name}>{launch.name}</span>
           </div>
-          <span className={`${styles.pair} ${launch.quote.category === "tokenized_stock" ? styles.stock : ""}`}>Paired with {quote}</span>
+          <span className={`tag ${launch.quote.category === "tokenized_stock" ? "tag-accent" : ""} ${styles.pair}`}>Paired with {quote}</span>
         </div>
         <div className={styles.row}>
-          <span className={styles.price}>{launch.market.price === null ? "-" : `${formatPrice(launch.market.price)} ${quote}`}</span>
+          <span className={`t-figure ${styles.price}`}>{launch.market.price === null ? "-" : `${formatPrice(launch.market.price)} ${quote}`}</span>
           <span className={styles.meta}>{launch.market.marketCap ? `${formatMarketValue(launch.market.marketCap, launch.quote)} market cap` : "no trades yet"}</span>
         </div>
         {live ? (
@@ -58,7 +59,7 @@ function CoinCard({ launch }: { launch: LaunchSummary }) {
         )}
         <div className={styles.row}>
           <span className={styles.meta}>{formatMarketValue(launch.market.volume24h, launch.quote)} traded today</span>
-          {launch.rewardTax && <span className={styles.tag}>Reward launch, {launch.rewardTax.bps / 100}% to holders</span>}
+          {launch.rewardTax && <span className="tag tag-caution">Reward launch, {launch.rewardTax.bps / 100}% to holders</span>}
         </div>
       </Link>
     </li>
@@ -67,24 +68,26 @@ function CoinCard({ launch }: { launch: LaunchSummary }) {
 
 /**
  * The landing's coins: the six that trade most, as cards a visitor could tap on a phone; the dense board is one tap
- * away. With nothing launched yet it invites the first launch, since a new platform is judged on this view.
+ * away. With nothing launched yet it invites the first launch with the ring at size, since a new platform is judged on
+ * this view and an empty state is designed, never a sentence in a box.
  */
 export function Trending({ launches }: { launches: LaunchSummary[] }) {
   return (
     <section className={`shell ${styles.section}`} aria-labelledby="trending-title">
       <div className={styles.head}>
-        <h2 id="trending-title" className={styles.title}>Trending now</h2>
+        <h2 id="trending-title" className={`t-h2 ${styles.title}`}>Trending now</h2>
         <nav className={styles.chips} aria-label="Paired with">
-          {CHIPS.map((c) => (
-            <Link key={c.label} href={c.href}>{c.label}</Link>
+          {CHIPS.map((c, i) => (
+            <Link key={c.label} href={c.href} className="chip" aria-current={i === 0 ? "true" : undefined}>{c.label}</Link>
           ))}
         </nav>
         <Link href="/coins" className={styles.all}>Every coin</Link>
       </div>
       {launches.length === 0 ? (
-        <div className={styles.empty}>
+        <div className={`card card-raised ${styles.empty}`}>
+          <Ring size={96} className={styles.ring} />
           <p>No coins yet. The first one could be yours.</p>
-          <Link href={LAUNCH_LINK.href} className={styles.cta}>{LAUNCH_LINK.label}</Link>
+          <Link href={LAUNCH_LINK.href} className="button button-primary button-lg">{LAUNCH_LINK.label}</Link>
         </div>
       ) : (
         <ul className={styles.grid} aria-label="Trending coins">

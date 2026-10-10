@@ -1,15 +1,17 @@
 import Link from "next/link";
+import { Ring } from "@/components/Mark";
+import styles from "./not-found.module.css";
 
+/** Nothing at this address: the ring at size on a raised card, one line and the way back (principles, section 7). */
 export default function NotFound() {
   return (
-    <div className="shell" style={{ paddingTop: 64, paddingBottom: 80 }}>
-      <h1 style={{ fontFamily: "var(--font-display)", fontStretch: "112%", fontWeight: 800, margin: "0 0 12px" }}>
-        No coin at this address
-      </h1>
-      <p style={{ color: "var(--ink-2)", margin: "0 0 20px" }}>
-        It may still be confirming. Check the address, or wait a few seconds and reload.
-      </p>
-      <Link href="/">All coins</Link>
+    <div className={`shell ${styles.page}`}>
+      <div className={`card card-raised ${styles.card}`}>
+        <Ring size={96} className={styles.ring} />
+        <h1 className={`t-h2 ${styles.title}`}>No coin at this address</h1>
+        <p className={styles.note}>It may still be confirming. Check the address, or wait a few seconds and reload.</p>
+        <Link href="/" className="button button-primary">All coins</Link>
+      </div>
     </div>
   );
 }

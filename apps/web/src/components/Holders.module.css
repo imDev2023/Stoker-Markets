@@ -3,16 +3,11 @@
   flex-direction: column;
   gap: 12px;
   padding: 20px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
   min-width: 0;
 }
 
 .title {
   margin: 0;
-  font-size: 0.875rem;
-  font-weight: 600;
 }
 
 .note {
@@ -25,7 +20,7 @@
   margin: 0;
   padding: 10px 12px;
   border-radius: var(--radius-sm);
-  background: var(--bg);
+  background: var(--sunken);
   font-size: 0.875rem;
   font-weight: 500;
 }
@@ -60,6 +55,7 @@
 
 .rank {
   color: var(--ink-3);
+  font-family: var(--font-mono);
   font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
 }
@@ -74,7 +70,8 @@
 .who a {
   color: var(--ink-2);
   text-decoration: none;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-strong);
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
 
 @media (hover: hover) {
@@ -99,6 +96,9 @@
 
 .share {
   text-align: right;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 640px) {

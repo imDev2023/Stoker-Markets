@@ -77,8 +77,8 @@ export function LedgerList({ initial, platform }: { initial: LedgerPage; platfor
   }
 
   return (
-    <section className={styles.card} aria-labelledby="ledger-title">
-      <h2 id="ledger-title" className={styles.title}>Ledger</h2>
+    <section className={`card ${styles.card}`} aria-labelledby="ledger-title">
+      <h2 id="ledger-title" className={`t-h3 ${styles.title}`}>Ledger</h2>
       <ol className={styles.entries}>
         {inReadingOrder(entries).map((e) => (
           <li key={`${e.signature}.${e.index}`} className={isOut(e) ? styles.out : undefined}>
@@ -96,7 +96,7 @@ export function LedgerList({ initial, platform }: { initial: LedgerPage; platfor
       </ol>
       {error && <p className={styles.error} role="alert">{error}</p>}
       {next && (
-        <button type="button" className={styles.more} onClick={() => void older()} disabled={loading}>
+        <button type="button" className={`button button-ghost ${styles.more}`} onClick={() => void older()} disabled={loading} aria-busy={loading}>
           {loading ? "Loading…" : "Show older entries"}
         </button>
       )}

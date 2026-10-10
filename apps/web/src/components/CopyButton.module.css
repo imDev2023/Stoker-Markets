@@ -7,9 +7,16 @@
   font-weight: 500;
   color: var(--ink-2);
   cursor: pointer;
+  transition: border-color var(--fast) var(--ease), color var(--fast) var(--ease), background-color var(--fast) var(--ease);
 }
 
 .copy:hover {
-  border-color: var(--ink-3);
+  border-color: var(--line-strong);
+  background: var(--hover);
   color: var(--ink);
+}
+
+.copy:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
 }

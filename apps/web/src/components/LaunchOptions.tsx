@@ -165,7 +165,7 @@ export function LaunchType({ options: o, coin, labelId }: { options: LaunchOptio
         <div className={styles.rates} role="group" aria-label="Reward Tax">
           <span className={styles.ratesLabel}>Reward Tax</span>
           {REWARD_TAX_RATES.map((bps) => (
-            <button key={bps} type="button" aria-pressed={o.rewardTax === bps} onClick={() => o.setRewardTax(bps)}>
+            <button key={bps} type="button" className="chip" aria-pressed={o.rewardTax === bps} onClick={() => o.setRewardTax(bps)}>
               {bps / 100}%
             </button>
           ))}

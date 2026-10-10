@@ -1,15 +1,18 @@
 import { Fragment } from "react";
 import type { LedgerPage, PlatformInfo, Revenue, RevenueAsset } from "@launchpad/contract";
 import { creatorEarnings } from "@/lib/fees";
-import { explorerUrl, formatUnits, formatUtcDay, quoteTicker, shortAddress, SOL_DECIMALS } from "@/lib/format";
+import { explorerUrl, formatAmount, formatUnits, formatUtcDay, quoteTicker, shortAddress, SOL_DECIMALS } from "@/lib/format";
 import { CopyButton } from "./CopyButton";
 import { LedgerList } from "./LedgerList";
+import { Ring } from "./Mark";
 import { QuoteLogo } from "./QuoteLogo";
 import styles from "./RevenueDashboard.module.css";
 
 /** Totals show up to six decimals; the Ledger shows every one. */
 const TOTAL_DECIMALS = 6;
 const total = (raw: string, asset: RevenueAsset) => formatUnits(raw, asset.decimals, Math.min(asset.decimals, TOTAL_DECIMALS));
+/** The tile's one big figure is read at a glance, so it is rounded short (404,386.56, 0.0876); the streams under it carry the exact totals. */
+const headline = (raw: string, asset: RevenueAsset) => formatAmount(raw, asset.decimals);
 
 /**
  * The public revenue page: what the platform has collected in each asset, all time and per day, where it went (to
@@ -23,7 +26,7 @@ export function RevenueDashboard({ revenue, ledger, platform }: { revenue: Reven
   return (
     <article className={`shell ${styles.page}`}>
       <header className={styles.head}>
-        <h1 className={styles.title}>Platform revenue</h1>
+        <h1 className={`t-h1 ${styles.title}`}>Platform revenue</h1>
         <p className={styles.lede}>
           Every fee the platform collects, every payment of a Creator&apos;s share and every move to its treasury is a
           Solana transaction on the Ledger below. Anyone can check these totals against it.
@@ -35,7 +38,8 @@ export function RevenueDashboard({ revenue, ledger, platform }: { revenue: Reven
           <section className={styles.section} aria-labelledby="totals-title">
             <h2 id="totals-title" className="visually-hidden">All time</h2>
             {revenue.totals.length === 0 ? (
-              <div className={styles.emptyCard}>
+              <div className={`card card-raised ${styles.emptyCard}`}>
+                <Ring size={72} className={styles.ring} />
                 <p>
                   No revenue collected yet. The Fee Collector runs every hour, and each collection shows up here with its
                   transaction.
@@ -44,14 +48,14 @@ export function RevenueDashboard({ revenue, ledger, platform }: { revenue: Reven
             ) : (
               <ul className={styles.totals}>
                 {revenue.totals.map((t) => (
-                  <li key={t.asset.mint} className={styles.asset}>
+                  <li key={t.asset.mint} className={`card ${styles.asset}`}>
                     <p className={styles.assetName}>
                       <QuoteLogo quote={t.asset} size={24} />
                       <span className={styles.ticker}>{quoteTicker(t.asset)}</span>
                       {t.asset.name && <span className={styles.name}>{t.asset.name}</span>}
                     </p>
                     <p className={styles.amount}>
-                      <span className="mono">{total(t.total, t.asset)}</span>
+                      <span className="mono">{headline(t.total, t.asset)}</span>
                       <span className={styles.amountLabel}>collected, all time</span>
                     </p>
                     <dl className={styles.streams}>
@@ -70,7 +74,7 @@ export function RevenueDashboard({ revenue, ledger, platform }: { revenue: Reven
                     </dl>
                     {/* Creators are paid in Quote Assets only; a coin a Fee Key paid out has no such share. */}
                     {(t.creatorForwarded !== "0" || t.creatorPending !== "0") && (
-                      <dl className={styles.streams}>
+                      <dl className={`${styles.streams} ${styles.creators}`}>
                         <div>
                           <dt>Sent to Creators</dt>
                           <dd className="mono">{total(t.creatorForwarded, t.asset)}</dd>
@@ -88,8 +92,8 @@ export function RevenueDashboard({ revenue, ledger, platform }: { revenue: Reven
           </section>
 
           {revenue.days.length > 0 && (
-            <section className={styles.card} aria-labelledby="days-title">
-              <h2 id="days-title" className={styles.cardTitle}>By day</h2>
+            <section className={`card ${styles.card}`} aria-labelledby="days-title">
+              <h2 id="days-title" className={`t-h3 ${styles.cardTitle}`}>By day</h2>
               <table className={styles.table}>
                 <thead>
                   <tr>
@@ -129,8 +133,8 @@ export function RevenueDashboard({ revenue, ledger, platform }: { revenue: Reven
         </div>
 
         <aside className={styles.side}>
-          <section className={styles.rule} aria-labelledby="streams-title">
-            <h2 id="streams-title" className={styles.cardTitle}>Where revenue comes from</h2>
+          <section className={`card ${styles.rule}`} aria-labelledby="streams-title">
+            <h2 id="streams-title" className={`t-h3 ${styles.cardTitle}`}>Where revenue comes from</h2>
             <dl className={styles.explain}>
               <div>
                 <dt>Curves</dt>
@@ -147,8 +151,8 @@ export function RevenueDashboard({ revenue, ledger, platform }: { revenue: Reven
             </dl>
           </section>
 
-          <section className={styles.card} aria-labelledby="wallets-title">
-            <h2 id="wallets-title" className={styles.cardTitle}>Where it goes</h2>
+          <section className={`card ${styles.card}`} aria-labelledby="wallets-title">
+            <h2 id="wallets-title" className={`t-h3 ${styles.cardTitle}`}>Where it goes</h2>
             <p className={styles.muted}>
               {earns.share}% of what the curves and pools bring in is the Creators&apos;, {earns.summary}. It is sent to each
               Creator&apos;s wallet within the hour of being collected and never goes to the treasury.

@@ -15,13 +15,13 @@ export function CurveProgress({ launch, platform }: { launch: LaunchSummary; pla
   const left = target > raised ? target - raised : 0n;
 
   return (
-    <section className={styles.card} aria-labelledby="progress-title">
+    <section className={`card ${styles.card}`} aria-labelledby="progress-title">
       <div className={styles.head}>
-        <h2 id="progress-title" className={styles.title}>Graduation</h2>
+        <h2 id="progress-title" className={`t-h3 ${styles.title}`}>Graduation</h2>
         {status === "graduated" ? (
           <span className={styles.graduated}>Graduated</span>
         ) : (
-          <span className={styles.pct}>{pct.toFixed(pct > 0 && pct < 10 ? 1 : 0)}%</span>
+          <span className={`${styles.pct} ${pct > 0 ? "heat-text" : ""}`}>{pct.toFixed(pct > 0 && pct < 10 ? 1 : 0)}%</span>
         )}
       </div>
       <div

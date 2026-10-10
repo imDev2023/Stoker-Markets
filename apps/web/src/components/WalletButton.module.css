@@ -15,7 +15,6 @@
   .inline .connected {
     width: 100%;
     height: 48px;
-    justify-content: center;
   }
   .inline .menu {
     left: 0;
@@ -23,50 +22,14 @@
   }
 }
 
+/* The button itself is the primitive (ghost in the header, primary inline); these only place the glyph and the address. */
 .connect,
 .connected {
-  display: inline-flex;
-  align-items: center;
   gap: 8px;
-  height: 40px;
-  padding: 0 16px;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: 0.9375rem;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background-color 120ms ease, border-color 120ms ease;
-}
-
-.connect {
-  border: 0;
-  background: var(--button);
-  color: var(--on-button);
-}
-
-.connect:hover {
-  background: var(--button-hover);
-  color: var(--on-button);
 }
 
 .connect:disabled {
-  opacity: 0.7;
   cursor: progress;
-}
-
-/* In the header the launch button is the one filled action, so connecting is outlined there like the connected state. */
-.header .connect,
-.connected {
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--ink);
-}
-
-.header .connect:hover,
-.connected:hover {
-  border-color: var(--ink-3);
-  background: var(--surface);
-  color: var(--ink);
 }
 
 .glyph {
@@ -74,10 +37,7 @@
   color: var(--ink-2);
 }
 
-.menu img {
-  border-radius: 4px;
-}
-
+/* The menu floats on surface-3 with the shadow, the one place the header casts one. */
 .menu {
   position: absolute;
   right: 0;
@@ -86,9 +46,25 @@
   padding: 6px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--surface);
-  box-shadow: var(--shadow);
+  background: var(--surface-3);
+  box-shadow: var(--highlight), var(--shadow);
   z-index: 20;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .menu {
+    animation: open var(--base) var(--ease);
+  }
+  @keyframes open {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+}
+
+.menu img {
+  border-radius: 4px;
 }
 
 .menu button,
@@ -99,17 +75,24 @@
   width: 100%;
   padding: 10px 12px;
   border: 0;
-  border-radius: 8px;
+  border-radius: calc(var(--radius-sm) - 2px);
   background: none;
   text-align: left;
   font-weight: 500;
   text-decoration: none;
   cursor: pointer;
+  transition: background-color var(--fast) var(--ease);
 }
 
 .menu button:hover,
 .menu .menuLink:hover {
-  background: var(--bg);
+  background: var(--hover);
+}
+
+.menu button:focus-visible,
+.menu .menuLink:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
 }
 
 .empty {
@@ -119,10 +102,6 @@
   color: var(--ink-2);
 }
 
-/* At the narrowest phones the wordmark, cluster badge and this button only fit side by side with tighter padding. */
-@media (max-width: 380px) {
-  .connect,
-  .connected {
-    padding: 0 12px;
-  }
+.empty a {
+  color: var(--accent);
 }

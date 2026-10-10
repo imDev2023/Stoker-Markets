@@ -1,9 +1,10 @@
+/* The header on surface with a hairline, translucent so the page's colour shows through as it scrolls under. */
 .header {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: saturate(140%) blur(10px);
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  backdrop-filter: saturate(140%) blur(12px);
   border-bottom: 1px solid var(--line);
 }
 
@@ -19,7 +20,7 @@
 .wordmark {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   font-family: var(--font-display);
   font-stretch: 125%;
   font-weight: 800;
@@ -65,7 +66,7 @@
   color: var(--ink-2);
   text-decoration: none;
   white-space: nowrap;
-  transition: color 120ms ease;
+  transition: color var(--fast) var(--ease);
 }
 
 .link:hover {
@@ -97,24 +98,10 @@
   display: flex;
 }
 
+/* The one filled action in the header (the primitive gives it the glow); it keeps its glyph when the words go. */
 .launch {
-  display: inline-flex;
-  align-items: center;
   gap: 7px;
-  height: 40px;
   padding: 0 16px 0 14px;
-  border-radius: 999px;
-  background: var(--button);
-  color: var(--on-button);
-  font-weight: 600;
-  font-size: 0.9375rem;
-  white-space: nowrap;
-  text-decoration: none;
-  transition: background-color 120ms ease;
-}
-
-.launch:hover {
-  background: var(--button-hover);
 }
 
 /*

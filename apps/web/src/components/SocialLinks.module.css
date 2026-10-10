@@ -9,11 +9,12 @@
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
   color: var(--ink-2);
+  transition: color var(--fast) var(--ease), background-color var(--fast) var(--ease);
 }
 
 .icon:hover {
   color: var(--ink);
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  background: var(--hover);
 }

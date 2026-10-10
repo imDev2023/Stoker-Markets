@@ -6,6 +6,7 @@ import type { LaunchQuote, LaunchSummary } from "@launchpad/contract";
 import { listLaunchQuotes, listLaunches, type BoardQuery } from "@/lib/api";
 import { boardSearch, DEFAULT_BOARD, inChip, PAIRED_CHIPS, SEARCH_MAX, SORT_LABELS, SORT_ORDER, type PairedChip } from "@/lib/board";
 import { COIN_COLUMNS, CoinRow } from "./CoinRow";
+import { Ring } from "./Mark";
 import { QuoteFilter } from "./QuoteFilter";
 import styles from "./Board.module.css";
 
@@ -87,11 +88,11 @@ export function Board({
   return (
     <section className={`shell ${styles.section}`} aria-labelledby="board-title">
       <div className={styles.head}>
-        <h2 id="board-title" className={styles.title}>Coins</h2>
+        <h2 id="board-title" className={`t-h2 ${styles.title}`}>Coins</h2>
         <span className={styles.live}>Updates every few seconds</span>
       </div>
       <div className={styles.toolbar}>
-        <label className={styles.search}>
+        <label className={`input ${styles.search}`}>
           <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
             <circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
             <path d="m13 13 4.5 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -107,20 +108,22 @@ export function Board({
             onChange={(e) => search(e.target.value)}
           />
         </label>
-        <div className={styles.sorts} role="group" aria-label="Sort coins">
+        <div className={styles.sorts}>
           <span className={styles.sortLabel}>Sort</span>
-          {SORT_ORDER.map((s) => (
-            <button key={s} type="button" aria-pressed={query.sort === s} onClick={() => change({ ...query, sort: s })}>
-              {SORT_LABELS[s]}
-            </button>
-          ))}
+          <div className="segmented" role="group" aria-label="Sort coins">
+            {SORT_ORDER.map((s) => (
+              <button key={s} type="button" aria-pressed={query.sort === s} onClick={() => change({ ...query, sort: s })}>
+                {SORT_LABELS[s]}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       <div className={styles.filters}>
         <div className={styles.paired} role="group" aria-label="Paired with">
           <span className={styles.pairedLabel}>Paired with</span>
           {PAIRED_CHIPS.map((c) => (
-            <button key={c.label} type="button" aria-pressed={c === chosen} onClick={() => choosePaired(c)}>
+            <button key={c.label} type="button" className="chip" aria-pressed={c === chosen} onClick={() => choosePaired(c)}>
               {c.label}
             </button>
           ))}
@@ -128,19 +131,20 @@ export function Board({
         <QuoteFilter quotes={quotes.filter((q) => inChip(q, query))} value={query.quote} onChange={(quote) => change({ ...query, quote })} />
       </div>
       {nothingLaunched ? (
-        <div className={styles.empty}>
+        <div className={`card card-raised ${styles.empty}`}>
+          <Ring size={80} className={styles.ring} />
           <p>No coins yet. The first one could be yours.</p>
-          <Link href="/launch" className={styles.cta}>Stoke a coin</Link>
+          <Link href="/launch" className="button button-primary">Stoke a coin</Link>
         </div>
       ) : launches.length === 0 ? (
-        <div className={styles.empty} aria-busy={loading}>
+        <div className={`card ${styles.empty}`} aria-busy={loading}>
           <p>{shown.q ? `No coins match "${shown.q}".` : "No coins match these filters."}</p>
-          <button type="button" className={styles.reset} onClick={reset}>
+          <button type="button" className="button button-ghost" onClick={reset}>
             Show all coins
           </button>
         </div>
       ) : (
-        <div className={styles.table}>
+        <div className={`card ${styles.table}`}>
           {/* The column names once, above the rows; each row names its own figures where the window is too narrow for columns. */}
           <div className={styles.columns} aria-hidden>
             {COIN_COLUMNS.map((c) => (

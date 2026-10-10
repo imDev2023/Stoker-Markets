@@ -97,9 +97,9 @@ export function AirdropCard({ initial, symbol, platform }: { initial: AirdropSta
   const pct = total === 0 ? 0 : (paid / total) * 100;
 
   return (
-    <section className={styles.card} aria-labelledby="airdrop-title">
+    <section className={`card ${styles.card}`} aria-labelledby="airdrop-title">
       <div className={styles.head}>
-        <h2 id="airdrop-title" className={styles.title}>Airdrop</h2>
+        <h2 id="airdrop-title" className={`t-h3 ${styles.title}`}>Airdrop</h2>
         <span className={styles.count}>
           {paid} of {total} paid
         </span>
@@ -134,7 +134,7 @@ export function AirdropCard({ initial, symbol, platform }: { initial: AirdropSta
 
       {isCreator && !done && (
         <div className={styles.action}>
-          <button type="button" className={styles.primary} onClick={send} disabled={busy || unpaid === 0}>
+          <button type="button" className={`button button-primary ${styles.primary}`} onClick={send} disabled={busy || unpaid === 0}>
             {step.kind === "preparing"
               ? "Preparing…"
               : step.kind === "signing"
