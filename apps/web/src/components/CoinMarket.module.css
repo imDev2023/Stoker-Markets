@@ -13,6 +13,74 @@
   min-width: 0;
 }
 
+/* The layout candidates (docs/design/layout.md): C1 and C3 keep the fixed column in view while the chart column scrolls. */
+.c1 .side,
+.c3 .side {
+  position: sticky;
+  top: 80px;
+}
+
+/* C3: the action in the strong left zone, the chart on the right. */
+.c3 {
+  grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+}
+
+.c3 .side {
+  order: -1;
+}
+
+/* The candidates' trades and holders as tabs in one panel under the chart. */
+.tabs {
+  display: flex;
+  flex-direction: column;
+}
+
+.tabBar {
+  display: flex;
+  gap: 4px;
+  padding: 8px 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.tabBar button {
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--ink-3);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.tabBar button[aria-selected="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+.tabBar button:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: 6px 6px 0 0;
+}
+
+/* The tabbed panels keep their own card chrome; the tab panel is the card around them, and the tab is their title. */
+.tabPanel > * {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.tabPanel h2 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
 /* One column: the columns dissolve so their cards can be reordered, trading first after progress. */
 @media (max-width: 900px) {
   .market {
@@ -24,9 +92,14 @@
   .side {
     display: contents;
   }
+  .c1 .side,
+  .c3 .side {
+    position: static;
+  }
   .progress { order: 1; }
   .trade { order: 2; }
   .chart { order: 3; }
   .history { order: 4; }
   .holders { order: 5; }
+  .aside { order: 6; }
 }

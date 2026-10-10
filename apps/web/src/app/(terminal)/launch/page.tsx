@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getPlatform, listQuotes } from "@/lib/api";
 import { LaunchForm } from "@/components/LaunchForm";
+import { LAUNCH_LAYOUTS, layoutFrom } from "@/lib/layout";
 
 export const metadata: Metadata = { title: "Stoke a coin" };
 
@@ -14,5 +15,5 @@ function quoteFrom(params: Record<string, string | string[] | undefined>) {
 
 export default async function LaunchPage({ searchParams }: Props) {
   const [platform, { quotes }, params] = await Promise.all([getPlatform(), listQuotes(), searchParams]);
-  return <LaunchForm platform={platform} quotes={quotes} initialQuote={quoteFrom(params)} />;
+  return <LaunchForm platform={platform} quotes={quotes} initialQuote={quoteFrom(params)} layout={layoutFrom(params, LAUNCH_LAYOUTS)} />;
 }

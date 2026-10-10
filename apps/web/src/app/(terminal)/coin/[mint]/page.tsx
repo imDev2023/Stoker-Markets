@@ -7,7 +7,9 @@ import { explorerUrl, formatUtc, isSol, quoteTicker, shortAddress } from "@/lib/
 import { AirdropCard } from "@/components/AirdropCard";
 import { CoinMarket } from "@/components/CoinMarket";
 import { CopyButton } from "@/components/CopyButton";
+import { CoinCard, PairLockup, PairStats, QuoteCard } from "@/components/PairCards";
 import { PairMark } from "@/components/PairMark";
+import { COIN_LAYOUTS, layoutFrom } from "@/lib/layout";
 import { QuoteLabelList } from "@/components/QuoteLabels";
 import { RewardsCard } from "@/components/RewardsCard";
 import styles from "./page.module.css";
@@ -27,7 +29,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CoinPage({ params, searchParams }: Props) {
   const { mint } = await params;
-  const referrer = referrerFrom(await searchParams);
+  const search = await searchParams;
+  const referrer = referrerFrom(search);
+  const layout = layoutFrom(search, COIN_LAYOUTS);
   const [launch, platform, trades, candles, holders, airdrop] = await Promise.all([
     getLaunch(mint), getPlatform(), listTrades(mint), getCandles(mint, "1m"),
     // A 404 (no such coin) or an unreadable chain leaves the card to retry, rather than failing the page.
@@ -37,7 +41,8 @@ export default async function CoinPage({ params, searchParams }: Props) {
   if (!launch) notFound();
   const rewards = launch.rewardTax ? await getCoinRewards(mint).catch(() => null) : null;
   // SOL needs no labels; any other Quote Asset shows what its issuer and the token list say about it (#11).
-  const quoteAsset = isSol(launch.quote) ? null : await getQuoteAsset(launch.quote.mint).catch(() => null);
+  // The layout candidates' Quote Asset card and stats strip want SOL's price and liquidity too.
+  const quoteAsset = isSol(launch.quote) && !layout ? null : await getQuoteAsset(launch.quote.mint).catch(() => null);
   // An Airdrop still being paid sits above the market, where its Creator sends it; a finished one joins the facts below.
   const earns = creatorEarnings(platform);
   const airdropCard = airdrop && <AirdropCard initial={airdrop} symbol={launch.symbol} platform={platform} />;
@@ -58,10 +63,18 @@ export default async function CoinPage({ params, searchParams }: Props) {
     ["Telegram", launch.links.telegram],
   ].filter((l): l is [string, string] => Boolean(l[1]));
 
+  const quoteCard = layout ? <QuoteCard launch={launch} quoteAsset={quoteAsset} /> : null;
+
   return (
     <article className={`shell ${styles.page}`}>
       <header className={styles.head}>
-        {launch.image ? <img className={styles.image} src={launch.image} alt="" width={112} height={112} /> : <div className={styles.image} />}
+        {layout ? (
+          <PairLockup launch={launch} />
+        ) : launch.image ? (
+          <img className={styles.image} src={launch.image} alt="" width={112} height={112} />
+        ) : (
+          <div className={styles.image} />
+        )}
         <div className={styles.titles}>
           <h1 className={styles.pair}>
             <PairMark base={launch.symbol} quote={quote} size="fit" />
@@ -83,12 +96,20 @@ export default async function CoinPage({ params, searchParams }: Props) {
 
       {!airdropDone && airdropCard}
 
+      {layout && <PairStats launch={launch} quoteAsset={quoteAsset} />}
+      {layout === "c2" && (
+        <div className={styles.pairCards}>
+          <CoinCard launch={launch} platform={platform} holders={holders ? holders.holders.filter((h) => h.kind === "holder" || h.kind === "creator").length : null} />
+          {quoteCard}
+        </div>
+      )}
+
       <CoinMarket
         initial={launch} platform={platform} initialTrades={trades.trades} initialCandles={candles} initialHolders={holders} renderedAt={Date.now()}
-        referrer={referrer}
+        referrer={referrer} layout={layout} aside={quoteCard}
       />
 
-      <section className={styles.panels}>
+      <section className={`${styles.panels} ${layout ? styles.panelsOne : ""}`}>
         <dl className={`card ${styles.facts}`}>
           <div>
             <dt>Creator earns</dt>
@@ -146,7 +167,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
             </div>
           ))}
         </dl>
-        {quoteAsset && (
+        {quoteAsset && !layout && (
           <section className={`card ${styles.wide} ${styles.quoteLabels}`} aria-labelledby="quote-labels-title">
             <h2 id="quote-labels-title" className={`t-h3 ${styles.quoteLabelsTitle}`}>Paired with {quote}</h2>
             <p className={styles.quoteLabelsNote}>

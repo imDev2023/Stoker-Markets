@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type { CandleInterval, CandleList, HolderList, LaunchSummary, PlatformInfo, Trade } from "@launchpad/contract";
 import { getCandles, getHolders, getLaunch, listTrades } from "@/lib/api";
 import { quoteTicker } from "@/lib/format";
+import type { CoinLayout } from "@/lib/layout";
 import { CurveProgress } from "./CurveProgress";
 import { Holders } from "./Holders";
 import { PriceChart } from "./PriceChart";
@@ -20,10 +21,13 @@ const HOLDERS_REFRESH_MS = 12_000;
  * indexed trades and the chain. After Graduation the same page trades in the coin's Raydium pool.
  */
 export function CoinMarket({
-  initial, platform, initialTrades, initialCandles, initialHolders, renderedAt, referrer = null,
+  initial, platform, initialTrades, initialCandles, initialHolders, renderedAt, referrer = null, layout = null, aside = null,
 }: {
   initial: LaunchSummary;
   platform: PlatformInfo;
+  /** A layout candidate (docs/design/layout.md), with the Quote Asset's card the page renders for its fixed column. */
+  layout?: CoinLayout | null;
+  aside?: ReactNode;
   /** From the page's `?ref=` link: the wallet that earns the referral share fee on the visitor's curve trades. */
   referrer?: string | null;
   initialTrades: Trade[];
@@ -40,6 +44,7 @@ export function CoinMarket({
   const [candles, setCandles] = useState(initialCandles);
   const [holders, setHolders] = useState(initialHolders);
   const [now, setNow] = useState(renderedAt);
+  const [tab, setTab] = useState<"trades" | "holders">("trades");
   const quote = quoteTicker(launch.quote);
   // The latest trade's price on the curve or, after Graduation, in the pool; before any trade, the curve's starting price.
   const price = launch.market.price;
@@ -85,26 +90,50 @@ export function CoinMarket({
     loadCandles(next).catch(() => undefined);
   }
 
+  const history = <TradeHistory trades={trades} symbol={launch.symbol} quote={launch.quote} platform={platform} now={now} graduation={launch.graduation} />;
+  const holdersList = <Holders holders={holders} platform={platform} />;
+  const trade = <TradePanel launch={launch} platform={platform} referrer={referrer} onTraded={() => void Promise.all([refresh(), refreshHolders()])} />;
+
+  if (layout) {
+    // The candidates: the stats strip above carries the curve, so the progress card goes; trades and holders are tabs
+    // under the chart; the fixed column holds the trade panel and, in C1 and C3, the Quote Asset's card.
+    return (
+      <div className={`${styles.market} ${styles[layout]}`}>
+        <div className={styles.main}>
+          <div className={styles.chart}>
+            <PriceChart data={candles} interval={candleInterval} onIntervalChange={changeInterval} price={price} quote={quote} />
+          </div>
+          <div className={`card ${styles.tabs} ${styles.history}`}>
+            <div className={styles.tabBar} role="tablist" aria-label="Activity">
+              <button type="button" role="tab" aria-selected={tab === "trades"} onClick={() => setTab("trades")}>Trades</button>
+              <button type="button" role="tab" aria-selected={tab === "holders"} onClick={() => setTab("holders")}>Top holders</button>
+            </div>
+            <div className={styles.tabPanel} role="tabpanel">{tab === "trades" ? history : holdersList}</div>
+          </div>
+        </div>
+        <div className={styles.side}>
+          {layout === "c1" && <div className={styles.aside}>{aside}</div>}
+          <div className={styles.trade}>{trade}</div>
+          {layout === "c3" && <div className={styles.aside}>{aside}</div>}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.market}>
       <div className={styles.main}>
         <div className={styles.chart}>
           <PriceChart data={candles} interval={candleInterval} onIntervalChange={changeInterval} price={price} quote={quote} />
         </div>
-        <div className={styles.history}>
-          <TradeHistory trades={trades} symbol={launch.symbol} quote={launch.quote} platform={platform} now={now} graduation={launch.graduation} />
-        </div>
+        <div className={styles.history}>{history}</div>
       </div>
       <div className={styles.side}>
         <div className={styles.progress}>
           <CurveProgress launch={launch} platform={platform} />
         </div>
-        <div className={styles.trade}>
-          <TradePanel launch={launch} platform={platform} referrer={referrer} onTraded={() => void Promise.all([refresh(), refreshHolders()])} />
-        </div>
-        <div className={styles.holders}>
-          <Holders holders={holders} platform={platform} />
-        </div>
+        <div className={styles.trade}>{trade}</div>
+        <div className={styles.holders}>{holdersList}</div>
       </div>
     </div>
   );

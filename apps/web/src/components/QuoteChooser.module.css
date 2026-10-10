@@ -280,3 +280,26 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* The layout candidates (docs/design/layout.md): the recommended three as larger cards ahead of the kinds. */
+.featured {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.big {
+  min-height: 78px;
+}
+
+.big .ticker {
+  font-size: 1.0625rem;
+}
+
+@media (max-width: 640px) {
+  .featured {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

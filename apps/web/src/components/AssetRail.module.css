@@ -1,0 +1,189 @@
+/* B1: the rail is a fixed column of the assets in use; B3: the same assets as a sideways strip of tiles. */
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: sticky;
+  top: 96px;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+.all,
+.asset {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.all {
+  margin-bottom: 8px;
+  justify-content: space-between;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+@media (hover: hover) {
+  .all:hover,
+  .asset:hover {
+    background: var(--surface-2);
+    color: var(--ink);
+  }
+}
+
+.all[aria-pressed="true"],
+.asset[aria-pressed="true"] {
+  background: var(--plate);
+  color: var(--accent-strong);
+}
+
+.all:focus-visible,
+.asset:focus-visible,
+.tile:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kind {
+  margin: 10px 0 4px;
+  padding: 0 10px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.ticker {
+  font-weight: 600;
+}
+
+.figures {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  margin-left: auto;
+  font-size: 0.6875rem;
+  line-height: 1.2;
+}
+
+.count {
+  color: var(--ink-3);
+}
+
+.volume {
+  color: var(--ink-2);
+}
+
+/* Narrow windows: the rail lies down as a strip of chips. */
+@media (max-width: 900px) {
+  .rail {
+    position: static;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .rail .group {
+    display: contents;
+  }
+  .rail .kind {
+    display: none;
+  }
+  .all,
+  .asset {
+    flex: none;
+    width: auto;
+    margin: 0;
+    padding: 6px 12px;
+    border-radius: 999px;
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .rail .figures {
+    display: none;
+  }
+}
+
+.strip {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+.tile {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 150px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease), background-color var(--fast) var(--ease);
+}
+
+@media (hover: hover) {
+  .tile:hover {
+    border-color: var(--line-strong);
+    background: var(--surface-2);
+  }
+}
+
+.tile[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--plate);
+  color: var(--ink);
+}
+
+.tileTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+  color: var(--ink);
+}
+
+.tileKind {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+
+.tileFigures {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.6875rem;
+  color: var(--ink-3);
+}

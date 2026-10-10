@@ -127,6 +127,85 @@
   overflow: hidden;
 }
 
+/* The layout candidates (docs/design/layout.md): the pair lockup is the first column and the "Paired" column goes. */
+.pairTable {
+  --cols: minmax(240px, 2.6fr) minmax(96px, 1.1fr) minmax(96px, 1.1fr) 140px minmax(96px, 1.1fr) 76px 96px;
+}
+
+.pairTable .columns span:nth-child(2),
+.pairTable .columns span:nth-child(3),
+.pairTable .columns span:nth-child(5),
+.pairTable .columns span:nth-child(6) {
+  text-align: right;
+}
+
+.pairTable .columns span:nth-child(4),
+.pairTable .columns span:nth-child(7) {
+  text-align: left;
+}
+
+/* B1: the rail on the left, fixed; the board takes the rest. */
+.withRail {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.main {
+  min-width: 0;
+}
+
+/* B2: a band a Quote Asset, its coins under it. */
+.band + .band {
+  border-top: 1px solid var(--line);
+}
+
+.bandHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bandHead[aria-pressed="true"] {
+  background: var(--plate);
+}
+
+.bandTicker {
+  font-family: var(--font-display);
+  font-stretch: 125%;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.bandKind {
+  color: var(--ink-3);
+}
+
+.bandFigures {
+  display: flex;
+  gap: 16px;
+  margin-left: auto;
+  color: var(--ink-2);
+}
+
+@media (max-width: 900px) {
+  .withRail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .columns {
   display: grid;
   grid-template-columns: var(--cols);

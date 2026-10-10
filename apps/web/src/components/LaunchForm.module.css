@@ -611,3 +611,26 @@
     flex: 1 1 auto;
   }
 }
+
+/* The layout candidates (docs/design/layout.md). L2's first stage is the asset alone (the page's own grid); the band names the chosen one above the form. */
+.band {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.bandText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 0.9375rem;
+}
+
+.bandText strong {
+  font-family: var(--font-display);
+  font-stretch: 125%;
+  font-weight: 800;
+}

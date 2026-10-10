@@ -63,7 +63,7 @@ export function QuoteSearch({ value, onChange }: { value: string; onChange: (que
  * it is; what its issuer can do is further information under the form and on the asset's page, never a chip under its
  * name (owner, 2026-10-10).
  */
-export function QuoteChooser({ quotes, value, query, onChange }: { quotes: QuoteAsset[]; value: string | null; query: string; onChange: (mint: string) => void }) {
+export function QuoteChooser({ quotes, value, query, onChange, featured = false }: { quotes: QuoteAsset[]; value: string | null; query: string; onChange: (mint: string) => void; featured?: boolean }) {
   const id = useId();
   const [chip, setChip] = useState<PairedChip>(PAIRED_CHIPS[0]!);
   const [all, setAll] = useState(false);
@@ -72,9 +72,45 @@ export function QuoteChooser({ quotes, value, query, onChange }: { quotes: Quote
   const matches = useMemo(() => searchQuotes(quotes.filter((q) => inChip(q, chip)), query), [quotes, chip, query]);
   const searching = query.trim() !== "";
   const shown = all || searching ? matches : matches.slice(0, SHOWN);
+  // The layout candidates (docs/design/layout.md): a recommended few ahead of the hundreds, SOL, the deepest stablecoin
+  // and the deepest stock, which the chooser's order (deepest first) picks out.
+  const picks = useMemo(() => {
+    if (!featured) return [];
+    const first = (category: QuoteAsset["category"]) => quotes.find((q) => q.category === category && q.launchable);
+    return [first("sol"), first("stablecoin"), first("tokenized_stock")].filter((q): q is QuoteAsset => q !== undefined);
+  }, [featured, quotes]);
+
+  const card = (q: QuoteAsset, big = false) => (
+    <label key={q.mint} className={`${styles.card} ${big ? styles.big : ""} ${q.launchable ? "" : styles.closed}`}>
+      <input
+        type="radio"
+        name={`${id}-quote`}
+        value={q.mint}
+        checked={q.mint === value}
+        disabled={!q.launchable}
+        onChange={() => onChange(q.mint)}
+      />
+      <QuoteLogo quote={q} size={big ? 44 : 34} />
+      <span className={styles.text}>
+        <span className={styles.title}>
+          <span className={styles.ticker}>{quoteTicker(q)}</span>
+          {distinctName(q) && <span className={styles.name}>{distinctName(q)}</span>}
+        </span>
+        <span className={styles.meta}>
+          <span className={styles.kind}>{kindOf(q)}</span>
+          <span className={q.launchable ? styles.target : styles.reason}>{q.launchable ? `graduates at ${graduationAmount(q)}` : q.reason}</span>
+        </span>
+      </span>
+    </label>
+  );
 
   return (
     <div className={styles.chooser}>
+      {picks.length > 0 && !searching && chip === PAIRED_CHIPS[0] && (
+        <div className={styles.featured} role="radiogroup" aria-label="Recommended">
+          {picks.map((q) => card(q, true))}
+        </div>
+      )}
       <div className={styles.chips} role="group" aria-label="Kind">
         {chips.map(({ chip: c, count }) => (
           <button key={c.label} type="button" className="chip" aria-pressed={c === chip} onClick={() => { setChip(c); setAll(false); }}>
@@ -84,29 +120,7 @@ export function QuoteChooser({ quotes, value, query, onChange }: { quotes: Quote
       </div>
 
       <div className={`${styles.grid} ${all && !searching ? styles.expanded : ""}`} role="radiogroup" aria-label="Pair with">
-        {shown.map((q) => (
-          <label key={q.mint} className={`${styles.card} ${q.launchable ? "" : styles.closed}`}>
-            <input
-              type="radio"
-              name={`${id}-quote`}
-              value={q.mint}
-              checked={q.mint === value}
-              disabled={!q.launchable}
-              onChange={() => onChange(q.mint)}
-            />
-            <QuoteLogo quote={q} size={34} />
-            <span className={styles.text}>
-              <span className={styles.title}>
-                <span className={styles.ticker}>{quoteTicker(q)}</span>
-                {distinctName(q) && <span className={styles.name}>{distinctName(q)}</span>}
-              </span>
-              <span className={styles.meta}>
-                <span className={styles.kind}>{kindOf(q)}</span>
-                <span className={q.launchable ? styles.target : styles.reason}>{q.launchable ? `graduates at ${graduationAmount(q)}` : q.reason}</span>
-              </span>
-            </span>
-          </label>
-        ))}
+        {shown.map((q) => card(q))}
       </div>
       {shown.length === 0 && <p className={styles.note}>No Quote Asset matches &ldquo;{query.trim()}&rdquo;.</p>}
       {!searching && matches.length > SHOWN && (

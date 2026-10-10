@@ -5,9 +5,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { LaunchQuote, LaunchSummary } from "@launchpad/contract";
 import { listLaunchQuotes, listLaunches, type BoardQuery } from "@/lib/api";
 import { boardSearch, DEFAULT_BOARD, inChip, PAIRED_CHIPS, SEARCH_MAX, SORT_LABELS, SORT_ORDER, type PairedChip } from "@/lib/board";
-import { COIN_COLUMNS, CoinRow } from "./CoinRow";
+import { COIN_COLUMNS, CoinRow, PAIR_COLUMNS } from "./CoinRow";
 import { Ring } from "./Mark";
 import { QuoteFilter } from "./QuoteFilter";
+import { AssetRail, AssetStrip, assetGroups, compactUsd } from "./AssetRail";
+import { QuoteLogo } from "./QuoteLogo";
+import type { BoardLayout } from "@/lib/layout";
+import { quoteTicker } from "@/lib/format";
+import { quoteKind } from "@/lib/landing";
 import styles from "./Board.module.css";
 
 const REFRESH_MS = 4_000;
@@ -24,8 +29,8 @@ const sameQuery = (a: BoardQuery, b: BoardQuery) =>
  * hydrates to the same text the server sent.
  */
 export function Board({
-  initial, initialQuery, quotes: initialQuotes, renderedAt,
-}: { initial: LaunchSummary[]; initialQuery: BoardQuery; quotes: LaunchQuote[]; renderedAt: number }) {
+  initial, initialQuery, quotes: initialQuotes, renderedAt, layout = null,
+}: { initial: LaunchSummary[]; initialQuery: BoardQuery; quotes: LaunchQuote[]; renderedAt: number; layout?: BoardLayout | null }) {
   const [launches, setLaunches] = useState(initial);
   const [query, setQuery] = useState(initialQuery);
   const [shown, setShown] = useState(initialQuery);
@@ -58,7 +63,10 @@ export function Board({
   function change(next: BoardQuery) {
     latest.current = next;
     setQuery(next);
-    window.history.replaceState(null, "", `${window.location.pathname}${boardSearch(next)}`);
+    const search = boardSearch(next);
+    // A layout candidate stays in the URL through every change of query.
+    const withLayout = layout ? `${search}${search ? "&" : "?"}layout=${layout}` : search;
+    window.history.replaceState(null, "", `${window.location.pathname}${withLayout}`);
     void load(next);
   }
 
@@ -84,9 +92,74 @@ export function Board({
   // A sort is not a filter: with nothing launched at all, the invitation shows whatever the sort in the URL.
   const nothingLaunched = launches.length === 0 && !shown.category && !shown.issuer && !shown.quote && !shown.q;
   const chosen = PAIRED_CHIPS.find((c) => c.category === query.category && c.issuer === query.issuer) ?? PAIRED_CHIPS[0];
+  const pair = layout !== null;
+  const columns = pair ? PAIR_COLUMNS : COIN_COLUMNS;
+  // B2 groups the rows under their Quote Asset, the busiest asset first.
+  const bands = layout === "b2"
+    ? assetGroups(quotes, launches).flatMap((g) => g.assets).map((a) => ({ ...a, rows: launches.filter((l) => l.quote.mint === a.quote.mint) })).filter((a) => a.rows.length > 0)
+    : null;
+  const chooseAsset = (quote: string | null) => change({ ...query, category: null, issuer: null, quote });
+
+  const table = (
+    <div className={`card ${styles.table} ${pair ? styles.pairTable : ""}`}>
+      {/* The column names once, above the rows; each row names its own figures where the window is too narrow for columns. */}
+      <div className={styles.columns} aria-hidden>
+        {columns.map((c) => (
+          <span key={c}>{c}</span>
+        ))}
+      </div>
+      {bands ? (
+        bands.map(({ quote, volumeUsd, rows }) => (
+          <div key={quote.mint} className={styles.band}>
+            <button type="button" className={styles.bandHead} aria-pressed={query.quote === quote.mint} onClick={() => chooseAsset(query.quote === quote.mint ? null : quote.mint)}>
+              <QuoteLogo quote={quote} size={20} />
+              <span className={styles.bandTicker}>{quoteTicker(quote)}</span>
+              <span className={styles.bandKind}>{quoteKind(quote)}</span>
+              <span className={styles.bandFigures}>
+                <span>{rows.length} {rows.length === 1 ? "coin" : "coins"}</span>
+                <span>{compactUsd(volumeUsd)} 24h</span>
+              </span>
+            </button>
+            <ul className={styles.rows} aria-busy={loading} aria-label={`Coins paired with ${quoteTicker(quote)}`}>
+              {rows.map((l) => (
+                <li key={l.mint}>
+                  <CoinRow launch={l} now={now} pair />
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      ) : (
+        <ul className={styles.rows} aria-busy={loading} aria-label="Coins">
+          {launches.map((l) => (
+            <li key={l.mint}>
+              <CoinRow launch={l} now={now} pair={pair} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+
+  const body = nothingLaunched ? (
+    <div className={`card card-raised ${styles.empty}`}>
+      <Ring size={80} className={styles.ring} />
+      <p>No coins yet. The first one could be yours.</p>
+      <Link href="/launch" className="button button-primary">Stoke a coin</Link>
+    </div>
+  ) : launches.length === 0 ? (
+    <div className={`card ${styles.empty}`} aria-busy={loading}>
+      <p>{shown.q ? `No coins match "${shown.q}".` : "No coins match these filters."}</p>
+      <button type="button" className="button button-ghost" onClick={reset}>
+        Show all coins
+      </button>
+    </div>
+  ) : table;
 
   return (
-    <section className={`shell ${styles.section}`} aria-labelledby="board-title">
+    <section className={`shell ${styles.section} ${layout === "b1" ? styles.withRail : ""}`} aria-labelledby="board-title">
+      {layout === "b1" && <AssetRail quotes={quotes} launches={launches} value={query.quote} onChange={chooseAsset} />}
+      <div className={styles.main}>
       <div className={styles.head}>
         <h2 id="board-title" className={`t-h2 ${styles.title}`}>Coins</h2>
         <span className={styles.live}>Updates every few seconds</span>
@@ -119,47 +192,27 @@ export function Board({
           </div>
         </div>
       </div>
-      <div className={styles.filters}>
-        <div className={styles.paired} role="group" aria-label="Paired with">
-          <span className={styles.pairedLabel}>Paired with</span>
-          {PAIRED_CHIPS.map((c) => (
-            <button key={c.label} type="button" className="chip" aria-pressed={c === chosen} onClick={() => choosePaired(c)}>
-              {c.label}
-            </button>
-          ))}
-        </div>
-        <QuoteFilter quotes={quotes.filter((q) => inChip(q, query))} value={query.quote} onChange={(quote) => change({ ...query, quote })} />
-      </div>
-      {nothingLaunched ? (
-        <div className={`card card-raised ${styles.empty}`}>
-          <Ring size={80} className={styles.ring} />
-          <p>No coins yet. The first one could be yours.</p>
-          <Link href="/launch" className="button button-primary">Stoke a coin</Link>
-        </div>
-      ) : launches.length === 0 ? (
-        <div className={`card ${styles.empty}`} aria-busy={loading}>
-          <p>{shown.q ? `No coins match "${shown.q}".` : "No coins match these filters."}</p>
-          <button type="button" className="button button-ghost" onClick={reset}>
-            Show all coins
-          </button>
-        </div>
-      ) : (
-        <div className={`card ${styles.table}`}>
-          {/* The column names once, above the rows; each row names its own figures where the window is too narrow for columns. */}
-          <div className={styles.columns} aria-hidden>
-            {COIN_COLUMNS.map((c) => (
-              <span key={c}>{c}</span>
-            ))}
-          </div>
-          <ul className={styles.rows} aria-busy={loading} aria-label="Coins">
-            {launches.map((l) => (
-              <li key={l.mint}>
-                <CoinRow launch={l} now={now} />
-              </li>
-            ))}
-          </ul>
+      {/* B1's rail and B3's strip are the "paired with" control; B2 keeps the chips and drops the dropdown, since a band is the filter. */}
+      {layout !== "b1" && (
+        <div className={styles.filters}>
+          {layout !== "b3" && (
+            <div className={styles.paired} role="group" aria-label="Paired with">
+              <span className={styles.pairedLabel}>Paired with</span>
+              {PAIRED_CHIPS.map((c) => (
+                <button key={c.label} type="button" className="chip" aria-pressed={c === chosen} onClick={() => choosePaired(c)}>
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          )}
+          {layout === null && (
+            <QuoteFilter quotes={quotes.filter((q) => inChip(q, query))} value={query.quote} onChange={(quote) => change({ ...query, quote })} />
+          )}
         </div>
       )}
+      {layout === "b3" && <AssetStrip quotes={quotes} launches={launches} value={query.quote} onChange={chooseAsset} />}
+      {body}
+      </div>
     </section>
   );
 }

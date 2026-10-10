@@ -75,6 +75,25 @@
   min-width: 0;
 }
 
+/* The layout candidates (docs/design/layout.md): the facts flow under the market in the chart's column, two cards a row. */
+.panelsOne {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* C2: the pair's two halves side by side above the market. */
+.pairCards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 760px) {
+  .pairCards,
+  .panelsOne {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .facts,
 .addresses {
   display: grid;
