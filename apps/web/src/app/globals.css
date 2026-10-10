@@ -277,6 +277,14 @@ textarea {
   padding: 0 var(--gutter);
 }
 
+/* The terminal (every page past the home): tight corners, a wider column, rows that fit sixty coins on a laptop screen. */
+.terminal {
+  --radius: 6px;
+  --radius-sm: 4px;
+  --max: 1320px;
+  --row: 34px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

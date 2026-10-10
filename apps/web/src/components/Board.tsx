@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { LaunchQuote, LaunchSummary } from "@launchpad/contract";
 import { listLaunchQuotes, listLaunches, type BoardQuery } from "@/lib/api";
 import { boardSearch, DEFAULT_BOARD, inChip, PAIRED_CHIPS, SEARCH_MAX, SORT_LABELS, SORT_ORDER, type PairedChip } from "@/lib/board";
-import { LaunchCard } from "./LaunchCard";
+import { COIN_COLUMNS, CoinRow } from "./CoinRow";
 import { QuoteFilter } from "./QuoteFilter";
 import styles from "./Board.module.css";
 
@@ -140,13 +140,21 @@ export function Board({
           </button>
         </div>
       ) : (
-        <ul className={styles.grid} aria-busy={loading} aria-label="Coins">
-          {launches.map((l) => (
-            <li key={l.mint}>
-              <LaunchCard launch={l} now={now} />
-            </li>
-          ))}
-        </ul>
+        <div className={styles.table}>
+          {/* The column names once, above the rows; each row names its own figures where the window is too narrow for columns. */}
+          <div className={styles.columns} aria-hidden>
+            {COIN_COLUMNS.map((c) => (
+              <span key={c}>{c}</span>
+            ))}
+          </div>
+          <ul className={styles.rows} aria-busy={loading} aria-label="Coins">
+            {launches.map((l) => (
+              <li key={l.mint}>
+                <CoinRow launch={l} now={now} />
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </section>
   );

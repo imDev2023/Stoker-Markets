@@ -1,0 +1,131 @@
+/* The columns are set once on the board's list (`--cols` in Board.module.css), so the header line and every row agree. */
+.row {
+  display: grid;
+  grid-template-columns: var(--cols);
+  align-items: center;
+  gap: 0 14px;
+  min-height: var(--row);
+  padding: 0 10px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 80ms ease;
+}
+
+.row:hover {
+  background: var(--surface);
+}
+
+.coin {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.image {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  object-fit: cover;
+  background: var(--sunken);
+}
+
+.symbol {
+  font-weight: 600;
+}
+
+.name {
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.paired {
+  color: var(--ink-2);
+}
+
+/* A stock pairing is the wedge, so it carries a trace of heat. */
+.stock {
+  color: var(--accent);
+}
+
+.num {
+  text-align: right;
+}
+
+.curve {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.track {
+  display: inline-block;
+  width: 56px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--sunken);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  min-width: 3px;
+  border-radius: 999px;
+  background: var(--heat);
+}
+
+.pct {
+  color: var(--ink-2);
+}
+
+.graduated {
+  color: var(--up);
+}
+
+.graduating {
+  color: var(--caution);
+}
+
+.when {
+  color: var(--ink-3);
+  text-align: right;
+}
+
+.mode {
+  color: var(--caution);
+  font-size: 0.75rem;
+}
+
+/* Narrow windows: two lines a coin, the figures labelled by their column name, so nothing scrolls sideways. */
+@media (max-width: 760px) {
+  .row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      "coin coin paired"
+      "price mcap curve"
+      "vol when mode";
+    gap: 4px 12px;
+    padding: 10px;
+    white-space: normal;
+  }
+  .coin { grid-area: coin; }
+  .paired { grid-area: paired; text-align: right; }
+  .price { grid-area: price; text-align: left; }
+  .mcap { grid-area: mcap; text-align: left; }
+  .vol { grid-area: vol; text-align: left; }
+  .curve { grid-area: curve; }
+  .when { grid-area: when; text-align: left; }
+  .mode { grid-area: mode; }
+  .num::before,
+  .when::before {
+    content: attr(data-label) " ";
+    color: var(--ink-3);
+  }
+}

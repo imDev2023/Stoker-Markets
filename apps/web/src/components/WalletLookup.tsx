@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import styles from "@/app/rewards/page.module.css";
+import styles from "@/app/(terminal)/rewards/page.module.css";
 
 const ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
