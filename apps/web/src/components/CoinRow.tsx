@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { LaunchSummary } from "@launchpad/contract";
 import { formatMarketValue } from "@/lib/board";
 import { formatPrice, quoteTicker, timeAgo } from "@/lib/format";
+import { quoteKind } from "@/lib/landing";
+import { PairMark } from "./PairMark";
 import styles from "./CoinRow.module.css";
 
 /** How far the curve is toward its Graduation Target, as a whole percentage; a sold-out curve is done. */
@@ -15,8 +17,10 @@ function progressOf(launch: LaunchSummary) {
 export const COIN_COLUMNS = ["Coin", "Paired", "Price", "Market cap", "Curve", "24h volume", "Launched", "Mode"] as const;
 
 /**
- * One coin as a terminal row: the whole row is the link to its page. Numbers are in mono and right-aligned under their
- * column; the curve is the one thing drawn, in the heat ramp, and a graduated coin says so in the gain colour.
+ * One coin as a terminal row: the whole row is the link to its page. The pair is written as the site writes pairs
+ * everywhere (BASE/QUOTE), and the "paired" column says what kind of asset the quote is. Numbers are in mono and
+ * right-aligned under their column; the curve is the one thing drawn, in the heat ramp, and a graduated coin says so in
+ * the gain colour.
  */
 export function CoinRow({ launch, now }: { launch: LaunchSummary; now: number }) {
   const quote = quoteTicker(launch.quote);
@@ -31,10 +35,13 @@ export function CoinRow({ launch, now }: { launch: LaunchSummary; now: number })
         ) : (
           <span className={styles.image} aria-hidden />
         )}
-        <span className={styles.symbol}>{launch.symbol}</span>
+        {/* The pair fits the box it is given (PairMark measures its parent), so it gets one of its own. */}
+        <span className={styles.pairBox}>
+          <PairMark base={launch.symbol} quote={quote} size="sm" />
+        </span>
         <span className={styles.name}>{launch.name}</span>
       </span>
-      <span className={`${styles.paired} ${stock ? styles.stock : ""}`}>{quote}</span>
+      <span className={`${styles.paired} ${stock ? styles.stock : ""}`}>{quoteKind(launch.quote)}</span>
       <span className={`${styles.num} ${styles.price}`} data-label="Price">{launch.market.price === null ? "-" : formatPrice(launch.market.price)}</span>
       <span className={`${styles.num} ${styles.mcap}`} data-label="Market cap">{launch.market.marketCap ? formatMarketValue(launch.market.marketCap, launch.quote) : "-"}</span>
       <span className={styles.curve}>

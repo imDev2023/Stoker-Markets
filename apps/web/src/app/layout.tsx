@@ -5,8 +5,9 @@ import { FeeChangeBanner } from "@/components/FeeChangeBanner";
 import { Providers } from "@/components/Providers";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { ThemeOverride } from "@/components/ThemeOverride";
 import { getPlatform, listAnnouncements } from "@/lib/api";
-import { THEME_GROUNDS, THEME_OVERRIDE_SCRIPT, themeFrom } from "@/lib/theme";
+import { THEME_GROUNDS, themeFrom } from "@/lib/theme";
 import "./globals.css";
 
 const archivo = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-archivo", display: "swap" });
@@ -37,12 +38,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const [platform, announcements] = await Promise.all([getPlatform(), listAnnouncements().catch(() => null)]);
   const upcoming = announcements?.announcements.find((a) => a.appliedSignature === null && new Date(a.effectiveAt).getTime() > Date.now() - 24 * 3600_000) ?? null;
   return (
-    // The override script may change `data-theme` before React sees it, which is intended, not a mismatch.
+    // `?theme=` may change `data-theme` after hydration (ThemeOverride), which is intended, not a mismatch.
     <html lang="en" data-theme={theme} className={`${archivo.variable} ${publicSans.variable} ${plexMono.variable}`} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_OVERRIDE_SCRIPT }} />
-      </head>
       <body>
+        <ThemeOverride />
         <Providers rpcUrl={platform.rpcUrl}>
           <SiteHeader cluster={platform.cluster} />
           {upcoming && <FeeChangeBanner announcement={upcoming} platform={platform} />}

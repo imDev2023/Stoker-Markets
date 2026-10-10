@@ -19,11 +19,19 @@
   background: var(--surface);
 }
 
+/* The pair and the name share a line; a name too long for the room left beside the pair wraps under it, so nothing is cut. */
 .coin {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 4px 10px;
   min-width: 0;
+}
+
+.pairBox {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .image {
@@ -35,14 +43,11 @@
   background: var(--sunken);
 }
 
-.symbol {
-  font-weight: 600;
-}
-
 .name {
+  flex: 1 1 120px;
+  min-width: 0;
   color: var(--ink-3);
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
 }
 
 .paired {
