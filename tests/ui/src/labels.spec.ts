@@ -12,14 +12,15 @@ test("the chooser names each Quote Asset's kind and never a label; the form's fu
   await page.goto("/launch");
   await expect(group(page).getByRole("radio")).toHaveCount(6);
 
-  // No warning sits beside an asset's name: each card says what kind of asset it is (ADR 0010), a fact and not a verdict.
+  // No warning sits beside an asset's name: each card says what kind of asset it is (ADR 0010), a fact and not a verdict,
+  // in the words of the chips above the cards.
   await expect(page.getByLabel("Quote Risk Labels")).toHaveCount(0);
   await expect(page.getByText("Can freeze wallets")).toHaveCount(0);
   await expect(card(page, "NVDAx")).toHaveAccessibleName(/xStocks/);
-  await expect(card(page, "USDC")).toHaveAccessibleName(/stablecoin/);
+  await expect(card(page, "USDC")).toHaveAccessibleName(/Currencies/);
   await expect(card(page, "JTO")).toHaveAccessibleName(/DeFi/);
-  await expect(card(page, "BULLWHALE")).toHaveAccessibleName(/meme/);
-  await expect(card(page, "TAXQ")).toHaveAccessibleName(/community/);
+  await expect(card(page, "BULLWHALE")).toHaveAccessibleName(/Memes/);
+  await expect(card(page, "TAXQ")).toHaveAccessibleName(/Community/);
 
   // Choosing a labelled asset is like choosing any other, and the form's further information lists every label with its source.
   await chooseQuote(page, "NVDAx");

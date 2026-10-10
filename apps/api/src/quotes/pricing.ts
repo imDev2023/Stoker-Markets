@@ -106,8 +106,9 @@ type JupiterToken = { id: string; icon?: string; isVerified?: boolean; liquidity
  * `tags` (its categories: `meme`, `defi`, `stocks`, `lst`, `major`, `stable`...). Uses the keyed host when an API key is
  * configured, the free one otherwise.
  */
-export function jupiterMarket(apiKey: string | undefined): QuoteMarket {
-  const host = apiKey ? "https://api.jup.ag" : "https://lite-api.jup.ag";
+export function jupiterMarket(apiKey: string | undefined, apiUrl?: string): QuoteMarket {
+  // `apiUrl` names another host: the stand-in that answers from the mainnet snapshot on the local chain.
+  const host = apiUrl ?? (apiKey ? "https://api.jup.ag" : "https://lite-api.jup.ag");
   const get = async (path: string) => {
     const res = await fetch(`${host}${path}`, { headers: apiKey ? { "x-api-key": apiKey } : {} });
     if (!res.ok) throw new Error(`Jupiter ${path.split("?")[0]} failed: ${res.status}`);

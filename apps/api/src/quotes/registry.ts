@@ -13,9 +13,6 @@ import { refreshPlatformFees } from "../routes/operator";
 
 export type RefreshDeps = { db: Db; cfg: Config; market: QuoteMarket; operations: Keypair };
 
-/** Rule writes per run, most urgent first; a first run on mainnet (571 Quote Assets) completes over a few runs. */
-const MAX_RULE_WRITES = 120;
-
 /**
  * The Quote Registry refresh, run by the Cron Trigger: every LaunchLab GlobalConfig becomes a Quote Asset with its mint's
  * metadata, a price, and a Graduation Target at that price, and our curve rule for it is brought in line (ADR 0005).
@@ -63,9 +60,10 @@ export async function refreshQuoteRegistry({ db, cfg, market, operations }: Refr
       ],
     }];
   });
-  // A Quote Asset without a rule account is unrestricted, so closing those gaps goes first.
+  // A Quote Asset without a rule account is unrestricted, so closing those gaps goes first; the rest wait for the next
+  // run when there are more than one run writes (QUOTE_RULE_WRITES_MAX), as on a first run over mainnet's hundreds.
   writes.sort((a, b) => Number(b.missing) - Number(a.missing));
-  await sendInstructionGroups(connection, operations, writes.slice(0, MAX_RULE_WRITES).map((w) => w.ixs));
+  await sendInstructionGroups(connection, operations, writes.slice(0, cfg.quoteRuleWritesMax).map((w) => w.ixs));
   const afterGroups = writes.length ? await readCurveRuleGroups(connection, cfg.launchlab, cfg.platformConfig, globalConfigs) : before;
   const after = new Map([...afterGroups].map(([g, rule]) => [g, rule ? (rule.get(RULE_GROUP.standard) ?? []) : null]));
 
@@ -95,6 +93,7 @@ export async function refreshQuoteRegistry({ db, cfg, market, operations }: Refr
       ruleMin: band?.min.toString() ?? null,
       ruleMax: band?.max.toString() ?? null,
       maxShareFeeRate: q.config.maxShareFeeRate.toNumber(),
+      liquidityUsd: listings.get(mint)?.liquidityUsd ?? null,
       labels: sortLabels([...mintLabels(q.mint, ticker), ...listLabels(listings.get(mint), ticker, market.listName)]),
       labelsSlot: mintsSlot,
       labelsCheckedAt: pricedAt,
@@ -118,11 +117,12 @@ export async function refreshQuoteRegistry({ db, cfg, market, operations }: Refr
   }
   // The quote mints are not added to the Helius webhook: watching a mint delivers every transaction that names it,
   // which for SOL or USDC is much of the chain. This refresh re-reads every mint's labels instead (runbook, section 7).
-  return { quoteAssets: rows.length, priced: rows.filter((r) => r.priceSol).length, ruleWrites: Math.min(writes.length, MAX_RULE_WRITES) };
+  return { quoteAssets: rows.length, priced: rows.filter((r) => r.priceSol).length, ruleWrites: Math.min(writes.length, cfg.quoteRuleWritesMax) };
 }
 
 const TX_MAX_BYTES = 1232;
 const PARALLEL_SENDS = 10;
+const SIGNATURE_STATUSES_MAX = 256;
 
 /**
  * Packs instruction groups into as few transactions as fit, sends them and waits for each to confirm or expire.
@@ -133,7 +133,14 @@ async function sendInstructionGroups(connection: Connection, payer: Keypair, gro
   if (!groups.length) return;
   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
   const make = (ixs: TransactionInstruction[]) => new Transaction({ feePayer: payer.publicKey, blockhash, lastValidBlockHeight }).add(...ixs);
-  const fits = (tx: Transaction) => tx.serializeMessage().length + 1 + 64 <= TX_MAX_BYTES;
+  // web3.js serializes into a packet-sized buffer and throws past it, so a message too large to measure doesn't fit either.
+  const fits = (tx: Transaction) => {
+    try {
+      return tx.serializeMessage().length + 1 + 64 <= TX_MAX_BYTES;
+    } catch {
+      return false;
+    }
+  };
   const txs: Transaction[] = [];
   for (const group of groups) {
     const last = txs.at(-1);
@@ -155,7 +162,10 @@ async function sendInstructionGroups(connection: Connection, payer: Keypair, gro
     }
   }
   while (signatures.length) {
-    const { value } = await connection.getSignatureStatuses(signatures);
+    // The RPC answers at most 256 signatures a call, and refuses a request body past 50 KB.
+    const value = [];
+    for (let i = 0; i < signatures.length; i += SIGNATURE_STATUSES_MAX)
+      value.push(...(await connection.getSignatureStatuses(signatures.slice(i, i + SIGNATURE_STATUSES_MAX))).value);
     for (let i = value.length - 1; i >= 0; i--) {
       const status = value[i];
       if (status?.err) console.error("curve rule write failed", signatures[i], status.err);

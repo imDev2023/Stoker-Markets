@@ -158,6 +158,8 @@ export const quoteAssets = pgTable("quote_assets", {
   ruleMax: numeric("rule_max", { precision: 40, scale: 0 }),
   /** The GlobalConfig's `max_share_fee_rate` (1e6 denominator): the most a referred trade may pay its referrer; 0 on most. */
   maxShareFeeRate: bigint("max_share_fee_rate", { mode: "number" }).notNull().default(0),
+  /** The token list's USD liquidity for the mint at the last refresh, null when the list doesn't know it: how prominent an asset is, for the chooser's order. */
+  liquidityUsd: doublePrecision("liquidity_usd"),
   /**
    * Quote Risk Labels (#11), as the API shows them; null until the mint has been checked. `labelsSlot` is the slot the
    * mint was read at, so a read from an older slot never overwrites a newer one.

@@ -8,7 +8,7 @@
   },
   "scripts": {
     "typecheck": "tsc -p .",
-    "arweave-stand-in": "tsx src/arweave-stand-in.ts"
+    "stand-ins": "tsx src/stand-ins.ts"
   },
   "dependencies": {
     "@launchpad/arweave": "workspace:*",

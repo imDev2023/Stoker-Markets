@@ -6,7 +6,7 @@ import {
 } from "@solana/web3.js";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { LAUNCH_IMAGE_MAX_BYTES, type PlatformInfo, type PreparedLaunch, type QuoteAsset } from "@launchpad/contract";
 import { ApiRequestError, prepareLaunch, reportTransaction, retryLaunch } from "@/lib/api";
 import { landedError } from "@/lib/transactions";
@@ -17,7 +17,8 @@ import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
 import { LaunchOptions, LaunchType, supplyShare, useLaunchOptions } from "./LaunchOptions";
 import { PairMark } from "./PairMark";
 import { QuoteLabelList } from "./QuoteLabels";
-import { QuoteChooser } from "./QuoteChooser";
+import { QuoteChooser, QuoteSearch } from "./QuoteChooser";
+import { QuoteLogo } from "./QuoteLogo";
 import { WalletButton } from "./WalletButton";
 import styles from "./LaunchForm.module.css";
 
@@ -53,6 +54,7 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
   const [quoteMint, setQuoteMint] = useState(
     () => quotes.find((q) => q.mint === initialQuote && q.launchable)?.mint ?? quotes.find((q) => q.launchable)?.mint ?? null,
   );
+  const [quoteQuery, setQuoteQuery] = useState("");
   const [step, setStep] = useState<Step>({ kind: "editing" });
   const [error, setError] = useState<string | null>(null);
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
@@ -182,20 +184,30 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
           </p>
         </header>
 
-        {/* One card, five sections: what the coin is, what it is paired with, then the options; the action follows the card. */}
+        {/* One card, five numbered sections: what the coin is, what it is paired with, then the options; the action follows the card. */}
         <fieldset className={styles.card} disabled={busy}>
-          <section className={styles.block} aria-labelledby="launch-type-label">
-            <LaunchType options={options} coin={symbol} />
+          <section className={styles.block} aria-labelledby="block-type">
+            <SectionHead id="block-type" index="01" title="Launch type" hint="A standard coin, or a Reward Launch that withholds a tax on every transfer and pays it to the coin's holders." />
+            <LaunchType options={options} coin={symbol} labelId="block-type" />
           </section>
 
           <section className={styles.block} aria-labelledby="block-coin">
-            <div className={styles.blockHead}>
-              <h2 id="block-coin">Your coin</h2>
-              <p>The name and ticker go on-chain at launch and never change; the image and description are stored for good on Arweave.</p>
-            </div>
+            <SectionHead
+              id="block-coin"
+              index="02"
+              title="Your coin"
+              hint="The name and ticker go on-chain at launch and never change; the image and description are stored for good on Arweave."
+            />
             <div className={styles.coinRow}>
               <label className={styles.drop}>
-                {imageUrl ? <img src={imageUrl} alt="Coin image preview" /> : <span>Add image</span>}
+                {imageUrl ? (
+                  <img src={imageUrl} alt="Coin image preview" />
+                ) : (
+                  <span className={styles.dropEmpty}>
+                    <span className={styles.dropPlus} aria-hidden />
+                    Add image
+                  </span>
+                )}
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp,image/gif"
@@ -232,11 +244,14 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
           </section>
 
           <section className={styles.block} aria-labelledby="block-pair">
-            <div className={styles.blockHead}>
-              <h2 id="block-pair">Paired with</h2>
-              <p>The asset your coin is priced and traded in. Every trade pays in it, and so does your share.</p>
-            </div>
-            <QuoteChooser quotes={quotes} value={quoteMint} onChange={setQuoteMint} />
+            <SectionHead
+              id="block-pair"
+              index="03"
+              title="Paired with"
+              hint="The asset your coin is priced and traded in. Every trade pays in it, and so does your share."
+              tools={<QuoteSearch value={quoteQuery} onChange={setQuoteQuery} />}
+            />
+            <QuoteChooser quotes={quotes} value={quoteMint} query={quoteQuery} onChange={setQuoteMint} />
             {quote && (
               <details className={styles.labels}>
                 <summary>Further information on {ticker}</summary>
@@ -250,12 +265,7 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
           </section>
 
           <section className={styles.block} aria-labelledby="block-links">
-            <div className={styles.blockHead}>
-              <h2 id="block-links">
-                Links <em>optional</em>
-              </h2>
-              <p>Saved in the coin&apos;s permanent metadata and shown on its page.</p>
-            </div>
+            <SectionHead id="block-links" index="04" title="Links" optional hint="Saved in the coin's permanent metadata and shown on its page." />
             <div className={styles.links}>
               <label className={styles.field}>
                 <span>Website</span>
@@ -273,10 +283,12 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
           </section>
 
           <section className={styles.block} aria-labelledby="block-options">
-            <div className={styles.blockHead}>
-              <h2 id="block-options">Launch options</h2>
-              <p>A first buy inside the launch transaction itself, and for allowed creators an airdrop paid from it.</p>
-            </div>
+            <SectionHead
+              id="block-options"
+              index="05"
+              title="Launch options"
+              hint="A first buy inside the launch transaction itself, and for allowed creators an airdrop paid from it."
+            />
             <LaunchOptions options={options} coin={symbol} />
           </section>
         </fieldset>
@@ -339,6 +351,7 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
       {/* The summary stays in view while the form scrolls: what the coin is and the terms it launches on, short enough to fit a laptop's screen. */}
       <aside className={styles.summary} aria-label="Launch summary">
         <div className={styles.summaryCard}>
+          <p className={styles.eyebrow} aria-hidden>Launch summary</p>
           <div className={styles.preview}>
             {imageUrl ? <img src={imageUrl} alt="" /> : <div className={styles.previewImage} aria-hidden />}
             <div className={styles.previewTitles}>
@@ -353,8 +366,11 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
               <dd>
                 {quote ? (
                   <>
-                    {ticker}
-                    <span className={styles.factNote}>{quoteKind(quote)}</span>
+                    <span className={styles.pricedIn}>
+                      <QuoteLogo quote={quote} size={18} />
+                      {ticker}
+                      <span className={styles.factNote}>{quoteKind(quote)}</span>
+                    </span>
                     <Link href={`/assets/${quote.mint}`} className={styles.factLink}>About {ticker}</Link>
                   </>
                 ) : (
@@ -432,6 +448,23 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
         }}
       />
     </form>
+  );
+}
+
+/** A section's head: its number, its title (the section's accessible name) and a line of hint, with room beside them for a tool. */
+function SectionHead({ id, index, title, hint, optional = false, tools }: { id: string; index: string; title: string; hint: string; optional?: boolean; tools?: ReactNode }) {
+  return (
+    <div className={styles.blockHead}>
+      <div className={styles.blockTitles}>
+        <h2 id={id}>
+          <span className={styles.index} aria-hidden>{index}</span>
+          {title}
+          {optional && <em>optional</em>}
+        </h2>
+        <p>{hint}</p>
+      </div>
+      {tools}
+    </div>
   );
 }
 
