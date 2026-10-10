@@ -1,13 +1,17 @@
-// Asset Pairing in the web app: choosing a Quote Asset, launching against it at the exact Graduation Target, being refused
+// Asset Pairing in the web app: choosing a Quote Asset from the form's cards, launching against it at the exact Graduation Target, being refused
 // one without a price, and trading a coin paired with something other than SOL.
 import type { Page } from "@playwright/test";
 import { PreparedLaunch } from "@launchpad/contract";
 import { COIN_PNG, QUOTES, expect, fundQuote, fundedKeypair, launchViaApi, listLaunches, test } from "./fixtures";
+import { chooseQuote } from "./launchPage";
 import { connectTestWallet } from "./wallet";
 
-const picker = (page: Page) => page.getByRole("button", { name: /^Pair with/ });
-const options = (page: Page) => page.getByRole("listbox", { name: "Quote Assets" }).getByRole("option");
-const search = (page: Page) => page.getByRole("combobox", { name: "Search Quote Assets" });
+const group = (page: Page) => page.getByRole("radiogroup", { name: "Pair with" });
+const cards = (page: Page) => group(page).getByRole("radio");
+/** One asset's card, by its ticker at the start of its name (the card's whole text names the radio). */
+const card = (page: Page, ticker: string) => group(page).getByRole("radio", { name: new RegExp(`^${ticker}\\b`) });
+const search = (page: Page) => page.getByRole("searchbox", { name: "Search Quote Assets" });
+const kinds = (page: Page) => page.getByRole("group", { name: "Kind" });
 const terms = (page: Page) => page.getByRole("definition").filter({ hasText: "raised" });
 const review = (page: Page) => page.getByRole("region", { name: "Review your launch" });
 
@@ -21,11 +25,9 @@ async function fillCoin(page: Page, name: string, symbol: string) {
   await page.getByLabel("Ticker").fill(symbol);
 }
 
-async function choose(page: Page, query: string, ticker: string) {
-  await picker(page).click();
-  await search(page).fill(query);
-  await options(page).filter({ hasText: ticker }).click();
-  await expect(picker(page)).toHaveAccessibleName(new RegExp(`^Pair with ${ticker}\\b`));
+async function choose(page: Page, ticker: string) {
+  await chooseQuote(page, ticker);
+  await expect(card(page, ticker)).toBeChecked();
 }
 
 async function acceptDisclaimer(page: Page, action: "launch" | "trade") {
@@ -34,64 +36,62 @@ async function acceptDisclaimer(page: Page, action: "launch" | "trade") {
   await dialog.getByRole("button", { name: "Continue" }).click();
 }
 
-test("the Quote Asset picker finds assets by ticker, name or mint, and shows unpriced ones without letting them be chosen", async ({ page }) => {
+test("the Quote Asset chooser finds assets by kind, ticker, name or mint, and shows unpriced ones without letting them be chosen", async ({ page }) => {
   await page.goto("/launch");
-  await expect(picker(page)).toHaveAccessibleName("Pair with SOL Solana");
+  await expect(card(page, "SOL")).toBeChecked();
   await expect(terms(page)).toHaveText("1 SOL raised, then moves to Raydium");
 
-  // SOL first, then what can be launched against, then the rest, each with what it must raise.
-  await picker(page).click();
-  await expect(search(page)).toBeFocused();
-  await expect(options(page)).toHaveCount(6);
-  await expect(options(page).first()).toContainText("SOL");
-  await expect(options(page).filter({ hasText: "USDC" })).toContainText("150 USDC");
-  await expect(options(page).filter({ hasText: "JTO" })).toContainText("60 JTO");
+  // SOL first, then what can be launched against, then the rest, each card with what a coin raises in it.
+  await expect(cards(page)).toHaveCount(6);
+  await expect(cards(page).first()).toHaveAccessibleName(/^SOL\b/);
+  await expect(card(page, "USDC")).toHaveAccessibleName(/graduates at 150 USDC/);
+  await expect(card(page, "JTO")).toHaveAccessibleName(/graduates at 60 JTO/);
   // The Token-2022 quote with a 1% transfer fee is launchable like any other, at 150 USD of it (1 USD each).
-  const taxq = options(page).filter({ hasText: "TAXQ" });
-  await expect(taxq).not.toHaveAttribute("aria-disabled", "true");
-  await expect(taxq).toContainText("150 TAXQ");
-  const bullwhale = options(page).filter({ hasText: "BULLWHALE" });
-  await expect(bullwhale).toHaveAttribute("aria-disabled", "true");
-  await expect(bullwhale).toContainText("No reliable price for BULLWHALE yet, so its Graduation Target can't be set.");
-  await expect(options(page).last()).toContainText("BULLWHALE");
+  await expect(card(page, "TAXQ")).toBeEnabled();
+  await expect(card(page, "TAXQ")).toHaveAccessibleName(/graduates at 150 TAXQ/);
+  await expect(card(page, "BULLWHALE")).toBeDisabled();
+  await expect(card(page, "BULLWHALE")).toHaveAccessibleName(/No reliable price for BULLWHALE yet, so its Graduation Target can't be set\./);
+  await expect(cards(page).last()).toHaveAccessibleName(/^BULLWHALE\b/);
+
+  // The kinds narrow the cards, each with its count; "All" brings every asset back.
+  await expect(kinds(page).getByRole("button")).toHaveText(["All 6", "xStocks 1", "Solana 1", "Currencies 1", "DeFi 1", "Memes 1", "Community 1"]);
+  await kinds(page).getByRole("button", { name: /^Currencies/ }).click();
+  await expect(cards(page)).toHaveCount(1);
+  await expect(card(page, "USDC")).toBeVisible();
+  await kinds(page).getByRole("button", { name: /^All/ }).click();
+  await expect(cards(page)).toHaveCount(6);
 
   // By name, by the start of a mint address, and by ticker.
   await search(page).fill("nvidia");
-  await expect(options(page)).toHaveCount(1);
-  await expect(options(page)).toContainText("NVDAx");
+  await expect(cards(page)).toHaveCount(1);
+  await expect(card(page, "NVDAx")).toBeVisible();
   await search(page).fill(QUOTES.USDC.toBase58().slice(0, 6));
-  await expect(options(page)).toHaveCount(1);
-  await expect(options(page)).toContainText("USDC");
+  await expect(cards(page)).toHaveCount(1);
+  await expect(card(page, "USDC")).toBeVisible();
   await search(page).fill("zzzz");
   await expect(page.getByText("No Quote Asset matches “zzzz”.")).toBeVisible();
 
-  // An unpriced asset stays unselected, by click or by keyboard.
+  // An unpriced asset stays unchosen: its card is disabled, however it is clicked, and the choice stays on SOL.
   await search(page).fill("bull");
-  // Playwright won't click an aria-disabled option unless forced; a person can.
-  await options(page).click({ force: true });
-  await search(page).press("Enter");
-  await expect(search(page)).toBeVisible();
-  await search(page).press("Escape");
-  await expect(search(page)).toBeHidden();
-  await expect(picker(page)).toBeFocused();
-  await expect(picker(page)).toHaveAccessibleName("Pair with SOL Solana");
+  await card(page, "BULLWHALE").click({ force: true });
+  await search(page).fill("");
+  await expect(card(page, "SOL")).toBeChecked();
 
-  // Keyboard choice: the list opens on the current choice and Enter takes the highlighted one.
-  await picker(page).press("Enter");
-  await search(page).fill("usd");
-  await search(page).press("Enter");
-  await expect(picker(page)).toHaveAccessibleName("Pair with USDC USD Coin");
+  // Keyboard choice: a focused card takes Space.
+  await card(page, "USDC").focus();
+  await page.keyboard.press("Space");
+  await expect(card(page, "USDC")).toBeChecked();
   await expect(terms(page)).toHaveText(
     "150 USDC raised, worth 1 SOL today, then moves to RaydiumThe amount is fixed from USDC's price when you launch.",
   );
-  await expect(page.getByRole("complementary", { name: "Preview" })).toContainText("TICKER paired with USDC");
+  await expect(page.getByRole("complementary", { name: "Launch summary" })).toContainText("TICKER paired with USDC");
 });
 
 test("a Creator launches a coin paired with a tokenized stock at the exact Graduation Target the transaction fixes", async ({ page, wallet }) => {
   await page.goto("/launch");
   await connectWallet(page);
   await fillCoin(page, "Chip Stock Pair", "CHIP");
-  await choose(page, "NVDAx", "NVDAx");
+  await choose(page, "NVDAx");
   await expect(terms(page)).toContainText("0.8333 NVDAx raised, worth 1 SOL today");
 
   const prepared = page.waitForResponse((r) => r.url().endsWith("/v1/launches/prepare"));
@@ -117,7 +117,7 @@ test("a Quote Asset that lost its price by launch time is refused with the reaso
   await page.goto("/launch");
   await connectWallet(page);
   await fillCoin(page, "Too Late", "LATE");
-  await choose(page, "USDC", "USDC");
+  await choose(page, "USDC");
   // The page was loaded while the asset had a price; by the time the Creator launches, the API has none for it.
   await page.route("**/v1/launches/prepare", async (route) => {
     const body = route.request().postDataBuffer()!.toString("latin1");

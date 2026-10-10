@@ -3,31 +3,27 @@
 // asset's own page (assets.spec.ts). Labels inform; none stops a launch or a trade.
 import type { Page } from "@playwright/test";
 import { expect, fundedKeypair, launchViaApi, QUOTES, test } from "./fixtures";
-import { connectWallet } from "./launchPage";
+import { chooseQuote, connectWallet } from "./launchPage";
 
-const picker = (page: Page) => page.getByRole("button", { name: /^Pair with/ });
-const options = (page: Page) => page.getByRole("listbox", { name: "Quote Assets" }).getByRole("option");
-const search = (page: Page) => page.getByRole("combobox", { name: "Search Quote Assets" });
-const option = (page: Page, ticker: string) => options(page).filter({ has: page.getByText(ticker, { exact: true }) });
+const group = (page: Page) => page.getByRole("radiogroup", { name: "Pair with" });
+const card = (page: Page, ticker: string) => group(page).getByRole("radio", { name: new RegExp(`^${ticker}\\b`) });
 
-test("the picker names each Quote Asset's kind and never a label; the form's further information lists them without stopping a launch", async ({ page, wallet }) => {
+test("the chooser names each Quote Asset's kind and never a label; the form's further information lists them without stopping a launch", async ({ page, wallet }) => {
   await page.goto("/launch");
-  await picker(page).click();
-  await expect(options(page)).toHaveCount(6);
+  await expect(group(page).getByRole("radio")).toHaveCount(6);
 
-  // No warning sits under an asset's name: each option says what kind of asset it is (ADR 0010), a fact and not a verdict.
+  // No warning sits beside an asset's name: each card says what kind of asset it is (ADR 0010), a fact and not a verdict.
   await expect(page.getByLabel("Quote Risk Labels")).toHaveCount(0);
   await expect(page.getByText("Can freeze wallets")).toHaveCount(0);
-  await expect(option(page, "NVDAx")).toContainText("xStocks");
-  await expect(option(page, "USDC")).toContainText("stablecoin");
-  await expect(option(page, "JTO")).toContainText("DeFi");
-  await expect(option(page, "BULLWHALE")).toContainText("meme");
-  await expect(option(page, "TAXQ")).toContainText("community");
+  await expect(card(page, "NVDAx")).toHaveAccessibleName(/xStocks/);
+  await expect(card(page, "USDC")).toHaveAccessibleName(/stablecoin/);
+  await expect(card(page, "JTO")).toHaveAccessibleName(/DeFi/);
+  await expect(card(page, "BULLWHALE")).toHaveAccessibleName(/meme/);
+  await expect(card(page, "TAXQ")).toHaveAccessibleName(/community/);
 
   // Choosing a labelled asset is like choosing any other, and the form's further information lists every label with its source.
-  await search(page).fill("nvdax");
-  await options(page).click();
-  await expect(picker(page)).toHaveAccessibleName(/^Pair with NVDAx\b/);
+  await chooseQuote(page, "NVDAx");
+  await expect(card(page, "NVDAx")).toBeChecked();
   const details = page.locator("details").filter({ hasText: "Further information on NVDAx" });
   await expect(details).toBeVisible();
   await details.locator("summary").click();
