@@ -433,6 +433,7 @@ test("revenue page", async ({ page, stack }) => {
   for (const [i, e] of ledger.entries.entries())
     await expect(entries.nth(i).getByRole("link").last()).toHaveAttribute("href", new RegExp(`/tx/${e.signature}`));
   await expect(page.locator("main img").first()).toHaveJSProperty("complete", true);
-  // Addresses and times differ between runs; every amount follows from the seed's fixed trades.
-  await snap(page, "revenue.png", (p) => [p.locator("time"), p.locator("a.mono")]);
+  // Addresses and times differ between runs, and the SOL swept so far wavers by a few lamports with the sweep's own costs
+  // (7.959784 one run, 7.959779 another); every other amount follows from the seed's fixed trades.
+  await snap(page, "revenue.png", (p) => [p.locator("time"), p.locator("a.mono"), p.locator('dl[aria-labelledby="swept-title"] dd')]);
 });
