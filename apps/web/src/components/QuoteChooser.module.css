@@ -281,7 +281,7 @@
   }
 }
 
-/* The layout candidates (docs/design/layout.md): the recommended three as larger cards ahead of the kinds. */
+/* The recommended three as larger cards ahead of the kinds (docs/design/layout.md: the first and biggest move). */
 .featured {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

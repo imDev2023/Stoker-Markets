@@ -13,7 +13,6 @@ import { landedError } from "@/lib/transactions";
 import { creatorEarnings, creatorShareOf } from "@/lib/fees";
 import { COIN_DECIMALS, COIN_SUPPLY, formatAmount, formatUnits, isSol, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { quoteKind } from "@/lib/landing";
-import type { LaunchLayout } from "@/lib/layout";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
 import { LaunchOptions, LaunchType, supplyShare, useLaunchOptions } from "./LaunchOptions";
 import { PairMark } from "./PairMark";
@@ -40,12 +39,11 @@ type Step =
 const DESCRIPTION_MAX = 1000;
 
 /**
- * `initialQuote` is the asset an asset's page sent the Creator here for; the first launchable one otherwise. `layout`
- * is a candidate of docs/design/layout.md: L1 puts the pair first, L2 opens on the asset alone until one is chosen.
+ * The launch form: the asset first, the coin, the launch type, then the links and the options, with the summary beside
+ * (docs/design/layout.md: choosing the asset is the first and biggest move). `initialQuote` is the asset an asset's
+ * page sent the Creator here for; the first launchable one otherwise.
  */
-export function LaunchForm({ platform, quotes, initialQuote = null, layout = null }: { platform: PlatformInfo; quotes: QuoteAsset[]; initialQuote?: string | null; layout?: LaunchLayout | null }) {
-  // L2's first stage: the asset alone, until the Creator continues with one (an asset's page skips it).
-  const [stage, setStage] = useState(layout === "l2" && !initialQuote);
+export function LaunchForm({ platform, quotes, initialQuote = null }: { platform: PlatformInfo; quotes: QuoteAsset[]; initialQuote?: string | null }) {
   const router = useRouter();
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
@@ -189,7 +187,7 @@ export function LaunchForm({ platform, quotes, initialQuote = null, layout = nul
     </header>
   );
 
-  const chooser = <QuoteChooser quotes={quotes} value={quoteMint} query={quoteQuery} onChange={setQuoteMint} featured={layout !== null} />;
+  const chooser = <QuoteChooser quotes={quotes} value={quoteMint} query={quoteQuery} onChange={setQuoteMint} />;
   const quoteLabels = quote && (
     <details className={styles.labels}>
       <summary>Further information on {ticker}</summary>
@@ -201,70 +199,7 @@ export function LaunchForm({ platform, quotes, initialQuote = null, layout = nul
     </details>
   );
 
-  // L2's first stage: the asset at full width with its facts beside, and one way on.
-  if (stage) {
-    return (
-      <div className={`shell ${styles.page}`}>
-        <div className={styles.main}>
-          {header}
-          <div className={`card ${styles.card}`}>
-            <section className={styles.block} aria-labelledby="block-pair">
-              <SectionHead
-                id="block-pair"
-                index="01"
-                title="Paired with"
-                hint="The asset your coin is priced and traded in. Every trade pays in it, and so does your share."
-                tools={<QuoteSearch value={quoteQuery} onChange={setQuoteQuery} />}
-              />
-              {chooser}
-            </section>
-          </div>
-        </div>
-        <aside className={styles.summary} aria-label="The chosen asset">
-          <div className={`card card-raised ${styles.summaryCard}`}>
-            <p className={`eyebrow ${styles.summaryEyebrow}`} aria-hidden>Your coin will be</p>
-            <div className={styles.preview}>
-              <div className={styles.previewTitles}>
-                <PairMark base="TICKER" quote={ticker ?? "SOL"} size="lg" />
-                <p className={styles.previewName}>priced and traded in {ticker ?? "an asset"}</p>
-              </div>
-            </div>
-            <dl className={styles.facts}>
-              <div>
-                <dt>Priced in</dt>
-                <dd>
-                  {quote ? (
-                    <span className={styles.pricedIn}>
-                      <QuoteLogo quote={quote} size={18} />
-                      {ticker}
-                      <span className={styles.factNote}>{quoteKind(quote)}</span>
-                    </span>
-                  ) : "Choose a Quote Asset"}
-                </dd>
-              </div>
-              <div>
-                <dt>Graduates at</dt>
-                <dd>{quote ? <GraduationTerms quote={quote} /> : "Choose a Quote Asset to see what your coin must raise."}</dd>
-              </div>
-              <div>
-                <dt>You earn</dt>
-                <dd>
-                  <span className={`heat-text ${styles.heat}`}>{earns.summary}</span>
-                  <span className={styles.factNote}>paid in {ticker ?? "the Quote Asset"}, nothing to claim</span>
-                </dd>
-              </div>
-            </dl>
-            {quote && <QuoteLabelList quote={quote} />}
-            <button type="button" className="button button-primary button-lg" disabled={!quote?.launchable} onClick={() => setStage(false)}>
-              Continue with {ticker ?? "an asset"}
-            </button>
-          </div>
-        </aside>
-      </div>
-    );
-  }
-
-  // The sections of the form; the candidates re-order them so the pair comes first (L1) or is already chosen (L2).
+  // The sections of the form, in the order they are shown: the pair first.
   const blocks = {
     type: {
       title: "Launch type",
@@ -369,26 +304,14 @@ export function LaunchForm({ platform, quotes, initialQuote = null, layout = nul
     },
   } as const;
   type Block = keyof typeof blocks;
-  const order: Block[] = layout === "l1" ? ["pair", "coin", "type", "links", "options"] : layout === "l2" ? ["coin", "type", "links", "options"] : ["type", "coin", "pair", "links", "options"];
+  const order: Block[] = ["pair", "coin", "type", "links", "options"];
 
   return (
     <form className={`shell ${styles.page}`} onSubmit={onSubmit} aria-busy={busy}>
       <div className={styles.main}>
         {header}
 
-        {/* L2: the chosen asset as a band above the form, with the way back to the first stage. */}
-        {layout === "l2" && quote && (
-          <div className={`card card-raised ${styles.band}`}>
-            <QuoteLogo quote={quote} size={28} />
-            <span className={styles.bandText}>
-              Paired with <strong>{ticker}</strong>
-              <span className={styles.factNote}>{quoteKind(quote)}, graduates at <GraduationTerms quote={quote} /></span>
-            </span>
-            <button type="button" className="button button-ghost" onClick={() => setStage(true)} disabled={busy}>Change</button>
-          </div>
-        )}
-
-        {/* One card, five numbered sections: what the coin is, what it is paired with, then the options; the action follows the card. */}
+        {/* One card, five numbered sections: what the coin is paired with, what it is, then the options; the action follows the card. */}
         <fieldset className={`card ${styles.card}`} disabled={busy}>
           {order.map((key, i) => (
             <section key={key} className={styles.block} aria-labelledby={`block-${key}`}>

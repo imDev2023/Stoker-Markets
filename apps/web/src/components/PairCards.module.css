@@ -1,4 +1,4 @@
-/* The layout candidates' pair pieces on the coin page (docs/design/layout.md). */
+/* The coin page's pair pieces (docs/design/layout.md): the lockup, the stats strip and the Quote Asset's card. */
 .lockup {
   position: relative;
   flex: none;
@@ -122,15 +122,6 @@
   margin: 2px 0 0;
   font-size: 0.875rem;
   color: var(--ink-3);
-}
-
-.coinImage {
-  flex: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  object-fit: cover;
-  background: var(--plate);
 }
 
 .quoteFacts {

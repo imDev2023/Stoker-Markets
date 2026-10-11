@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import type { CandleInterval, CandleList, HolderList, LaunchSummary, PlatformInfo, Trade } from "@launchpad/contract";
 import { getCandles, getHolders, getLaunch, listTrades } from "@/lib/api";
 import { quoteTicker } from "@/lib/format";
-import type { CoinLayout } from "@/lib/layout";
 import { CurveProgress } from "./CurveProgress";
 import { Holders } from "./Holders";
 import { PriceChart } from "./PriceChart";
@@ -17,16 +16,17 @@ const REFRESH_MS = 4_000;
 const HOLDERS_REFRESH_MS = 12_000;
 
 /**
- * The live part of a coin page: curve progress, chart, trades, the trade panel and top holders, kept up to date from the
- * indexed trades and the chain. After Graduation the same page trades in the coin's Raydium pool.
+ * The live part of a coin page (docs/design/layout.md, the pair rail): the chart on the left with the trades and the
+ * holders as tabs under it; on the right the pair's other half (the Quote Asset's card the page renders), the curve's
+ * progress and the trade panel, kept up to date from the indexed trades and the chain. After Graduation the same page
+ * trades in the coin's Raydium pool.
  */
 export function CoinMarket({
-  initial, platform, initialTrades, initialCandles, initialHolders, renderedAt, referrer = null, layout = null, aside = null,
+  initial, platform, initialTrades, initialCandles, initialHolders, renderedAt, referrer = null, aside = null,
 }: {
   initial: LaunchSummary;
   platform: PlatformInfo;
-  /** A layout candidate (docs/design/layout.md), with the Quote Asset's card the page renders for its fixed column. */
-  layout?: CoinLayout | null;
+  /** The Quote Asset's card, first in the fixed column. */
   aside?: ReactNode;
   /** From the page's `?ref=` link: the wallet that earns the referral share fee on the visitor's curve trades. */
   referrer?: string | null;
@@ -90,50 +90,35 @@ export function CoinMarket({
     loadCandles(next).catch(() => undefined);
   }
 
-  const history = <TradeHistory trades={trades} symbol={launch.symbol} quote={launch.quote} platform={platform} now={now} graduation={launch.graduation} />;
-  const holdersList = <Holders holders={holders} platform={platform} />;
-  const trade = <TradePanel launch={launch} platform={platform} referrer={referrer} onTraded={() => void Promise.all([refresh(), refreshHolders()])} />;
-
-  if (layout) {
-    // The candidates: the stats strip above carries the curve, so the progress card goes; trades and holders are tabs
-    // under the chart; the fixed column holds the trade panel and, in C1 and C3, the Quote Asset's card.
-    return (
-      <div className={`${styles.market} ${styles[layout]}`}>
-        <div className={styles.main}>
-          <div className={styles.chart}>
-            <PriceChart data={candles} interval={candleInterval} onIntervalChange={changeInterval} price={price} quote={quote} />
-          </div>
-          <div className={`card ${styles.tabs} ${styles.history}`}>
-            <div className={styles.tabBar} role="tablist" aria-label="Activity">
-              <button type="button" role="tab" aria-selected={tab === "trades"} onClick={() => setTab("trades")}>Trades</button>
-              <button type="button" role="tab" aria-selected={tab === "holders"} onClick={() => setTab("holders")}>Top holders</button>
-            </div>
-            <div className={styles.tabPanel} role="tabpanel">{tab === "trades" ? history : holdersList}</div>
-          </div>
-        </div>
-        <div className={styles.side}>
-          {layout === "c1" && <div className={styles.aside}>{aside}</div>}
-          <div className={styles.trade}>{trade}</div>
-          {layout === "c3" && <div className={styles.aside}>{aside}</div>}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className={styles.market}>
       <div className={styles.main}>
         <div className={styles.chart}>
           <PriceChart data={candles} interval={candleInterval} onIntervalChange={changeInterval} price={price} quote={quote} />
         </div>
-        <div className={styles.history}>{history}</div>
+        {/* The tab is the panel's title: each panel keeps its heading for its region's name, unseen. */}
+        <div className={`card ${styles.tabs}`}>
+          <div className={styles.tabBar} role="tablist" aria-label="Activity">
+            <button type="button" role="tab" aria-selected={tab === "trades"} onClick={() => setTab("trades")}>Trades</button>
+            <button type="button" role="tab" aria-selected={tab === "holders"} onClick={() => setTab("holders")}>Top holders</button>
+          </div>
+          <div className={styles.tabPanel} role="tabpanel">
+            {tab === "trades" ? (
+              <TradeHistory trades={trades} symbol={launch.symbol} quote={launch.quote} platform={platform} now={now} graduation={launch.graduation} headingHidden />
+            ) : (
+              <Holders holders={holders} platform={platform} headingHidden />
+            )}
+          </div>
+        </div>
       </div>
       <div className={styles.side}>
+        <div className={styles.aside}>{aside}</div>
         <div className={styles.progress}>
           <CurveProgress launch={launch} platform={platform} />
         </div>
-        <div className={styles.trade}>{trade}</div>
-        <div className={styles.holders}>{holdersList}</div>
+        <div className={styles.trade}>
+          <TradePanel launch={launch} platform={platform} referrer={referrer} onTraded={() => void Promise.all([refresh(), refreshHolders()])} />
+        </div>
       </div>
     </div>
   );

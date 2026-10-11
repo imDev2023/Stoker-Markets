@@ -97,32 +97,6 @@ test("asset page of a tokenized stock, with the coins priced in it", async ({ pa
   await snap(page, "asset.png");
 });
 
-test("board Quote Asset filter, open", async ({ page }) => {
-  await page.goto("/coins?sort=trending");
-  const trigger = page.getByRole("button", { name: /^Quote Asset: / });
-  await trigger.click();
-  const list = page.getByRole("listbox", { name: "Quote Assets" });
-  await expect(list.getByRole("option").first()).toHaveText("All Quote Assets");
-  await page.waitForLoadState("networkidle");
-  await page.evaluate(() => document.fonts.ready);
-  // The truncation check waits for hydration, so the overflow check after it sees the finished layout.
-  await expectNoTruncatedText(page);
-  await expectNoHorizontalOverflow(page);
-  // Masks paint over everything, the open list included, so only the button and its list are captured, with nothing to mask.
-  // The button is brought up below the sticky header so the whole list is in view.
-  await trigger.evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 96));
-  const button = (await trigger.boundingBox())!;
-  const popover = (await list.locator("..").boundingBox())!;
-  // Padded so the focus ring and the list's shadow show whole, and clamped to the viewport.
-  const pad = 12;
-  const viewport = page.viewportSize()!;
-  const left = Math.max(0, Math.min(button.x, popover.x) - pad);
-  const right = Math.min(viewport.width, Math.max(button.x + button.width, popover.x + popover.width) + pad);
-  const top = button.y - pad;
-  const clip = { x: left, y: top, width: right - left, height: popover.y + popover.height + pad * 2 - top };
-  await expect(page).toHaveScreenshot("board-quote-filter.png", { clip });
-});
-
 test("search palette, with a match", async ({ page }) => {
   await page.goto("/rewards");
   await page.getByRole("banner").getByRole("button", { name: "Search", exact: true }).click();

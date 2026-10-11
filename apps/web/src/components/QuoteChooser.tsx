@@ -56,14 +56,15 @@ export function QuoteSearch({ value, onChange }: { value: string; onChange: (que
 }
 
 /**
- * The Quote Asset chooser on the launch form: the kinds as chips with their counts (the same chips as the board and the
+ * The Quote Asset chooser on the launch form: a recommended three ahead of everything (SOL, the deepest stablecoin and
+ * the deepest stock, docs/design/layout.md), the kinds as chips with their counts (the same chips as the board and the
  * assets page), and the assets as cards, one radio each, the deepest markets first. An asset that can't be launched
  * against stays in view with its reason but can't be chosen. Nine cards show before "Show all", which opens the rest
  * in a region that scrolls on its own, so the form never grows by hundreds of cards. Each card says what kind of asset
  * it is; what its issuer can do is further information under the form and on the asset's page, never a chip under its
  * name (owner, 2026-10-10).
  */
-export function QuoteChooser({ quotes, value, query, onChange, featured = false }: { quotes: QuoteAsset[]; value: string | null; query: string; onChange: (mint: string) => void; featured?: boolean }) {
+export function QuoteChooser({ quotes, value, query, onChange }: { quotes: QuoteAsset[]; value: string | null; query: string; onChange: (mint: string) => void }) {
   const id = useId();
   const [chip, setChip] = useState<PairedChip>(PAIRED_CHIPS[0]!);
   const [all, setAll] = useState(false);
@@ -72,19 +73,19 @@ export function QuoteChooser({ quotes, value, query, onChange, featured = false 
   const matches = useMemo(() => searchQuotes(quotes.filter((q) => inChip(q, chip)), query), [quotes, chip, query]);
   const searching = query.trim() !== "";
   const shown = all || searching ? matches : matches.slice(0, SHOWN);
-  // The layout candidates (docs/design/layout.md): a recommended few ahead of the hundreds, SOL, the deepest stablecoin
-  // and the deepest stock, which the chooser's order (deepest first) picks out.
+  // The recommended few ahead of the hundreds: SOL, the deepest stablecoin and the deepest stock, which the chooser's
+  // order (deepest first) picks out.
   const picks = useMemo(() => {
-    if (!featured) return [];
     const first = (category: QuoteAsset["category"]) => quotes.find((q) => q.category === category && q.launchable);
     return [first("sol"), first("stablecoin"), first("tokenized_stock")].filter((q): q is QuoteAsset => q !== undefined);
-  }, [featured, quotes]);
+  }, [quotes]);
 
+  // A recommended card mirrors its card in the grid, so it is a radio group of its own: two radios of one group can't both show chosen.
   const card = (q: QuoteAsset, big = false) => (
     <label key={q.mint} className={`${styles.card} ${big ? styles.big : ""} ${q.launchable ? "" : styles.closed}`}>
       <input
         type="radio"
-        name={`${id}-quote`}
+        name={big ? `${id}-pick` : `${id}-quote`}
         value={q.mint}
         checked={q.mint === value}
         disabled={!q.launchable}

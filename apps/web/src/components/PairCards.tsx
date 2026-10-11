@@ -1,25 +1,24 @@
 import Link from "next/link";
-import type { LaunchSummary, PlatformInfo, QuoteAsset } from "@launchpad/contract";
+import type { LaunchSummary, QuoteAsset } from "@launchpad/contract";
 import { formatMarketValue } from "@/lib/board";
-import { creatorEarnings } from "@/lib/fees";
-import { COIN_SUPPLY, formatPrice, formatUtc, quoteTicker, shortAddress } from "@/lib/format";
+import { formatPrice, quoteTicker } from "@/lib/format";
 import { quoteKind } from "@/lib/landing";
 import { QuoteLogo } from "./QuoteLogo";
 import styles from "./PairCards.module.css";
 
 /*
- * The layout candidates' pair pieces (docs/design/layout.md, the coin page): the lockup of both marks, the pair's
- * stats strip, the Quote Asset's card and, for C2, the coin's own card beside it.
+ * The coin page's pair pieces (docs/design/layout.md): the lockup of both marks, the pair's stats strip and the Quote
+ * Asset's card, the pair's other half beside the trade panel.
  */
 
 const usd = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: n < 1 ? 6 : 2 });
 const compactUsd = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", notation: "compact", maximumSignificantDigits: 3 });
 
-/** How far the curve is toward its Graduation Target, as a whole percentage; a sold-out curve is done. */
+/** How far the curve is toward its Graduation Target, to a hundredth of a percent as CurveProgress has it; a sold-out curve is done. */
 function progressOf(launch: LaunchSummary) {
   if (launch.curve.status !== "live") return 100;
   const target = BigInt(launch.graduationTarget);
-  return target === 0n ? 0 : Math.min(100, Number((BigInt(launch.curve.raised) * 1000n) / target) / 10);
+  return target === 0n ? 0 : Math.min(100, Number((BigInt(launch.curve.raised) * 10_000n) / target) / 100);
 }
 
 /** The coin's image with the Quote Asset's logo over its corner: the pair drawn, not only written. */
@@ -107,42 +106,6 @@ export function QuoteCard({ launch, quoteAsset }: { launch: LaunchSummary; quote
       </dl>
       <p className={styles.quoteNote}>Every trade of {launch.symbol} is paid in {ticker}, and so is the Creator&apos;s share.</p>
       <Link href={`/assets/${q.mint}`} className={styles.link}>Everything about {ticker}</Link>
-    </section>
-  );
-}
-
-/** C2's other half: the coin's own card, the same shape as the Quote Asset's. */
-export function CoinCard({ launch, platform, holders }: { launch: LaunchSummary; platform: PlatformInfo; holders: number | null }) {
-  const earns = creatorEarnings(platform);
-  return (
-    <section className={`card ${styles.quoteCard}`} aria-labelledby="coin-card-title">
-      <p className="eyebrow">The coin</p>
-      <div className={styles.quoteHead}>
-        {launch.image ? <img className={styles.coinImage} src={launch.image} alt="" width={40} height={40} /> : <span className={styles.coinImage} aria-hidden />}
-        <div>
-          <h2 id="coin-card-title" className={`t-h3 ${styles.quoteTitle}`}>{launch.symbol}</h2>
-          <p className={styles.quoteKind}>{launch.name}</p>
-        </div>
-      </div>
-      <dl className={styles.quoteFacts}>
-        <div>
-          <dt>Supply</dt>
-          <dd>{COIN_SUPPLY.toLocaleString("en-US")}, fixed</dd>
-        </div>
-        <div>
-          <dt>Holders</dt>
-          <dd>{holders ?? "-"}</dd>
-        </div>
-        <div>
-          <dt>Launched</dt>
-          <dd><time dateTime={launch.createdAt}>{formatUtc(launch.createdAt)}</time></dd>
-        </div>
-        <div>
-          <dt>Creator</dt>
-          <dd className="mono">{shortAddress(launch.creator)}</dd>
-        </div>
-      </dl>
-      <p className={styles.quoteNote}>The Creator earns {earns.summary}, half of what the platform collects, with nothing to claim.</p>
     </section>
   );
 }

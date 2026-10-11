@@ -1,8 +1,9 @@
+/* The chart column stretches to the fixed column's height, the activity panel taking the room, so no canvas shows under it. */
 .market {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .main,
@@ -13,23 +14,26 @@
   min-width: 0;
 }
 
-/* The layout candidates (docs/design/layout.md): C1 and C3 keep the fixed column in view while the chart column scrolls. */
-.c1 .side,
-.c3 .side {
-  position: sticky;
-  top: 80px;
+.side {
+  align-self: start;
 }
 
-/* C3: the action in the strong left zone, the chart on the right. */
-.c3 {
-  grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+.tabs {
+  flex: 1;
 }
 
-.c3 .side {
-  order: -1;
+/*
+  The fixed column keeps the pair's other half and the one action in view while the chart column scrolls, on a window tall
+  enough to show the whole column: pinned on a shorter one, its foot (the trade panel) would be out of reach.
+*/
+@media (min-height: 1000px) {
+  .side {
+    position: sticky;
+    top: 80px;
+  }
 }
 
-/* The candidates' trades and holders as tabs in one panel under the chart. */
+/* The trades and the holders as tabs in one panel under the chart. */
 .tabs {
   display: flex;
   flex-direction: column;
@@ -66,22 +70,14 @@
   border-radius: 6px 6px 0 0;
 }
 
-/* The tabbed panels keep their own card chrome; the tab panel is the card around them, and the tab is their title. */
+/* The tabbed panels drop their own card chrome: the tab panel is the card around them. */
 .tabPanel > * {
   border: 0;
   box-shadow: none;
   background: transparent;
 }
 
-.tabPanel h2 {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-}
-
-/* One column: the columns dissolve so their cards can be reordered, trading first after progress. */
+/* One column: the columns dissolve so their cards can be reordered: progress and trading first, then the chart and the activity, the pair's other half last. */
 @media (max-width: 900px) {
   .market {
     display: flex;
@@ -92,14 +88,9 @@
   .side {
     display: contents;
   }
-  .c1 .side,
-  .c3 .side {
-    position: static;
-  }
   .progress { order: 1; }
   .trade { order: 2; }
   .chart { order: 3; }
-  .history { order: 4; }
-  .holders { order: 5; }
-  .aside { order: 6; }
+  .tabs { order: 4; }
+  .aside { order: 5; }
 }
