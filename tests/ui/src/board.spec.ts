@@ -9,8 +9,8 @@ const cards = (page: Page) => page.getByRole("list", { name: "Coins" }).getByRol
 const sorts = (page: Page) => page.getByRole("group", { name: "Sort coins" });
 const paired = (page: Page) => page.getByRole("group", { name: "Paired with" });
 const search = (page: Page) => page.getByRole("searchbox", { name: "Search coins" });
-/** A row of the asset rail: a kind or an asset, named by its label followed by its count of coins. */
-const railRow = (page: Page, label: string) => paired(page).getByRole("button", { name: new RegExp(`^${label}( \\d+ coins?)?$`) });
+/** A row of the asset rail: a kind or an asset, named by its label, then its count of coins and (an asset) their volume. */
+const railRow = (page: Page, label: string) => paired(page).getByRole("button", { name: new RegExp(`^${label}\\b`) });
 
 /** The mints the API lists for a query, in order: what the board must show. */
 async function expected(query: Record<string, string>) {
@@ -71,8 +71,8 @@ test("a trader sorts and filters the board, and the address keeps the choice", a
   await expect(cards(page).filter({ hasNotText: "/USDC" })).toHaveCount(0);
 
   // The rail lists only what coins are paired with, under its kind: USDC under Currencies, NVDAx under xStocks.
-  await expect(railRow(page, "USDC")).toHaveAccessibleName(/^USDC \d+ coins?$/);
-  await expect(railRow(page, "NVDAx")).toHaveAccessibleName(/^NVDAx 1 coin$/);
+  await expect(railRow(page, "USDC")).toHaveAccessibleName(/^USDC \d+ coins? \$[\d.,]+[KMB]?$/);
+  await expect(railRow(page, "NVDAx")).toHaveAccessibleName(/^NVDAx \d+ coins? \$[\d.,]+[KMB]?$/);
   await expect(paired(page).getByRole("button", { name: /^TAXQ/ })).toHaveCount(0);
 
   // One asset narrows the board to that pair, whatever kind was chosen.

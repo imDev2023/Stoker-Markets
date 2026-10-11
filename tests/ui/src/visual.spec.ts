@@ -128,7 +128,7 @@ test("coin page with trades", async ({ page }) => {
   await page.goto(`/coin/${await mintOf("Harbor Lights")}`);
   await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
   await expect(page.getByRole("region", { name: "Trades", exact: true }).getByRole("row")).toHaveCount(5);
-  await expect(page.getByText("Market cap")).toBeVisible();
+  await expect(page.getByText(/^Market cap [\d.,]+ \w+$/)).toBeVisible();
   await snap(page, "coin-traded.png", tradedDynamic);
 });
 
@@ -170,7 +170,7 @@ test("coin page paired with USDC, after a buy", async ({ page }) => {
   await page.goto(`/coin/${await mintOf("Dollar Paired")}`);
   await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
   await expect(page.getByRole("region", { name: "Trades", exact: true }).getByRole("row")).toHaveCount(2);
-  await expect(page.getByText("Market cap")).toBeVisible();
+  await expect(page.getByText(/^Market cap [\d.,]+ \w+$/)).toBeVisible();
   await snap(page, "coin-usdc.png", tradedDynamic);
 });
 
@@ -210,7 +210,7 @@ test("coin page after graduation", async ({ page }) => {
   await page.goto(`/coin/${await mintOf("Cap and Gown")}`);
   await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
   await expect(page.getByText("Graduated to its Raydium pool")).toBeVisible();
-  await expect(page.getByText("Market cap")).toBeVisible();
+  await expect(page.getByText(/^Market cap [\d.,]+ \w+$/)).toBeVisible();
   await snap(page, "coin-graduated.png", tradedDynamic);
 });
 

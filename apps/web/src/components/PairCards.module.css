@@ -67,9 +67,8 @@
   line-height: 1.1;
   letter-spacing: -0.01em;
   color: var(--ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* A figure wraps rather than truncates (the suite's truncation check): the words ("trades on Raydium") at their spaces, a long number anywhere. */
+  overflow-wrap: anywhere;
 }
 
 .figure small {
@@ -172,6 +171,10 @@
   }
   .stats > div {
     padding: 12px 14px;
+  }
+  /* Three cells across a phone leave about 90px each: "graduating" fits at this size on one line. */
+  .figure {
+    font-size: 1.0625rem;
   }
   .stats > div:first-child {
     grid-column: 1 / -1;

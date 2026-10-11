@@ -76,7 +76,8 @@ test("a trader buys, then sells half, and sees both in the history and the chart
   await expect(history.getByRole("row")).toHaveCount(2);
   await expect(history.getByRole("row").nth(1)).toContainText("Buy");
   await expect(page.getByText("No trades yet. Be the first to buy.", { exact: true })).toBeHidden();
-  await expect(page.getByText("Market cap")).toBeVisible();
+  // The chart's market cap, with the figure (the stats strip has a "Market cap" label of its own).
+  await expect(page.getByText(/^Market cap [\d.,]+ SOL$/)).toBeVisible();
 
   // Sell half: the percentage presets come from the balance the wallet holds.
   await panel(page).getByRole("group", { name: "Buy or sell" }).getByRole("button", { name: "Sell" }).click();
