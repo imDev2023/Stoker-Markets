@@ -145,6 +145,7 @@ No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare
 - Devnet faucets are rate-limited and faucet.solana.com is closed to agents; the owner's default Solana CLI wallet holds devnet SOL.
 - StonkFun's Terms of Use ban scraping and copying: never use its frontend, copy or branding; never open its `/admin`, `/api/admin/*` or `/integrators`.
 - StonkFun's saved site pages and social material live in the private repo `imDev2023/Stoker-Markets-research` (`research/website/`, `research/social/`; `research/social/telegram-group/` is the owner's private group export, local only). This repository is public since 2026-10-07: never add them back, and never commit anything from stonkfun.xyz here.
+- The revenue page's "Swept to the treasury so far" SOL wavers by a few lamports between UI runs (7.959784 one run, 7.959779 another, the sweep's own costs), so `visual.spec.ts` masks those figures; a UI baseline is proven only by a plain run after the one that wrote it, and the layout unit's nine runs (2026-10-11) caught that flake and two real faults that way. Never size a table column in `em` on its heading when the cells' font is larger: the trades table's time column was `5.5em` of an 11px heading, and "41s ago" against "1m ago" in the 13px cells moved every column.
 
 ## Multica dashboard
 
