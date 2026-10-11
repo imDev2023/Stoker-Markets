@@ -1,7 +1,7 @@
 // The tokens and primitives come first, so a component's module can override a primitive's defaults on a tied selector.
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
-import { Archivo, IBM_Plex_Mono, Public_Sans } from "next/font/google";
+import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import { FeeChangeBanner } from "@/components/FeeChangeBanner";
 import { Providers } from "@/components/Providers";
@@ -11,9 +11,11 @@ import { ThemeOverride } from "@/components/ThemeOverride";
 import { getPlatform, listAnnouncements } from "@/lib/api";
 import { THEME_GROUNDS, themeFrom } from "@/lib/theme";
 
-const archivo = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-archivo", display: "swap" });
-const publicSans = Public_Sans({ subsets: ["latin"], variable: "--font-public-sans", display: "swap" });
-const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-plex-mono", display: "swap" });
+// The families (owner, 2026-10-11, on "Stoker Type"): the display face carries the voice through its optical-size and
+// width axes, the body and the figures stay plain, so a dense row reads while a headline and the wordmark stand out.
+const bricolage = Bricolage_Grotesque({ subsets: ["latin"], axes: ["opsz", "wdth"], variable: "--font-bricolage", display: "swap" });
+const instrumentSans = Instrument_Sans({ subsets: ["latin"], variable: "--font-instrument-sans", display: "swap" });
+const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-jetbrains-mono", display: "swap" });
 
 /** The scheme this build is made with; `?theme=` on a page can show another (src/lib/theme.ts). */
 const theme = themeFrom(process.env.NEXT_PUBLIC_THEME);
@@ -40,7 +42,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const upcoming = announcements?.announcements.find((a) => a.appliedSignature === null && new Date(a.effectiveAt).getTime() > Date.now() - 24 * 3600_000) ?? null;
   return (
     // `?theme=` may change `data-theme` after hydration (ThemeOverride), which is intended, not a mismatch.
-    <html lang="en" data-theme={theme} className={`${archivo.variable} ${publicSans.variable} ${plexMono.variable}`} suppressHydrationWarning>
+    <html lang="en" data-theme={theme} className={`${bricolage.variable} ${instrumentSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <body>
         <ThemeOverride />
         <Providers rpcUrl={platform.rpcUrl}>

@@ -159,7 +159,7 @@
 
 .ticker {
   font-family: var(--font-display);
-  font-stretch: 125%;
+  font-stretch: 100%;
   font-weight: 800;
   font-size: 0.9375rem;
   letter-spacing: -0.01em;

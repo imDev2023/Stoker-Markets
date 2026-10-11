@@ -124,7 +124,8 @@ Its tile is dark graphite today (`#141312`) so that one image serves both modes;
 
 ## 5. Type
 
-The families stay (Archivo display, Public Sans body, IBM Plex Mono figures); what changes is the scale and the discipline.
+The families were Archivo display, Public Sans body and IBM Plex Mono figures until 2026-10-11, when the owner picked T3 on "Stoker Type" (https://claude.ai/artifact/Hh1kFK1tBbfjS4i1uBEpE6, nine pairings rendered as the same slice of the real site): Bricolage Grotesque display (its optical-size axis gives the headline and the wordmark their voice; its width axis runs 75% to 100%, so headings sit at 92% and the marks at 100% where Archivo sat at 112% and 125%), Instrument Sans body, JetBrains Mono figures.
+The scale and the discipline below are unchanged.
 
 | Step | Size / line / tracking | Weight | Use |
 | --- | --- | --- | --- |

@@ -25,7 +25,7 @@
   align-items: center;
   gap: 9px;
   font-family: var(--font-display);
-  font-stretch: 125%;
+  font-stretch: 100%;
   font-weight: 800;
   font-size: 1.125rem;
   letter-spacing: -0.01em;

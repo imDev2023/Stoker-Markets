@@ -184,7 +184,7 @@
 
 .bandTicker {
   font-family: var(--font-display);
-  font-stretch: 125%;
+  font-stretch: 100%;
   font-size: 1rem;
   font-weight: 800;
 }
