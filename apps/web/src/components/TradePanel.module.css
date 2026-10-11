@@ -124,7 +124,7 @@
   font-family: var(--font-display);
   font-stretch: 100%;
   font-weight: 800;
-  font-size: 0.9375rem;
+  font-size: 1rem;
   color: var(--ink-2);
   max-width: 9ch;
   overflow: hidden;

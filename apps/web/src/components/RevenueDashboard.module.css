@@ -115,7 +115,7 @@
 
 .ticker {
   font-family: var(--font-display);
-  font-stretch: 92%;
+  font-stretch: 100%;
   font-weight: 600;
   font-size: 1rem;
   overflow-wrap: anywhere;

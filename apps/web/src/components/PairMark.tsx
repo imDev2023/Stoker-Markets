@@ -6,7 +6,7 @@ import styles from "./PairMark.module.css";
 type Size = "sm" | "md" | "lg" | "fit";
 
 /** Largest size a `fit` pair grows to, matching the CSS cap. */
-const FIT_MAX_PX = 84;
+const FIT_MAX_PX = 96;
 /** Below this share of its set size a pair stops shrinking and the ticker is cut with an ellipsis instead. */
 const MIN_SCALE = 0.5;
 
