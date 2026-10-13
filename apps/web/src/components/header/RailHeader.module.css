@@ -1,0 +1,226 @@
+/* The rail, the top line and the dock are one banner; each shows at its widths. */
+.header {
+  display: contents;
+}
+
+.rail {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 232px;
+  padding: 16px 12px;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 2px 8px;
+  font-family: var(--font-display);
+  font-stretch: 100%;
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: 0;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+}
+
+.cluster {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--plate);
+  color: var(--accent-strong);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 16px;
+}
+
+/* The one filled action, at the rail's width. */
+.stoke {
+  justify-content: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 0 14px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.groupTitle {
+  padding: 16px 10px 6px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: var(--radius-xs);
+  color: var(--ink-2);
+  font-weight: 500;
+  font-size: 0.9375rem;
+  text-decoration: none;
+  transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.item svg {
+  flex: none;
+  color: var(--ink-3);
+  transition: color var(--fast) var(--ease);
+}
+
+.item:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.item:hover svg {
+  color: var(--ink-2);
+}
+
+.item[aria-current="page"] {
+  background: var(--plate);
+  color: var(--accent-strong);
+}
+
+.item[aria-current="page"] svg {
+  color: var(--accent);
+}
+
+.foot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.footRow {
+  display: flex;
+  justify-content: center;
+}
+
+.wallet :global(.button) {
+  width: 100%;
+}
+
+/* The narrow window: a top line in place of the rail, and the dock. */
+.top {
+  display: none;
+}
+
+.dock {
+  display: none;
+}
+
+@media (max-width: 1099.98px) {
+  .rail {
+    display: none;
+  }
+  .top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    padding: 0 var(--gutter);
+    background: color-mix(in srgb, var(--surface) 84%, transparent);
+    backdrop-filter: saturate(140%) blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  .top .wordmark {
+    padding: 0;
+  }
+  .topActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dock {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 10;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    height: calc(64px + env(safe-area-inset-bottom));
+    padding: 0 4px env(safe-area-inset-bottom);
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    backdrop-filter: saturate(140%) blur(12px);
+    border-top: 1px solid var(--line);
+  }
+  .dockItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 0;
+    height: 64px;
+    color: var(--ink-3);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .dockItem svg {
+    transition: transform var(--slow) cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .dockItem[aria-current="page"] {
+    color: var(--accent-strong);
+  }
+  /* The launch button raised out of the dock: a filled disc, the dock's one colour. */
+  .dockStoke {
+    width: 44px;
+    height: 44px;
+    margin-top: -14px;
+    padding: 0;
+    border-radius: 50%;
+  }
+  .dockStoke svg {
+    transition: none;
+  }
+}
+
+/* The dock's spring on tap (Osmo's dock, the press rather than the hover): the glyph dips and springs back past rest. */
+@media (max-width: 1099.98px) and (prefers-reduced-motion: no-preference) {
+  .dockItem:active svg {
+    transform: scale(0.8);
+    transition-duration: var(--fast);
+  }
+  .dockItem:active .dockStoke {
+    transform: scale(0.92);
+  }
+}

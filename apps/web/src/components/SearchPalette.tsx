@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { createPortal } from "react-dom";
 import type { LaunchSummary } from "@launchpad/contract";
 import { listLaunches } from "@/lib/api";
 import { formatMarketValue, SEARCH_MAX } from "@/lib/board";
 import { quoteTicker } from "@/lib/format";
+import { LAUNCH_LINK, NAV_LINKS } from "@/lib/site";
 import { PairMark } from "./PairMark";
 import styles from "./SearchPalette.module.css";
 
@@ -27,9 +30,12 @@ function SearchGlyph() {
 
 /**
  * Search from any page: a button in the header (or ⌘K, Ctrl+K elsewhere) opens a palette that finds coins by name,
- * ticker or contract address through the same API search as the board, and opens the chosen coin's page.
+ * ticker or contract address through the same API search as the board, and opens the chosen coin's page. The header
+ * candidates (src/lib/header.ts) place the trigger differently: `button` is the bar's field-like button, `small` the same
+ * a size down, `wide` fills its row, `bare` fills a well of its own drawing, `glyph` is the icon alone at every width;
+ * `pages` lists the site's sections before anything is typed (the command bar's palette).
  */
-export function SearchPalette() {
+export function SearchPalette({ variant = "button", word = "Search", pages = false }: { variant?: "button" | "small" | "wide" | "bare" | "glyph"; word?: string; pages?: boolean }) {
   const router = useRouter();
   const id = useId();
   const trigger = useRef<HTMLButtonElement>(null);
@@ -133,18 +139,19 @@ export function SearchPalette() {
       <button
         ref={trigger}
         type="button"
-        className={styles.trigger}
+        className={`${styles.trigger} ${styles[variant]}`}
         onClick={() => setOpen(true)}
         aria-label="Search"
         aria-haspopup="dialog"
         aria-expanded={open}
       >
         <SearchGlyph />
-        <span className={styles.word}>Search</span>
+        <span className={styles.word}>{word}</span>
         <kbd className={styles.kbd}>{mac ? "⌘K" : "Ctrl K"}</kbd>
       </button>
 
-      {open && (
+      {/* Into the body: the header's backdrop filter makes it the containing block of anything fixed inside it, and the backdrop would cover the header's band alone. */}
+      {open && createPortal(
         <div
           className={styles.backdrop}
           onMouseDown={(e) => {
@@ -179,7 +186,18 @@ export function SearchPalette() {
               </button>
             </div>
             {results === null ? (
-              <p className={styles.hint}>Type a coin&rsquo;s name, ticker or contract address. Coins appear as you type.</p>
+              <>
+                {pages && (
+                  <nav className={styles.pages} aria-label="Go to">
+                    {[NAV_LINKS[0], LAUNCH_LINK, ...NAV_LINKS.slice(1)].map((l) => (
+                      <Link key={l.href} href={l.href} className={styles.page} onClick={close}>
+                        {l.label}
+                      </Link>
+                    ))}
+                  </nav>
+                )}
+                <p className={styles.hint}>Type a coin&rsquo;s name, ticker or contract address. Coins appear as you type.</p>
+              </>
             ) : results.length === 0 ? (
               <p className={styles.hint}>No coins match &ldquo;{query.trim()}&rdquo;.</p>
             ) : (
@@ -211,7 +229,8 @@ export function SearchPalette() {
               <span><kbd>esc</kbd> close</span>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

@@ -44,17 +44,101 @@
   color: var(--ink-3);
 }
 
-/* Below the width where the whole header fits, the search keeps its glyph alone. */
+/* Below the width where the whole header fits, the bar's search keeps its glyph alone; the glyph variant always does. */
 @media (max-width: 1280px) {
-  .trigger {
+  .button {
     width: 40px;
     padding: 0;
     justify-content: center;
   }
-  .word,
-  .kbd {
+  .button .word,
+  .button .kbd {
     display: none;
   }
+}
+
+.glyph {
+  width: 40px;
+  padding: 0;
+  justify-content: center;
+}
+
+.glyph .word,
+.glyph .kbd {
+  display: none;
+}
+
+.small {
+  height: 32px;
+  padding: 0 8px 0 10px;
+}
+
+.small .word {
+  font-size: 0.875rem;
+}
+
+/* The trigger as a row's whole width (the rail's foot), and as the search of a well another component draws (the command bar). */
+.wide,
+.bare {
+  width: 100%;
+  flex: 1;
+  min-width: 0;
+  justify-content: flex-start;
+}
+
+.wide .word,
+.bare .word {
+  flex: 1;
+  text-align: left;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bare {
+  height: 100%;
+  border-color: transparent;
+  background: transparent;
+}
+
+.bare:hover,
+.bare:focus-visible {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+@media (max-width: 640px) {
+  .bare .kbd {
+    display: none;
+  }
+}
+
+/* The sections before anything is typed, where the command bar's palette is the way around the site. */
+.pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 14px 18px 0;
+}
+
+.page {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-2);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.page:hover {
+  background: var(--hover);
+  color: var(--ink);
 }
 
 .backdrop {
