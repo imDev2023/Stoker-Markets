@@ -22,6 +22,17 @@ The owner decided (2026-10-06, prefix shortened 2026-10-09) that all three, and 
 
 With a file admin keypair, section 2's `platform-config build --sign admin.json` signs, sends and checks in one go, so no hardware wallet signing path is needed.
 
+The four keys landed on 2026-10-10 (about 8.5 hours a key) and the owner assigned them on 2026-10-13 (#23):
+
+| Role | Address |
+| --- | --- |
+| admin (`PLATFORM_ADMIN`) | `Stoke7675JniwDxRnT9rfjZ1EU3yUTEoHRBtZT6XcJb` |
+| operations | `StokehV2bK8z7c3kbUmdTbdJ8HxKNR7WmHLmEpR9ZGu` |
+| treasury (`TREASURY_WALLET`) | `StokezuREp73svYnkD8eWisfRLo6AQh2WtBFT4Q93B3` |
+| platform-token mint | `StokeDgBjCYcTGe7VExPaJ5biH2MR6TYtQiiN7NAQX1` |
+
+Backups (owner, 2026-10-13): each keypair file printed on a home printer straight from Terminal (`lpr <file>`, never through a document app or the clipboard, which autosave to iCloud and sync to other devices), two sets stored apart, and all four imported into a Phantom wallet made for Stoker alone and never connected to a dapp. An imported key is not covered by Phantom's recovery phrase, so the paper is the backup. The plain files stay in `~/.config/stoker/mainnet/` only until sections 2, 3 and 5 have signed with them; then delete them, exclude `~/.config/stoker` from Time Machine (`tmutil addexclusion`) and delete its earlier backups and local snapshots.
+
 Funding the operations wallet, in SOL, before the first refresh:
 
 | Need | About |
@@ -203,9 +214,9 @@ Move it to `devnet.stoker.markets` and `api-devnet.stoker.markets`, which `env.d
 ## 12. Go-live checklist
 
 1. [x] #7 decided: name, domain, ticker. ADR 0005 accepted.
-2. [ ] Admin key on a cold device; operations wallet and Treasury created; operations wallet funded (section 1).
-3. [ ] PlatformConfig created and decoded as expected (section 2).
-4. [ ] Platform Lookup Table created and rooted (section 3).
+2. [x] Admin key on a cold device; operations wallet and Treasury created; operations wallet funded (section 1). 2026-10-13: the four `Stoke` keys assigned (section 1's table), paper backups made, admin 1.67 SOL and operations 5.1 SOL.
+3. [x] PlatformConfig created and decoded as expected (section 2). 2026-10-13: `2a6kp9vQ4X4pjkvf6isuvp8eCGBNnSdaNL8NKhqywXVA`, tx `2Fm9Dzxk8SLFCtAeGSV4tTyQR9a9rzKhz17SYoest8sy6ysScc3Ej5nziDBG7QBbe8sUXpdvYbEoYkxEcGqBW7pZ`, `platform-config check` passed.
+4. [x] Platform Lookup Table created and rooted (section 3). 2026-10-13: `CPv7717aQwPXihwvbSkQvT9nhBmo3Eh7pgCJ7hbN8CHc`, 255 addresses, SOL and the 60 deepest verified markets of the 2026-10-10 snapshot (listed on #23).
 5. [x] Postgres migrated; Hyperdrive configured (section 4). 2026-10-07.
 6. [ ] API deployed with the checklist's values and secrets; `/health` ok (section 5).
 7. [ ] Quote Registry refreshed until 571 Quote Assets each have a curve rule (section 6).
