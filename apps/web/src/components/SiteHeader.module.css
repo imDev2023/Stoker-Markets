@@ -162,8 +162,11 @@
   .actions {
     gap: 8px;
   }
-  .cluster,
-  .scheme {
+  .cluster {
+    display: none;
+  }
+  /* Two classes, so this wins over the toggle's own display rule whichever module loads last; it sits in the menu's foot instead. */
+  .actions .scheme {
     display: none;
   }
   .launch {
