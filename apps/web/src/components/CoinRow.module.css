@@ -1,5 +1,9 @@
-/* The columns are set once on the board's list (`--cols` in Board.module.css), so the header line and every row agree. */
+/*
+  The columns are set once on the board's list (`--cols` in Board.module.css), so the header line and every row agree.
+  A row is two lines of one shape: the lockup spans both, the pair above the name (small multiples: the eye reads only the differences).
+*/
 .row {
+  --row: 52px;
   display: grid;
   grid-template-columns: var(--cols);
   align-items: center;
@@ -26,45 +30,56 @@
   box-shadow: inset 0 0 0 2px var(--accent);
 }
 
-/* The pair and the name share a line; a name too long for the room left beside the pair wraps under it, so nothing is cut. */
 .coin {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
   align-items: center;
-  gap: 4px 10px;
+  gap: 1px 10px;
   min-width: 0;
+  padding: 6px 0;
 }
 
-.pairBox {
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: 100%;
+/* The lockup: the coin's image with the Quote Asset's logo over its corner, so both halves of the pair are drawn. */
+.lockup {
+  position: relative;
+  grid-row: 1 / 3;
+  width: 30px;
+  height: 30px;
 }
 
 .image {
-  flex: none;
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   object-fit: cover;
   background: var(--sunken);
 }
 
+.quoteLogo {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  display: inline-flex;
+  padding: 1px;
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.pairBox {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* The name wraps when the column is narrower than it, so nothing is cut (the suite's truncation check). */
 .name {
-  flex: 1 1 120px;
   min-width: 0;
   font-family: var(--font-body);
+  font-size: 0.75rem;
+  line-height: 1.3;
   color: var(--ink-3);
   white-space: normal;
-}
-
-.paired {
-  color: var(--ink-2);
-}
-
-/* A stock pairing is the wedge, so it carries the accent. */
-.stock {
-  color: var(--accent);
+  overflow-wrap: anywhere;
 }
 
 .num {
@@ -118,31 +133,30 @@
   font-size: 0.75rem;
 }
 
-/* Narrow windows: two lines a coin, the figures labelled by their column name, so nothing scrolls sideways. */
+/* Narrow windows: the pair on its own line, then the figures labelled by their column name, so nothing scrolls sideways. */
 @media (max-width: 760px) {
   /* The price column is the widest: a curve price has up to nine leading zeros and four digits (0.0000000005925), which
      an even third of a phone's width can't hold. */
   .row {
     grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 0.9fr);
     grid-template-areas:
-      "coin coin paired"
+      "coin coin coin"
       "price mcap curve"
       "vol when mode";
     gap: 4px 12px;
     padding: 10px 12px;
     white-space: normal;
   }
-  .coin { grid-area: coin; }
-  .paired { grid-area: paired; text-align: right; }
+  .coin { grid-area: coin; padding: 0; }
   .price { grid-area: price; text-align: left; overflow-wrap: anywhere; }
   .track { width: 48px; }
   .mcap { grid-area: mcap; text-align: left; }
   .vol { grid-area: vol; text-align: left; }
   .curve { grid-area: curve; }
+  /* The launch time reads on its own ("9h ago"); its label would wrap it onto a second line. */
   .when { grid-area: when; text-align: left; }
   .mode { grid-area: mode; }
-  .num::before,
-  .when::before {
+  .num::before {
     content: attr(data-label) " ";
     color: var(--ink-3);
   }

@@ -181,7 +181,7 @@
 
 .coinSymbol {
   font-family: var(--font-display);
-  font-stretch: 112%;
+  font-stretch: 100%;
   font-weight: 600;
   font-size: 1rem;
   overflow-wrap: anywhere;
@@ -242,7 +242,7 @@
   gap: 8px;
   margin: 0;
   font-family: var(--font-display);
-  font-stretch: 112%;
+  font-stretch: 100%;
   font-weight: 600;
   font-size: 1rem;
 }
@@ -277,7 +277,7 @@
 
 .assetUnit {
   font-family: var(--font-display);
-  font-stretch: 112%;
+  font-stretch: 100%;
   font-weight: 600;
   font-size: 1.125rem;
   color: var(--ink-2);

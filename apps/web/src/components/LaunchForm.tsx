@@ -38,7 +38,11 @@ type Step =
 
 const DESCRIPTION_MAX = 1000;
 
-/** `initialQuote` is the asset an asset's page sent the Creator here for; the first launchable one otherwise. */
+/**
+ * The launch form: the asset first, the coin, the launch type, then the links and the options, with the summary beside
+ * (docs/design/layout.md: choosing the asset is the first and biggest move). `initialQuote` is the asset an asset's
+ * page sent the Creator here for; the first launchable one otherwise.
+ */
 export function LaunchForm({ platform, quotes, initialQuote = null }: { platform: PlatformInfo; quotes: QuoteAsset[]; initialQuote?: string | null }) {
   const router = useRouter();
   const { connection } = useConnection();
@@ -173,31 +177,44 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
   const platformFeePct = Number((platform.platformFeeBps / 100).toFixed(3));
   const ticker = quote ? quoteTicker(quote) : null;
 
-  return (
-    <form className={`shell ${styles.page}`} onSubmit={onSubmit} aria-busy={busy}>
-      <div className={styles.main}>
-        <header className={styles.head}>
-          <h1 className={`t-h1 ${styles.title}`}>Stoke a coin</h1>
-          <p className={styles.lede}>
-            A fixed-supply coin on a Raydium curve, priced in any of the {launchable.toLocaleString("en-US")} assets Raydium quotes. It moves to
-            its own Raydium pool at its target, and you earn {earns.summary}.
-          </p>
-        </header>
+  const header = (
+    <header className={styles.head}>
+      <h1 className={`t-h1 ${styles.title}`}>Stoke a coin</h1>
+      <p className={styles.lede}>
+        A fixed-supply coin on a Raydium curve, priced in any of the {launchable.toLocaleString("en-US")} assets Raydium quotes. It moves to
+        its own Raydium pool at its target, and you earn {earns.summary}.
+      </p>
+    </header>
+  );
 
-        {/* One card, five numbered sections: what the coin is, what it is paired with, then the options; the action follows the card. */}
-        <fieldset className={`card ${styles.card}`} disabled={busy}>
-          <section className={styles.block} aria-labelledby="block-type">
-            <SectionHead id="block-type" index="01" title="Launch type" hint="A standard coin, or a Reward Launch that withholds a tax on every transfer and pays it to the coin's holders." />
-            <LaunchType options={options} coin={symbol} labelId="block-type" />
-          </section>
+  const chooser = <QuoteChooser quotes={quotes} value={quoteMint} query={quoteQuery} onChange={setQuoteMint} />;
+  const quoteLabels = quote && (
+    <details className={styles.labels}>
+      <summary>Further information on {ticker}</summary>
+      <p className={styles.labelsNote}>
+        What {ticker}&apos;s mint and the token list say about it. Each fact informs; none stops a launch.
+      </p>
+      <QuoteLabelList quote={quote} />
+      <Link href={`/assets/${quote.mint}`} className={styles.labelsLink}>Everything about {ticker}</Link>
+    </details>
+  );
 
-          <section className={styles.block} aria-labelledby="block-coin">
-            <SectionHead
-              id="block-coin"
-              index="02"
-              title="Your coin"
-              hint="The name and ticker go on-chain at launch and never change; the image and description are stored for good on Arweave."
-            />
+  // The sections of the form, in the order they are shown: the pair first.
+  const blocks = {
+    type: {
+      title: "Launch type",
+      hint: "A standard coin, or a Reward Launch that withholds a tax on every transfer and pays it to the coin's holders.",
+      optional: false,
+      tools: undefined,
+      node: <LaunchType options={options} coin={symbol} labelId="block-type" />,
+    },
+    coin: {
+      title: "Your coin",
+      hint: "The name and ticker go on-chain at launch and never change; the image and description are stored for good on Arweave.",
+      optional: false,
+      tools: undefined,
+      node: (
+        <>
             <div className={styles.coinRow}>
               <label className={styles.drop}>
                 {imageUrl ? (
@@ -241,31 +258,27 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
               <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={DESCRIPTION_MAX} rows={3} />
               <small className={styles.counter} aria-hidden>{description.length} / {DESCRIPTION_MAX}</small>
             </label>
-          </section>
-
-          <section className={styles.block} aria-labelledby="block-pair">
-            <SectionHead
-              id="block-pair"
-              index="03"
-              title="Paired with"
-              hint="The asset your coin is priced and traded in. Every trade pays in it, and so does your share."
-              tools={<QuoteSearch value={quoteQuery} onChange={setQuoteQuery} />}
-            />
-            <QuoteChooser quotes={quotes} value={quoteMint} query={quoteQuery} onChange={setQuoteMint} />
-            {quote && (
-              <details className={styles.labels}>
-                <summary>Further information on {ticker}</summary>
-                <p className={styles.labelsNote}>
-                  What {ticker}&apos;s mint and the token list say about it. Each fact informs; none stops a launch.
-                </p>
-                <QuoteLabelList quote={quote} />
-                <Link href={`/assets/${quote.mint}`} className={styles.labelsLink}>Everything about {ticker}</Link>
-              </details>
-            )}
-          </section>
-
-          <section className={styles.block} aria-labelledby="block-links">
-            <SectionHead id="block-links" index="04" title="Links" optional hint="Saved in the coin's permanent metadata and shown on its page." />
+        </>
+      ),
+    },
+    pair: {
+      title: "Paired with",
+      hint: "The asset your coin is priced and traded in. Every trade pays in it, and so does your share.",
+      optional: false,
+      tools: <QuoteSearch value={quoteQuery} onChange={setQuoteQuery} />,
+      node: (
+        <>
+          {chooser}
+          {quoteLabels}
+        </>
+      ),
+    },
+    links: {
+      title: "Links",
+      hint: "Saved in the coin's permanent metadata and shown on its page.",
+      optional: true,
+      tools: undefined,
+      node: (
             <div className={styles.links}>
               <label className={styles.field}>
                 <span>Website</span>
@@ -280,17 +293,32 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
                 <input type="url" value={telegram} onChange={(e) => setTelegram(e.target.value)} placeholder="https://t.me/" />
               </label>
             </div>
-          </section>
+      ),
+    },
+    options: {
+      title: "Launch options",
+      hint: "A first buy inside the launch transaction itself, and for allowed creators an airdrop paid from it.",
+      optional: false,
+      tools: undefined,
+      node: <LaunchOptions options={options} coin={symbol} />,
+    },
+  } as const;
+  type Block = keyof typeof blocks;
+  const order: Block[] = ["pair", "coin", "type", "links", "options"];
 
-          <section className={styles.block} aria-labelledby="block-options">
-            <SectionHead
-              id="block-options"
-              index="05"
-              title="Launch options"
-              hint="A first buy inside the launch transaction itself, and for allowed creators an airdrop paid from it."
-            />
-            <LaunchOptions options={options} coin={symbol} />
-          </section>
+  return (
+    <form className={`shell ${styles.page}`} onSubmit={onSubmit} aria-busy={busy}>
+      <div className={styles.main}>
+        {header}
+
+        {/* One card, five numbered sections: what the coin is paired with, what it is, then the options; the action follows the card. */}
+        <fieldset className={`card ${styles.card}`} disabled={busy}>
+          {order.map((key, i) => (
+            <section key={key} className={styles.block} aria-labelledby={`block-${key}`}>
+              <SectionHead id={`block-${key}`} index={String(i + 1).padStart(2, "0")} title={blocks[key].title} hint={blocks[key].hint} optional={blocks[key].optional} tools={blocks[key].tools} />
+              {blocks[key].node}
+            </section>
+          ))}
         </fieldset>
 
       <div className={styles.action}>

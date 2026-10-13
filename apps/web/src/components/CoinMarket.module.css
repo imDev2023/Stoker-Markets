@@ -1,8 +1,9 @@
+/* The chart column stretches to the fixed column's height, the activity panel taking the room, so no canvas shows under it. */
 .market {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .main,
@@ -13,7 +14,70 @@
   min-width: 0;
 }
 
-/* One column: the columns dissolve so their cards can be reordered, trading first after progress. */
+.side {
+  align-self: start;
+}
+
+.tabs {
+  flex: 1;
+}
+
+/*
+  The fixed column keeps the pair's other half and the one action in view while the chart column scrolls, on a window tall
+  enough to show the whole column: pinned on a shorter one, its foot (the trade panel) would be out of reach.
+*/
+@media (min-height: 1000px) {
+  .side {
+    position: sticky;
+    top: 80px;
+  }
+}
+
+/* The trades and the holders as tabs in one panel under the chart. */
+.tabs {
+  display: flex;
+  flex-direction: column;
+}
+
+.tabBar {
+  display: flex;
+  gap: 4px;
+  padding: 8px 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.tabBar button {
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--ink-3);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.tabBar button[aria-selected="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+.tabBar button:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: 6px 6px 0 0;
+}
+
+/* The tabbed panels drop their own card chrome: the tab panel is the card around them. */
+.tabPanel > * {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+/* One column: the columns dissolve so their cards can be reordered: progress and trading first, then the chart and the activity, the pair's other half last. */
 @media (max-width: 900px) {
   .market {
     display: flex;
@@ -27,6 +91,6 @@
   .progress { order: 1; }
   .trade { order: 2; }
   .chart { order: 3; }
-  .history { order: 4; }
-  .holders { order: 5; }
+  .tabs { order: 4; }
+  .aside { order: 5; }
 }

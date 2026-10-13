@@ -27,10 +27,15 @@ function creatorLine(h: HolderList) {
  * The coin's largest holders, read from the chain, and whether its Creator still holds. The curve (and after Graduation,
  * the Raydium pool) is named rather than linked: it holds the coins nobody has bought yet.
  */
-export function Holders({ holders, platform }: { holders: HolderList | null; platform: { cluster: string; rpcUrl: string } }) {
+export function Holders({ holders, platform, headingHidden = false }: {
+  holders: HolderList | null;
+  platform: { cluster: string; rpcUrl: string };
+  /** When a tab names the panel: the heading stays as the region's name, unseen. */
+  headingHidden?: boolean;
+}) {
   return (
     <section className={`card ${styles.card}`} aria-labelledby="holders-title">
-      <h2 id="holders-title" className={`t-h3 ${styles.title}`}>Top holders</h2>
+      <h2 id="holders-title" className={headingHidden ? "visually-hidden" : `t-h3 ${styles.title}`}>Top holders</h2>
       {holders === null ? (
         <p className={styles.note}>Couldn&rsquo;t read the holders from the chain. Retrying.</p>
       ) : (

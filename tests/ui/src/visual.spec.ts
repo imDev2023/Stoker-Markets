@@ -97,32 +97,6 @@ test("asset page of a tokenized stock, with the coins priced in it", async ({ pa
   await snap(page, "asset.png");
 });
 
-test("board Quote Asset filter, open", async ({ page }) => {
-  await page.goto("/coins?sort=trending");
-  const trigger = page.getByRole("button", { name: /^Quote Asset: / });
-  await trigger.click();
-  const list = page.getByRole("listbox", { name: "Quote Assets" });
-  await expect(list.getByRole("option").first()).toHaveText("All Quote Assets");
-  await page.waitForLoadState("networkidle");
-  await page.evaluate(() => document.fonts.ready);
-  // The truncation check waits for hydration, so the overflow check after it sees the finished layout.
-  await expectNoTruncatedText(page);
-  await expectNoHorizontalOverflow(page);
-  // Masks paint over everything, the open list included, so only the button and its list are captured, with nothing to mask.
-  // The button is brought up below the sticky header so the whole list is in view.
-  await trigger.evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 96));
-  const button = (await trigger.boundingBox())!;
-  const popover = (await list.locator("..").boundingBox())!;
-  // Padded so the focus ring and the list's shadow show whole, and clamped to the viewport.
-  const pad = 12;
-  const viewport = page.viewportSize()!;
-  const left = Math.max(0, Math.min(button.x, popover.x) - pad);
-  const right = Math.min(viewport.width, Math.max(button.x + button.width, popover.x + popover.width) + pad);
-  const top = button.y - pad;
-  const clip = { x: left, y: top, width: right - left, height: popover.y + popover.height + pad * 2 - top };
-  await expect(page).toHaveScreenshot("board-quote-filter.png", { clip });
-});
-
 test("search palette, with a match", async ({ page }) => {
   await page.goto("/rewards");
   await page.getByRole("banner").getByRole("button", { name: "Search", exact: true }).click();
@@ -154,7 +128,7 @@ test("coin page with trades", async ({ page }) => {
   await page.goto(`/coin/${await mintOf("Harbor Lights")}`);
   await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
   await expect(page.getByRole("region", { name: "Trades", exact: true }).getByRole("row")).toHaveCount(5);
-  await expect(page.getByText("Market cap")).toBeVisible();
+  await expect(page.getByText(/^Market cap [\d.,]+ \w+$/)).toBeVisible();
   await snap(page, "coin-traded.png", tradedDynamic);
 });
 
@@ -196,7 +170,7 @@ test("coin page paired with USDC, after a buy", async ({ page }) => {
   await page.goto(`/coin/${await mintOf("Dollar Paired")}`);
   await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
   await expect(page.getByRole("region", { name: "Trades", exact: true }).getByRole("row")).toHaveCount(2);
-  await expect(page.getByText("Market cap")).toBeVisible();
+  await expect(page.getByText(/^Market cap [\d.,]+ \w+$/)).toBeVisible();
   await snap(page, "coin-usdc.png", tradedDynamic);
 });
 
@@ -236,7 +210,7 @@ test("coin page after graduation", async ({ page }) => {
   await page.goto(`/coin/${await mintOf("Cap and Gown")}`);
   await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
   await expect(page.getByText("Graduated to its Raydium pool")).toBeVisible();
-  await expect(page.getByText("Market cap")).toBeVisible();
+  await expect(page.getByText(/^Market cap [\d.,]+ \w+$/)).toBeVisible();
   await snap(page, "coin-graduated.png", tradedDynamic);
 });
 
@@ -459,6 +433,7 @@ test("revenue page", async ({ page, stack }) => {
   for (const [i, e] of ledger.entries.entries())
     await expect(entries.nth(i).getByRole("link").last()).toHaveAttribute("href", new RegExp(`/tx/${e.signature}`));
   await expect(page.locator("main img").first()).toHaveJSProperty("complete", true);
-  // Addresses and times differ between runs; every amount follows from the seed's fixed trades.
-  await snap(page, "revenue.png", (p) => [p.locator("time"), p.locator("a.mono")]);
+  // Addresses and times differ between runs, and the SOL swept so far wavers by a few lamports with the sweep's own costs
+  // (7.959784 one run, 7.959779 another); every other amount follows from the seed's fixed trades.
+  await snap(page, "revenue.png", (p) => [p.locator("time"), p.locator("a.mono"), p.locator('dl[aria-labelledby="swept-title"] dd')]);
 });

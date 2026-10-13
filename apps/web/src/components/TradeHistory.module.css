@@ -59,9 +59,9 @@
   text-align: right;
 }
 
-/* Wider than any "59m ago", so the columns hold still as the times tick over. */
+/* Wider than any "59m ago" in a cell's 13px mono (in rem: the width is set on the 11px heading, where an em is a 60px column that "41s ago" overruns), so the columns hold still as the times tick over. */
 .table .time {
-  width: 5.5em;
+  width: 4.5rem;
   color: var(--ink-3);
 }
 

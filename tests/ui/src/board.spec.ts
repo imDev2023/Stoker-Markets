@@ -9,7 +9,8 @@ const cards = (page: Page) => page.getByRole("list", { name: "Coins" }).getByRol
 const sorts = (page: Page) => page.getByRole("group", { name: "Sort coins" });
 const paired = (page: Page) => page.getByRole("group", { name: "Paired with" });
 const search = (page: Page) => page.getByRole("searchbox", { name: "Search coins" });
-const quoteFilter = (page: Page) => page.getByRole("button", { name: /^Quote Asset: / });
+/** A row of the asset rail: a kind or an asset, named by its label, then its count of coins and (an asset) their volume. */
+const railRow = (page: Page, label: string) => paired(page).getByRole("button", { name: new RegExp(`^${label}\\b`) });
 
 /** The mints the API lists for a query, in order: what the board must show. */
 async function expected(query: Record<string, string>) {
@@ -63,44 +64,41 @@ test("a trader sorts and filters the board, and the address keeps the choice", a
   const byCap = await expected({ sort: "market_cap" });
   expect(byCap.indexOf(`/coin/${high}`)).toBeLessThan(byCap.indexOf(`/coin/${low}`));
 
-  // A "Paired with" chip keeps the sort, and shows only coins paired with that kind of Quote Asset.
-  await paired(page).getByRole("button", { name: "Currencies" }).click();
+  // A kind in the asset rail keeps the sort, and shows only coins paired with that kind of Quote Asset.
+  await railRow(page, "Currencies").click();
   await expect(page).toHaveURL(/\/coins\?sort=graduation&category=stablecoin$/);
   await expectBoard(page, { sort: "graduation", category: "stablecoin" });
   await expect(cards(page).filter({ hasNotText: "/USDC" })).toHaveCount(0);
 
-  // The Quote Asset filter offers only what coins are paired with, within the chip.
-  await quoteFilter(page).click();
-  const options = page.getByRole("listbox", { name: "Quote Assets" }).getByRole("option");
-  await expect(options.filter({ hasText: "USDC" })).toHaveCount(1);
-  await expect(options.filter({ hasText: "NVDAx" })).toHaveCount(0);
-  await page.keyboard.press("Escape");
-  await paired(page).getByRole("button", { name: "All" }).click();
-  await quoteFilter(page).click();
-  await page.getByRole("combobox", { name: "Search Quote Assets" }).fill("nvda");
-  await page.getByRole("option", { name: /NVDAx/ }).click();
-  await expect(quoteFilter(page)).toHaveAccessibleName("Quote Asset: NVDAx");
+  // The rail lists only what coins are paired with, under its kind: USDC under Currencies, NVDAx under xStocks.
+  await expect(railRow(page, "USDC")).toHaveAccessibleName(/^USDC \d+ coins? \$[\d.,]+[KMB]?$/);
+  await expect(railRow(page, "NVDAx")).toHaveAccessibleName(/^NVDAx \d+ coins? \$[\d.,]+[KMB]?$/);
+  await expect(paired(page).getByRole("button", { name: /^TAXQ/ })).toHaveCount(0);
+
+  // One asset narrows the board to that pair, whatever kind was chosen.
+  await railRow(page, "NVDAx").click();
+  await expect(railRow(page, "NVDAx")).toHaveAttribute("aria-pressed", "true");
   await expect(page).toHaveURL(new RegExp(`quote=${QUOTES.NVDAx.toBase58()}`));
   await expectBoard(page, { sort: "graduation", quote: QUOTES.NVDAx.toBase58() });
 
   // A reload, or a shared link, shows the same board.
   await page.reload();
-  await expect(quoteFilter(page)).toHaveAccessibleName("Quote Asset: NVDAx");
+  await expect(railRow(page, "NVDAx")).toHaveAttribute("aria-pressed", "true");
   await expect(sorts(page).getByRole("button", { name: "Near graduation", pressed: true })).toBeVisible();
   await expectBoard(page, { sort: "graduation", quote: QUOTES.NVDAx.toBase58() });
 
-  // Choosing a chip the chosen Quote Asset isn't in lets go of the Quote Asset.
-  await paired(page).getByRole("button", { name: "Solana" }).click();
-  await expect(quoteFilter(page)).toHaveAccessibleName("Quote Asset: all");
+  // Choosing a kind the chosen Quote Asset isn't in lets go of the Quote Asset.
+  await railRow(page, "Solana").click();
+  await expect(railRow(page, "NVDAx")).toHaveAttribute("aria-pressed", "false");
   await expect(page).toHaveURL(/\/coins\?sort=graduation&category=sol$/);
   await expectBoard(page, { sort: "graduation", category: "sol" });
 
-  // A stock issuer's chip is finer than the Stocks category: the stock coin, paired with xStocks' NVDAx, is the only one.
-  await paired(page).getByRole("button", { name: "xStocks" }).click();
+  // A stock issuer's kind is finer than the Stocks category: the stock coin, paired with xStocks' NVDAx, is the only one.
+  await railRow(page, "xStocks").click();
   await expect(page).toHaveURL(/\/coins\?sort=graduation&issuer=xstocks$/);
   await expectBoard(page, { sort: "graduation", issuer: "xstocks" });
   await expect(cards(page).filter({ hasNotText: "/NVDAx" })).toHaveCount(0);
-  await paired(page).getByRole("button", { name: "PreStocks" }).click();
+  await railRow(page, "PreStocks").click();
   await expect(page.getByText("No coins match these filters.")).toBeVisible();
 });
 
@@ -154,6 +152,8 @@ test("the coin page shows top holders that match the chain, and whether the Crea
   const holders = page.getByRole("region", { name: "Top holders" });
 
   await page.goto(`/coin/${mint}`);
+  // The holders are the second tab under the chart.
+  await page.getByRole("tab", { name: "Top holders" }).click();
   const creatorHeld = await coinsHeld(creator.publicKey, mint);
   await expect(holders.getByText(`The Creator holds ${percentOf(creatorHeld)} of the supply.`)).toBeVisible();
   await expect(holders.getByRole("listitem").first()).toContainText("Curve");
@@ -181,6 +181,7 @@ test("the coin page shows top holders that match the chain, and whether the Crea
   // Once the Creator sells everything, the card says so.
   await tradeViaApi(creator, mint, "sell", creatorHeld);
   await page.reload();
+  await page.getByRole("tab", { name: "Top holders" }).click();
   await expect(holders.getByText("The Creator has sold all their coins.")).toBeVisible();
   await expect(holders.getByRole("listitem").filter({ hasText: "Creator" })).toHaveCount(0);
 });
@@ -188,6 +189,7 @@ test("the coin page shows top holders that match the chain, and whether the Crea
 test("a coin nobody has bought shows the curve holding everything and a Creator who holds none", async ({ page }) => {
   const mint = await launchViaApi(await fundedKeypair(), { name: "Holder None", symbol: "NONE" });
   await page.goto(`/coin/${mint}`);
+  await page.getByRole("tab", { name: "Top holders" }).click();
   const holders = page.getByRole("region", { name: "Top holders" });
   await expect(holders.getByText("The Creator holds none of this coin.")).toBeVisible();
   await expect(holders.getByRole("listitem")).toHaveCount(1);

@@ -6,7 +6,7 @@ import styles from "./TradeHistory.module.css";
 
 /** The latest trades of a Launch's coin, on its curve and after Graduation in its pool, newest first. */
 export function TradeHistory({
-  trades, symbol, quote, platform, now, graduation,
+  trades, symbol, quote, platform, now, graduation, headingHidden = false,
 }: {
   trades: Trade[];
   symbol: string;
@@ -14,12 +14,14 @@ export function TradeHistory({
   platform: { cluster: string; rpcUrl: string };
   now: number;
   graduation: Graduation | null;
+  /** When a tab names the panel: the heading stays as the region's name, unseen. */
+  headingHidden?: boolean;
 }) {
   // Graduation is marked where the curve's trades end and the pool's begin.
   const lastCurveTrade = graduation ? trades.findIndex((t) => t.venue === "curve") : -1;
   return (
     <section className={`card ${styles.card}`} aria-labelledby="trades-title">
-      <h2 id="trades-title" className={`t-h3 ${styles.title}`}>Trades</h2>
+      <h2 id="trades-title" className={headingHidden ? "visually-hidden" : `t-h3 ${styles.title}`}>Trades</h2>
       {trades.length === 0 ? (
         <p className={styles.empty}>No trades yet. Be the first to buy.</p>
       ) : (

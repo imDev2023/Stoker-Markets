@@ -3,10 +3,10 @@
   align-items: baseline;
   gap: 0.12em;
   font-family: var(--font-display);
-  font-stretch: 125%;
+  font-stretch: 100%;
   font-weight: 800;
   line-height: 1;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   white-space: nowrap;
   min-width: 0;
   /* Before the script fits it, a long pair truncates its ticker rather than pushing past its container. */
@@ -32,12 +32,16 @@
   font-weight: 600;
 }
 
-/* The line keeps its set height when a long ticker shrinks the type, so rows beside and below stay aligned. */
-.sm { font-size: 0.9375rem; min-height: 0.9375rem; }
-.md { font-size: 1.375rem; min-height: 1.375rem; }
-.lg { font-size: clamp(1.75rem, 4vw, 2.5rem); min-height: clamp(1.75rem, 4vw, 2.5rem); }
+/*
+  The line keeps its set height when a long ticker shrinks the type, so rows beside and below stay aligned.
+  The sizes are a step up from the Archivo build's: Bricolage's full width is a fifth narrower than Archivo's 125%,
+  and at the old sizes a pair sat small in a cell cut for the wider face (the spacing fault of 2026-10-11).
+*/
+.sm { font-size: 1.0625rem; min-height: 1.0625rem; }
+.md { font-size: 1.5rem; min-height: 1.5rem; }
+.lg { font-size: clamp(2rem, 4.5vw, 2.75rem); min-height: clamp(2rem, 4.5vw, 2.75rem); }
 .fit {
-  /* Archivo at 125% width and weight 800 averages about 0.88em per capital; size so the whole pair fits the container. */
-  font-size: min(5.25rem, calc(100cqi / (var(--chars) * 0.88)));
-  letter-spacing: -0.02em;
+  /* Bricolage Grotesque at full width and weight 800 averages about 0.7em per capital (measured 0.63 to 0.69); size so the whole pair fits the container. */
+  font-size: min(6rem, calc(100cqi / (var(--chars) * 0.7)));
+  letter-spacing: -0.015em;
 }

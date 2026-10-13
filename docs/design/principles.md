@@ -124,7 +124,10 @@ Its tile is dark graphite today (`#141312`) so that one image serves both modes;
 
 ## 5. Type
 
-The families stay (Archivo display, Public Sans body, IBM Plex Mono figures); what changes is the scale and the discipline.
+The families were Archivo display, Public Sans body and IBM Plex Mono figures until 2026-10-11, when the owner picked T3 on "Stoker Type" (https://claude.ai/artifact/Hh1kFK1tBbfjS4i1uBEpE6, nine pairings rendered as the same slice of the real site): Bricolage Grotesque display (its optical-size axis gives the headline and the wordmark their voice; its width axis runs 75% to 100%, so the display step sits at 92% and everything else at 100% where Archivo sat at 112% and 125%), Instrument Sans body, JetBrains Mono figures.
+The same day the owner saw the spacing and padding as wrong since the change; measured against the old families on every page at 1440 and 390, no box had moved, but Bricolage's full width is a fifth narrower than Archivo's 125%, so the pair marks, the wordmark and the headings at 92% sat small in cells cut for the wider face.
+The fix was proportion, not padding: the heading steps at 100% with the tracking opened (`-0.015em`, `-0.01em`, `0`), the pair marks a step up (`sm` 17px, `md` 24px, `lg` up to 44px, `fit` up to 96px), the wordmark 20px, the tickers in the trade panel and the filter 16px; the hero keeps the 92% at opsz 96 the owner picked.
+The scale and the discipline below are unchanged.
 
 | Step | Size / line / tracking | Weight | Use |
 | --- | --- | --- | --- |

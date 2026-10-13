@@ -13,16 +13,6 @@
   min-width: 0;
 }
 
-.image {
-  flex: none;
-  width: clamp(72px, 10vw, 96px);
-  height: clamp(72px, 10vw, 96px);
-  border-radius: var(--radius);
-  object-fit: cover;
-  background: var(--plate);
-  box-shadow: var(--highlight), var(--shadow-raised);
-}
-
 .titles {
   flex: 1;
   display: flex;
@@ -62,10 +52,10 @@
   overflow-wrap: anywhere;
 }
 
-/* The same columns as the market above, so the cards line up down the page. */
+/* The facts flow under the market, two cards a row; they share no row grid with the market, so no card waits on another's height. */
 .panels {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
   gap: 16px;
 }

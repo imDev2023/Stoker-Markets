@@ -15,7 +15,7 @@
   background: var(--plate);
   color: var(--accent-strong);
   font-family: var(--font-display);
-  font-stretch: 125%;
+  font-stretch: 100%;
   font-weight: 800;
   line-height: 1;
 }

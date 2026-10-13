@@ -7,6 +7,7 @@ import { explorerUrl, formatUtc, isSol, quoteTicker, shortAddress } from "@/lib/
 import { AirdropCard } from "@/components/AirdropCard";
 import { CoinMarket } from "@/components/CoinMarket";
 import { CopyButton } from "@/components/CopyButton";
+import { PairLockup, PairStats, QuoteCard } from "@/components/PairCards";
 import { PairMark } from "@/components/PairMark";
 import { QuoteLabelList } from "@/components/QuoteLabels";
 import { RewardsCard } from "@/components/RewardsCard";
@@ -25,6 +26,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: launch ? `${launch.symbol} / ${quoteTicker(launch.quote)}` : "Coin not found" };
 }
 
+/**
+ * A coin's page is its pair's page (docs/design/layout.md): the lockup of both marks as the header, the pair's figures
+ * in a strip, the market with the Quote Asset's card beside the trade panel, and the facts under it.
+ */
 export default async function CoinPage({ params, searchParams }: Props) {
   const { mint } = await params;
   const referrer = referrerFrom(await searchParams);
@@ -36,8 +41,8 @@ export default async function CoinPage({ params, searchParams }: Props) {
   ]);
   if (!launch) notFound();
   const rewards = launch.rewardTax ? await getCoinRewards(mint).catch(() => null) : null;
-  // SOL needs no labels; any other Quote Asset shows what its issuer and the token list say about it (#11).
-  const quoteAsset = isSol(launch.quote) ? null : await getQuoteAsset(launch.quote.mint).catch(() => null);
+  // The Quote Asset's card and the stats strip want its price and liquidity; its labels are shown for any asset but SOL (#11).
+  const quoteAsset = await getQuoteAsset(launch.quote.mint).catch(() => null);
   // An Airdrop still being paid sits above the market, where its Creator sends it; a finished one joins the facts below.
   const earns = creatorEarnings(platform);
   const airdropCard = airdrop && <AirdropCard initial={airdrop} symbol={launch.symbol} platform={platform} />;
@@ -61,7 +66,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
   return (
     <article className={`shell ${styles.page}`}>
       <header className={styles.head}>
-        {launch.image ? <img className={styles.image} src={launch.image} alt="" width={112} height={112} /> : <div className={styles.image} />}
+        <PairLockup launch={launch} />
         <div className={styles.titles}>
           <h1 className={styles.pair}>
             <PairMark base={launch.symbol} quote={quote} size="fit" />
@@ -83,9 +88,11 @@ export default async function CoinPage({ params, searchParams }: Props) {
 
       {!airdropDone && airdropCard}
 
+      <PairStats launch={launch} quoteAsset={quoteAsset} />
+
       <CoinMarket
         initial={launch} platform={platform} initialTrades={trades.trades} initialCandles={candles} initialHolders={holders} renderedAt={Date.now()}
-        referrer={referrer}
+        referrer={referrer} aside={<QuoteCard launch={launch} quoteAsset={quoteAsset} />}
       />
 
       <section className={styles.panels}>
@@ -146,7 +153,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
             </div>
           ))}
         </dl>
-        {quoteAsset && (
+        {quoteAsset && !isSol(launch.quote) && (
           <section className={`card ${styles.wide} ${styles.quoteLabels}`} aria-labelledby="quote-labels-title">
             <h2 id="quote-labels-title" className={`t-h3 ${styles.quoteLabelsTitle}`}>Paired with {quote}</h2>
             <p className={styles.quoteLabelsNote}>
