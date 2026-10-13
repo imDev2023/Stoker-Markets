@@ -9,7 +9,6 @@
 
 /* The bar spans the window at the page's gutters: it carries more than the content column is wide. */
 .bar {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -50,19 +49,20 @@
   color: var(--accent-strong);
 }
 
-/* The pill, centred on the window whatever sits either side of it, raised on surface-3 with the shadow. */
+/*
+ * The pill, raised on surface-3 with the shadow, centred in the room between the wordmark and the actions: in the flow,
+ * never over them, so a narrower window can only bring it nearer (centred on the window it ran into the search).
+ */
 .pill {
-  position: absolute;
-  left: 50%;
-  top: 50%;
   display: flex;
+  flex: none;
   gap: 2px;
+  margin: 0 auto;
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--surface-3);
   box-shadow: var(--highlight), var(--shadow-raised);
-  transform: translate(-50%, -50%);
   transition: opacity var(--base) var(--ease), transform var(--base) var(--ease);
 }
 
@@ -141,12 +141,12 @@
 /* The open search stretches over the pill's end, so the pill steps aside while it is open. */
 .bar:has([data-search-open]) .pill {
   opacity: 0;
-  transform: translate(-50%, -50%) scale(0.96);
+  transform: scale(0.96);
   pointer-events: none;
 }
 
-/* Under 1100px the pill gives way to the menu button; the account stays in the header, since the menu it opens is the way to disconnect and to a Creator's earnings. */
-@media (max-width: 1100px) {
+/* Under 1200px (where the pill, the wordmark and the actions no longer share a row) the pill gives way to the menu button; the account stays in the header, since the menu it opens is the way to disconnect and to a Creator's earnings. */
+@media (max-width: 1200px) {
   .pill {
     display: none;
   }
@@ -162,7 +162,8 @@
   .actions {
     gap: 8px;
   }
-  .cluster {
+  .cluster,
+  .scheme {
     display: none;
   }
   .launch {

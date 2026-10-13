@@ -6,6 +6,7 @@ import { useEffect, useId, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { LAUNCH_LINK, NAV_LINKS, SITE_LINKS } from "@/lib/site";
 import { isCurrent } from "./NavLinks";
+import { SchemeToggle } from "./SchemeToggle";
 import { SocialLinks } from "./SocialLinks";
 import { WalletButton } from "./WalletButton";
 import styles from "./PhoneMenu.module.css";
@@ -68,7 +69,10 @@ export function PhoneMenu({ className = "" }: { className?: string }) {
                 {LAUNCH_LINK.label}
               </Link>
               <WalletButton variant="inline" />
-              <SocialLinks />
+              <div className={styles.row}>
+                <SocialLinks />
+                <SchemeToggle />
+              </div>
             </div>
           </div>
         </div>,

@@ -87,6 +87,13 @@
   height: 48px;
 }
 
+/* The socials and the light-or-dark toggle, which the phone's bar has no room for. */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .link {
     animation: rise var(--slow) var(--ease) both;

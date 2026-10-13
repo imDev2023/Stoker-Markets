@@ -1,11 +1,10 @@
 /*
- * The pill, the field it becomes, the disc and the result pills are one solid colour, the page's ink, so the goo filter
- * (blur, then alpha pushed to a hard edge, the crisp drawing laid back on top) can join them where they near each other.
- * Translucent paint would come out of the filter as blobs, so everything inside is solid or carries the ink's own colour.
+ * The pill, the field it becomes, the disc and the result pills are the nav pill's own material (surface-3, the line, the
+ * raised shadow) so the two read as one family, and one solid fill, so the goo filter (blur, then alpha pushed to a hard
+ * edge, the crisp drawing laid back on top) can join them where they near each other. Translucent paint would come out
+ * of the filter as blobs, so nothing inside is translucent but the shadow, which is too faint to survive it.
  */
 .root {
-  --goo-fill: var(--ink);
-  --goo-ink: var(--bg);
   position: relative;
   /* Room for the glyph, the word and "Ctrl K"; on a Mac the shorter key sits flush right. */
   width: 150px;
@@ -35,11 +34,10 @@
 .bar,
 .disc,
 .pill {
-  background: var(--goo-fill);
-  color: var(--goo-ink);
-  --ink: var(--goo-ink);
-  --ink-2: color-mix(in srgb, var(--goo-ink) 72%, transparent);
-  --ink-3: color-mix(in srgb, var(--goo-ink) 55%, transparent);
+  border: 1px solid var(--line);
+  background: var(--surface-3);
+  box-shadow: var(--highlight), var(--shadow-raised);
+  color: var(--ink);
 }
 
 .bar {
@@ -85,6 +83,7 @@
   text-align: left;
   font-size: 0.9375rem;
   font-weight: 500;
+  color: var(--ink-2);
 }
 
 .kbd {
@@ -93,9 +92,10 @@
   font-weight: 500;
   line-height: 1;
   padding: 4px 6px;
+  border: 1px solid var(--line);
   border-radius: 6px;
-  background: color-mix(in srgb, var(--goo-ink) 16%, transparent);
-  color: var(--ink-2);
+  background: var(--surface);
+  color: var(--ink-3);
 }
 
 .input {
@@ -139,8 +139,8 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  border: 2px solid var(--ink-3);
-  border-top-color: var(--goo-ink);
+  border: 2px solid var(--line-strong);
+  border-top-color: var(--accent);
   animation: turn 0.7s linear infinite;
 }
 
@@ -186,7 +186,7 @@
 }
 
 .pill.active {
-  background: color-mix(in srgb, var(--goo-fill) 84%, var(--goo-ink));
+  background: var(--plate);
 }
 
 .empty {
@@ -203,7 +203,7 @@
   height: 24px;
   border-radius: 6px;
   object-fit: cover;
-  background: color-mix(in srgb, var(--goo-ink) 14%, transparent);
+  background: var(--sunken);
 }
 
 .titles {

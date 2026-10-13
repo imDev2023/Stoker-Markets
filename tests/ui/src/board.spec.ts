@@ -231,3 +231,19 @@ test("the header's search finds a coin from any page and opens it", async ({ pag
   await expect(page.getByRole("listbox", { name: "Coins found" })).toHaveCount(0);
   await expect(open).toBeFocused();
 });
+
+test("the header's toggle switches light and dark and the choice holds", async ({ page }) => {
+  await page.goto("/coins");
+  const html = page.locator("html");
+  const ground = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  // The flows run in light; the toggle offers dark, applies it at once and keeps it across a reload (a cookie the layout reads).
+  const before = await ground();
+  await page.getByRole("button", { name: "Switch to dark mode" }).click();
+  await expect(html).toHaveAttribute("data-scheme", "dark");
+  expect(await ground()).not.toBe(before);
+  await page.reload();
+  await expect(html).toHaveAttribute("data-scheme", "dark");
+  await page.getByRole("button", { name: "Switch to light mode" }).click();
+  await expect(html).toHaveAttribute("data-scheme", "light");
+  expect(await ground()).toBe(before);
+});

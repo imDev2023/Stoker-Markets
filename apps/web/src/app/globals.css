@@ -52,8 +52,13 @@
   color-scheme: light;
 }
 
+/*
+ * Light and dark follow the visitor's system setting, and the header's toggle (SchemeToggle, a `scheme` cookie the
+ * layout puts on <html> as `data-scheme`) overrides it either way. So every dark block is written twice: under the
+ * media query, guarded against an explicit light, and again pinned by an explicit dark. Keep the two copies the same.
+ */
 @media (prefers-color-scheme: dark) {
-  :root[data-theme="cobalt"] {
+  :root[data-theme="cobalt"]:not([data-scheme="light"]) {
     --bg: #070a12;
     --surface: #0e1320;
     --surface-2: #141b2c;
@@ -80,6 +85,34 @@
     --ring: 0 0 0 3px rgb(91 132 255 / 55%);
     color-scheme: dark;
   }
+}
+
+:root[data-theme="cobalt"][data-scheme="dark"] {
+  --bg: #070a12;
+  --surface: #0e1320;
+  --surface-2: #141b2c;
+  --surface-3: #1b2338;
+  --raised: #141b2c;
+  --sunken: #04060c;
+  --line: rgb(255 255 255 / 8%);
+  --line-strong: rgb(255 255 255 / 16%);
+  --highlight: inset 0 1px 0 rgb(255 255 255 / 4%);
+  --ink: #eef2ff;
+  --ink-2: #a9b3cc;
+  --ink-3: #7d88a3;
+  --accent: #5b84ff;
+  --accent-strong: #8aa6ff;
+  --accent-rgb: 91 132 255;
+  --on-accent: #ffffff;
+  --plate: #152650;
+  --button: #3560ff;
+  --on-button: #ffffff;
+  --lift: white;
+  --shadow: 0 4px 16px rgb(0 0 0 / 50%);
+  --shadow-raised: 0 8px 24px -12px rgb(0 0 0 / 50%);
+  --glow: 0 0 0 1px rgb(91 132 255 / 35%), 0 0 24px rgb(91 132 255 / 25%);
+  --ring: 0 0 0 3px rgb(91 132 255 / 55%);
+  color-scheme: dark;
 }
 
 /* B Violet: an indigo-shifted neutral and a violet between Stripe's purple and Phantom's periwinkle. */
@@ -113,7 +146,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root[data-theme="violet"] {
+  :root[data-theme="violet"]:not([data-scheme="light"]) {
     --bg: #09081a;
     --surface: #110f26;
     --surface-2: #181534;
@@ -140,6 +173,34 @@
     --ring: 0 0 0 3px rgb(139 124 255 / 55%);
     color-scheme: dark;
   }
+}
+
+:root[data-theme="violet"][data-scheme="dark"] {
+  --bg: #09081a;
+  --surface: #110f26;
+  --surface-2: #181534;
+  --surface-3: #201c42;
+  --raised: #181534;
+  --sunken: #05040f;
+  --line: rgb(255 255 255 / 8%);
+  --line-strong: rgb(255 255 255 / 16%);
+  --highlight: inset 0 1px 0 rgb(255 255 255 / 4%);
+  --ink: #f0eefc;
+  --ink-2: #aca7cc;
+  --ink-3: #8882aa;
+  --accent: #8b7cff;
+  --accent-strong: #aa9fff;
+  --accent-rgb: 139 124 255;
+  --on-accent: #0b0a1f;
+  --plate: #241f55;
+  --button: #8b7cff;
+  --on-button: #0b0a1f;
+  --lift: white;
+  --shadow: 0 4px 16px rgb(0 0 0 / 50%);
+  --shadow-raised: 0 8px 24px -12px rgb(0 0 0 / 50%);
+  --glow: 0 0 0 1px rgb(139 124 255 / 35%), 0 0 24px rgb(139 124 255 / 25%);
+  --ring: 0 0 0 3px rgb(139 124 255 / 55%);
+  color-scheme: dark;
 }
 
 /* C Teal, the pick: the terminal canon, a near-black canvas with a mint-teal accent and dark text on its fill. */
@@ -174,8 +235,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root,
-  :root[data-theme="teal"] {
+  :root:not([data-scheme="light"]), :root[data-theme="teal"]:not([data-scheme="light"]) {
     --bg: #05090e;
     --surface: #0b1219;
     --surface-2: #111a24;
@@ -204,6 +264,34 @@
   }
 }
 
+:root[data-scheme="dark"], :root[data-theme="teal"][data-scheme="dark"] {
+  --bg: #05090e;
+  --surface: #0b1219;
+  --surface-2: #111a24;
+  --surface-3: #17222e;
+  --raised: #111a24;
+  --sunken: #03060a;
+  --line: rgb(255 255 255 / 8%);
+  --line-strong: rgb(255 255 255 / 16%);
+  --highlight: inset 0 1px 0 rgb(255 255 255 / 4%);
+  --ink: #eaf3f5;
+  --ink-2: #a3b4bc;
+  --ink-3: #768a94;
+  --accent: #2fd3c0;
+  --accent-strong: #6fe8d8;
+  --accent-rgb: 47 211 192;
+  --on-accent: #04120f;
+  --plate: #0f3330;
+  --button: #2fd3c0;
+  --on-button: #04120f;
+  --lift: white;
+  --shadow: 0 4px 16px rgb(0 0 0 / 50%);
+  --shadow-raised: 0 8px 24px -12px rgb(0 0 0 / 50%);
+  --glow: 0 0 0 1px rgb(47 211 192 / 35%), 0 0 24px rgb(47 211 192 / 25%);
+  --ring: 0 0 0 3px rgb(47 211 192 / 55%);
+  color-scheme: dark;
+}
+
 /* The same in every direction: the heat, the direction colours, the caution (principle 4). */
 :root {
   --brand: #c7410c;
@@ -218,7 +306,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-scheme="light"]) {
     --brand: #ff9a5c;
     --heat-low: #ffb020;
     --heat-high: #ff5a1f;
@@ -229,6 +317,18 @@
     --caution: #fbbf24;
     --caution-bg: #3a2d12;
   }
+}
+
+:root[data-scheme="dark"] {
+  --brand: #ff9a5c;
+  --heat-low: #ffb020;
+  --heat-high: #ff5a1f;
+  --up: #34d399;
+  --up-bg: #0f2b22;
+  --down: #ff5c6c;
+  --down-bg: #3a1a22;
+  --caution: #fbbf24;
+  --caution-bg: #3a2d12;
 }
 
 :root {
