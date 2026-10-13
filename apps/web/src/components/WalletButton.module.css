@@ -32,6 +32,37 @@
   cursor: progress;
 }
 
+.connectGlyph {
+  display: none;
+}
+
+/* The phone's header has no room for the words: the glyph alone, the words kept as the button's name. */
+@media (max-width: 640px) {
+  .header .connect {
+    width: 40px;
+    padding: 0;
+  }
+  .header .connectGlyph {
+    display: inline-flex;
+  }
+  .header .connectWord {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  /* Connected, the address alone: with the mark, search, the launch button and the menu beside it, the glyph's 26px would not fit a 390px window. */
+  .header .connected {
+    padding: 0 10px;
+  }
+  .header .connected .glyph {
+    display: none;
+  }
+}
+
 .glyph {
   flex: none;
   color: var(--ink-2);

@@ -145,9 +145,9 @@
   pointer-events: none;
 }
 
+/* Under 1100px the pill gives way to the menu button; the account stays in the header, since the menu it opens is the way to disconnect and to a Creator's earnings. */
 @media (max-width: 1100px) {
-  .pill,
-  .wallet {
+  .pill {
     display: none;
   }
   .actions .menu {
@@ -157,7 +157,10 @@
 
 @media (max-width: 640px) {
   .bar {
-    gap: 12px;
+    gap: 8px;
+  }
+  .actions {
+    gap: 8px;
   }
   .cluster {
     display: none;
@@ -180,6 +183,7 @@
   /* On a phone the open search takes the bar's whole width, so what it would cover gives way. */
   .bar:has([data-search-open]) .wordmark,
   .bar:has([data-search-open]) .launch,
+  .bar:has([data-search-open]) .wallet,
   .bar:has([data-search-open]) .menu {
     opacity: 0;
     pointer-events: none;
