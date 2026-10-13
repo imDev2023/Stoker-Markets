@@ -2,16 +2,13 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from "next/font/google";
-import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 import { FeeChangeBanner } from "@/components/FeeChangeBanner";
-import { HeaderSwitch } from "@/components/HeaderSwitch";
 import { Providers } from "@/components/Providers";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { ThemeOverride } from "@/components/ThemeOverride";
 import { getPlatform, listAnnouncements } from "@/lib/api";
-import { HEADER_COOKIE, headerFrom } from "@/lib/header";
 import { THEME_GROUNDS, themeFrom } from "@/lib/theme";
 
 // The families (owner, 2026-10-11, on "Stoker Type"): the display face carries the voice through its optical-size and
@@ -41,18 +38,15 @@ export const dynamic = "force-dynamic";
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   // A fee change everyone should see coming; the banner is left out rather than the page failing if the API is down.
-  const [platform, announcements, jar] = await Promise.all([getPlatform(), listAnnouncements().catch(() => null), cookies()]);
+  const [platform, announcements] = await Promise.all([getPlatform(), listAnnouncements().catch(() => null)]);
   const upcoming = announcements?.announcements.find((a) => a.appliedSignature === null && new Date(a.effectiveAt).getTime() > Date.now() - 24 * 3600_000) ?? null;
-  // The header candidates of #37 (src/lib/header.ts): a cookie `?header=` sets, read here since a layout has no search params.
-  const header = headerFrom(jar.get(HEADER_COOKIE)?.value);
   return (
     // `?theme=` may change `data-theme` after hydration (ThemeOverride), which is intended, not a mismatch.
-    <html lang="en" data-theme={theme} data-header={header} className={`${bricolage.variable} ${instrumentSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html lang="en" data-theme={theme} className={`${bricolage.variable} ${instrumentSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <body>
         <ThemeOverride />
-        <HeaderSwitch />
         <Providers rpcUrl={platform.rpcUrl}>
-          <SiteHeader cluster={platform.cluster} kind={header} />
+          <SiteHeader cluster={platform.cluster} />
           {upcoming && <FeeChangeBanner announcement={upcoming} platform={platform} />}
           <main>{children}</main>
           <SiteFooter cluster={platform.cluster} />

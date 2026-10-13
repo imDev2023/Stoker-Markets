@@ -256,38 +256,8 @@
   --radius-xs: 8px;
   --gutter: clamp(16px, 4vw, 40px);
   --max: 1180px;
-  /* The sticky header's height, which anything pinned under it (the asset rail, a coin page's side column) clears. */
-  --header-h: 64px;
-}
-
-/*
- * The header candidates of #37 (src/lib/header.ts, shown by `?header=`): each says how tall it is; the side rail takes
- * the window's left edge on a wide window and the dock its foot on a narrow one, so the body makes room.
- */
-html[data-header="tiers"] {
-  --header-h: 89px;
-}
-
-html[data-header="pill"] {
+  /* The sticky header's height (72px gives the pill its air), which anything pinned under it (the asset rail, a coin page's side column) clears. */
   --header-h: 72px;
-}
-
-@media (min-width: 1100px) {
-  html[data-header="rail"] {
-    --header-h: 0px;
-  }
-  html[data-header="rail"] body {
-    padding-left: 232px;
-  }
-}
-
-@media (max-width: 1099.98px) {
-  html[data-header="rail"] {
-    --header-h: 56px;
-  }
-  html[data-header="rail"] body {
-    padding-bottom: calc(64px + env(safe-area-inset-bottom));
-  }
 }
 
 *,

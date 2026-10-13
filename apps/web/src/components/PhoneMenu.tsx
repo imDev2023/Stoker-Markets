@@ -5,19 +5,17 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { LAUNCH_LINK, NAV_LINKS, SITE_LINKS } from "@/lib/site";
-import { isCurrent } from "../NavLinks";
-import { SocialLinks } from "../SocialLinks";
-import { WalletButton } from "../WalletButton";
-import { MenuGlyph } from "./NavIcons";
+import { isCurrent } from "./NavLinks";
+import { SocialLinks } from "./SocialLinks";
+import { WalletButton } from "./WalletButton";
 import styles from "./PhoneMenu.module.css";
 
 /**
- * The narrow window's menu behind a button in the header: a `sheet` slides in from the right with the links, the launch
- * button, the wallet and the socials (the command bar's phone), an `overlay` fills the window with the links set large and
- * rising in turn (the floating pill's phone, the Codrops treatment in CSS transforms). Escape, the backdrop and a chosen
- * link close it; the page behind holds still.
+ * The narrow window's menu behind a button in the header: an overlay the window's height with the links set large in
+ * the display face, each rising a beat after the one before (the Codrops treatment in CSS transforms), and the launch
+ * button, the wallet and the socials at its foot. Escape, the backdrop and a chosen link close it; the page holds still.
  */
-export function PhoneMenu({ kind, className = "" }: { kind: "sheet" | "overlay"; className?: string }) {
+export function PhoneMenu({ className = "" }: { className?: string }) {
   const id = useId();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -42,12 +40,14 @@ export function PhoneMenu({ kind, className = "" }: { kind: "sheet" | "overlay";
   return (
     <>
       <button type="button" className={`${styles.button} ${className}`} onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-controls={id} aria-label={open ? "Close menu" : "Menu"}>
-        <MenuGlyph open={open} />
+        <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+          {open ? <path d="m5 5 10 10M15 5 5 15" /> : <path d="M3.5 6h13M3.5 10h13M3.5 14h13" />}
+        </svg>
       </button>
       {/* Into the body, clear of the header's backdrop filter, which would contain a fixed box within the header's band. */}
       {open && createPortal(
         <div
-          className={`${styles.backdrop} ${styles[kind]}`}
+          className={styles.backdrop}
           onMouseDown={(e) => {
             if (e.target === e.currentTarget) close();
           }}

@@ -9,17 +9,28 @@ import styles from "./SiteHeader.module.css";
 export const isCurrent = (href: string, pathname: string) =>
   pathname === href || pathname.startsWith(`${href}/`) || (href === "/coins" && pathname.startsWith("/coin/"));
 
-/** The header's links, the current section marked, and the API docs last since developers look for them here too. */
+/**
+ * The header's pill: the sections with the current one marked and the API docs last, since developers look for them
+ * here too. Each word is set twice, one in view and one below it, so the hover can slide them.
+ */
 export function NavLinks() {
   const pathname = usePathname();
+  const word = (label: string) => (
+    <span className={styles.swap}>
+      <span className={styles.word}>{label}</span>
+      <span className={styles.under} aria-hidden="true">{label}</span>
+    </span>
+  );
   return (
-    <nav className={styles.nav} aria-label="Main">
+    <nav className={styles.pill} aria-label="Main">
       {NAV_LINKS.map((l) => (
         <Link key={l.href} href={l.href} className={styles.link} aria-current={isCurrent(l.href, pathname) ? "page" : undefined}>
-          {l.label}
+          {word(l.label)}
         </Link>
       ))}
-      <a href={SITE_LINKS.apiDocs.href} className={styles.link} target="_blank" rel="noreferrer">API</a>
+      <a href={SITE_LINKS.apiDocs.href} className={styles.link} target="_blank" rel="noreferrer">
+        {word("API")}
+      </a>
     </nav>
   );
 }

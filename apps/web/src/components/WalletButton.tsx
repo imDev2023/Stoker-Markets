@@ -21,11 +21,8 @@ function Glyph() {
   );
 }
 
-/**
- * `inline` sits inside page content: it fills the width on phones, like the page's other main actions. `dock` is an
- * item of the side rail candidate's phone dock (header/RailNav.tsx): the glyph over a word, its menu opening upward.
- */
-export function WalletButton({ variant = "header" }: { variant?: "header" | "inline" | "dock" }) {
+/** `inline` sits inside page content: it fills the width on phones, like the page's other main actions. */
+export function WalletButton({ variant = "header" }: { variant?: "header" | "inline" }) {
   const { wallets, wallet, publicKey, connecting, select, connect, disconnect } = useWallet();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
@@ -72,7 +69,6 @@ export function WalletButton({ variant = "header" }: { variant?: "header" | "inl
   }, [pending, wallet, publicKey, connect]);
 
   const wrap = `${styles.wrap} ${styles[variant]}`;
-  const dock = variant === "dock";
   // In the header the launch button is the one filled action, so connecting is a ghost there; inline it is the action.
   const connectKind = variant === "header" ? "button-ghost" : "button-primary";
 
@@ -81,7 +77,7 @@ export function WalletButton({ variant = "header" }: { variant?: "header" | "inl
       <div className={wrap} ref={menu}>
         <button
           type="button"
-          className={dock ? styles.dockButton : `button button-ghost ${styles.connected}`}
+          className={`button button-ghost ${styles.connected}`}
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
           title={wallet ? `Connected with ${wallet.adapter.name}` : undefined}
@@ -107,16 +103,9 @@ export function WalletButton({ variant = "header" }: { variant?: "header" | "inl
 
   return (
     <div className={wrap} ref={menu}>
-      {dock ? (
-        <button type="button" className={styles.dockButton} onClick={() => setOpen((o) => !o)} aria-expanded={open} disabled={connecting} aria-label="Connect wallet">
-          <Glyph />
-          <span>{connecting ? "Connecting" : "Wallet"}</span>
-        </button>
-      ) : (
-        <button type="button" className={`button ${connectKind} ${styles.connect}`} onClick={() => setOpen((o) => !o)} aria-expanded={open} disabled={connecting}>
-          {connecting ? "Connecting…" : "Connect wallet"}
-        </button>
-      )}
+      <button type="button" className={`button ${connectKind} ${styles.connect}`} onClick={() => setOpen((o) => !o)} aria-expanded={open} disabled={connecting}>
+        {connecting ? "Connecting…" : "Connect wallet"}
+      </button>
       {open && (
         <div className={styles.menu} role="menu" aria-label="Choose a wallet">
           {installed.length === 0 ? (
