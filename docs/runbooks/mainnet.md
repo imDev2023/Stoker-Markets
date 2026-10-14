@@ -143,6 +143,8 @@ After the deploy: `GET https://api.<domain>/health` must answer `{"ok":true}`; a
 
 A GlobalConfig with no curve rule account is unrestricted even with `restrict_curve_param` on (ADR 0005), so nothing may launch before every GlobalConfig has a rule. The refresh writes at most 120 rules a run, missing ones first, and runs every five minutes: mainnet's 571 take five runs, about 25 minutes, or run the job by hand five times (`POST /v1/operator/jobs/quote-registry`, or the operator page's button) and check `GET /v1/operator/jobs?job=quote-registry`. Then `GET /v1/quotes` should list 571 Quote Assets, launchable where Jupiter prices them, each with a Graduation Target worth 85 SOL.
 
+Run on 2026-10-14: mainnet had 613 GlobalConfigs by then, 586 priced by Jupiter. The first run died in a second on Jupiter's free-plan window (#100 fixed it), and the next five each reported 120 writes while only about 38 a run landed: ten sends at once with one blockhash for the run, stretched past its validity by the Helius free plan's throttling (281 "Blockhash not found", 114 fetches cancelled by the Worker's connection cap). Since then a run sends four at a time with a fresh blockhash a batch and reports `ruleWrites` (landed) and `ruleWriteFailures`; on the free RPC plan a run of 120 takes a few minutes. The crons could not do the runs: Workers Free allows five Cron Triggers an account and devnet holds them (section 12, item 6).
+
 Keep the site's launch page closed (or the DNS unpublished) until that count is right.
 
 ## 7. The Helius webhook

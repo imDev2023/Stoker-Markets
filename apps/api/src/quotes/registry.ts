@@ -1,4 +1,4 @@
-import { Connection, Transaction, type Keypair, type TransactionInstruction } from "@solana/web3.js";
+import { Connection, PublicKey, Transaction, type Keypair, type TransactionInstruction } from "@solana/web3.js";
 import { getTableColumns, sql } from "drizzle-orm";
 import {
   createCurveRuleIx, listGlobalConfigs, readCurveRuleGroups, readQuoteMints, RULE_GROUP, updateCurveRuleIx, WSOL_MINT, type RuleConstraint,
@@ -63,7 +63,7 @@ export async function refreshQuoteRegistry({ db, cfg, market, operations }: Refr
   // A Quote Asset without a rule account is unrestricted, so closing those gaps goes first; the rest wait for the next
   // run when there are more than one run writes (QUOTE_RULE_WRITES_MAX), as on a first run over mainnet's hundreds.
   writes.sort((a, b) => Number(b.missing) - Number(a.missing));
-  await sendInstructionGroups(connection, operations, writes.slice(0, cfg.quoteRuleWritesMax).map((w) => w.ixs));
+  const sent = await sendInstructionGroups(connection, operations, writes.slice(0, cfg.quoteRuleWritesMax).map((w) => w.ixs));
   const afterGroups = writes.length ? await readCurveRuleGroups(connection, cfg.launchlab, cfg.platformConfig, globalConfigs) : before;
   const after = new Map([...afterGroups].map(([g, rule]) => [g, rule ? (rule.get(RULE_GROUP.standard) ?? []) : null]));
 
@@ -117,61 +117,86 @@ export async function refreshQuoteRegistry({ db, cfg, market, operations }: Refr
   }
   // The quote mints are not added to the Helius webhook: watching a mint delivers every transaction that names it,
   // which for SOL or USDC is much of the chain. This refresh re-reads every mint's labels instead (runbook, section 7).
-  return { quoteAssets: rows.length, priced: rows.filter((r) => r.priceSol).length, ruleWrites: Math.min(writes.length, cfg.quoteRuleWritesMax) };
+  // What landed and what didn't, so the summary says what the chain now has rather than what the run meant to write.
+  return { quoteAssets: rows.length, priced: rows.filter((r) => r.priceSol).length, ruleWrites: sent.landed, ruleWriteFailures: sent.failed };
 }
 
 const TX_MAX_BYTES = 1232;
-const PARALLEL_SENDS = 10;
-const SIGNATURE_STATUSES_MAX = 256;
+/** Transactions in flight at once: under a Worker's six concurrent connections, and gentle on a rate-limited RPC. */
+const PARALLEL_SENDS = 4;
+/** Any well-formed hash does to measure a transaction: its size doesn't depend on the blockhash. */
+const SIZING_BLOCKHASH = PublicKey.default.toBase58();
+
+type SendOutcome = { landed: number; failed: number };
 
 /**
- * Packs instruction groups into as few transactions as fit, sends them and waits for each to confirm or expire.
- * Failures are logged, not thrown: the caller re-reads the chain, so a failed write shows up as a rule left as it was.
- * Polls signature statuses because Workers can't hold the websocket `confirmTransaction` uses.
+ * Packs instruction groups into as few transactions as fit and sends them a few at a time, each batch with a fresh
+ * blockhash and confirmed (or expired) before the next: on the first mainnet run, ten sends at once with one blockhash
+ * for the whole run were stretched by the RPC's throttling past the blockhash's validity, so most were rejected
+ * ("Blockhash not found") or cancelled by the Worker's connection cap, while the run reported every write as made.
+ * Failures are logged and counted, not thrown: the caller re-reads the chain, so a failed write shows up as a rule left
+ * as it was. Polls signature statuses because Workers can't hold the websocket `confirmTransaction` uses.
  */
-async function sendInstructionGroups(connection: Connection, payer: Keypair, groups: TransactionInstruction[][]) {
-  if (!groups.length) return;
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-  const make = (ixs: TransactionInstruction[]) => new Transaction({ feePayer: payer.publicKey, blockhash, lastValidBlockHeight }).add(...ixs);
+async function sendInstructionGroups(connection: Connection, payer: Keypair, groups: TransactionInstruction[][]): Promise<SendOutcome> {
+  const outcome: SendOutcome = { landed: 0, failed: 0 };
+  if (!groups.length) return outcome;
   // web3.js serializes into a packet-sized buffer and throws past it, so a message too large to measure doesn't fit either.
-  const fits = (tx: Transaction) => {
+  const sizeOf = (ixs: TransactionInstruction[]) => {
     try {
-      return tx.serializeMessage().length + 1 + 64 <= TX_MAX_BYTES;
+      return new Transaction({ feePayer: payer.publicKey, blockhash: SIZING_BLOCKHASH, lastValidBlockHeight: 0 }).add(...ixs).serializeMessage().length + 1 + 64;
     } catch {
-      return false;
+      return Infinity;
     }
   };
-  const txs: Transaction[] = [];
+  const packed: { ixs: TransactionInstruction[]; groups: number }[] = [];
   for (const group of groups) {
-    const last = txs.at(-1);
-    const merged = last && make([...last.instructions, ...group]);
-    if (merged && fits(merged)) txs[txs.length - 1] = merged;
-    else txs.push(make(group));
+    const last = packed.at(-1);
+    if (last && sizeOf([...last.ixs, ...group]) <= TX_MAX_BYTES) {
+      last.ixs.push(...group);
+      last.groups += 1;
+    } else packed.push({ ixs: [...group], groups: 1 });
   }
-  const signatures: string[] = [];
-  for (let i = 0; i < txs.length; i += PARALLEL_SENDS) {
+  for (let i = 0; i < packed.length; i += PARALLEL_SENDS) {
+    const batch = packed.slice(i, i + PARALLEL_SENDS);
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
     const sent = await Promise.allSettled(
-      txs.slice(i, i + PARALLEL_SENDS).map((tx) => {
+      batch.map((p) => {
+        const tx = new Transaction({ feePayer: payer.publicKey, blockhash, lastValidBlockHeight }).add(...p.ixs);
         tx.sign(payer);
         return connection.sendRawTransaction(tx.serialize());
       }),
     );
-    for (const s of sent) {
-      if (s.status === "fulfilled") signatures.push(s.value);
-      else console.error("curve rule write rejected", s.reason);
+    const pending: { signature: string; groups: number }[] = [];
+    sent.forEach((s, j) => {
+      const groupsIn = batch[j]!.groups;
+      if (s.status === "fulfilled") pending.push({ signature: s.value, groups: groupsIn });
+      else {
+        outcome.failed += groupsIn;
+        console.error("curve rule write rejected", s.reason);
+      }
+    });
+    while (pending.length) {
+      const { value } = await connection.getSignatureStatuses(pending.map((p) => p.signature));
+      for (let k = value.length - 1; k >= 0; k--) {
+        const status = value[k];
+        const p = pending[k]!;
+        if (status?.err) {
+          console.error("curve rule write failed", p.signature, status.err);
+          outcome.failed += p.groups;
+          pending.splice(k, 1);
+        } else if (status?.confirmationStatus === "confirmed" || status?.confirmationStatus === "finalized") {
+          outcome.landed += p.groups;
+          pending.splice(k, 1);
+        }
+      }
+      if (!pending.length) break;
+      if ((await connection.getBlockHeight("confirmed")) > lastValidBlockHeight) {
+        for (const p of pending) console.error("curve rule write expired", p.signature);
+        outcome.failed += pending.reduce((n, p) => n + p.groups, 0);
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 500));
     }
   }
-  while (signatures.length) {
-    // The RPC answers at most 256 signatures a call, and refuses a request body past 50 KB.
-    const value = [];
-    for (let i = 0; i < signatures.length; i += SIGNATURE_STATUSES_MAX)
-      value.push(...(await connection.getSignatureStatuses(signatures.slice(i, i + SIGNATURE_STATUSES_MAX))).value);
-    for (let i = value.length - 1; i >= 0; i--) {
-      const status = value[i];
-      if (status?.err) console.error("curve rule write failed", signatures[i], status.err);
-      if (status?.err || status?.confirmationStatus === "confirmed" || status?.confirmationStatus === "finalized") signatures.splice(i, 1);
-    }
-    if (!signatures.length || (await connection.getBlockHeight("confirmed")) > lastValidBlockHeight) break;
-    await new Promise((r) => setTimeout(r, 500));
-  }
+  return outcome;
 }
