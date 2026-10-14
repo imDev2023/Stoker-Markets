@@ -97,6 +97,19 @@ export function staticMarket(pricesJson: string, tokenListJson = "{}"): QuoteMar
 
 const JUPITER_PRICE_IDS_MAX = 50;
 const JUPITER_TOKEN_IDS_MAX = 100;
+/** How often a call refused with 429 is tried again, and the longest one wait for the window to turn. */
+const JUPITER_RETRIES = 3;
+const JUPITER_WAIT_MAX_MS = 15_000;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** A numeric header, or null when absent or not a number (`Number(null)` would be 0). */
+function numberHeader(res: Response, name: string) {
+  const raw = res.headers.get(name);
+  if (raw === null) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
 
 type JupiterToken = { id: string; icon?: string; isVerified?: boolean; liquidity?: number | null; tags?: string[] | null };
 
@@ -109,10 +122,29 @@ type JupiterToken = { id: string; icon?: string; isVerified?: boolean; liquidity
 export function jupiterMarket(apiKey: string | undefined, apiUrl?: string): QuoteMarket {
   // `apiUrl` names another host: the stand-in that answers from the mainnet snapshot on the local chain.
   const host = apiUrl ?? (apiKey ? "https://api.jup.ag" : "https://lite-api.jup.ag");
-  const get = async (path: string) => {
-    const res = await fetch(`${host}${path}`, { headers: apiKey ? { "x-api-key": apiKey } : {} });
-    if (!res.ok) throw new Error(`Jupiter ${path.split("?")[0]} failed: ${res.status}`);
-    return res.json();
+  // A key's plan is a window of requests (the free one: 10 a window of about ten seconds, measured 2026-10-14), told by
+  // `x-ratelimit-remaining` and `x-ratelimit-reset` (an epoch second), and a refresh of mainnet's 605 Quote Assets makes
+  // about thirty calls: wait for the window to turn when it is used up, and try a call refused with 429 again after it,
+  // rather than fail the whole run.
+  let remaining: number | null = null;
+  let windowResetsAt = 0;
+  const get = async (path: string): Promise<unknown> => {
+    for (let attempt = 0; ; attempt++) {
+      if (remaining !== null && remaining <= 0 && windowResetsAt > Date.now()) await sleep(Math.min(windowResetsAt - Date.now(), JUPITER_WAIT_MAX_MS) + 200);
+      const res = await fetch(`${host}${path}`, { headers: apiKey ? { "x-api-key": apiKey } : {} });
+      remaining = numberHeader(res, "x-ratelimit-remaining");
+      const reset = numberHeader(res, "x-ratelimit-reset");
+      windowResetsAt = reset !== null && reset > 0 ? reset * 1000 : Date.now() + 1000;
+      if (res.status === 429 && attempt < JUPITER_RETRIES) {
+        const retryAfter = numberHeader(res, "retry-after");
+        const waitMs = retryAfter !== null && retryAfter > 0 ? retryAfter * 1000 : Math.max(windowResetsAt - Date.now(), 1000);
+        await sleep(Math.min(waitMs, JUPITER_WAIT_MAX_MS) + 200);
+        remaining = null;
+        continue;
+      }
+      if (!res.ok) throw new Error(`Jupiter ${path.split("?")[0]} failed: ${res.status}`);
+      return res.json();
+    }
   };
   return {
     async usdPrices(mints) {
