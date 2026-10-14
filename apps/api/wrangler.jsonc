@@ -154,12 +154,12 @@
         "LAUNCHLAB_PROGRAM": "LanMV9sAd7wArD4vJFi2qDdfnVhFxYSUg6eADduJ3uj",
         "CPMM_PROGRAM": "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C",
         "LOCK_PROGRAM": "LockrWmn6K5twhz3y9w1dQERbmgSaRkfnTeTKbpofwE",
-        // From the runbook's sections 1 to 3: the PDA of the cold admin key, that key's address, the table the
-        // operations wallet creates, and the Treasury's address.
-        "PLATFORM_CONFIG": "",
-        "PLATFORM_ADMIN": "",
-        "PLATFORM_LOOKUP_TABLE": "",
-        "TREASURY_WALLET": "",
+        // From the runbook's sections 1 to 3 (created 2026-10-13, #23): the PDA of the cold admin key, that key's
+        // address, the table the operations wallet created (SOL and the 60 deepest Quote Assets), and the Treasury.
+        "PLATFORM_CONFIG": "2a6kp9vQ4X4pjkvf6isuvp8eCGBNnSdaNL8NKhqywXVA",
+        "PLATFORM_ADMIN": "Stoke7675JniwDxRnT9rfjZ1EU3yUTEoHRBtZT6XcJb",
+        "PLATFORM_LOOKUP_TABLE": "CPv7717aQwPXihwvbSkQvT9nhBmo3Eh7pgCJ7hbN8CHc",
+        "TREASURY_WALLET": "StokezuREp73svYnkD8eWisfRLo6AQh2WtBFT4Q93B3",
         "GRADUATION_TARGET_LAMPORTS": "85000000000",
         "GRADUATION_ALERT_AFTER_SECONDS": "300",
         "POOL_BACKFILL_SECONDS": "900",
