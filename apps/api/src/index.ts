@@ -41,7 +41,9 @@ import { tradeRoutes } from "./routes/trades";
 
 const app = new Hono<AppEnv>();
 
-app.use("*", async (c, next) => cors({ origin: c.env.WEB_ORIGIN, allowMethods: ["GET", "POST", "DELETE"] })(c, next));
+// WEB_ORIGIN may list several origins, comma-separated: the devnet rehearsal answers on its own hostname and, until the
+// production web deploy takes the apex at go-live, on stoker.markets too (owner, 2026-10-14).
+app.use("*", async (c, next) => cors({ origin: c.env.WEB_ORIGIN.split(",").map((o) => o.trim()), allowMethods: ["GET", "POST", "DELETE"] })(c, next));
 
 app.use("/v1/*", async (c, next) => {
   c.set("cfg", config(c.env));
