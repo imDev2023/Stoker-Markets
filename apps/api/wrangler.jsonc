@@ -147,8 +147,9 @@
       "routes": [{ "pattern": "api.stoker.markets", "custom_domain": true }],
       "vars": {
         "CLUSTER": "mainnet",
-        // What browsers use: a public endpoint with no key in the URL.
-        "PUBLIC_RPC_URL": "https://api.mainnet-beta.solana.com",
+        // What browsers use: a keyless endpoint that accepts a browser Origin (Solana's own answers 403 to one; CLAUDE.md).
+        // publicnode for now (owner, 2026-10-14); Helius's Secure RPC URL, on a paid plan, if its limits are ever hit.
+        "PUBLIC_RPC_URL": "https://solana-rpc.publicnode.com",
         "PUBLIC_API_URL": "https://api.stoker.markets",
         "WEB_ORIGIN": "https://stoker.markets",
         "LAUNCHLAB_PROGRAM": "LanMV9sAd7wArD4vJFi2qDdfnVhFxYSUg6eADduJ3uj",
