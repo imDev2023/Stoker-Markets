@@ -102,7 +102,7 @@ The mainnet values are in the `env.production` block of `apps/api/wrangler.jsonc
 | --- | --- | --- |
 | `CLUSTER` | `mainnet` | turns every check below on |
 | `RPC_URL` | the Helius (or other provider) RPC URL with its key | must be https; never reaches a browser |
-| `PUBLIC_RPC_URL` | a keyless endpoint made for browsers, such as the Secure RPC URL in Helius's dashboard (no key in it, rate-limited per IP); a URL with `?api-key=` is refused even when the key is restricted to our domain. Not `https://api.mainnet-beta.solana.com`: it answers a server but refuses every request that carries a browser `Origin` with 403 "Access forbidden" (tested 2026-10-05 with `https://stoker.markets` and with localhost), so wallets could not read balances or send trades through it | required on mainnet; https; refused if the URL carries a key, token or secret |
+| `PUBLIC_RPC_URL` | `https://solana-rpc.publicnode.com` (owner, 2026-10-14: keyless, and it answered a request with a browser `Origin` with 200 and `access-control-allow-origin: *`); the Secure RPC URL in Helius's dashboard (keyless, 5 requests a second per IP, paid plans only) if publicnode's limits are ever hit. A URL with `?api-key=` is refused even when the key is restricted to our domain. Not `https://api.mainnet-beta.solana.com`: it answers a server but refuses every request that carries a browser `Origin` with 403 "Access forbidden" (tested 2026-10-05 with `https://stoker.markets` and with localhost), so wallets could not read balances or send trades through it | required on mainnet; https; refused if the URL carries a key, token or secret |
 | `PUBLIC_API_URL` | `https://api.<our domain>` | refused if not https, or on localhost, a bare IP or `workers.dev`: every coin's metadata URL is built from it and can never change (section 8) |
 | `WEB_ORIGIN` | `https://<our domain>` | CORS |
 | `LAUNCHLAB_PROGRAM`, `CPMM_PROGRAM`, `LOCK_PROGRAM` | the mainnet ids in section 2 | the local defaults are devnet's |
@@ -211,6 +211,8 @@ Move it to `devnet.stoker.markets` and `api-devnet.stoker.markets`, which `env.d
 3. In `apps/web`, `NEXT_PUBLIC_API_URL=https://api-devnet.stoker.markets pnpm exec opennextjs-cloudflare build`, then `pnpm exec opennextjs-cloudflare deploy --env devnet`.
 4. Check `https://api-devnet.stoker.markets/health` and that a devnet trade made away from the site is indexed.
 
+Made on 2026-10-14: both Workers deployed from main (`ed6b5f0`) with their new custom domains, the webhook's URL changed through Helius's API with its six addresses kept, `/health` ok, the site built against `api-devnet` with the fee-change banner showing. A resolver that was asked for the new hostnames before the deploy caches the negative answer for a while: check against `1.1.1.1` or with `curl --resolve`.
+
 ## 12. Go-live checklist
 
 1. [x] #7 decided: name, domain, ticker. ADR 0005 accepted.
@@ -221,8 +223,8 @@ Move it to `devnet.stoker.markets` and `api-devnet.stoker.markets`, which `env.d
 6. [ ] API deployed with the checklist's values and secrets; `/health` ok (section 5).
 7. [ ] Quote Registry refreshed until 571 Quote Assets each have a curve rule (section 6).
 8. [ ] Helius raw webhook on the PlatformConfig, with the secret (section 7); `HELIUS_API_KEY` and `HELIUS_WEBHOOK_ID` set so graduated pools join it on their own (section 5).
-9. [ ] Domain and R2 in place; the Arweave settings left at their mainnet defaults (section 8). R2 bucket `stoker-metadata` created 2026-10-07; the domain move (section 11) is still to run. The zone's "Always Use HTTPS" (SSL/TLS > Edge Certificates) was off on 2026-10-08, so `http://` served the site and the API with 200: turn it on (owner; the agents' token only reads it).
-10. [ ] Web deployed on the domain (section 9). Before it: every non-mainnet cluster answers `noindex` (one line in the root layout, #23's 2026-10-08 comment), so the rehearsal's test coins are never indexed on the production domain.
+9. [ ] Domain and R2 in place; the Arweave settings left at their mainnet defaults (section 8). R2 bucket `stoker-metadata` created 2026-10-07; the domain move (section 11) was made on 2026-10-14, so `stoker.markets` and `api.stoker.markets` are free for the production Workers. The zone's "Always Use HTTPS" (SSL/TLS > Edge Certificates) was off on 2026-10-08, so `http://` served the site and the API with 200: turn it on (owner; the agents' token only reads it).
+10. [ ] Web deployed on the domain (section 9). Every non-mainnet cluster answers `noindex` (the root layout's `generateMetadata`, pinned by `tests/ui/src/empty.spec.ts`), so the rehearsal's test coins are never indexed under the brand.
 11. [ ] Alerts arrive in the chosen channel: `POST /v1/operator/jobs/fee-collector?fail=simulated` raises `job_failed`, the next run resolves it.
 12. [ ] Platform Token launched fairly and named; GlobalConfig requested after Graduation (section 10).
 
