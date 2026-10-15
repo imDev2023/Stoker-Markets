@@ -13,7 +13,12 @@
   "env": {
     "devnet": {
       "name": "stoker-web-devnet",
-      "routes": [{ "pattern": "devnet.stoker.markets", "custom_domain": true }],
+      // The apex shows the rehearsal until the production web deploy takes it at go-live (owner, 2026-10-14): remove it and
+      // redeploy devnet first, or wrangler asks to move the domain.
+      "routes": [
+        { "pattern": "devnet.stoker.markets", "custom_domain": true },
+        { "pattern": "stoker.markets", "custom_domain": true }
+      ],
       "assets": { "directory": ".open-next/assets", "binding": "ASSETS" }
     },
     "production": {

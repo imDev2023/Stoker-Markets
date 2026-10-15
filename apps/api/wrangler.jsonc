@@ -95,7 +95,8 @@
         // Browsers get the public endpoint, never the Worker's own RPC URL and its key.
         "PUBLIC_RPC_URL": "https://api.devnet.solana.com",
         "PUBLIC_API_URL": "https://api-devnet.stoker.markets",
-        "WEB_ORIGIN": "https://devnet.stoker.markets",
+        // The apex shows the rehearsal until the production web deploy takes it at go-live (owner, 2026-10-14); drop it then.
+        "WEB_ORIGIN": "https://devnet.stoker.markets,https://stoker.markets",
         "LAUNCHLAB_PROGRAM": "DRay6fNdQ5J82H7xV6uq2aV3mNrUZ1J4PgSKsWgptcm6",
         "CPMM_PROGRAM": "DRaycpLY18LhpbydsBWbVJtxpNv9oXPgjRSfpF2bWpYb",
         "LOCK_PROGRAM": "DRay25Usp3YJAi7beckgpGUC7mGJ2cR1AVPxhYfwVCUX",
