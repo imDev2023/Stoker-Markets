@@ -214,6 +214,9 @@ Move it to `devnet.stoker.markets` and `api-devnet.stoker.markets`, which `env.d
 4. Check `https://api-devnet.stoker.markets/health` and that a devnet trade made away from the site is indexed.
 
 Made on 2026-10-14: both Workers deployed from main (`ed6b5f0`) with their new custom domains, the webhook's URL changed through Helius's API with its six addresses kept, `/health` ok, the site built against `api-devnet` with the fee-change banner showing. A resolver that was asked for the new hostnames before the deploy caches the negative answer for a while: check against `1.1.1.1` or with `curl --resolve`.
+Since 2026-10-15 the apex `stoker.markets` shows the same rehearsal until the production web deploy takes it (owner, 2026-10-14; #104).
+What it shows is devnet's chain, not a setting: Raydium's LaunchLab quotes 4 GlobalConfigs on devnet, 2 of them priced (SOL and a devnet USDC clone the site labels "community"), so the landing says "any of the 2 assets" and the launch form offers two pairs.
+Built against the mainnet API the same pages read 614 Quote Assets, 585 launchable (2026-10-15): at go-live anyone can pair a coin with any of them, and the creator line reads one figure for both venues because mainnet's CPMM config carries the 1% creator fee where devnet's only has 0.25%.
 
 ## 12. Go-live checklist
 

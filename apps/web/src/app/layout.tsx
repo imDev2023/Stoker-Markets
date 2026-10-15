@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import { FeeChangeBanner } from "@/components/FeeChangeBanner";
+import { ClusterNotice } from "@/components/ClusterNotice";
 import { Providers } from "@/components/Providers";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -53,6 +54,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <ThemeOverride />
         <Providers rpcUrl={platform.rpcUrl}>
           <SiteHeader cluster={platform.cluster} />
+          {platform.cluster === "devnet" && <ClusterNotice />}
           {upcoming && <FeeChangeBanner announcement={upcoming} platform={platform} />}
           <main>{children}</main>
           <SiteFooter cluster={platform.cluster} />
