@@ -1,0 +1,10 @@
+.banner {
+  background: var(--plate);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 0.875rem;
+}
+
+.inner {
+  padding-block: 10px;
+}
