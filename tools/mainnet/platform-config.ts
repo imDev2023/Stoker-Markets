@@ -250,8 +250,12 @@ async function main() {
 }
 
 if (process.argv[1] && /platform-config\.ts$/.test(process.argv[1])) {
-  main().catch((e: Error) => {
-    console.error(e.message);
-    process.exit(1);
-  });
+  // web3.js keeps its websocket open after a confirmation, so the process would never exit on its own (the devnet
+  // fee-change apply of 2026-10-15 hung after "Sent and confirmed").
+  main()
+    .then(() => process.exit(process.exitCode ?? 0))
+    .catch((e: Error) => {
+      console.error(e.message);
+      process.exit(1);
+    });
 }
