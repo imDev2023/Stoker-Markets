@@ -29,7 +29,7 @@
 @media (min-height: 1000px) {
   .side {
     position: sticky;
-    top: 80px;
+    top: calc(var(--header-h) + 16px);
   }
 }
 

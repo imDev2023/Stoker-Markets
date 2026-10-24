@@ -1,0 +1,28 @@
+/* A ghost square like the menu button: the glyph of the mode a press brings. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color var(--fast) var(--ease), opacity var(--fast) var(--ease);
+}
+
+.button:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.button:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.button:disabled {
+  cursor: default;
+}

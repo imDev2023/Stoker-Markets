@@ -1,19 +1,19 @@
-/* The header on surface with a hairline, translucent so the page's colour shows through as it scrolls under. */
+/* No hairline: the pill is the header's edge, and the page's colour shows through the bar as it scrolls under. */
 .header {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
   backdrop-filter: saturate(140%) blur(12px);
-  border-bottom: 1px solid var(--line);
 }
 
 /* The bar spans the window at the page's gutters: it carries more than the content column is wide. */
 .bar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
-  height: 64px;
+  height: var(--header-h);
   padding: 0 var(--gutter);
 }
 
@@ -28,6 +28,7 @@
   letter-spacing: 0;
   text-decoration: none;
   white-space: nowrap;
+  transition: opacity var(--fast) var(--ease);
 }
 
 .mark {
@@ -48,25 +49,35 @@
   color: var(--accent-strong);
 }
 
-.nav {
+/*
+ * The pill, raised on surface-3 with the shadow, centred in the room between the wordmark and the actions: in the flow,
+ * never over them, so a narrower window can only bring it nearer (centred on the window it ran into the search).
+ */
+.pill {
   display: flex;
-  align-self: stretch;
+  flex: none;
   gap: 2px;
-  margin-right: auto;
+  margin: 0 auto;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-3);
+  box-shadow: var(--highlight), var(--shadow-raised);
+  transition: opacity var(--base) var(--ease), transform var(--base) var(--ease);
 }
 
-/* A link is as tall as the bar, so the current section's marker sits on the bar's bottom edge. */
 .link {
-  position: relative;
   display: inline-flex;
   align-items: center;
-  padding: 0 11px;
-  font-weight: 500;
-  font-size: 0.9375rem;
+  height: 36px;
+  padding: 0 15px;
+  border-radius: 999px;
   color: var(--ink-2);
-  text-decoration: none;
+  font-size: 0.9375rem;
+  font-weight: 500;
   white-space: nowrap;
-  transition: color var(--fast) var(--ease);
+  text-decoration: none;
+  transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 
 .link:hover {
@@ -74,18 +85,40 @@
 }
 
 .link[aria-current="page"] {
-  color: var(--ink);
+  background: var(--plate);
+  color: var(--accent-strong);
 }
 
-.link[aria-current="page"]::after {
-  content: "";
+/* The word and its twin stacked in a clipped box; the hover slides both up by one line. */
+.swap {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  line-height: 1.25;
+}
+
+.word,
+.under {
+  display: block;
+}
+
+.under {
   position: absolute;
-  left: 11px;
-  right: 11px;
-  bottom: -1px;
-  height: 2px;
-  border-radius: 2px 2px 0 0;
-  background: var(--accent);
+  inset: 0;
+  transform: translateY(100%);
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .word,
+  .under {
+    transition: transform var(--base) var(--ease);
+  }
+  .link:hover .word {
+    transform: translateY(-100%);
+  }
+  .link:hover .under {
+    transform: translateY(0);
+  }
 }
 
 .actions {
@@ -94,40 +127,46 @@
   gap: 8px;
 }
 
-.social {
-  display: flex;
-}
-
-/* The one filled action in the header (the primitive gives it the glow); it keeps its glyph when the words go. */
 .launch {
   gap: 7px;
   padding: 0 16px 0 14px;
+  transition: opacity var(--fast) var(--ease);
 }
 
-/*
- * Narrower windows give things up in order: first the socials (the footer has them), then the links (the wordmark leads
- * to the coins, the button to launching, the footer to everything), then the badge and the words on the two buttons.
- */
-@media (max-width: 1280px) {
-  .social {
-    display: none;
-  }
+/* Two classes, so this wins over the menu button's own display rule whichever module loads last. */
+.actions .menu {
+  display: none;
 }
 
-@media (max-width: 1100px) {
-  .nav {
+/* The open search stretches over the pill's end, so the pill steps aside while it is open. */
+.bar:has([data-search-open]) .pill {
+  opacity: 0;
+  transform: scale(0.96);
+  pointer-events: none;
+}
+
+/* Under 1200px (where the pill, the wordmark and the actions no longer share a row) the pill gives way to the menu button; the account stays in the header, since the menu it opens is the way to disconnect and to a Creator's earnings. */
+@media (max-width: 1200px) {
+  .pill {
     display: none;
   }
-  .wordmark {
-    margin-right: auto;
+  .actions .menu {
+    display: inline-flex;
   }
 }
 
 @media (max-width: 640px) {
   .bar {
-    gap: 12px;
+    gap: 8px;
+  }
+  .actions {
+    gap: 8px;
   }
   .cluster {
+    display: none;
+  }
+  /* Two classes, so this wins over the toggle's own display rule whichever module loads last; it sits in the menu's foot instead. */
+  .actions .scheme {
     display: none;
   }
   .launch {
@@ -144,5 +183,13 @@
     overflow: hidden;
     clip: rect(0 0 0 0);
     white-space: nowrap;
+  }
+  /* On a phone the open search takes the bar's whole width, so what it would cover gives way. */
+  .bar:has([data-search-open]) .wordmark,
+  .bar:has([data-search-open]) .launch,
+  .bar:has([data-search-open]) .wallet,
+  .bar:has([data-search-open]) .menu {
+    opacity: 0;
+    pointer-events: none;
   }
 }

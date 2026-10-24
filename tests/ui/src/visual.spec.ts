@@ -97,7 +97,7 @@ test("asset page of a tokenized stock, with the coins priced in it", async ({ pa
   await snap(page, "asset.png");
 });
 
-test("search palette, with a match", async ({ page }) => {
+test("the header's search open, with a match", async ({ page }) => {
   await page.goto("/rewards");
   await page.getByRole("banner").getByRole("button", { name: "Search", exact: true }).click();
   await page.getByRole("combobox", { name: "Search coins" }).fill("harbor");
@@ -107,8 +107,7 @@ test("search palette, with a match", async ({ page }) => {
   await page.evaluate(() => document.fonts.ready);
   await expectNoTruncatedText(page);
   await expectNoHorizontalOverflow(page);
-  // The palette covers the viewport, so the viewport is the shot; the page shows through its backdrop, so the page's
-  // times are masked as in any other shot.
+  // The result pills hang from the header over the page, so the viewport is the shot, its times masked as in any other.
   await expect(page).toHaveScreenshot("search.png", { mask: dynamic(page) });
 });
 

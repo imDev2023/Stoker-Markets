@@ -4,7 +4,7 @@
   flex-direction: column;
   gap: 2px;
   position: sticky;
-  top: 96px;
+  top: calc(var(--header-h) + 32px);
   font-family: var(--font-mono);
   font-size: 0.8125rem;
   font-variant-numeric: tabular-nums slashed-zero;

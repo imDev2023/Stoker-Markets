@@ -76,11 +76,15 @@ export function PriceChart({
     paint();
     const scheme = window.matchMedia("(prefers-color-scheme: dark)");
     scheme.addEventListener("change", paint);
+    // The header's toggle (SchemeToggle) and `?theme=` (ThemeOverride) change the tokens through <html>'s attributes.
+    const attrs = new MutationObserver(paint);
+    attrs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-scheme", "data-theme"] });
     c.subscribeCrosshairMove((p) => setHovered(p.time === undefined ? null : (byTime.current.get(p.time as number) ?? null)));
     chart.current = c;
     series.current = s;
     return () => {
       scheme.removeEventListener("change", paint);
+      attrs.disconnect();
       c.remove();
       chart.current = null;
       series.current = null;
