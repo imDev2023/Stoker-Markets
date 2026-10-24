@@ -22,6 +22,17 @@ The owner decided (2026-10-06, prefix shortened 2026-10-09) that all three, and 
 
 With a file admin keypair, section 2's `platform-config build --sign admin.json` signs, sends and checks in one go, so no hardware wallet signing path is needed.
 
+The four keys landed on 2026-10-10 (about 8.5 hours a key) and the owner assigned them on 2026-10-13 (#23):
+
+| Role | Address |
+| --- | --- |
+| admin (`PLATFORM_ADMIN`) | `Stoke7675JniwDxRnT9rfjZ1EU3yUTEoHRBtZT6XcJb` |
+| operations | `StokehV2bK8z7c3kbUmdTbdJ8HxKNR7WmHLmEpR9ZGu` |
+| treasury (`TREASURY_WALLET`) | `StokezuREp73svYnkD8eWisfRLo6AQh2WtBFT4Q93B3` |
+| platform-token mint | `StokeDgBjCYcTGe7VExPaJ5biH2MR6TYtQiiN7NAQX1` |
+
+Backups (owner, 2026-10-13): each keypair file printed on a home printer straight from Terminal (`lpr <file>`, never through a document app or the clipboard, which autosave to iCloud and sync to other devices), two sets stored apart, and all four imported into a Phantom wallet made for Stoker alone and never connected to a dapp. An imported key is not covered by Phantom's recovery phrase, so the paper is the backup. The plain files stay in `~/.config/stoker/mainnet/` only until sections 2, 3 and 5 have signed with them; then delete them, exclude `~/.config/stoker` from Time Machine (`tmutil addexclusion`) and delete its earlier backups and local snapshots.
+
 Funding the operations wallet, in SOL, before the first refresh:
 
 | Need | About |
@@ -91,7 +102,7 @@ The mainnet values are in the `env.production` block of `apps/api/wrangler.jsonc
 | --- | --- | --- |
 | `CLUSTER` | `mainnet` | turns every check below on |
 | `RPC_URL` | the Helius (or other provider) RPC URL with its key | must be https; never reaches a browser |
-| `PUBLIC_RPC_URL` | a keyless endpoint made for browsers, such as the Secure RPC URL in Helius's dashboard (no key in it, rate-limited per IP); a URL with `?api-key=` is refused even when the key is restricted to our domain. Not `https://api.mainnet-beta.solana.com`: it answers a server but refuses every request that carries a browser `Origin` with 403 "Access forbidden" (tested 2026-10-05 with `https://stoker.markets` and with localhost), so wallets could not read balances or send trades through it | required on mainnet; https; refused if the URL carries a key, token or secret |
+| `PUBLIC_RPC_URL` | `https://solana-rpc.publicnode.com` (owner, 2026-10-14: keyless, and it answered a request with a browser `Origin` with 200 and `access-control-allow-origin: *`); the Secure RPC URL in Helius's dashboard (keyless, 5 requests a second per IP, paid plans only) if publicnode's limits are ever hit. A URL with `?api-key=` is refused even when the key is restricted to our domain. Not `https://api.mainnet-beta.solana.com`: it answers a server but refuses every request that carries a browser `Origin` with 403 "Access forbidden" (tested 2026-10-05 with `https://stoker.markets` and with localhost), so wallets could not read balances or send trades through it | required on mainnet; https; refused if the URL carries a key, token or secret |
 | `PUBLIC_API_URL` | `https://api.<our domain>` | refused if not https, or on localhost, a bare IP or `workers.dev`: every coin's metadata URL is built from it and can never change (section 8) |
 | `WEB_ORIGIN` | `https://<our domain>` | CORS |
 | `LAUNCHLAB_PROGRAM`, `CPMM_PROGRAM`, `LOCK_PROGRAM` | the mainnet ids in section 2 | the local defaults are devnet's |
@@ -123,7 +134,7 @@ Secrets, set with `wrangler secret put <NAME> --env production`, never in the co
 | `MINT_KEY_SECRET` | at least 32 random characters. Every launch's mint key is derived from it and a nonce, so a retry rebuilds the same coin address; never rotate it while any prepared launch could still be retried, and keep an offline copy |
 | `OPERATOR_TOKEN` | a long random string; whoever holds it has the operator endpoints and the `/operator` page. **owner**: who holds it |
 | `ALERT_WEBHOOK_URL` | the chat webhook (Slack, Discord, Telegram) alerts are posted to as JSON; without it alerts are only stored. **owner**: which channel |
-| `JUPITER_API_KEY` | the owner's Jupiter key, `JUP_API_KEY` in `~/.config/env/global.env` (checked 2026-10-07: `api.jup.ag` answers it 200). Set it: without it prices use the keyless `lite-api.jup.ag` host, which Jupiter is retiring, and routes run keyless at 0.5 requests a second. Plans are $0 (1 rps), $25 a month (10 rps) and up; raise the plan when the portal's usage page shows 429s |
+| `JUPITER_API_KEY` | the owner's Jupiter key, `JUP_API_KEY` in `~/.config/env/global.env` (checked 2026-10-07: `api.jup.ag` answers it 200). Set it: without it prices use the keyless `lite-api.jup.ag` host, which Jupiter is retiring, and routes run keyless at 0.5 requests a second. Plans are $0 (measured 2026-10-14: a window of 10 requests, about ten seconds, told by `x-ratelimit-remaining` and `x-ratelimit-reset`), $25 a month (10 rps) and up. The first mainnet refresh failed in one second with `Jupiter /price/v3 failed: 429` on the free plan, since a refresh of 605 Quote Assets makes about thirty calls; since then the client waits for the window and retries a 429 (`apps/api/src/quotes/pricing.ts`), so a refresh takes about half a minute on the free plan. Raise the plan when a job run's duration or the portal's usage page says so |
 | `HELIUS_API_KEY`, `HELIUS_WEBHOOK_ID` | optional, together: the Helius API key and the id of the raw webhook from section 7. With both, the Indexer adds each graduated pool to the webhook as it indexes the Graduation, through Helius's webhook API (`PUT /v0/webhooks/<id>`, `apps/api/src/helius.ts`); one without the other fails `/health`. Without them the webhook's addresses are edited by hand |
 
 After the deploy: `GET https://api.<domain>/health` must answer `{"ok":true}`; any configuration error is its message.
@@ -131,6 +142,8 @@ After the deploy: `GET https://api.<domain>/health` must answer `{"ok":true}`; a
 ## 6. First refresh: the Quote Registry and every curve rule
 
 A GlobalConfig with no curve rule account is unrestricted even with `restrict_curve_param` on (ADR 0005), so nothing may launch before every GlobalConfig has a rule. The refresh writes at most 120 rules a run, missing ones first, and runs every five minutes: mainnet's 571 take five runs, about 25 minutes, or run the job by hand five times (`POST /v1/operator/jobs/quote-registry`, or the operator page's button) and check `GET /v1/operator/jobs?job=quote-registry`. Then `GET /v1/quotes` should list 571 Quote Assets, launchable where Jupiter prices them, each with a Graduation Target worth 85 SOL.
+
+Run on 2026-10-14: mainnet had 613 GlobalConfigs by then, 586 priced by Jupiter. The first run died in a second on Jupiter's free-plan window (#100 fixed it), and the next five each reported 120 writes while only about 38 a run landed: ten sends at once with one blockhash for the run, stretched past its validity by the Helius free plan's throttling (281 "Blockhash not found", 114 fetches cancelled by the Worker's connection cap). Since then a run sends four at a time with a fresh blockhash a batch and reports `ruleWrites` (landed) and `ruleWriteFailures`; on the free RPC plan a run of 120 takes a few minutes. From 2026-10-15 to 2026-10-24 the crons rewrote 4,000 to 5,900 rules a day (about 0.03 SOL in fees) as prices crossed the 2.5% re-centre threshold, so the threshold is 5% since 2026-10-24 (ADR 0005 amended); watch `ruleWrites` on `GET /v1/operator/jobs?job=quote-registry` for the drop. The crons could not do the runs: the production Worker's five Cron Triggers had not fired once in 80 minutes while devnet's identical five fired every minute (Workers Logs, grouped by trigger), cause not found yet (CLAUDE.md, traps); the runs were made by hand.
 
 Keep the site's launch page closed (or the DNS unpublished) until that count is right.
 
@@ -174,7 +187,7 @@ The web Worker renders pages on the server, and all of those requests reach the 
      -d "{\"creator\": \"<the launching wallet>\", \"secretKey\": $(cat ~/.config/stoker/mainnet/platform-token.json)}"
    ```
 
-   That wallet's next launch takes the address (`GET /v1/operator/mint-keys` shows it `drafted` once prepared), so launch from that wallet next, and nothing else from it before. A key no draft has taken can be removed with `DELETE /v1/operator/mint-keys/<address>`.
+   That wallet's next launch takes the address (`GET /v1/operator/mint-keys` shows it `drafted` once prepared), so launch from that wallet next, and nothing else from it before. A key no draft has taken can be removed with `DELETE /v1/operator/mint-keys/<address>`. Done 2026-10-24: the owner chose the treasury `StokezuREp73svYnkD8eWisfRLo6AQh2WtBFT4Q93B3`, and `StokeDgBjCYcTGe7VExPaJ5biH2MR6TYtQiiN7NAQX1` is stored for it on `api.stoker.markets` (`drafted: false`), so the treasury's next launch, and only that launch, is STOKER. The address holds the 0.1 SOL the admin sent it on 2026-10-13; a launch on an address that already holds SOL lands (proven on the local chain with LaunchLab's program, `mint-keys.test.ts`), and the SOL becomes the mint account's.
 2. Launch it from the site like any Creator, paired with SOL, standard (not a Reward Launch), with **no First Buy and no Airdrop**: a First Buy is a team allocation, and the PRD promises none. The launch transaction is public proof; publish its signature and the mint.
 3. Name it for the Burn: `PUT /v1/operator/platform-token` with the mint (the Burn is idle until then).
 4. Once it graduates (85 SOL raised, Raydium's crank migrates it within seconds), ask Raydium for a LaunchLab GlobalConfig with the Platform Token as quote mint; only Raydium can create one (CLAUDE.md, settled). When it exists, the next Quote Registry refresh lists it, prices it and writes its curve rule, and the token becomes a Quote Asset with no code change.
@@ -188,7 +201,7 @@ Run the same deploy against real devnet (`CLUSTER=devnet`, the devnet program id
 - Graduation, pool fees and Fee Keys for a Token-2022 Quote Asset (devnet has no stock GlobalConfig, so this may only be provable on mainnet with a small amount).
 - The Helius webhook end to end: a trade made from another wallet appears on the board without the fast path.
 - The Fee Collector sweeps to the treasury and the Creator Forward then pays the Creator their share (ADR 0009): the Creator's wallet receives it with nothing to sign, and the forward is on the Ledger and the creator page.
-- The rehearsal's PlatformConfig was created under ADR 0007 (`fee_rate` 7500, `creator_fee_rate` 2500); #85 moves it to 10000 and 0 through the fee-change flow (#22) rather than a new config, which is also the rehearsal of that flow: `pnpm --filter @launchpad/mainnet fee-change announce --api https://api-devnet.stoker.markets --token-file ~/.config/stoker/devnet/<operator token> --platform-fee-bps 100 --creator-fee-bps 0 --effective-at <a day ahead, ISO> --note "..."`, and once due `fee-change apply --api ... --token-file ... --rpc <devnet RPC> --id <the announcement's id> --sign ~/.config/stoker/devnet/<admin keypair>` (proven against the local chain in `tests/backend/src/mainnet-tools.test.ts`). The webhook delivers the change and the site's fees follow; `platform-config check` then passes with the new defaults.
+- The rehearsal's PlatformConfig was created under ADR 0007 (`fee_rate` 7500, `creator_fee_rate` 2500); #85 moves it to 10000 and 0 through the fee-change flow (#22) rather than a new config, which is also the rehearsal of that flow: `pnpm --filter @launchpad/mainnet fee-change announce --api https://api-devnet.stoker.markets --token-file ~/.config/stoker/devnet/<operator token> --platform-fee-bps 100 --creator-fee-bps 0 --effective-at <a day ahead, ISO> --note "..."`, and once due `fee-change apply --api ... --token-file ... --rpc <devnet RPC> --id <the announcement's id> --sign ~/.config/stoker/devnet/<admin keypair>` (proven against the local chain in `tests/backend/src/mainnet-tools.test.ts`). The webhook delivers the change and the site's fees follow; `platform-config check` then passes with the new defaults. Done 2026-10-15: applied at 04:08:42Z, `42k4fjqJCaqEi2wF75itKQefpcqs9xES1VopDLqh3LAXzNRDHT8mwQXbcu8TYM4StoffKoQTWNh4Km8HFxA128sn`, the devnet API and site reading 1.00% / 0% and the check passing with the rehearsal's values.
 - The Reward Engine pays a round, the Burn buys and burns (a SOL route is needed for the Burn: on devnet use `raydium-cpmm` pools you seed, as the local chain does).
 - The Jupiter route source and `PRICE_SOURCE=jupiter` can only be exercised on mainnet: exercise them with a tiny Launch before opening the site.
 
@@ -200,20 +213,25 @@ Move it to `devnet.stoker.markets` and `api-devnet.stoker.markets`, which `env.d
 3. In `apps/web`, `NEXT_PUBLIC_API_URL=https://api-devnet.stoker.markets pnpm exec opennextjs-cloudflare build`, then `pnpm exec opennextjs-cloudflare deploy --env devnet`.
 4. Check `https://api-devnet.stoker.markets/health` and that a devnet trade made away from the site is indexed.
 
+Made on 2026-10-14: both Workers deployed from main (`ed6b5f0`) with their new custom domains, the webhook's URL changed through Helius's API with its six addresses kept, `/health` ok, the site built against `api-devnet` with the fee-change banner showing. A resolver that was asked for the new hostnames before the deploy caches the negative answer for a while: check against `1.1.1.1` or with `curl --resolve`.
+Since 2026-10-15 the apex `stoker.markets` shows the same rehearsal until the production web deploy takes it (owner, 2026-10-14; #104).
+What it shows is devnet's chain, not a setting: Raydium's LaunchLab quotes 4 GlobalConfigs on devnet, 2 of them priced (SOL and a devnet USDC clone the site labels "community"), so the landing says "any of the 2 assets" and the launch form offers two pairs.
+Built against the mainnet API the same pages read 614 Quote Assets, 585 launchable (2026-10-15): at go-live anyone can pair a coin with any of them, and the creator line reads one figure for both venues because mainnet's CPMM config carries the 1% creator fee where devnet's only has 0.25%.
+
 ## 12. Go-live checklist
 
 1. [x] #7 decided: name, domain, ticker. ADR 0005 accepted.
-2. [ ] Admin key on a cold device; operations wallet and Treasury created; operations wallet funded (section 1).
-3. [ ] PlatformConfig created and decoded as expected (section 2).
-4. [ ] Platform Lookup Table created and rooted (section 3).
+2. [x] Admin key on a cold device; operations wallet and Treasury created; operations wallet funded (section 1). 2026-10-13: the four `Stoke` keys assigned (section 1's table), paper backups made, admin 1.67 SOL and operations 5.1 SOL.
+3. [x] PlatformConfig created and decoded as expected (section 2). 2026-10-13: `2a6kp9vQ4X4pjkvf6isuvp8eCGBNnSdaNL8NKhqywXVA`, tx `2Fm9Dzxk8SLFCtAeGSV4tTyQR9a9rzKhz17SYoest8sy6ysScc3Ej5nziDBG7QBbe8sUXpdvYbEoYkxEcGqBW7pZ`, `platform-config check` passed.
+4. [x] Platform Lookup Table created and rooted (section 3). 2026-10-13: `CPv7717aQwPXihwvbSkQvT9nhBmo3Eh7pgCJ7hbN8CHc`, 255 addresses, SOL and the 60 deepest verified markets of the 2026-10-10 snapshot (listed on #23).
 5. [x] Postgres migrated; Hyperdrive configured (section 4). 2026-10-07.
-6. [ ] API deployed with the checklist's values and secrets; `/health` ok (section 5).
-7. [ ] Quote Registry refreshed until 571 Quote Assets each have a curve rule (section 6).
-8. [ ] Helius raw webhook on the PlatformConfig, with the secret (section 7); `HELIUS_API_KEY` and `HELIUS_WEBHOOK_ID` set so graduated pools join it on their own (section 5).
-9. [ ] Domain and R2 in place; the Arweave settings left at their mainnet defaults (section 8). R2 bucket `stoker-metadata` created 2026-10-07; the domain move (section 11) is still to run. The zone's "Always Use HTTPS" (SSL/TLS > Edge Certificates) was off on 2026-10-08, so `http://` served the site and the API with 200: turn it on (owner; the agents' token only reads it).
-10. [ ] Web deployed on the domain (section 9). Before it: every non-mainnet cluster answers `noindex` (one line in the root layout, #23's 2026-10-08 comment), so the rehearsal's test coins are never indexed on the production domain.
-11. [ ] Alerts arrive in the chosen channel: `POST /v1/operator/jobs/fee-collector?fail=simulated` raises `job_failed`, the next run resolves it.
-12. [ ] Platform Token launched fairly and named; GlobalConfig requested after Graduation (section 10).
+6. [x] API deployed with the checklist's values and secrets; `/health` ok (section 5). 2026-10-14: `stoker-api` on `api.stoker.markets`, the eight secrets set (`RPC_URL`, `OPERATIONS_KEY`, `HELIUS_WEBHOOK_SECRET`, `MINT_KEY_SECRET`, `OPERATOR_TOKEN`, `JUPITER_API_KEY`, `HELIUS_API_KEY`, `HELIUS_WEBHOOK_ID`), `PUBLIC_RPC_URL` publicnode (#99), the database migrated to 0020 (it had 18 of 21, and every query on `quote_assets` answered "internal error" until then: `/health` never touches the database), `/v1/platform` reading 1.00% / 0%, `poolBps` 50, 85 SOL. The five Cron Triggers began firing about four hours after the schedules were re-registered through the API (2026-10-14, about 10:15Z) and have run every minute since; `ALERT_WEBHOOK_URL` set the same day.
+7. [x] Quote Registry refreshed until 571 Quote Assets each have a curve rule (section 6). 2026-10-14: 613 GlobalConfigs, 586 priced, 585 launchable (GPRO is priced too low for its target to fit), the 27 unpriced with closed rules; eleven hand runs after #100 and #101, 2.25 SOL spent from the operations wallet (2.81 left).
+8. [ ] Helius raw webhook on the PlatformConfig, with the secret (section 7); `HELIUS_API_KEY` and `HELIUS_WEBHOOK_ID` set so graduated pools join it on their own (section 5). 2026-10-14: webhook `a3fdd491-688a-4a2c-b404-08c70f47d455` (`raw`, the PlatformConfig and the operations wallet, the auth header set) and both secrets set; proven only when the first Graduation is indexed and the pool joins the webhook.
+9. [ ] Domain and R2 in place; the Arweave settings left at their mainnet defaults (section 8). R2 bucket `stoker-metadata` created 2026-10-07; the domain move (section 11) was made on 2026-10-14, so `stoker.markets` and `api.stoker.markets` are free for the production Workers. The zone's "Always Use HTTPS" (SSL/TLS > Edge Certificates) was off on 2026-10-08, so `http://` served the site and the API with 200: turn it on (owner; the agents' token only reads it).
+10. [ ] Web deployed on the domain (section 9). Every non-mainnet cluster answers `noindex` (the root layout's `generateMetadata`, pinned by `tests/ui/src/empty.spec.ts`), so the rehearsal's test coins are never indexed under the brand.
+11. [x] Alerts arrive in the chosen channel: `POST /v1/operator/jobs/fee-collector?fail=simulated` raises `job_failed`, the next run resolves it. 2026-10-14: raised at 06:13:40Z, posted to the Telegram approval chat by the Worker (the owner's screenshot of 2026-10-15), resolved by a real run at 06:13:44Z.
+12. [ ] Platform Token launched fairly and named; GlobalConfig requested after Graduation (section 10). Step 1 done 2026-10-24: the treasury launches it (owner's choice, so the platform's own coin pays its Creator Earnings to the treasury on the Ledger) and the mint key `StokeDgBj...` is stored for it and `platform-token.json` deleted the same day (the production database holds the only copy). Steps 2 to 5 at go-live, from the treasury in Phantom.
 
 ## Only the owner can do
 

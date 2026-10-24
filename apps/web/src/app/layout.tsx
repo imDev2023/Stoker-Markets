@@ -5,6 +5,7 @@ import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from "next/font/
 import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 import { FeeChangeBanner } from "@/components/FeeChangeBanner";
+import { ClusterNotice } from "@/components/ClusterNotice";
 import { Providers } from "@/components/Providers";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -22,12 +23,18 @@ const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500"
 /** The scheme this build is made with; `?theme=` on a page can show another (src/lib/theme.ts). */
 const theme = themeFrom(process.env.NEXT_PUBLIC_THEME);
 
-export const metadata: Metadata = {
-  title: { default: "Stoker", template: "%s · Stoker" },
-  description: "No one picks your pair. You do. Launch a coin on Solana priced in SOL, a stablecoin, a tokenized stock or any asset Raydium quotes; creators earn from every trade.",
-  // The same file the PlatformConfig's `img` names on-chain (runbook, section 2), so it must stay at this address.
-  icons: { icon: "/icon.png" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  // Only mainnet is indexable: the devnet rehearsal and a local stack carry test coins that would otherwise be indexed
+  // under the brand (runbook, section 12, item 10). The platform is read again below; Next memoises the fetch.
+  const { cluster } = await getPlatform();
+  return {
+    title: { default: "Stoker", template: "%s · Stoker" },
+    description: "No one picks your pair. You do. Launch a coin on Solana priced in SOL, a stablecoin, a tokenized stock or any asset Raydium quotes; creators earn from every trade.",
+    // The same file the PlatformConfig's `img` names on-chain (runbook, section 2), so it must stay at this address.
+    icons: { icon: "/icon.png" },
+    ...(cluster === "mainnet" ? {} : { robots: { index: false, follow: false } }),
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [
@@ -51,6 +58,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <ThemeOverride />
         <Providers rpcUrl={platform.rpcUrl}>
           <SiteHeader cluster={platform.cluster} />
+          {platform.cluster === "devnet" && <ClusterNotice />}
           {upcoming && <FeeChangeBanner announcement={upcoming} platform={platform} />}
           <main>{children}</main>
           <SiteFooter cluster={platform.cluster} />

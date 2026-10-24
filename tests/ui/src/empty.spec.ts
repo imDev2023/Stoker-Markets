@@ -12,6 +12,12 @@ test("the empty landing invites the first launch", async ({ page }) => {
   await expect(page).toHaveScreenshot("home-empty.png", { fullPage: true });
 });
 
+test("a cluster other than mainnet tells search engines not to index it", async ({ page }) => {
+  // The rehearsal's and the local stack's test coins must never be indexed under the brand (runbook, section 12, item 10).
+  await page.goto("/");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+});
+
 test("the empty board shows every control", async ({ page }) => {
   await page.goto("/coins");
   await expect(page.getByText("No coins yet. The first one could be yours.")).toBeVisible();
