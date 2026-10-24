@@ -14,8 +14,15 @@ export function SchemeToggle({ className = "" }: { className?: string }) {
   const [dark, setDark] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const explicit = document.documentElement.dataset.scheme;
-    setDark(explicit ? explicit === "dark" : matchMedia("(prefers-color-scheme: dark)").matches);
+    const system = matchMedia("(prefers-color-scheme: dark)");
+    const read = () => {
+      const explicit = document.documentElement.dataset.scheme;
+      setDark(explicit ? explicit === "dark" : system.matches);
+    };
+    read();
+    // Until a choice is made the page follows the system setting, which can change while the page is open.
+    system.addEventListener("change", read);
+    return () => system.removeEventListener("change", read);
   }, []);
 
   function flip() {

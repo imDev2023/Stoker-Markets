@@ -28,11 +28,18 @@
   pointer-events: none;
 }
 
-/* Dark is the hero look: the glow carries more on the near-black canvas than on the white. */
+/*
+ * Dark is the hero look: the glow carries more on the near-black canvas than on the white. Written twice like the dark
+ * token blocks in globals.css, so the header's toggle (`data-scheme` on <html>) moves it too.
+ */
 @media (prefers-color-scheme: dark) {
-  .hero::before {
+  :root:not([data-scheme="light"]) .hero::before {
     --glow-heat: 22%;
   }
+}
+
+:root[data-scheme="dark"] .hero::before {
+  --glow-heat: 22%;
 }
 
 .copy {

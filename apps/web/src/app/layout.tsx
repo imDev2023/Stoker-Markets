@@ -36,12 +36,19 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: THEME_GROUNDS[theme].light },
-    { media: "(prefers-color-scheme: dark)", color: THEME_GROUNDS[theme].dark },
-  ],
-};
+/** The browser's own chrome follows the page: the toggle's choice when there is one, the system setting otherwise. */
+export async function generateViewport(): Promise<Viewport> {
+  const scheme = (await cookies()).get(SCHEME_COOKIE)?.value;
+  const grounds = THEME_GROUNDS[theme];
+  return {
+    themeColor: scheme === "light" || scheme === "dark"
+      ? grounds[scheme]
+      : [
+          { media: "(prefers-color-scheme: light)", color: grounds.light },
+          { media: "(prefers-color-scheme: dark)", color: grounds.dark },
+        ],
+  };
+}
 
 export const dynamic = "force-dynamic";
 

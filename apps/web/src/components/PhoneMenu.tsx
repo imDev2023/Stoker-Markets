@@ -68,7 +68,9 @@ export function PhoneMenu({ className = "" }: { className?: string }) {
               <Link href={LAUNCH_LINK.href} className="button button-primary" onClick={close}>
                 {LAUNCH_LINK.label}
               </Link>
-              <WalletButton variant="inline" />
+              <div className={styles.wallet}>
+                <WalletButton variant="inline" />
+              </div>
               <div className={styles.row}>
                 <SocialLinks />
                 <SchemeToggle />

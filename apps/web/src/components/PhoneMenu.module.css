@@ -87,6 +87,16 @@
   height: 48px;
 }
 
+/* The wallet fills the foot like the launch button above it at every width, not only under the inline variant's phone rule. */
+.wallet > div {
+  width: 100%;
+}
+
+.wallet > div > button {
+  width: 100%;
+  height: 48px;
+}
+
 /* The socials and the light-or-dark toggle, which the phone's bar has no room for. */
 .row {
   display: flex;
