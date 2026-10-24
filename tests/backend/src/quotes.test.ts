@@ -3,7 +3,8 @@ import { ComputeBudgetProgram, Keypair, PublicKey, Transaction, sendAndConfirmTr
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import BN from "bn.js";
 import {
-  initializeV2Ix, LAUNCH_SHAPE, launchlabCoder, launchlabPdas, RuleField, RuleOp, updateCurveRuleIx, WSOL_MINT, type InitializeParams,
+  graduationBandOf, initializeV2Ix, LAUNCH_SHAPE, launchlabCoder, launchlabPdas, readCurveRuleGroups, rewardLaunchConstraints, RuleField, RuleOp,
+  standardLaunchConstraints, updateCurveRuleIx, WSOL_MINT, type InitializeParams,
 } from "@launchpad/chain";
 import { PreparedTrade, TradeList, type TradeSide } from "@launchpad/contract";
 import { LOCAL_QUOTES, localnetKeys, mintLocalQuote, send } from "@launchpad/localnet";
@@ -175,6 +176,42 @@ describe("a GlobalConfig our curve rules don't cover yet", () => {
 
     await refreshQuoteRegistry();
     await expect(launchDirectly(jto.mint, TOKEN_PROGRAM_ID, new BN(jto.raw), offShape)).rejects.toThrow(/0x1789|CurveParamNotMatchPlatformRule/);
+    expect((await listQuotes()).find((q) => q.symbol === "JTO")).toMatchObject({ launchable: true, graduationTarget: { raw: jto.raw } });
+  });
+});
+
+describe("the refresh moves a band only once the target has drifted 5% from its centre (ADR 0005)", () => {
+  const jto = EXPECTED_TARGETS[2]!;
+  const target = BigInt(jto.raw);
+  const platformConfig = () => new PublicKey(env().platform.platformConfig);
+  const bandAround = (centre: bigint) => ({ min: new BN(((centre * 9_000n) / 10_000n).toString()), max: new BN(((centre * 11_000n) / 10_000n).toString()) });
+  /** Writes JTO's two groups as the refresh would for a target at `centre`, signed by the operations wallet as the refresh is. */
+  const writeBandAround = (centre: bigint) => {
+    const { operations } = localnetKeys();
+    const band = bandAround(centre);
+    return send(connection(), [
+      updateCurveRuleIx(program(), operations.publicKey, platformConfig(), globalConfigOf(jto.mint), 0, standardLaunchConstraints(band)),
+      updateCurveRuleIx(program(), operations.publicKey, platformConfig(), globalConfigOf(jto.mint), 1, rewardLaunchConstraints(band)),
+    ], [operations]);
+  };
+  const bandOnChain = async () => {
+    const groups = await readCurveRuleGroups(connection(), program(), platformConfig(), [globalConfigOf(jto.mint)]);
+    const band = graduationBandOf(groups.get(globalConfigOf(jto.mint).toBase58())!.get(0)!)!;
+    return { min: band.min.toString(), max: band.max.toString() };
+  };
+  const asStrings = (b: { min: BN; max: BN }) => ({ min: b.min.toString(), max: b.max.toString() });
+
+  it("leaves a band whose centre is 4% from the target, which still accepts the target", async () => {
+    await writeBandAround((target * 104n) / 100n);
+    await refreshQuoteRegistry();
+    expect(await bandOnChain()).toEqual(asStrings(bandAround((target * 104n) / 100n)));
+    expect((await listQuotes()).find((q) => q.symbol === "JTO")).toMatchObject({ launchable: true, graduationTarget: { raw: jto.raw } });
+  });
+
+  it("re-centres a band whose centre is 6% from the target", async () => {
+    await writeBandAround((target * 106n) / 100n);
+    await refreshQuoteRegistry();
+    expect(await bandOnChain()).toEqual(asStrings(bandAround(target)));
     expect((await listQuotes()).find((q) => q.symbol === "JTO")).toMatchObject({ launchable: true, graduationTarget: { raw: jto.raw } });
   });
 });

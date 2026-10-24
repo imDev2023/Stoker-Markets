@@ -17,8 +17,13 @@ export type Band = { min: bigint; max: bigint };
 const BPS = 10_000n;
 /** Launches may raise up to 10% more or less than the target at the latest price. */
 const BAND_BPS = 1_000n;
-/** The refresh moves a band once the target drifts 2.5% from its centre, so a launch built just before still lands inside. */
-const RECENTRE_BPS = 250n;
+/**
+ * The refresh moves a band once the target drifts 5% from its centre. A launch is priced live at prepare time and checked
+ * against the band on-chain, so the 5% left to the band's edge covers the price move between two refreshes. Every move is
+ * its own transaction (one asset's two groups fill most of one), so at 2.5% mainnet rewrote 4,000 to 5,900 rules a day,
+ * about 0.03 SOL, mostly for assets that drift that far every few runs (ADR 0005, amended 2026-10-24).
+ */
+const RECENTRE_BPS = 500n;
 /** Below this a raw target loses precision to rounding (0.005%) and the curve trades in coarse steps. */
 const MIN_TARGET_RAW = 10_000n;
 const U64_MAX = 2n ** 64n - 1n;

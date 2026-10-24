@@ -118,7 +118,14 @@ export async function refreshQuoteRegistry({ db, cfg, market, operations }: Refr
   // The quote mints are not added to the Helius webhook: watching a mint delivers every transaction that names it,
   // which for SOL or USDC is much of the chain. This refresh re-reads every mint's labels instead (runbook, section 7).
   // What landed and what didn't, so the summary says what the chain now has rather than what the run meant to write.
-  return { quoteAssets: rows.length, priced: rows.filter((r) => r.priceSol).length, ruleWrites: sent.landed, ruleWriteFailures: sent.failed };
+  return {
+    quoteAssets: rows.length,
+    priced: rows.filter((r) => r.priceSol).length,
+    // GlobalConfigs that had no rule account when the run began (unrestricted until this run's write landed).
+    rulesMissing: writes.filter((w) => w.missing).length,
+    ruleWrites: sent.landed,
+    ruleWriteFailures: sent.failed,
+  };
 }
 
 const TX_MAX_BYTES = 1232;
@@ -130,7 +137,8 @@ const SIZING_BLOCKHASH = PublicKey.default.toBase58();
 type SendOutcome = { landed: number; failed: number };
 
 /**
- * Packs instruction groups into as few transactions as fit and sends them a few at a time, each batch with a fresh
+ * Packs instruction groups into as few transactions as fit (one asset's two group updates are 772 bytes, so in practice
+ * one asset a transaction and one base fee a band move) and sends them a few at a time, each batch with a fresh
  * blockhash and confirmed (or expired) before the next: on the first mainnet run, ten sends at once with one blockhash
  * for the whole run were stretched by the RPC's throttling past the blockhash's validity, so most were rejected
  * ("Blockhash not found") or cancelled by the Worker's connection cap, while the run reported every write as made.
