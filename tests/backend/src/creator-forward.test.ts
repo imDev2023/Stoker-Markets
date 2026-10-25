@@ -140,13 +140,20 @@ describe("the creator page", () => {
 describe("on the curve", () => {
   it("tells every client what the platform forwards, from the fees the chain has", async () => {
     const [platform, rates] = [await platformInfo(), await feeRates()];
-    // Half of the Platform Fee on the curve; after Graduation, half of the creator fee of the CPMM config the
-    // PlatformConfig names, read from the chain.
+    // Half of the Platform Fee on the curve; after Graduation, half of what the platform receives of the creator fee of
+    // the CPMM config the PlatformConfig names: the fee less the share Raydium keeps at collection, both read from the chain.
     const config = await connection().getAccountInfo(CPSWAP_CONFIG, "confirmed");
-    const { creator_fee_rate } = cpmmCoder.accounts.decode("AmmConfig", config!.data) as { creator_fee_rate: { toNumber(): number } };
+    const { creator_fee_rate, creator_fee_share_rate } = cpmmCoder.accounts.decode("AmmConfig", config!.data) as {
+      creator_fee_rate: { toNumber(): number }; creator_fee_share_rate: { toNumber(): number };
+    };
+    const poolBps = creator_fee_rate.toNumber() / 100;
+    const shareBps = creator_fee_share_rate.toNumber() / 100;
+    expect(platform.poolCreatorFeeShareBps).toBe(shareBps);
     expect(platform.creatorForward).toEqual({
-      shareBps: 5000, curveBps: rates.platform / 2, poolBps: creator_fee_rate.toNumber() / 100 / 2, minLamports: env().creatorForwardMinLamports,
+      shareBps: 5000, curveBps: rates.platform / 2, poolBps: (poolBps * (10_000 - shareBps)) / 10_000 / 2, minLamports: env().creatorForwardMinLamports,
     });
+    // Mainnet's config, which the local chain carries: 1% of which Raydium keeps 5%, so 0.475% reaches the Creator.
+    expect(platform.creatorForward.poolBps).toBe(47.5);
     // 1.00% Platform Fee and no on-chain Creator Fee (ADR 0009): the Creator's ~0.5% is all forwarded.
     expect([rates.platform, rates.creator]).toEqual([100, 0]);
     expect(platform.creatorForward.curveBps).toBe(50);
