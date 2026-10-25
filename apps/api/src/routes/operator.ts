@@ -17,6 +17,8 @@ import { uploadCounts } from "../metadata";
 /** Where the fees as last read from the chain are kept, so every page can show them without an RPC call. */
 export const FEE_SETTINGS = {
   platform: "platform_fee_bps", creator: "creator_fee_bps", poolCreator: "pool_creator_fee_bps",
+  // The share of the pool creator fee Raydium keeps when it is collected, in basis points of that fee (5% on mainnet).
+  poolCreatorShare: "pool_creator_fee_share_bps",
   // Raydium's own fee on a trade: the GlobalConfig's trade fee on the curve, the CPMM config's trade fee after Graduation.
   raydiumCurve: "raydium_curve_fee_bps", raydiumPool: "raydium_pool_fee_bps",
 } as const;
@@ -167,6 +169,11 @@ export type PlatformFees = {
   creatorFeeBps: number;
   /** The creator fee of the CPMM config graduated pools use, which the platform collects. */
   poolCreatorFeeBps: number;
+  /**
+   * The share of that creator fee Raydium keeps for itself when it is collected (`creator_fee_share_rate` on the CPMM
+   * config), in basis points of the fee: 500 on mainnet's 1% config, so the platform receives 0.95% of a pool trade.
+   */
+  poolCreatorFeeShareBps: number;
   /** Raydium's own fee on a curve trade, from SOL's GlobalConfig (every GlobalConfig charged the same on 2026-10-25). */
   raydiumCurveFeeBps: number;
   /** Raydium's own fee on a pool trade, the CPMM config's trade fee. */
@@ -187,11 +194,13 @@ async function feesOnChain(db: Db, connection: Connection, cfg: Config): Promise
   const [cpmm, global] = await connection.getMultipleAccountsInfo([cpswapConfig, solConfig], "confirmed");
   if (!cpmm) throw new Error(`the PlatformConfig's CPMM config ${cpswapConfig.toBase58()} was not found`);
   if (!global) throw new Error(`SOL's GlobalConfig ${solConfig.toBase58()} was not found`);
-  const { creator_fee_rate, trade_fee_rate } = cpmmCoder.accounts.decode("AmmConfig", cpmm.data) as { creator_fee_rate: BN; trade_fee_rate: BN };
+  const { creator_fee_rate, trade_fee_rate, creator_fee_share_rate } = cpmmCoder.accounts.decode("AmmConfig", cpmm.data) as {
+    creator_fee_rate: BN; trade_fee_rate: BN; creator_fee_share_rate: BN;
+  };
   const g = launchlabCoder.accounts.decode("GlobalConfig", global.data) as { trade_fee_rate: BN };
   return {
     platformFeeBps: toBps(info.feeRate), creatorFeeBps: toBps(info.creatorFeeRate), poolCreatorFeeBps: toBps(creator_fee_rate),
-    raydiumCurveFeeBps: toBps(g.trade_fee_rate), raydiumPoolFeeBps: toBps(trade_fee_rate),
+    poolCreatorFeeShareBps: toBps(creator_fee_share_rate), raydiumCurveFeeBps: toBps(g.trade_fee_rate), raydiumPoolFeeBps: toBps(trade_fee_rate),
   };
 }
 
@@ -204,10 +213,10 @@ export async function platformFees(db: Db, cfg: Config): Promise<PlatformFees> {
   const keys = Object.values(FEE_SETTINGS);
   const rows = await db.select().from(platformSettings).where(inArray(platformSettings.key, keys));
   const value = (key: string) => rows.find((r) => r.key === key)?.value;
-  const [platform, creator, poolCreator, raydiumCurve, raydiumPool] = keys.map(value);
-  if (platform !== undefined && creator !== undefined && poolCreator !== undefined && raydiumCurve !== undefined && raydiumPool !== undefined)
+  const [platform, creator, poolCreator, poolCreatorShare, raydiumCurve, raydiumPool] = keys.map(value);
+  if (platform !== undefined && creator !== undefined && poolCreator !== undefined && poolCreatorShare !== undefined && raydiumCurve !== undefined && raydiumPool !== undefined)
     return {
-      platformFeeBps: Number(platform), creatorFeeBps: Number(creator), poolCreatorFeeBps: Number(poolCreator),
+      platformFeeBps: Number(platform), creatorFeeBps: Number(creator), poolCreatorFeeBps: Number(poolCreator), poolCreatorFeeShareBps: Number(poolCreatorShare),
       raydiumCurveFeeBps: Number(raydiumCurve), raydiumPoolFeeBps: Number(raydiumPool),
     };
   const fees = await feesOnChain(db, new Connection(cfg.rpcUrl, "confirmed"), cfg);
@@ -220,6 +229,7 @@ export async function recordPlatformFees(db: Db, fees: { platformFeeBps: number;
   const values = [
     [FEE_SETTINGS.platform, fees.platformFeeBps], [FEE_SETTINGS.creator, fees.creatorFeeBps],
     ...(fees.poolCreatorFeeBps === undefined ? [] : [[FEE_SETTINGS.poolCreator, fees.poolCreatorFeeBps] as const]),
+    ...(fees.poolCreatorFeeShareBps === undefined ? [] : [[FEE_SETTINGS.poolCreatorShare, fees.poolCreatorFeeShareBps] as const]),
     ...(fees.raydiumCurveFeeBps === undefined ? [] : [[FEE_SETTINGS.raydiumCurve, fees.raydiumCurveFeeBps] as const]),
     ...(fees.raydiumPoolFeeBps === undefined ? [] : [[FEE_SETTINGS.raydiumPool, fees.raydiumPoolFeeBps] as const]),
   ] as const;

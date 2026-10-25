@@ -52,7 +52,7 @@ _Avoid_: Pair with anything, multi-quote
 
 **Platform Fee**:
 Our share of every trade on a Launch, collected by the platform.
-On the curve LaunchLab pays it into one vault per Quote Asset; after Graduation it is the CPMM pool's creator fee, since the platform is every graduated pool's creator.
+On the curve LaunchLab pays it into one vault per Quote Asset; after Graduation it is the CPMM pool's creator fee, since the platform is every graduated pool's creator, less the share of it Raydium keeps at collection (the config's `creator_fee_share_rate`, 5% on mainnet).
 Half of it is the Creator's, paid on as the Creator Forward (ADR 0009).
 _Avoid_: Protocol fee (that is Raydium's cut)
 

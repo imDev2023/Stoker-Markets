@@ -1,6 +1,7 @@
 // Quote Risk Labels in the web app (#11): never beside an asset's name (owner, 2026-10-10), only as further information:
-// the launch form's details, a section on the coin page of every Launch paired with something other than SOL, and the
-// asset's own page (assets.spec.ts). Labels inform; none stops a launch or a trade.
+// a section on the coin page of every Launch paired with something other than SOL, and the asset's own page
+// (assets.spec.ts). The launch form carries none (owner, 2026-10-25: its "Further information" disclosure was removed).
+// Labels inform; none stops a launch or a trade.
 import type { Page } from "@playwright/test";
 import { expect, fundedKeypair, launchViaApi, QUOTES, test } from "./fixtures";
 import { chooseQuote, connectWallet } from "./launchPage";
@@ -8,7 +9,7 @@ import { chooseQuote, connectWallet } from "./launchPage";
 const group = (page: Page) => page.getByRole("radiogroup", { name: "Pair with" });
 const card = (page: Page, ticker: string) => group(page).getByRole("radio", { name: new RegExp(`^${ticker}\\b`) });
 
-test("the chooser names each Quote Asset's kind and never a label; the form's further information lists them without stopping a launch", async ({ page, wallet }) => {
+test("the chooser names each Quote Asset's kind and never a label, and choosing a labelled asset stops nothing", async ({ page, wallet }) => {
   await page.goto("/launch");
   await expect(group(page).getByRole("radio")).toHaveCount(6);
 
@@ -22,19 +23,11 @@ test("the chooser names each Quote Asset's kind and never a label; the form's fu
   await expect(card(page, "BULLWHALE")).toHaveAccessibleName(/Memes/);
   await expect(card(page, "TAXQ")).toHaveAccessibleName(/Community/);
 
-  // Choosing a labelled asset is like choosing any other, and the form's further information lists every label with its source.
+  // Choosing a labelled asset is like choosing any other: the form shows no label and no disclosure for it.
   await chooseQuote(page, "NVDAx");
   await expect(card(page, "NVDAx")).toBeChecked();
-  const details = page.locator("details").filter({ hasText: "Further information on NVDAx" });
-  await expect(details).toBeVisible();
-  await details.locator("summary").click();
-  const list = page.getByRole("list", { name: "NVDAx risk labels" });
-  await expect(list.getByRole("listitem")).toHaveCount(6);
-  await expect(list.getByRole("listitem").first()).toContainText("Can freeze wallets");
-  await expect(list.getByRole("listitem").first()).toContainText("The issuer (JDq1…xJNs) can freeze any wallet's NVDAx");
-  await expect(list.getByRole("listitem").first()).toContainText("Read from the mint on-chain");
-  await expect(list.getByRole("listitem").last()).toContainText("Scaled balances");
-  await expect(details.getByRole("link", { name: "Everything about NVDAx" })).toHaveAttribute("href", `/assets/${QUOTES.NVDAx.toBase58()}`);
+  await expect(page.locator("details")).toHaveCount(0);
+  await expect(page.getByRole("list", { name: "NVDAx risk labels" })).toHaveCount(0);
 
   await connectWallet(page);
   await expect(page.getByRole("button", { name: "Review launch" })).toBeEnabled();

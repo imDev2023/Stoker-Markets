@@ -70,8 +70,10 @@ test("a coin graduates from the curve to its Raydium pool and keeps trading on t
   // A buy now goes through the pool, with the pool's fees.
   await page.getByLabel("You pay").fill("0.1");
   const quote = page.locator("dl").filter({ hasText: "You get about" });
+  // Mainnet's pool config (the local chain's since 2026-10-25): 1% creator fee of which Raydium keeps 5% at collection.
   await expect(quote).toContainText("Raydium pool fee 0.25%");
-  await expect(quote).toContainText("Platform fee 0.25%");
+  await expect(quote).toContainText("Platform fee 0.95%");
+  await expect(quote).toContainText("Raydium's share of the platform fee 0.05%");
   await expect(quote).not.toContainText("Creator fee");
   await expect(page.getByText(/takes the last coins on the curve/)).toBeHidden();
   const before = await coinBalance(wallet.keypair, mint);

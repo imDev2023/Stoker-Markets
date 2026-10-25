@@ -273,6 +273,12 @@ describe("retries", () => {
 });
 
 describe("after Graduation", () => {
+  /** What the platform receives of a pool's creator fee counter: Raydium keeps `poolCreatorFeeShareBps` of it, floored. */
+  async function received(counter: bigint) {
+    const share = BigInt((await platformInfo()).poolCreatorFeeShareBps);
+    return counter - (counter * share) / 10_000n;
+  }
+
   /** A coin that sold out its curve and was migrated into its pool, open for swaps, all indexed. */
   async function graduatedCoin(quoteMint: PublicKey, buyout: bigint) {
     const creator = await fundedWallet();
@@ -297,7 +303,8 @@ describe("after Graduation", () => {
     await deliverWebhook([buy.signature, sell.signature]);
     // After Graduation the pool's creator fee is the platform's to collect; the chain pays the Creator nothing there either.
     expect([buy.quote.venue, buy.quote.fees.creator, sell.quote.fees.creator]).toEqual(["pool", "0", "0"]);
-    const poolFee = BigInt(buy.quote.fees.platform) + BigInt(sell.quote.fees.platform);
+    // Raydium keeps its share of the pool's creator fee at collection (5% on mainnet's config); the rest is the platform's.
+    const poolFee = await received(BigInt(buy.quote.fees.platform) + BigInt(sell.quote.fees.platform));
 
     const sent = (await collectAndForward()).filter((f) => f.creator === coin.creator.publicKey.toBase58());
     const share = coin.onCurve + poolFee / 2n;

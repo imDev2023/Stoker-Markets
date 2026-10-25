@@ -137,8 +137,8 @@ function Earnings({ earnings, forwards, platform }: { earnings: CreatorEarnings;
             every trade.
           </p>
           <p>
-            After graduation the coin trades in its Raydium pool, and half of the creator fee that pool pays the platform
-            is yours: ~{earns.pool}% of every trade.
+            After graduation the coin trades in its Raydium pool, where the Platform Fee is {platform.poolCreatorFeeBps / 100}% of
+            every trade, and half of it is yours: ~{earns.pool}% of every trade.
           </p>
           <p>
             It arrives in your wallet within about an hour of being collected, once it is worth{" "}

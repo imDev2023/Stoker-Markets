@@ -4,14 +4,21 @@ import type { PlatformInfo } from "@launchpad/contract";
 const pct = (bps: number) => Number((bps / 100).toFixed(3));
 
 /**
+ * A percentage said as "about", to one decimal: what the site repeats of a Creator's share (owner, 2026-10-25: about
+ * 0.5% everywhere, the exact split in the launch summary's note alone). After Graduation the exact figure is 0.475% on
+ * mainnet, since Raydium keeps 5% of the pool's creator fee.
+ */
+const about = (bps: number) => Number((bps / 100).toFixed(1));
+
+/**
  * What a Creator earns, from the platform facts the chain and the API give (ADR 0009): the platform's share of what it
  * collects on their coin's trades, on the curve out of the Platform Fee and after Graduation out of the pool's creator
  * fee, sent to their wallet. The chain's own Creator Fee is 0 on our platform; were the admin ever to set one, the
  * chain would pay it on top, so it is counted here.
  */
 export function creatorEarnings(platform: PlatformInfo) {
-  const curve = pct(platform.creatorFeeBps + platform.creatorForward.curveBps);
-  const pool = pct(platform.creatorForward.poolBps);
+  const curve = about(platform.creatorFeeBps + platform.creatorForward.curveBps);
+  const pool = about(platform.creatorForward.poolBps);
   return {
     curve,
     pool,
@@ -31,16 +38,19 @@ export function creatorShareOf(platform: PlatformInfo, platformFee: string) {
 
 /**
  * What a trader pays on a trade, in percent, for the launch summary: the platform's fees and Raydium's own on the curve,
- * the pool's creator fee and Raydium's after Graduation, each from the chain through the platform facts.
+ * the pool's creator fee and Raydium's after Graduation, each from the chain through the platform facts. The note's
+ * split is exact (owner, 2026-10-25): after Graduation Raydium also keeps its share of the pool's creator fee
+ * (`poolCreatorFeeShareBps`, 5% on mainnet), so there it reads 0.3% to Raydium, 0.475% to the Creator and 0.475% to
+ * the platform where the curve reads 0.25%, 0.5% and 0.5%.
  */
 export function tradingFee(platform: PlatformInfo) {
-  const earns = creatorEarnings(platform);
   const curve = pct(platform.platformFeeBps + platform.creatorFeeBps + platform.raydiumFee.curveBps);
   const pool = pct(platform.poolCreatorFeeBps + platform.raydiumFee.poolBps);
-  // Who gets what of it (owner, 2026-10-25: 0.25% to Raydium, 0.5% to the Creator, 0.5% to the platform, on both venues on mainnet).
-  const who = (raydium: number, creator: number, platformKeeps: number) => `${pct(raydium)}% to Raydium, ${creator}% to you, ${pct(platformKeeps)}% to the platform`;
-  const onCurve = who(platform.raydiumFee.curveBps, earns.curve, platform.platformFeeBps + platform.creatorFeeBps - earns.curve * 100);
-  const inPool = who(platform.raydiumFee.poolBps, earns.pool, platform.poolCreatorFeeBps - earns.pool * 100);
+  const who = (raydium: number, creator: number, platformKeeps: number) => `${pct(raydium)}% to Raydium, ${pct(creator)}% to you, ${pct(platformKeeps)}% to the platform`;
+  const curveCreator = platform.creatorFeeBps + platform.creatorForward.curveBps;
+  const onCurve = who(platform.raydiumFee.curveBps, curveCreator, platform.platformFeeBps - platform.creatorForward.curveBps);
+  const raydiumShare = (platform.poolCreatorFeeBps * platform.poolCreatorFeeShareBps) / 10_000;
+  const inPool = who(platform.raydiumFee.poolBps + raydiumShare, platform.creatorForward.poolBps, platform.poolCreatorFeeBps - raydiumShare - platform.creatorForward.poolBps);
   return {
     curve,
     pool,

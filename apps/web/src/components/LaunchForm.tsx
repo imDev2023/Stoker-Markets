@@ -16,7 +16,6 @@ import { quoteKind } from "@/lib/landing";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
 import { LaunchOptions, LaunchType, supplyShare, useLaunchOptions } from "./LaunchOptions";
 import { PairMark } from "./PairMark";
-import { QuoteLabelList } from "./QuoteLabels";
 import { QuoteChooser, QuoteSearch } from "./QuoteChooser";
 import { QuoteLogo } from "./QuoteLogo";
 import { WalletButton } from "./WalletButton";
@@ -188,16 +187,6 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
   );
 
   const chooser = <QuoteChooser quotes={quotes} value={quoteMint} query={quoteQuery} onChange={setQuoteMint} />;
-  const quoteLabels = quote && (
-    <details className={styles.labels}>
-      <summary>Further information on {ticker}</summary>
-      <p className={styles.labelsNote}>
-        What {ticker}&apos;s mint and the token list say about it. Each fact informs; none stops a launch.
-      </p>
-      <QuoteLabelList quote={quote} />
-      <Link href={`/assets/${quote.mint}`} className={styles.labelsLink}>Everything about {ticker}</Link>
-    </details>
-  );
 
   // The sections of the form, in the order they are shown: the pair first.
   const blocks = {
@@ -269,7 +258,6 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
       node: (
         <>
           {chooser}
-          {quoteLabels}
         </>
       ),
     },

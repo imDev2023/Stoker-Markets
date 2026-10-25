@@ -287,56 +287,6 @@
   color: var(--ink-3);
 }
 
-/* Further information on the chosen Quote Asset: a well that opens under the chooser. */
-.labels {
-  padding: 12px 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--sunken);
-}
-
-.labels summary {
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 600;
-  transition: color var(--fast) var(--ease);
-}
-
-.labels summary:hover {
-  color: var(--accent);
-}
-
-.labels summary:focus-visible {
-  outline: none;
-  box-shadow: var(--ring);
-  border-radius: 4px;
-}
-
-.labels[open] summary {
-  margin-bottom: 10px;
-}
-
-.labelsNote {
-  margin: 0 0 12px;
-  font-size: 0.875rem;
-  color: var(--ink-3);
-}
-
-.labelsLink {
-  display: inline-block;
-  margin-top: 12px;
-  color: var(--accent);
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.labelsLink:hover {
-  color: var(--accent-strong);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
 /*
  * The summary column: short enough to sit whole under the header on a laptop; on a shorter window than that it scrolls
  * within its own height (the launch terms of 2026-10-25 made it eight rows), so nothing in it is ever out of reach.

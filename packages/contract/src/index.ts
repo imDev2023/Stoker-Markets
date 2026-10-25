@@ -98,6 +98,13 @@ export const PlatformInfo = z.object({
   /** The creator fee of the CPMM config graduated pools use, which the platform collects after Graduation (1% on mainnet). */
   poolCreatorFeeBps: z.number(),
   /**
+   * The share of that creator fee Raydium keeps for itself when it is collected (`creator_fee_share_rate` on the CPMM
+   * config), in basis points of the fee: 500 on mainnet's 1% config, so of a pool trade's `poolCreatorFeeBps` the
+   * platform receives `poolCreatorFeeBps * (1 - poolCreatorFeeShareBps / 10_000)` and Raydium the rest on top of
+   * `raydiumFee.poolBps`.
+   */
+  poolCreatorFeeShareBps: z.number(),
+  /**
    * Raydium's own fee on a trade, which a trader pays on top of the platform's: on the curve the GlobalConfig's trade
    * fee (SOL's, the same on every GlobalConfig when checked), after Graduation the CPMM config's trade fee. A trader
    * pays `platformFeeBps + creatorFeeBps + raydiumFee.curveBps` on the curve and `poolCreatorFeeBps + raydiumFee.poolBps`
@@ -107,8 +114,8 @@ export const PlatformInfo = z.object({
   /**
    * The Creator Forward (ADR 0009): what the platform pays a Creator, `shareBps` of what it collects on their coin's
    * trades on either venue. That is `curveBps` of every curve trade (out of the Platform Fee) and `poolBps` of every
-   * pool trade (out of the pool creator fee at the rate of the CPMM config graduated pools use). Paid in the Quote
-   * Asset once the amount owed is worth `minLamports`.
+   * pool trade (out of the pool creator fee at the rate of the CPMM config graduated pools use, less Raydium's share
+   * of it). Paid in the Quote Asset once the amount owed is worth `minLamports`.
    */
   creatorForward: z.object({ shareBps: z.number().int(), curveBps: z.number(), poolBps: z.number(), minLamports: z.string() }),
   /** What a referred curve trade pays its referrer, in basis points, where the Quote Asset allows a share fee. */
