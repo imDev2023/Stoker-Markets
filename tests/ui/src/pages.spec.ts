@@ -7,7 +7,8 @@ const main = (page: import("@playwright/test").Page) => page.getByRole("navigati
 test("the API page is the whole reference, answered live, and the header and footer link to it", async ({ page }) => {
   await page.goto("/api");
   await expect(page.getByRole("heading", { level: 1, name: "The API" })).toBeVisible();
-  await expect(main(page).getByRole("link", { name: "API" })).toHaveAttribute("aria-current", "page");
+  // The pill calls the page "Developers" (owner, 2026-10-25); the footer lists it as "API" among the developers' links.
+  await expect(main(page).getByRole("link", { name: "Developers" })).toHaveAttribute("aria-current", "page");
   // No link out to GitHub for the docs: the footer's Developers group points at the page itself.
   await expect(page.getByRole("contentinfo").getByRole("link", { name: "API" })).toHaveAttribute("href", "/api");
   await expect(page.locator('a[href*="docs/api.md"]')).toHaveCount(0);

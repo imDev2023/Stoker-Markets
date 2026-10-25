@@ -13,11 +13,11 @@ const under = (href: string, pathname: string) => pathname === href || pathname.
  */
 export const isCurrent = (link: NavLink, pathname: string) => under(link.href, pathname) || (link.also !== undefined && under(link.also, pathname));
 
-/** The pill's and the menu's links: the sections, then the API's page last, since developers look for it here too. */
+/** The pill's and the menu's links: the sections, then the API's page last as "Developers" (owner, 2026-10-25). */
 export const HEADER_LINKS: readonly NavLink[] = [...NAV_LINKS, API_LINK];
 
 /**
- * The header's pill: the sections with the current one marked and the API last. Each word is set twice, one in view
+ * The header's pill: the sections with the current one marked and Developers last. Each word is set twice, one in view
  * and one below it, so the hover can slide them.
  */
 export function NavLinks() {

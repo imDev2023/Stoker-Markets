@@ -33,9 +33,9 @@ export const NAV_LINKS = [
 
 /**
  * The API's reference is a page of the site (owner, 2026-10-25: everything on the page, no link out to the repository),
- * set last in the pill and the menu, where developers look for it, and under Developers in the footer.
+ * set last in the pill and the menu as "Developers" (owner, 2026-10-25), and under the footer's Developers group as "API".
  */
-export const API_LINK = { href: "/api", label: "API" } as const satisfies NavLink;
+export const API_LINK = { href: "/api", label: "Developers" } as const satisfies NavLink;
 
 const SITE_PAGES = [
   NAV_LINKS[0],
@@ -58,7 +58,8 @@ export const FOOTER_GROUPS = [
   },
   {
     title: "Developers",
-    links: [API_LINK, SITE_LINKS.github],
+    // The footer names the page itself, among the developers' links, where the pill names the audience.
+    links: [{ href: API_LINK.href, label: "API" }, SITE_LINKS.github],
   },
   {
     title: "Community",
