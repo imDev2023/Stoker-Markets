@@ -200,6 +200,8 @@ test("trade panel paying with SOL where there is no SOL route", async ({ page, w
   const panel = page.getByRole("region", { name: /^Trade( |$)/ });
   await connectTestWallet(page, panel.getByRole("button", { name: "Connect wallet" }));
   await panel.getByRole("button", { name: "0.1 SOL" }).click();
+  // The pointer rests on the preset it clicked, which draws its hover; park it so the shot is the same every run.
+  await page.mouse.move(0, 0);
   await expect(panel.getByText("There's no SOL route to NVDAx right now. Pay in NVDAx instead.")).toBeVisible();
   await expect(panel).toHaveScreenshot("trade-sol-no-route.png", { mask: tradedDynamic(page) });
   expect(wallet.requests).toHaveLength(0);

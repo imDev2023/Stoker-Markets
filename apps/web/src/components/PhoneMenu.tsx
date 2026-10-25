@@ -56,7 +56,7 @@ export function PhoneMenu({ className = "" }: { className?: string }) {
           <div id={id} className={styles.panel} role="dialog" aria-modal="true" aria-label="Menu">
             <nav className={styles.nav} aria-label="Main">
               {NAV_LINKS.map((l, i) => (
-                <Link key={l.href} href={l.href} className={styles.link} style={order(i)} aria-current={isCurrent(l.href, pathname) ? "page" : undefined} onClick={close}>
+                <Link key={l.href} href={l.href} className={styles.link} style={order(i)} aria-current={isCurrent(l, pathname) ? "page" : undefined} onClick={close}>
                   {l.label}
                 </Link>
               ))}
