@@ -205,7 +205,7 @@
   }
 }
 
-/* h6, two tiers: a shorter upper bar, the sections and the facts in a thin tier under it; anything pinned under the header clears both. */
+/* h6, two tiers: a shorter upper bar, the sections in a thin tier under it; anything pinned under the header clears both. */
 :global(html[data-header="h6"]) {
   --header-h: 92px;
 }
@@ -268,17 +268,7 @@
   background: var(--accent);
 }
 
-/* The status line's facts, at the tier's right end; the tier has the gutter's padding of its own, so no shell. */
-.tierFacts {
-  margin-left: auto;
-  padding: 0;
-  flex-wrap: nowrap;
-}
-
 @media (max-width: 1200px) {
-  .h6 .tierFacts {
-    display: none;
-  }
   /* The tier carries the sections at every width, so the menu button only comes when the launch and the account leave the bar. */
   .h6 .actions .menu {
     display: none;

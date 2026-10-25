@@ -12,7 +12,6 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { ThemeOverride } from "@/components/ThemeOverride";
 import { getPlatform, listAnnouncements } from "@/lib/api";
-import { platformFacts } from "@/lib/facts";
 import { HEADER_COOKIE, headerFrom } from "@/lib/header";
 import { SCHEME_COOKIE } from "@/lib/scheme";
 import { THEME_GROUNDS, themeFrom } from "@/lib/theme";
@@ -61,9 +60,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const upcoming = announcements?.announcements.find((a) => a.appliedSignature === null && new Date(a.effectiveAt).getTime() > Date.now() - 24 * 3600_000) ?? null;
   // Light or dark chosen with the header's toggle (SchemeToggle); without the cookie the page follows the system setting.
   const scheme = jar.get(SCHEME_COOKIE)?.value;
-  // One of the lighter header candidates, kept by `?header=` (HeaderOverride); the two-tier one draws the status facts itself.
+  // One of the lighter header candidates, kept by `?header=` (HeaderOverride).
   const header = headerFrom(jar.get(HEADER_COOKIE)?.value);
-  const facts = header === "h6" ? await platformFacts() : [];
   return (
     // `?theme=` may change `data-theme` after hydration (ThemeOverride), which is intended, not a mismatch.
     <html lang="en" data-theme={theme} data-scheme={scheme === "light" || scheme === "dark" ? scheme : undefined} data-header={header ?? undefined} className={`${bricolage.variable} ${instrumentSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
@@ -71,7 +69,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <ThemeOverride />
         <HeaderOverride current={header} />
         <Providers rpcUrl={platform.rpcUrl}>
-          <SiteHeader cluster={platform.cluster} candidate={header} facts={facts} />
+          <SiteHeader cluster={platform.cluster} candidate={header} />
           {platform.cluster === "devnet" && <ClusterNotice />}
           {upcoming && <FeeChangeBanner announcement={upcoming} platform={platform} />}
           <main>{children}</main>

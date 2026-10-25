@@ -30,10 +30,10 @@ function LaunchButton({ className = "", glyphOnly = false }: { className?: strin
  *
  * `candidate` draws one of the lighter headers instead (src/lib/header.ts; owner, 2026-10-25: the bar above is too
  * congested): no cluster chip, no toggle, four sections, the search a glyph until pressed; h6 adds the lower tier with
- * the sections and `facts`, h7 puts the search in the pill, h8 the launch button. On a phone all four show the mark, the
+ * the sections, h7 puts the search in the pill, h8 the launch button. On a phone all four show the mark, the
  * search, the launch glyph and the menu, the account in the menu's foot.
  */
-export function SiteHeader({ cluster, candidate = null, facts = [] }: { cluster: string; candidate?: HeaderCandidate | null; facts?: [string, string][] }) {
+export function SiteHeader({ cluster, candidate = null }: { cluster: string; candidate?: HeaderCandidate | null }) {
   if (candidate === null) {
     return (
       <header className={styles.header}>
@@ -96,7 +96,7 @@ export function SiteHeader({ cluster, candidate = null, facts = [] }: { cluster:
           {menu}
         </div>
       </div>
-      {candidate === "h6" && <TierTwo facts={facts} />}
+      {candidate === "h6" && <TierTwo />}
     </header>
   );
 }

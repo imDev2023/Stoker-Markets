@@ -4,15 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LIGHT_NAV_LINKS } from "@/lib/site";
 import { isCurrentLink } from "./NavLinks";
-import facts from "./StatusLine.module.css";
 import styles from "./SiteHeader.module.css";
 
 /**
  * The two-tier candidate's lower tier (h6, src/lib/header.ts): the sections as a strip of tabs at the left, the current
- * one underlined in the accent, and on every page past the home the status line's facts at the right, so the terminal's
- * status line is not a third band under it. On a phone the facts go and the strip scrolls sideways.
+ * one underlined in the accent. On a phone the strip scrolls sideways.
  */
-export function TierTwo({ facts: rows }: { facts: [string, string][] }) {
+export function TierTwo() {
   const pathname = usePathname();
   return (
     <div className={styles.tier}>
@@ -23,16 +21,6 @@ export function TierTwo({ facts: rows }: { facts: [string, string][] }) {
           </Link>
         ))}
       </nav>
-      {pathname !== "/" && (
-        <dl className={`${facts.facts} ${styles.tierFacts}`}>
-          {rows.map(([k, v]) => (
-            <div key={k}>
-              <dt>{k}</dt>
-              <dd>{v}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
     </div>
   );
 }

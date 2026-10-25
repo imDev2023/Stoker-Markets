@@ -5,11 +5,11 @@
  * that `?header=` sets (components/HeaderOverride.tsx); `?header=h4` clears it. The pick removes this file and the
  * losers' code.
  *
- * Each candidate takes things out of the bar rather than shrinking them. All four drop the cluster chip (the status line
- * says the network), the toggle (the footer carries it, and the account menu once connected), the API link (the footer's
+ * Each candidate takes things out of the bar rather than shrinking them. All four drop the cluster chip (the devnet
+ * rehearsal's notice says the network, and the footer's legal line does), the toggle (the footer carries it, and the account menu once connected), the API link (the footer's
  * Developers group) and two sections (Burns and Revenue under "Treasury"); they differ in where the rest goes:
  *   h5  Trimmed: the same arrangement, the search a glyph until pressed.
- *   h6  Two tiers: the wordmark and the actions above, the sections and the status facts below in one thin tier.
+ *   h6  Two tiers: the wordmark and the actions above, the sections as tabs in one thin tier below.
  *   h7  One pill: the search is the pill's last segment and the pill becomes the field.
  *   h8  Launch in the pill: "Stoke a coin" is the pill's filled last segment; the bar's right holds the search and the account.
  */
