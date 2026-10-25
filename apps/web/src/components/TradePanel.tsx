@@ -308,7 +308,7 @@ export function TradePanel({
               // The pool's creator fee is the platform's, less the share Raydium keeps of it when collected (5% on mainnet).
               { label: "Platform fee", pct: (shown.feeBps.platform * (10_000 - platform.poolCreatorFeeShareBps)) / 1_000_000, raw: (BigInt(shown.fees.platform) - raydiumShare).toString(), unit: "quote" as const },
               ...(platform.poolCreatorFeeShareBps > 0
-                ? [{ label: "Raydium's share of the platform fee", pct: (shown.feeBps.platform * platform.poolCreatorFeeShareBps) / 1_000_000, raw: raydiumShare.toString(), unit: "quote" as const }]
+                ? [{ label: "Raydium keeps", pct: (shown.feeBps.platform * platform.poolCreatorFeeShareBps) / 1_000_000, raw: raydiumShare.toString(), unit: "quote" as const }]
                 : []),
             ]
           : [
