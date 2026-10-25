@@ -139,7 +139,7 @@
 }
 
 /* The open search stretches over the pill's end, so the pill steps aside while it is open. */
-.bar:has([data-search-open]) .pill {
+.bar:has([data-search-open]) .pill:not(.onePill) {
   opacity: 0;
   transform: scale(0.96);
   pointer-events: none;
@@ -192,4 +192,164 @@
     opacity: 0;
     pointer-events: none;
   }
+}
+
+/*
+ * The lighter candidates (src/lib/header.ts; owner, 2026-10-25). Shared: no cluster chip, no toggle, the search a glyph;
+ * on a phone the account leaves the bar for the menu's foot, so the bar is the mark, the search, the launch glyph and
+ * the menu.
+ */
+@media (max-width: 640px) {
+  .light .walletLight {
+    display: none;
+  }
+}
+
+/* h6, two tiers: a shorter upper bar, the sections and the facts in a thin tier under it; anything pinned under the header clears both. */
+:global(html[data-header="h6"]) {
+  --header-h: 92px;
+}
+
+.h6 .bar {
+  height: 56px;
+}
+
+.tier {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 36px;
+  padding: 0 var(--gutter);
+  border-top: 1px solid var(--line);
+}
+
+.tabs {
+  display: flex;
+  align-self: stretch;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* A tab is a word with a line under it when current, the terminal's own idiom rather than the pill's plate. */
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  color: var(--ink-2);
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color var(--fast) var(--ease);
+}
+
+.tab:hover {
+  color: var(--ink);
+}
+
+.tab[aria-current="page"] {
+  color: var(--accent-strong);
+}
+
+.tab[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+
+/* The status line's facts, at the tier's right end; the tier has the gutter's padding of its own, so no shell. */
+.tierFacts {
+  margin-left: auto;
+  padding: 0;
+  flex-wrap: nowrap;
+}
+
+@media (max-width: 1200px) {
+  .h6 .tierFacts {
+    display: none;
+  }
+  /* The tier carries the sections at every width, so the menu button only comes when the launch and the account leave the bar. */
+  .h6 .actions .menu {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .h6 .actions .menu {
+    display: inline-flex;
+  }
+  .h6 .tabs {
+    margin: 0 calc(-1 * var(--gutter));
+    padding: 0 var(--gutter);
+  }
+}
+
+/* h7, one pill: the search is the pill's last segment; open, its field grows leftward over the links in the pill's own material. */
+.onePill {
+  position: relative;
+  align-items: center;
+}
+
+.onePill .link {
+  transition: opacity var(--base) var(--ease), background-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.onePill:has([data-search-open]) .link {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Under 1200px the pill keeps the search alone: a disc in the pill's material, so the search needs no second home. */
+@media (max-width: 1200px) {
+  .h7 .onePill {
+    display: flex;
+  }
+  .h7 .onePill .link {
+    display: none;
+  }
+}
+
+/* h8, launch in the pill: the one filled action as the pill's last segment, the pill's own height. */
+.pillLaunch {
+  height: 36px;
+  margin-left: 4px;
+  border-radius: 999px;
+}
+
+.launchPhone {
+  display: none;
+}
+
+@media (max-width: 1200px) {
+  .h8 .launchPhone {
+    display: inline-flex;
+  }
+}
+
+/* The launch glyph alone, which the phone rule below 640px already makes of every launch button. */
+.launchGlyph {
+  width: 40px;
+  padding: 0;
+  justify-content: center;
+}
+
+.launchGlyph .launchWord {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

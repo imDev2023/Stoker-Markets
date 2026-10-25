@@ -1,13 +1,17 @@
 import Link from "next/link";
 import { FOOTER_GROUPS } from "@/lib/site";
 import { Mark } from "./Mark";
+import { SchemeToggle } from "./SchemeToggle";
 import { SocialLinks } from "./SocialLinks";
 import styles from "./SiteFooter.module.css";
 
 const external = (href: string) => /^(https?:|mailto:)/.test(href);
 
-/** Every page's foot: the site's own pages, the docs and where to find us; the only place the site links outward. */
-export function SiteFooter({ cluster }: { cluster: string }) {
+/**
+ * Every page's foot: the site's own pages, the docs and where to find us; the only place the site links outward.
+ * `schemeToggle` sets the light-or-dark toggle beside the socials (the lighter header candidates, src/lib/header.ts).
+ */
+export function SiteFooter({ cluster, schemeToggle = false }: { cluster: string; schemeToggle?: boolean }) {
   return (
     <footer className={styles.footer}>
       <div className={`shell ${styles.inner}`}>
@@ -17,7 +21,10 @@ export function SiteFooter({ cluster }: { cluster: string }) {
             Stoker
           </Link>
           <p className={styles.tagline}>Launch a coin on Solana, paired with any asset. Creators earn from every trade.</p>
-          <SocialLinks />
+          <div className={styles.row}>
+            <SocialLinks />
+            {schemeToggle && <SchemeToggle />}
+          </div>
         </div>
         <nav className={styles.groups} aria-label="Footer">
           {FOOTER_GROUPS.map((g) => (

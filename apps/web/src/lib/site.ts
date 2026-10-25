@@ -25,6 +25,19 @@ export const NAV_LINKS = [
   { href: "/revenue", label: "Revenue" },
 ] as const;
 
+/**
+ * The lighter header candidates' sections (src/lib/header.ts): Burns and Revenue under one word, which is current on
+ * either page, and the API link left to the footer's Developers group.
+ */
+export const LIGHT_NAV_LINKS = [
+  { href: "/coins", label: "Coins" },
+  { href: "/assets", label: "Assets" },
+  { href: "/rewards", label: "Rewards" },
+  { href: "/revenue", label: "Treasury", also: "/burns" },
+] as const;
+
+export type NavLink = { href: string; label: string; also?: string };
+
 // A Creator's earnings page is their own (owner, 2026-10-08): nothing links to it but the account menu, once the
 // connected wallet has launched a coin.
 export const FOOTER_GROUPS = [

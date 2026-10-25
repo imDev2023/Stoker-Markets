@@ -32,8 +32,10 @@ function SearchGlyph() {
  * merging with the bar as it falls. The merging is Lucas Bebber's goo: the group is blurred and its alpha pushed to hard
  * edges, with the crisp drawing laid back over it. Safari draws the filter wrong, so there the pills simply drop. Arrows
  * move, Enter opens the coin, Escape closes and hands focus back; reduced motion gets the states without the springs.
+ * `compact` keeps the glyph alone until pressed (the lighter header candidates, src/lib/header.ts), and `inPill` sets it
+ * as the nav pill's last segment, at the links' height, the field growing over them.
  */
-export function GooeySearch() {
+export function GooeySearch({ compact = false, inPill = false }: { compact?: boolean; inPill?: boolean }) {
   const router = useRouter();
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
@@ -144,7 +146,11 @@ export function GooeySearch() {
   const pills = results === null ? null : results.length === 0 ? "none" : results;
 
   return (
-    <div ref={root} className={`${styles.root} ${open ? styles.open : ""} ${goo ? "" : styles.plain}`} data-search-open={open || undefined}>
+    <div
+      ref={root}
+      className={`${styles.root} ${open ? styles.open : ""} ${goo ? "" : styles.plain} ${compact ? styles.compact : ""} ${inPill ? styles.inPill : ""}`}
+      data-search-open={open || undefined}
+    >
       <svg className={styles.defs} aria-hidden="true" focusable="false">
         <defs>
           <filter id={filterId}>

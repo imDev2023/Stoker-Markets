@@ -46,6 +46,13 @@
   line-height: 1.5;
 }
 
+/* The socials and, when the header has none, the light-or-dark toggle. */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .groups {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -107,14 +114,28 @@
     grid-template-columns: 1fr;
     gap: 32px;
   }
-  .groups {
+  /* The socials and, when the header has none, the light-or-dark toggle. */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.groups {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 /* Two columns fit a phone; one column only on the narrowest screens. */
 @media (max-width: 340px) {
-  .groups {
+  /* The socials and, when the header has none, the light-or-dark toggle. */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.groups {
     grid-template-columns: 1fr;
   }
 }

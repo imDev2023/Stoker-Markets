@@ -126,6 +126,19 @@
   box-shadow: var(--ring);
 }
 
+/* The light-or-dark toggle's row at the menu's foot, parted from the actions by a hairline. */
+.menuRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 6px;
+  padding: 8px 6px 2px 12px;
+  border-top: 1px solid var(--line);
+  font-size: 0.875rem;
+  color: var(--ink-2);
+}
+
 .empty {
   margin: 0;
   padding: 10px 12px;
