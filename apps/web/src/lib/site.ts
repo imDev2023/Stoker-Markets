@@ -16,19 +16,34 @@ export const SITE_LINKS = {
 /** Launching is the header's one button, not a link among the others; every launch button says this (owner, 2026-10-09). */
 export const LAUNCH_LINK = { href: "/launch", label: "Stoke a coin" } as const;
 
-/** The header's plain links, in order; the footer repeats them under "Explore", the launch link among them. */
+export type NavLink = { href: string; label: string; also?: string };
+
+/**
+ * The header's sections, in order (owner, 2026-10-25: the board's link reads "Explore", and Burns and Revenue sit under
+ * "Ledger", the glossary's word for the public record both are entries on, current on either page). The footer lists
+ * the pages themselves under "Site", the launch link among them.
+ */
 export const NAV_LINKS = [
-  { href: "/coins", label: "Coins" },
+  { href: "/coins", label: "Explore" },
   { href: "/assets", label: "Assets" },
   { href: "/rewards", label: "Rewards" },
+  { href: "/revenue", label: "Ledger", also: "/burns" },
+] as const satisfies readonly NavLink[];
+
+const SITE_PAGES = [
+  NAV_LINKS[0],
+  LAUNCH_LINK,
+  NAV_LINKS[1],
+  NAV_LINKS[2],
   { href: "/burns", label: "Burns" },
   { href: "/revenue", label: "Revenue" },
+  { href: "/announcements", label: "Announcements" },
 ] as const;
 
 // A Creator's earnings page is their own (owner, 2026-10-08): nothing links to it but the account menu, once the
 // connected wallet has launched a coin.
 export const FOOTER_GROUPS = [
-  { title: "Explore", links: [NAV_LINKS[0], LAUNCH_LINK, ...NAV_LINKS.slice(1), { href: "/announcements", label: "Announcements" }] },
+  { title: "Site", links: SITE_PAGES },
   {
     title: "Creators",
     links: [LAUNCH_LINK],
