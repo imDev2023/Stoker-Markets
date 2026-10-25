@@ -83,6 +83,8 @@ app.get("/v1/platform", async (c) => {
     platformConfig: cfg.platformConfig.toBase58(),
     graduationTargetLamports: cfg.graduationTargetLamports.toString(),
     platformFeeBps: fees.platformFeeBps,
+    poolCreatorFeeBps: fees.poolCreatorFeeBps,
+    raydiumFee: { curveBps: fees.raydiumCurveFeeBps, poolBps: fees.raydiumPoolFeeBps },
     creatorFeeBps: fees.creatorFeeBps,
     creatorForward: {
       // Half of what the platform collects on either venue (ADR 0009): of the Platform Fee on the curve, of the pool

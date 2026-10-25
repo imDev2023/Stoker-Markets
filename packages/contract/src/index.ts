@@ -95,6 +95,15 @@ export const PlatformInfo = z.object({
   platformFeeBps: z.number(),
   /** LaunchLab's on-chain creator fee on curve trades, as the chain has it: 0 on our platform (ADR 0009). */
   creatorFeeBps: z.number(),
+  /** The creator fee of the CPMM config graduated pools use, which the platform collects after Graduation (1% on mainnet). */
+  poolCreatorFeeBps: z.number(),
+  /**
+   * Raydium's own fee on a trade, which a trader pays on top of the platform's: on the curve the GlobalConfig's trade
+   * fee (SOL's, the same on every GlobalConfig when checked), after Graduation the CPMM config's trade fee. A trader
+   * pays `platformFeeBps + creatorFeeBps + raydiumFee.curveBps` on the curve and `poolCreatorFeeBps + raydiumFee.poolBps`
+   * in the pool.
+   */
+  raydiumFee: z.object({ curveBps: z.number(), poolBps: z.number() }),
   /**
    * The Creator Forward (ADR 0009): what the platform pays a Creator, `shareBps` of what it collects on their coin's
    * trades on either venue. That is `curveBps` of every curve trade (out of the Platform Fee) and `poolBps` of every

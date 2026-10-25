@@ -337,10 +337,16 @@
   text-underline-offset: 3px;
 }
 
-/* The summary column: short enough to sit whole under the header on a laptop, so nothing in it ever scrolls out of reach. */
+/*
+ * The summary column: short enough to sit whole under the header on a laptop; on a shorter window than that it scrolls
+ * within its own height (the launch terms of 2026-10-25 made it eight rows), so nothing in it is ever out of reach.
+ */
 .summary {
   position: sticky;
   top: 88px;
+  max-height: calc(100dvh - 88px - 24px);
+  overflow-y: auto;
+  scrollbar-width: thin;
   min-width: 0;
 }
 

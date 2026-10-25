@@ -28,3 +28,24 @@ export function creatorEarnings(platform: PlatformInfo) {
 export function creatorShareOf(platform: PlatformInfo, platformFee: string) {
   return (BigInt(platformFee) * BigInt(platform.creatorForward.shareBps)) / 10_000n;
 }
+
+/**
+ * What a trader pays on a trade, in percent, for the launch summary: the platform's fees and Raydium's own on the curve,
+ * the pool's creator fee and Raydium's after Graduation, each from the chain through the platform facts.
+ */
+export function tradingFee(platform: PlatformInfo) {
+  const curvePlatform = pct(platform.platformFeeBps + platform.creatorFeeBps);
+  const curveRaydium = pct(platform.raydiumFee.curveBps);
+  const poolPlatform = pct(platform.poolCreatorFeeBps);
+  const poolRaydium = pct(platform.raydiumFee.poolBps);
+  const curve = pct(platform.platformFeeBps + platform.creatorFeeBps + platform.raydiumFee.curveBps);
+  const pool = pct(platform.poolCreatorFeeBps + platform.raydiumFee.poolBps);
+  return {
+    curve,
+    pool,
+    /** "1.25% of every trade, on the curve and after graduation", or each figure when the two differ. */
+    summary: curve === pool ? `${curve}% of every trade, on the curve and after graduation` : `${curve}% of every trade on the curve, ${pool}% after graduation`,
+    /** The split, for the note under it. */
+    split: `${curvePlatform}% platform fee and ${curveRaydium}% Raydium on the curve, ${poolPlatform}% pool fee and ${poolRaydium}% Raydium after`,
+  };
+}
