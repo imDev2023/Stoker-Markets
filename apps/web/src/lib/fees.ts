@@ -34,18 +34,19 @@ export function creatorShareOf(platform: PlatformInfo, platformFee: string) {
  * the pool's creator fee and Raydium's after Graduation, each from the chain through the platform facts.
  */
 export function tradingFee(platform: PlatformInfo) {
-  const curvePlatform = pct(platform.platformFeeBps + platform.creatorFeeBps);
-  const curveRaydium = pct(platform.raydiumFee.curveBps);
-  const poolPlatform = pct(platform.poolCreatorFeeBps);
-  const poolRaydium = pct(platform.raydiumFee.poolBps);
+  const earns = creatorEarnings(platform);
   const curve = pct(platform.platformFeeBps + platform.creatorFeeBps + platform.raydiumFee.curveBps);
   const pool = pct(platform.poolCreatorFeeBps + platform.raydiumFee.poolBps);
+  // Who gets what of it (owner, 2026-10-25: 0.25% to Raydium, 0.5% to the Creator, 0.5% to the platform, on both venues on mainnet).
+  const who = (raydium: number, creator: number, platformKeeps: number) => `${pct(raydium)}% to Raydium, ${creator}% to you, ${pct(platformKeeps)}% to the platform`;
+  const onCurve = who(platform.raydiumFee.curveBps, earns.curve, platform.platformFeeBps + platform.creatorFeeBps - earns.curve * 100);
+  const inPool = who(platform.raydiumFee.poolBps, earns.pool, platform.poolCreatorFeeBps - earns.pool * 100);
   return {
     curve,
     pool,
     /** "1.25% of every trade, on the curve and after graduation", or each figure when the two differ. */
     summary: curve === pool ? `${curve}% of every trade, on the curve and after graduation` : `${curve}% of every trade on the curve, ${pool}% after graduation`,
-    /** The split, for the note under it. */
-    split: `${curvePlatform}% platform fee and ${curveRaydium}% Raydium on the curve, ${poolPlatform}% pool fee and ${poolRaydium}% Raydium after`,
+    /** The split, for the note under it: one line when both venues split alike. */
+    split: onCurve === inPool ? onCurve : `on the curve ${onCurve}; after graduation ${inPool}`,
   };
 }
