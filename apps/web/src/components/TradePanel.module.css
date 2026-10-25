@@ -252,6 +252,11 @@
   color: var(--ink-3);
 }
 
+/* The amount never breaks across lines; a long label wraps instead. */
+.fee dd {
+  white-space: nowrap;
+}
+
 .fee :global(.mono) {
   font-size: 0.75rem;
 }
