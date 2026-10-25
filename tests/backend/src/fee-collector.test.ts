@@ -13,7 +13,7 @@ import { FEE_COLLECTOR_CRON } from "@launchpad/stack";
 import { BurnsPage, CoinRewards, HolderList, JobRun, JobRunList, LaunchList, LedgerPage, Revenue, type LedgerEntry } from "@launchpad/contract";
 import {
   SOL, coinsOf, connection, deliverWebhook, env, feeAt, feeRates, fundedWallet, launch, launchedCoin, networkFee, quote, tokenBalance, trade,
-} from "./client";
+ platformInfo } from "./client";
 
 const programs = programsFor("localnet");
 const WSOL = WSOL_MINT.toBase58();
@@ -113,6 +113,15 @@ async function poolCreatorFees(pool: PublicKey) {
 }
 
 /** The pool's creator fee on the Quote Asset side. */
+/**
+ * What the platform receives of a pool's creator fee counter when it collects it: Raydium keeps its share
+ * (`poolCreatorFeeShareBps`, mainnet's 5%), floored, and the pool's creator gets the rest (raydium-cp-swap `settle_creator_fee`).
+ */
+async function received(counter: bigint) {
+  const share = BigInt((await platformInfo()).poolCreatorFeeShareBps);
+  return counter - (counter * share) / 10_000n;
+}
+
 async function quoteCreatorFee(pool: PublicKey, quoteMint: PublicKey) {
   const p = await poolCreatorFees(pool);
   return p.token0.equals(quoteMint) ? p.fees[0] : p.fees[1];
@@ -239,8 +248,9 @@ describe("the Platform Fee", () => {
 describe("after Graduation", () => {
   it("collects the pool creator fee and the Fee Key's LP fees of a SOL pool, exactly as the chain pays them", async () => {
     const coin = await graduatedCoin();
-    const paid = await poolTrades(coin, SOL(0.5));
-    expect(await quoteCreatorFee(coin.pool, WSOL_MINT)).toBe(paid);
+    const counted = await poolTrades(coin, SOL(0.5));
+    expect(await quoteCreatorFee(coin.pool, WSOL_MINT)).toBe(counted);
+    const paid = await received(counted);
     const sol = await lamportsOf(ops());
     const coinsInTreasury = await tokensOf(treasury(), new PublicKey(coin.mint));
 
@@ -293,8 +303,9 @@ describe("after Graduation", () => {
 
   it("collects a USDC pool's creator fee and Fee Key in USDC", async () => {
     const coin = await graduatedCoin({ quoteMint: USDC });
-    const paid = await poolTrades(coin, usdc(50));
-    expect(await quoteCreatorFee(coin.pool, USDC)).toBe(paid);
+    const counted = await poolTrades(coin, usdc(50));
+    expect(await quoteCreatorFee(coin.pool, USDC)).toBe(counted);
+    const paid = await received(counted);
     const inTreasury = await tokensOf(treasury(), USDC);
     const surplus = await surplusOf(USDC);
 
@@ -321,7 +332,8 @@ describe("after Graduation", () => {
   it("leaves a fee worth less than the collection minimum to grow, and collects it once it is worth it", async () => {
     const coin = await graduatedCoin();
     await runCollector(); // what the buyout and migration left behind
-    const tiny = await trade(coin.trader, coin.mint, "buy", SOL(0.01));
+    // At the pool's 1% creator fee a 0.005 SOL buy leaves 50,000 lamports, under the 100,000 minimum.
+    const tiny = await trade(coin.trader, coin.mint, "buy", SOL(0.005));
     await deliverWebhook([tiny.signature]);
     const fee = BigInt(tiny.quote.fees.platform);
     expect(fee).toBeLessThan(BigInt(env().collectMinLamports));
@@ -335,7 +347,7 @@ describe("after Graduation", () => {
     await deliverWebhook([big.signature]);
     const collected = await runCollector();
     const poolFee = sentBy(collected).find((s) => s.purpose === "pool_fee" && s.subject === coin.pool.toBase58())!;
-    expect((await entriesOf([poolFee.signature]))[0]).toMatchObject({ amount: (fee + BigInt(big.quote.fees.platform)).toString() });
+    expect((await entriesOf([poolFee.signature]))[0]).toMatchObject({ amount: (await received(fee + BigInt(big.quote.fees.platform))).toString() });
   });
 });
 

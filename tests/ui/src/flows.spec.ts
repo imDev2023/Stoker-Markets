@@ -147,7 +147,8 @@ test("a Creator's earnings are their own page, offered once they have launched, 
   // The coin's page says what its Creator earns and how, and leads to no creator page: a Creator's is their own.
   await page.goto(`/coin/${mint}`);
   const earns = page.getByRole("definition").filter({ hasText: "sent to the Creator's wallet" });
-  await expect(earns).toContainText("~0.5% of every trade on the curve and ~0.125% after graduation");
+  // One figure for both venues: the local chain's pool config carries mainnet's 1% creator fee (owner, 2026-10-25).
+  await expect(earns).toContainText("~0.5% of every trade, on the curve and after graduation");
   await expect(page.locator('a[href^="/creator"]')).toHaveCount(0);
 
   // Now that the wallet has launched a coin, the account menu leads to its earnings; nothing asks for a signature.

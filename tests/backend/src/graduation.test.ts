@@ -143,8 +143,9 @@ describe("trading after Graduation", () => {
     const trader = await fundedWallet();
     const shown = TradeQuote.parse(await (await quote(mint, { side: "buy", amount: SOL(0.1).toString() })).json());
     expect(shown).toMatchObject({ venue: "pool", side: "buy", amountIn: SOL(0.1).toString(), completesCurve: false });
-    expect(shown.feeBps).toEqual({ raydium: 25, platform: 25, creator: 0 });
-    expect(shown.fees).toEqual({ raydium: "250000", platform: "250000", creator: "0" });
+    // The pool's creator fee is mainnet's 1% (the local chain carries that config since 2026-10-25), Raydium's 0.25%.
+    expect(shown.feeBps).toEqual({ raydium: 25, platform: 100, creator: 0 });
+    expect(shown.fees).toEqual({ raydium: "250000", platform: "1000000", creator: "0" });
 
     const creatorFees = await poolCreatorFees(migration.pool);
     const sol = await solOf(trader);
@@ -253,7 +254,7 @@ describe("trading after Graduation", () => {
 
     const sol = await solOf(trader);
     const buy = await trade(trader, coin, "buy", SOL(0.1));
-    expect(buy.quote.fees).toEqual({ raydium: "250000", platform: "250000", creator: "0" });
+    expect(buy.quote.fees).toEqual({ raydium: "250000", platform: "1000000", creator: "0" });
     const sell = await trade(trader, coin, "sell", (await coinsOf(coin, trader)) / 2n);
     expect((await solOf(trader)) - sol).toBe(
       BigInt(sell.quote.amountOut) - BigInt(buy.quote.amountIn) - (await networkFee(buy.signature)) - (await networkFee(sell.signature)),
@@ -289,8 +290,8 @@ describe("trading after Graduation", () => {
     const usdcBefore = await usdcOf(trader);
     const coinsBefore = await coinsOf(coin.mint, trader);
     const buy = await trade(trader, coin.mint, "buy", USDC(20));
-    // 0.25% pool fee and 0.25% pool creator fee, both on the USDC going in.
-    expect(buy.quote).toMatchObject({ venue: "pool", amountIn: USDC(20).toString(), fees: { raydium: "50000", platform: "50000", creator: "0" } });
+    // 0.25% pool fee and the 1% pool creator fee (mainnet's config), both on the USDC going in.
+    expect(buy.quote).toMatchObject({ venue: "pool", amountIn: USDC(20).toString(), fees: { raydium: "50000", platform: "200000", creator: "0" } });
     expect(await usdcOf(trader)).toBe(usdcBefore - USDC(20));
     expect(await coinsOf(coin.mint, trader)).toBe(coinsBefore + BigInt(buy.quote.amountOut));
 

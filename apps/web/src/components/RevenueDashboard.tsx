@@ -142,7 +142,7 @@ export function RevenueDashboard({ revenue, ledger, platform }: { revenue: Reven
               </div>
               <div>
                 <dt>Pools</dt>
-                <dd>After graduation, the creator fee of every trade in the coin&apos;s Raydium pool, which the platform collects.</dd>
+                <dd>After graduation, the Platform Fee of every trade in the coin&apos;s Raydium pool, {platform.poolCreatorFeeBps / 100}%, which the platform collects as the pool&apos;s creator.</dd>
               </div>
               <div>
                 <dt>Fee Keys</dt>

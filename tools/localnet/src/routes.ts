@@ -10,7 +10,7 @@ import BN from "bn.js";
 import {
   cpmmCoder, cpmmPdas, loadPool, programsFor, sortMints, swapBaseInputIx, temporaryTokenAccount, WSOL_MINT,
 } from "@launchpad/chain";
-import { CPSWAP_CONFIG, LOCAL_QUOTES, airdrop, ensureLookupTable, localnetKeys, mintLocalQuote, send } from "./index";
+import { LOCAL_QUOTES, ROUTE_POOL_CONFIG, airdrop, ensureLookupTable, localnetKeys, mintLocalQuote, send } from "./index";
 
 /**
  * The local chain's stand-in for the market a buy paid with SOL routes through. On mainnet the API asks Jupiter; the
@@ -36,7 +36,7 @@ function initializePoolIx(creator: PublicKey, mintA: PublicKey, amountA: BN, min
   const { cpmm, cpmmCreatePoolFee } = programsFor("localnet");
   const pdas = cpmmPdas(cpmm);
   const [token0, token1] = sortMints(mintA, mintB);
-  const pool = pdas.pool(CPSWAP_CONFIG, token0, token1);
+  const pool = pdas.pool(ROUTE_POOL_CONFIG, token0, token1);
   const lpMint = pdas.lpMint(pool);
   const ata = (mint: PublicKey) => getAssociatedTokenAddressSync(mint, creator);
   const [amount0, amount1] = token0.equals(mintA) ? [amountA, amountB] : [amountB, amountA];
@@ -45,7 +45,7 @@ function initializePoolIx(creator: PublicKey, mintA: PublicKey, amountA: BN, min
     data: cpmmCoder.instruction.encode("initialize", { init_amount_0: amount0, init_amount_1: amount1, open_time: new BN(0) }),
     keys: [
       meta(creator, true, true),
-      meta(CPSWAP_CONFIG),
+      meta(ROUTE_POOL_CONFIG),
       meta(pdas.authority),
       meta(pool, false, true),
       meta(token0),
@@ -101,7 +101,7 @@ async function createPools(connection: Connection, liquidity: Keypair) {
  */
 export async function swapThroughSolRoute(connection: Connection, trader: Keypair, quoteMint: PublicKey, lamports: bigint) {
   const { cpmm } = programsFor("localnet");
-  const pool = await loadPool(connection, cpmmPdas(cpmm).pool(CPSWAP_CONFIG, WSOL_MINT, quoteMint));
+  const pool = await loadPool(connection, cpmmPdas(cpmm).pool(ROUTE_POOL_CONFIG, WSOL_MINT, quoteMint));
   if (!pool) throw new Error(`no SOL route pool for ${quoteMint.toBase58()}`);
   const amountIn = new BN(lamports.toString());
   const wsol = await temporaryTokenAccount(connection, { owner: trader.publicKey, mint: WSOL_MINT, tokenProgram: TOKEN_PROGRAM_ID, lamports: amountIn });
@@ -128,7 +128,7 @@ export async function createSolRoutes(connection: Connection): Promise<SolRoutes
   const { cpmm } = programsFor("localnet");
   const created = await createPools(connection, liquidity);
   const addresses = [
-    cpmm, CPSWAP_CONFIG, cpmmPdas(cpmm).authority, ...created.flatMap((c) => [c.pool, ...c.vaults, c.observation]),
+    cpmm, ROUTE_POOL_CONFIG, cpmmPdas(cpmm).authority, ...created.flatMap((c) => [c.pool, ...c.vaults, c.observation]),
   ];
   return {
     pools: Object.fromEntries(created.map((c) => [c.route.quote.toBase58(), c.pool.toBase58()])),

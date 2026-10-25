@@ -13,7 +13,7 @@ A trader still pays 1.25% on the curve, the same as at StonkFun.
 On the curve the PlatformConfig sets `fee_rate` 10000 and `creator_fee_rate` 0 (LaunchLab's 1e6 denominator): 0.25% to Raydium and a 1.00% Platform Fee, nothing on-chain for the Creator.
 Every trade still names the Creator's LaunchLab vault, as the program requires, but nothing is ever paid into it, so there is nothing to claim.
 
-After Graduation nothing changes on-chain from ADR 0001: the platform is every pool's creator (`platform_cp_creator`), collects the pool's creator fee (1% with the CPMM config the runbook picks) and holds every Fee Key.
+After Graduation nothing changes on-chain from ADR 0001: the platform is every pool's creator (`platform_cp_creator`), collects the pool's creator fee (1% with the CPMM config the runbook picks, of which Raydium keeps its `creator_fee_share_rate`, 5% on that config, at collection, so 0.95% arrives) and holds every Fee Key.
 
 ## The Creator's share
 

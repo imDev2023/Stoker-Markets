@@ -83,13 +83,16 @@ app.get("/v1/platform", async (c) => {
     platformConfig: cfg.platformConfig.toBase58(),
     graduationTargetLamports: cfg.graduationTargetLamports.toString(),
     platformFeeBps: fees.platformFeeBps,
+    poolCreatorFeeBps: fees.poolCreatorFeeBps,
+    poolCreatorFeeShareBps: fees.poolCreatorFeeShareBps,
+    raydiumFee: { curveBps: fees.raydiumCurveFeeBps, poolBps: fees.raydiumPoolFeeBps },
     creatorFeeBps: fees.creatorFeeBps,
     creatorForward: {
       // Half of what the platform collects on either venue (ADR 0009): of the Platform Fee on the curve, of the pool
-      // creator fee after Graduation, both as the chain has them.
+      // creator fee after Graduation less the share Raydium keeps of it, all as the chain has them.
       shareBps: CREATOR_SHARE_BPS,
       curveBps: (fees.platformFeeBps * CREATOR_SHARE_BPS) / 10_000,
-      poolBps: (fees.poolCreatorFeeBps * CREATOR_SHARE_BPS) / 10_000,
+      poolBps: (fees.poolCreatorFeeBps * (10_000 - fees.poolCreatorFeeShareBps) * CREATOR_SHARE_BPS) / 100_000_000,
       minLamports: cfg.creatorForwardMinLamports.toString(),
     },
     referralShareBps: cfg.referralShareBps,

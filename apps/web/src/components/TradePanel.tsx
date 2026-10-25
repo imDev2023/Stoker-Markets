@@ -296,6 +296,8 @@ export function TradePanel({
           ? [{ label: `${launch.symbol} reward tax`, pct: shown.transferFeeBps.base / 100, raw: shown.transferFees.base, unit: "coin" as const }]
           : []),
       ];
+  // Raydium floors its share of a pool trade's creator fee and the platform receives the rest (raydium-cp-swap `settle_creator_fee`).
+  const raydiumShare = shown ? (BigInt(shown.fees.platform) * BigInt(platform.poolCreatorFeeShareBps)) / 10_000n : 0n;
   const fees: Fee[] = !shown
     ? []
     : [
@@ -303,7 +305,11 @@ export function TradePanel({
         ...(shown.venue === "pool"
           ? [
               { label: "Raydium pool fee", pct: shown.feeBps.raydium / 100, raw: shown.fees.raydium, unit: poolFeeInCoins ? ("coin" as const) : ("quote" as const) },
-              { label: "Platform fee", pct: shown.feeBps.platform / 100, raw: shown.fees.platform, unit: "quote" as const },
+              // The pool's creator fee is the platform's, less the share Raydium keeps of it when collected (5% on mainnet).
+              { label: "Platform fee", pct: (shown.feeBps.platform * (10_000 - platform.poolCreatorFeeShareBps)) / 1_000_000, raw: (BigInt(shown.fees.platform) - raydiumShare).toString(), unit: "quote" as const },
+              ...(platform.poolCreatorFeeShareBps > 0
+                ? [{ label: "Raydium keeps", pct: (shown.feeBps.platform * platform.poolCreatorFeeShareBps) / 1_000_000, raw: raydiumShare.toString(), unit: "quote" as const }]
+                : []),
             ]
           : [
               { label: "Raydium", pct: shown.feeBps.raydium / 100, raw: shown.fees.raydium, unit: "quote" as const },
