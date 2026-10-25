@@ -92,6 +92,17 @@ test("assets page", async ({ page }) => {
   await snap(page, "assets.png");
 });
 
+test("api page", async ({ page }) => {
+  await page.goto("/api");
+  // The live answer carries the stack's own ports and addresses.
+  await snap(page, "api.png", (p) => [...dynamic(p), p.locator("pre[data-live]")]);
+});
+
+test("curated page", async ({ page }) => {
+  await page.goto("/curated");
+  await snap(page, "curated.png");
+});
+
 test("asset page of a tokenized stock, with the coins priced in it", async ({ page }) => {
   await page.goto(`/assets/${QUOTES.NVDAx.toBase58()}`);
   await snap(page, "asset.png");

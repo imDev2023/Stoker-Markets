@@ -136,6 +136,11 @@ _Avoid_: Distribution, epoch, cycle
 Our own coin, fair-launched as the first Launch on our platform with no presale or team allocation.
 _Avoid_: Governance token, utility token, our coin
 
+**Curated Launch**:
+a coin the platform has approved and works on with its team, launched by the platform itself (owner, 2026-10-25, #118).
+Only a wallet that stakes STOKER can buy one, and the more it stakes, the larger its allocation of that launch.
+The header's "Curated" section lists them; none exists before the Platform Token does.
+
 **Burn**:
 Using platform revenue to buy the Platform Token on the market and destroy it, on a public schedule.
 _Avoid_: Buyback (on its own), revenue share, dividend

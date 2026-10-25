@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { LAUNCH_LINK, NAV_LINKS, SITE_LINKS } from "@/lib/site";
-import { isCurrent } from "./NavLinks";
+import { LAUNCH_LINK } from "@/lib/site";
+import { HEADER_LINKS, isCurrent } from "./NavLinks";
 import { SchemeToggle } from "./SchemeToggle";
 import { SocialLinks } from "./SocialLinks";
 import { WalletButton } from "./WalletButton";
@@ -55,14 +55,11 @@ export function PhoneMenu({ className = "" }: { className?: string }) {
         >
           <div id={id} className={styles.panel} role="dialog" aria-modal="true" aria-label="Menu">
             <nav className={styles.nav} aria-label="Main">
-              {NAV_LINKS.map((l, i) => (
+              {HEADER_LINKS.map((l, i) => (
                 <Link key={l.href} href={l.href} className={styles.link} style={order(i)} aria-current={isCurrent(l, pathname) ? "page" : undefined} onClick={close}>
                   {l.label}
                 </Link>
               ))}
-              <a href={SITE_LINKS.apiDocs.href} className={styles.link} style={order(NAV_LINKS.length)} target="_blank" rel="noreferrer">
-                API
-              </a>
             </nav>
             <div className={styles.foot}>
               <Link href={LAUNCH_LINK.href} className="button button-primary" onClick={close}>
