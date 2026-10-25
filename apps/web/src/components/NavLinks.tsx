@@ -9,7 +9,7 @@ const under = (href: string, pathname: string) => pathname === href || pathname.
 
 /**
  * A coin's page belongs under "Explore"; every other section is its own path and what hangs under it, and the one that
- * also covers a second page (the Ledger's Burns) is current there too.
+ * also covers a second page (Stats' Burns) is current there too.
  */
 export const isCurrent = (link: NavLink, pathname: string) => under(link.href, pathname) || (link.also !== undefined && under(link.also, pathname));
 

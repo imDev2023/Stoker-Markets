@@ -19,8 +19,8 @@ export type NavLink = { href: string; label: string; also?: string };
 
 /**
  * The header's sections, in order (owner, 2026-10-25: the board's link reads "Explore"; "Curated" is the platform's
- * own approved launches, open to STOKER stakers, #118; Burns and Revenue sit under "Ledger", the glossary's word for
- * the public record both are entries on, current on either page). The footer lists the pages themselves under "Site",
+ * own approved launches, open to STOKER stakers, #118; Burns and Revenue sit under "Stats" (owner, 2026-10-25, renamed
+ * from Ledger the same night; the Ledger stays the glossary's word for the public record), current on either page). The footer lists the pages themselves under "Site",
  * the launch link among them.
  */
 export const NAV_LINKS = [
@@ -28,7 +28,7 @@ export const NAV_LINKS = [
   { href: "/curated", label: "Curated" },
   { href: "/assets", label: "Assets" },
   { href: "/rewards", label: "Rewards" },
-  { href: "/revenue", label: "Ledger", also: "/burns" },
+  { href: "/revenue", label: "Stats", also: "/burns" },
 ] as const satisfies readonly NavLink[];
 
 /**
