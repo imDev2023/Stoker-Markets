@@ -92,6 +92,10 @@ _Avoid_: Withdrawal, transfer (on its own)
 The scheduled job that claims every Platform Fee and Fee Key into the Operations Wallet and sweeps it to the Treasury, less what is owed to Creators.
 _Avoid_: Fee cron, claimer
 
+**Creator Earnings Destination**:
+Where a Creator's earnings go, chosen on the launch form and fixed for the coin's life: their wallet (a Creator Forward), the coin's holders (a dividend in the Quote Asset through a Reward Round), or a buyback that burns the coin in its own market (ADR 0011).
+_Avoid_: Vault, template, fee mode
+
 **Ledger**:
 The append-only public record of every movement of platform revenue, each tied to its transaction signature; Creator Forwards, Burns, Flywheel buys and what permanent metadata costs are on it too.
 _Avoid_: History, log, audit trail

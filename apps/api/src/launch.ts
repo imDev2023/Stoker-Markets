@@ -9,7 +9,9 @@ import {
   curvePrice, firstBuyTakesCurve, LAUNCH_SHAPE, loadLookupTable, RATE_DENOMINATOR, planAirdrop, prepareLaunch, quoteFirstBuy, readTransferFees,
   rewardTaxFee, WSOL_MINT, type FirstBuyQuote, type LaunchPairing,
 } from "@launchpad/chain";
-import type { AirdropRecipients, GraduationTarget, LaunchModesSummary, PreparedLaunch, RewardPayoutAsset, RewardTaxBps, TradeQuote } from "@launchpad/contract";
+import type {
+  AirdropRecipients, CreatorEarningsDestination, GraduationTarget, LaunchModesSummary, PreparedLaunch, RewardPayoutAsset, RewardTaxBps, TradeQuote,
+} from "@launchpad/contract";
 import { airdropRecipients, launchDrafts, launchMetadata, type Db } from "@launchpad/db";
 import type { Config } from "./env";
 import { arweaveUrl, signedItems } from "./metadata";
@@ -120,14 +122,14 @@ async function checkQuoteBalance(connection: Connection, quote: QuoteAsset, crea
  */
 export async function resolveLaunchModes(
   connection: Connection, cfg: Config, quote: QuoteAsset, creator: PublicKey, firstBuy: BN | null, airdrop: AirdropRecipients,
-  rewardTaxBps: RewardTaxBps | null = null, rewardPayout: RewardPayoutAsset | null = null,
+  rewardTaxBps: RewardTaxBps | null = null, rewardPayout: RewardPayoutAsset | null = null, earningsDestination: CreatorEarningsDestination = "wallet",
 ): Promise<{ firstBuy: LaunchFirstBuy | null; summary: LaunchModesSummary }> {
   if (rewardPayout && !rewardTaxBps) throw new LaunchModeError("A payout asset is only for a Reward Launch. Choose a Reward Tax, or leave the payout asset out.");
   const rewardTax = rewardTaxBps ? { bps: rewardTaxBps, payout: rewardPayout ?? ("coin" as const) } : null;
   const bought = firstBuy ? await quoteLaunchFirstBuy(connection, cfg, quote, firstBuy, rewardTaxBps) : null;
   const toContract = (b: LaunchFirstBuy) => firstBuyToContract(b, quote.decimals, b.quoteTransferFeeBps, b.rewardTaxBps);
   if (bought) await checkQuoteBalance(connection, quote, creator, bought.quote.amountIn);
-  if (airdrop.length === 0) return { firstBuy: bought, summary: { rewardTax, firstBuy: bought && toContract(bought), airdrop: null } };
+  if (airdrop.length === 0) return { firstBuy: bought, summary: { rewardTax, earningsDestination, firstBuy: bought && toContract(bought), airdrop: null } };
   if (!bought) throw new LaunchModeError("An airdrop is paid from your first buy. Add a first buy.");
   const recipients = airdrop.map((r) => ({ wallet: new PublicKey(r.wallet), amount: new BN(r.amount) }));
   for (const r of recipients) {
@@ -151,6 +153,7 @@ export async function resolveLaunchModes(
     firstBuy: bought,
     summary: {
       rewardTax,
+      earningsDestination,
       firstBuy: toContract(bought),
       airdrop: { recipients: recipients.length, amount: amount.toString(), transactions, costLamports: costLamports.toString() },
     },
@@ -162,7 +165,7 @@ export async function saveDraft(
   db: Db,
   d: {
     mint: PublicKey; creator: PublicKey; nonce: string | null; quote: QuoteAsset; firstBuy: BN | null; airdrop: AirdropRecipients; rewardTaxBps: RewardTaxBps | null;
-    rewardPayout: RewardPayoutAsset | null;
+    rewardPayout: RewardPayoutAsset | null; earningsDestination: CreatorEarningsDestination;
   },
 ) {
   await db.transaction(async (tx) => {
@@ -178,6 +181,8 @@ export async function saveDraft(
       rewardTaxBps: d.rewardTaxBps,
       // The Payout Asset is fixed here, with the coin's address: a retry and the Indexer read it back from this row.
       rewardPayout: d.rewardTaxBps ? (d.rewardPayout ?? "coin") : null,
+      // So is where the earnings go (ADR 0011): the Indexer copies it to the Launch, and nothing changes it after.
+      earningsDestination: d.earningsDestination,
     });
     if (d.airdrop.length > 0)
       await tx.insert(airdropRecipients).values(
@@ -254,6 +259,7 @@ export async function resolveDraftModes(db: Db, connection: Connection, cfg: Con
     recipients.map((r) => ({ wallet: r.wallet, amount: r.amount })),
     (draft.rewardTaxBps as RewardTaxBps | null) ?? null,
     draft.rewardPayout,
+    draft.earningsDestination,
   );
   return { quote, ...modes };
 }

@@ -26,6 +26,12 @@ export const launches = pgTable(
      */
     rewardPayout: text("reward_payout", { enum: ["coin", "quote"] }),
     /**
+     * Where the Creator's earnings go (ADR 0011, #113): their wallet, the coin's holders, or a buyback that burns the
+     * coin. Copied from the launch draft when the launch is indexed and never changed; a coin launched without our API
+     * pays the wallet.
+     */
+    earningsDestination: text("earnings_destination", { enum: ["wallet", "holders", "burn"] }).notNull().default("wallet"),
+    /**
      * The transaction in which the operations wallet gave up the coin's transfer-fee-config authority for good, once
      * Raydium's migration handed it over; from then on nobody can change the Reward Tax. Null until then.
      */
@@ -232,6 +238,8 @@ export const launchDrafts = pgTable(
     rewardTaxBps: integer("reward_tax_bps"),
     /** The Payout Asset the Creator chose for a Reward Launch; null for a standard Launch. */
     rewardPayout: text("reward_payout", { enum: ["coin", "quote"] }),
+    /** Where the Creator chose their earnings to go (ADR 0011). */
+    earningsDestination: text("earnings_destination", { enum: ["wallet", "holders", "burn"] }).notNull().default("wallet"),
     /** Newest transaction of the Creator's coin account already scanned for airdrop payments. */
     airdropScannedUntil: text("airdrop_scanned_until"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

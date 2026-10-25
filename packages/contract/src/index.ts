@@ -2,7 +2,7 @@ import { z } from "zod";
 import { LaunchMarket } from "./board";
 import { GraduationTarget, QuoteRef } from "./quotes";
 import { CurveProgress, Graduation, SolRouteSource } from "./trades";
-import { LaunchModeFields, LaunchModesSummary, RewardTax } from "./launchModes";
+import { CreatorEarningsDestination, LaunchModeFields, LaunchModesSummary, RewardTax } from "./launchModes";
 
 /** The public API contract, shared by the API (which validates with it) and every client, including our web app. */
 
@@ -67,6 +67,8 @@ export const LaunchSummary = z.object({
   graduation: Graduation.nullable(),
   /** A Reward Launch's Reward Tax; null for a standard coin. */
   rewardTax: RewardTax.nullable(),
+  /** Where the Creator's earnings go (ADR 0011): a coin launched without our API pays its Creator's wallet. */
+  earningsDestination: CreatorEarningsDestination,
   market: LaunchMarket,
   createdSignature: z.string(),
   createdAt: z.iso.datetime(),
