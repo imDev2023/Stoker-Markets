@@ -255,61 +255,6 @@
   }
 }
 
-/* Compact (the lighter header candidates): the glyph alone until pressed, as every width under 640px has it. */
-.compact {
-  width: 40px;
-}
-
-.compact .trigger {
-  justify-content: center;
-  padding: 0;
-}
-
-.compact .word,
-.compact .kbd {
-  display: none;
-}
-
-/* In the nav pill (h7): a 36px segment like the links; open, the field grows leftward over them. */
-.inPill,
-.inPill .group,
-.inPill .bar,
-.inPill .disc {
-  height: 36px;
-}
-
-.inPill {
-  width: 36px;
-}
-
-.inPill .bar,
-.inPill .disc,
-.inPill .pill {
-  box-shadow: none;
-}
-
-.inPill .bar {
-  border-color: transparent;
-}
-
-.inPill.open .bar {
-  right: 44px;
-  border-color: var(--line);
-}
-
-.inPill .disc {
-  width: 36px;
-}
-
-.inPill .pills {
-  top: 6px;
-  right: 44px;
-}
-
-.inPill .pill {
-  box-shadow: var(--highlight), var(--shadow-raised);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .group,
   .bar,

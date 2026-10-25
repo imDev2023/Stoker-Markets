@@ -6,7 +6,6 @@ import { WalletReadyState } from "@solana/wallet-adapter-base";
 import { useEffect, useRef, useState } from "react";
 import { listLaunches } from "@/lib/api";
 import { shortAddress } from "@/lib/format";
-import { SchemeToggle } from "./SchemeToggle";
 import styles from "./WalletButton.module.css";
 
 /** The wallet's glyph: a card with its clasp. */
@@ -22,12 +21,8 @@ function Glyph() {
   );
 }
 
-/**
- * `inline` sits inside page content: it fills the width on phones, like the page's other main actions. `schemeToggle`
- * puts the light-or-dark toggle in the connected menu (the lighter header candidates, src/lib/header.ts, whose bar has
- * none; the footer carries it for a visitor without a wallet).
- */
-export function WalletButton({ variant = "header", schemeToggle = false }: { variant?: "header" | "inline"; schemeToggle?: boolean }) {
+/** `inline` sits inside page content: it fills the width on phones, like the page's other main actions. */
+export function WalletButton({ variant = "header" }: { variant?: "header" | "inline" }) {
   const { wallets, wallet, publicKey, connecting, select, connect, disconnect } = useWallet();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
@@ -100,12 +95,6 @@ export function WalletButton({ variant = "header", schemeToggle = false }: { var
             <button type="button" role="menuitem" onClick={() => { setOpen(false); void disconnect(); }}>
               Disconnect
             </button>
-            {schemeToggle && (
-              <div className={styles.menuRow}>
-                <span>Appearance</span>
-                <SchemeToggle />
-              </div>
-            )}
           </div>
         )}
       </div>
