@@ -143,8 +143,9 @@ describe("trading after Graduation", () => {
     const trader = await fundedWallet();
     const shown = TradeQuote.parse(await (await quote(mint, { side: "buy", amount: SOL(0.1).toString() })).json());
     expect(shown).toMatchObject({ venue: "pool", side: "buy", amountIn: SOL(0.1).toString(), completesCurve: false });
-    expect(shown.feeBps).toEqual({ raydium: 25, platform: 25, creator: 0 });
-    expect(shown.fees).toEqual({ raydium: "250000", platform: "250000", creator: "0" });
+    // The pool's creator fee is mainnet's 1% (the local chain carries that config since 2026-10-25), Raydium's 0.25%.
+    expect(shown.feeBps).toEqual({ raydium: 25, platform: 100, creator: 0 });
+    expect(shown.fees).toEqual({ raydium: "250000", platform: "1000000", creator: "0" });
 
     const creatorFees = await poolCreatorFees(migration.pool);
     const sol = await solOf(trader);

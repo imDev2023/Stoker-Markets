@@ -321,7 +321,8 @@ describe("after Graduation", () => {
   it("leaves a fee worth less than the collection minimum to grow, and collects it once it is worth it", async () => {
     const coin = await graduatedCoin();
     await runCollector(); // what the buyout and migration left behind
-    const tiny = await trade(coin.trader, coin.mint, "buy", SOL(0.01));
+    // At the pool's 1% creator fee a 0.005 SOL buy leaves 50,000 lamports, under the 100,000 minimum.
+    const tiny = await trade(coin.trader, coin.mint, "buy", SOL(0.005));
     await deliverWebhook([tiny.signature]);
     const fee = BigInt(tiny.quote.fees.platform);
     expect(fee).toBeLessThan(BigInt(env().collectMinLamports));

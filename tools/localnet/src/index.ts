@@ -40,6 +40,13 @@ const SOL_QUOTE_MINT = new PublicKey("So1111111111111111111111111111111111111111
 export const CPSWAP_CONFIG = new PublicKey("DHHEU8YC277qyBsc3hjZsHkQY1zdDhzumBZdErv6qEes");
 
 /**
+ * The CPMM config of the SOL route pools (routes.ts), which stand in for the real pools Jupiter routes through on
+ * mainnet: devnet's index 0 (0.25% trade fee, 0.25% creator fee), never the graduation config above, whose 1% creator fee
+ * would make every SOL swap cost what no real route does.
+ */
+export const ROUTE_POOL_CONFIG = new PublicKey("5MxLgy9oPdTC3YgkiePHqr3EoCRD9uLVYRQS2ANAs7wy");
+
+/**
  * A Token-2022 quote mint with a 1% transfer fee, made on the local chain at bootstrap (there is no fixture: the chain
  * creates it), standing in for the mainnet Quote Assets whose issuers withhold a fee on every transfer (33 of 573; the
  * PreStocks at 3%, reward-style tokens). Its address is derived from a fixed seed, so it is the same on every chain.
