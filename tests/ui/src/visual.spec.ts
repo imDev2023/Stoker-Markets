@@ -3,7 +3,7 @@
 import type { Page } from "@playwright/test";
 import { LedgerPage, Revenue } from "@launchpad/contract";
 import {
-  allowAirdrops, COIN_PNG, drain, expect, expectNoHorizontalOverflow, expectNoTruncatedText, fixedKeypair, giveCoins, listLaunches, QUOTES, SEED_CREATOR,
+  allowAirdrops, COIN_PNG, drain, expect, expectHydrated, expectNoHorizontalOverflow, expectNoTruncatedText, fixedKeypair, giveCoins, listLaunches, QUOTES, SEED_CREATOR,
   SEED_HOLDER, test,
 } from "./fixtures";
 import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, REWARD_QUOTE } from "./seedData";
@@ -48,7 +48,9 @@ async function snap(page: Page, name: string, mask = dynamic) {
     }
     await Promise.all([...document.images].map((img) => img.decode().catch(() => undefined)));
   });
-  // The truncation check waits for hydration, so the overflow check after it sees the finished layout.
+  // Hydrated before the shot, so the caret Playwright hides is on a field React already holds; the truncation check
+  // then polls past the font swaps, so the overflow check after it sees the finished layout.
+  await expectHydrated(page);
   await expectNoTruncatedText(page);
   await expectNoHorizontalOverflow(page);
   // A full-page capture of a scrolled page stitches the sticky header into the middle.
