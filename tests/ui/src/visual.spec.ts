@@ -1,5 +1,6 @@
 // Every screen at desktop and phone width, light and dark, against committed baselines. Values that change from run to
 // run (addresses, times, costs) are masked; everything else must match to the pixel.
+import { fileURLToPath } from "node:url";
 import type { Page } from "@playwright/test";
 import { LedgerPage, Revenue } from "@launchpad/contract";
 import {
@@ -25,6 +26,9 @@ const tradedDynamic = (page: Page) => [
   page.locator("a.mono"),
   page.locator("dl").filter({ hasText: "Launch transaction" }).locator(".mono"),
 ];
+
+/** The suite's screenshot styles plus the dialog's own; a call's `stylePath` replaces the config's, so both are named. */
+const DIALOG_STYLES = ["screenshot.css", "dialog.css"].map((name) => fileURLToPath(new URL(`./${name}`, import.meta.url)));
 
 /**
  * A panel taller than the phone's viewport is captured while the page is scrolled, where the sticky site header would
@@ -157,8 +161,9 @@ test("trade panel, buy and sell, quote and review", async ({ page, wallet }) => 
   await panel.getByRole("button", { name: "Review buy" }).click();
   const dialog = page.getByRole("dialog", { name: "Before you trade" });
   await expect(dialog).toBeVisible();
-  // Masks paint over everything, the modal included, so the dialog is captured on its own.
-  await expect(dialog).toHaveScreenshot("trade-disclaimer.png");
+  // Masks paint over everything, the modal included, so the dialog is captured on its own, with the page hidden under it
+  // (`dialog.css`: one bottom row of `trade-disclaimer.png` on the phone differed between runs, 2026-10-26).
+  await expect(dialog).toHaveScreenshot("trade-disclaimer.png", { stylePath: DIALOG_STYLES });
   await dialog.getByRole("checkbox").check();
   await dialog.getByRole("button", { name: "Continue" }).click();
   await expect(panel.getByRole("region", { name: "Review your trade" })).toBeVisible();
