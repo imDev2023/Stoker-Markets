@@ -96,8 +96,8 @@ test("assets page", async ({ page }) => {
 
 test("api page", async ({ page }) => {
   await page.goto("/api");
-  // The live answer carries the stack's own ports and addresses.
-  await snap(page, "api.png", (p) => [...dynamic(p), p.locator("pre[data-live]")]);
+  // The quickstart's base URL, its request and the live answer carry the stack's own port and addresses (`data-live`).
+  await snap(page, "api.png", (p) => [...dynamic(p), p.locator("[data-live]")]);
 });
 
 test("curated page", async ({ page }) => {
@@ -150,6 +150,8 @@ test("trade panel, buy and sell, quote and review", async ({ page, wallet }) => 
   await connectTestWallet(page, panel.getByRole("button", { name: "Connect wallet" }));
   await panel.getByRole("button", { name: "0.5 SOL" }).click();
   await expect(panel.getByText("You get about")).toBeVisible();
+  // The pointer rests on what it clicked and would draw its hover into the shot; park it first.
+  await page.mouse.move(0, 0);
   await expect(panel).toHaveScreenshot("trade-buy-quote.png", { mask: tradedDynamic(page) });
 
   await panel.getByRole("button", { name: "Review buy" }).click();
@@ -160,6 +162,8 @@ test("trade panel, buy and sell, quote and review", async ({ page, wallet }) => 
   await dialog.getByRole("checkbox").check();
   await dialog.getByRole("button", { name: "Continue" }).click();
   await expect(panel.getByRole("region", { name: "Review your trade" })).toBeVisible();
+  // The pointer rests on what it clicked and would draw its hover into the shot; park it first.
+  await page.mouse.move(0, 0);
   await expect(panel).toHaveScreenshot("trade-buy-review.png", { mask: tradedDynamic(page) });
   expect(wallet.requests).toHaveLength(0);
 
@@ -169,6 +173,8 @@ test("trade panel, buy and sell, quote and review", async ({ page, wallet }) => 
   await panel.getByLabel("You pay").fill("1000000");
   await expect(panel.getByText("Your wallet has no HRBR.", { exact: true })).toBeVisible();
   await expect(panel.getByText("You get about")).toBeVisible();
+  // The pointer rests on what it clicked and would draw its hover into the shot; park it first.
+  await page.mouse.move(0, 0);
   await expect(panel).toHaveScreenshot("trade-sell-over-balance.png", { mask: tradedDynamic(page) });
 });
 
@@ -195,6 +201,8 @@ test("trade panel paying with SOL on a USDC-paired coin, quote and review", asyn
   await expect(panel.getByRole("group", { name: "Pay with" }).getByRole("button", { name: "SOL" })).toHaveAttribute("aria-pressed", "true");
   await panel.getByRole("button", { name: "0.5 SOL" }).click();
   await expect(panel.getByText("You pay exactly")).toBeVisible();
+  // The pointer rests on what it clicked and would draw its hover into the shot; park it first.
+  await page.mouse.move(0, 0);
   await expect(panel).toHaveScreenshot("trade-sol-quote.png", { mask: tradedDynamic(page) });
 
   await panel.getByRole("button", { name: "Review buy" }).click();
@@ -202,6 +210,8 @@ test("trade panel paying with SOL on a USDC-paired coin, quote and review", asyn
   await dialog.getByRole("checkbox").check();
   await dialog.getByRole("button", { name: "Continue" }).click();
   await expect(panel.getByRole("region", { name: "Review your trade" })).toBeVisible();
+  // The pointer rests on what it clicked and would draw its hover into the shot; park it first.
+  await page.mouse.move(0, 0);
   await expect(panel).toHaveScreenshot("trade-sol-review.png", { mask: tradedDynamic(page) });
   expect(wallet.requests).toHaveLength(0);
 });

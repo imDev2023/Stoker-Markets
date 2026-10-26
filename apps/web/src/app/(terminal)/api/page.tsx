@@ -44,12 +44,12 @@ export default async function ApiPage() {
       <section id="quickstart" className={`card ${base.card} ${styles.section}`} aria-labelledby="quickstart-title">
         <h2 id="quickstart-title" className={`t-h3 ${base.cardTitle}`}>Quickstart</h2>
         <p className={styles.prose}>
-          The base URL is <code className={`${styles.code} ${styles.url}`}>{baseUrl}</code>. Every body is JSON, and every amount a raw integer
+          The base URL is <code className={`${styles.code} ${styles.url}`} data-live="">{baseUrl}</code>. Every body is JSON, and every amount a raw integer
           as a decimal string. The answer below came from the API for this page view.
         </p>
         <figure className={styles.figure}>
           <figcaption className={styles.caption}>Request</figcaption>
-          <pre className={styles.block}>{`curl ${baseUrl}/platform`}</pre>
+          <pre className={styles.block} data-live="">{`curl ${baseUrl}/platform`}</pre>
         </figure>
         {answer === null ? (
           <p className={base.note}>The API didn&apos;t answer just now; try the request yourself.</p>

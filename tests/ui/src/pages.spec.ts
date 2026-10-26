@@ -13,7 +13,7 @@ test("the API page is the whole reference, answered live, and the header and foo
   await expect(page.getByRole("contentinfo").getByRole("link", { name: "API" })).toHaveAttribute("href", "/api");
   await expect(page.locator('a[href*="docs/api.md"]')).toHaveCount(0);
   // The quickstart shows the answer the API gave for this page view: the cluster the stack runs on.
-  await expect(page.getByRole("region", { name: "Quickstart" }).locator("pre[data-live]")).toContainText('"cluster": "localnet"');
+  await expect(page.getByRole("region", { name: "Quickstart" }).getByRole("figure", { name: "Answer" }).locator("pre")).toContainText('"cluster": "localnet"');
   // Every section of the reference, each reachable from the contents.
   const sections = ["Reading, no key needed", "Preparing transactions", "Sign, send, report", "Referrals", "API keys and limits", "Errors", "The operator's endpoints"];
   for (const name of sections) await expect(page.getByRole("region", { name })).toBeVisible();
