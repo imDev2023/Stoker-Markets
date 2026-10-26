@@ -70,7 +70,7 @@ describe("Copy Protection", () => {
     const copier = await fundedWallet();
     // Eight stripes, the first colour the brighter: a picture with enough edges to hash (a flat one is not compared).
     const picture = png([240, 80, 20], [20, 40, 200]);
-    const launched = await launch(original, { name: `Ember Fox ${tag}`, symbol: `EMB${tag.slice(0, 4)}`, image: image(picture) });
+    const launched = await launch(original, { name: `Ember Fox ${tag}`, symbol: `EMB${tag.slice(0, 4)}`, image: image(picture), exact: true });
     await deliverWebhook([launched.signature]);
     const coin = await summary(launched.prepared.mint);
     expect(new Date(coin.protection.until).getTime() - new Date(coin.createdAt).getTime()).toBe(WINDOW_SECONDS * 1000);
@@ -101,22 +101,22 @@ describe("Copy Protection", () => {
     expect((await check({ creator: original.publicKey.toBase58(), symbol: ticker, name: `Ember Fox ${tag}`, image: picture })).symbol).toMatchObject({ status: "free" });
 
     // Prepare refuses with the same verdict, the ticker first.
-    const refused = await prepare({ creator: copier.publicKey.toBase58(), name: `Ember Fox ${tag}`, symbol: ticker, image: image(picture) });
+    const refused = await prepare({ creator: copier.publicKey.toBase58(), name: `Ember Fox ${tag}`, symbol: ticker, image: image(picture), exact: true });
     expect(refused.status).toBe(409);
     const body = (await refused.json()) as { error: string; copy: { kind: string; of: { mint: string } } };
     expect(body.copy).toMatchObject({ kind: "ticker", of: { mint: coin.mint } });
     expect(body.error).toBe(body.copy && (await check({ symbol: ticker })).symbol!.reason);
-    const byImage = await prepare({ creator: copier.publicKey.toBase58(), image: image(picture) });
+    const byImage = await prepare({ creator: copier.publicKey.toBase58(), image: image(picture), exact: true });
     expect(byImage.status).toBe(409);
     expect(((await byImage.json()) as { copy: { kind: string } }).copy.kind).toBe("image");
     // The original Creator relaunches their own ticker freely.
-    const again = await prepare({ creator: original.publicKey.toBase58(), name: `Ember Fox ${tag}`, symbol: ticker, image: image(picture) });
+    const again = await prepare({ creator: original.publicKey.toBase58(), name: `Ember Fox ${tag}`, symbol: ticker, image: image(picture), exact: true });
     expect(again.status).toBe(200);
 
     // After the window the copy launches, and carries a label naming the original.
     await sleep(Math.max(0, new Date(coin.protection.until).getTime() - Date.now() + 500));
     expect((await check({ symbol: ticker })).symbol).toMatchObject({ status: "free" });
-    const late = await launch(copier, { name: `Ember Fox ${tag}`, symbol: ticker, image: image(picture) });
+    const late = await launch(copier, { name: `Ember Fox ${tag}`, symbol: ticker, image: image(picture), exact: true });
     await deliverWebhook([late.signature]);
     const copy = await summary(late.prepared.mint);
     expect(copy.copyOf).toMatchObject({ kind: "ticker", mint: coin.mint, symbol: ticker, protectedUntil: coin.protection.until });
@@ -126,7 +126,7 @@ describe("Copy Protection", () => {
   it("labels a coin launched on our PlatformConfig without our API as a copy of a protected one", async () => {
     const tag = uniqueTag();
     const original = await fundedWallet();
-    const launched = await launch(original, { name: `Quiet Owl ${tag}`, symbol: `OWL${tag.slice(0, 4)}` });
+    const launched = await launch(original, { name: `Quiet Owl ${tag}`, symbol: `OWL${tag.slice(0, 4)}`, exact: true });
     await deliverWebhook([launched.signature]);
 
     const creator = await fundedWallet();

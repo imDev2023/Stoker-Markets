@@ -117,7 +117,7 @@ describe("the creator page", () => {
   it("keeps a coin paired with USDC apart, in USDC, beside the SOL one", async () => {
     const creator = await fundedWallet();
     const solCoin = await coinOf(creator);
-    const usdcCoin = await coinOf(creator, { symbol: "USDF", quoteMint: USDC.toBase58() });
+    const usdcCoin = await coinOf(creator, { symbol: "USDK", quoteMint: USDC.toBase58(), exact: true });
     const earnedSol = await curveBuy(solCoin, SOL(0.1));
     const trader = await fundedWallet();
     await mintLocalQuote(connection(), USDC, trader.publicKey, units(50));
@@ -131,7 +131,7 @@ describe("the creator page", () => {
       { quote: usdcQuote, earned: earnedUsdc.toString(), forwarded: "0", pending: earnedUsdc.toString() },
     ]);
     expect(e.launches.map((l) => [l.symbol, l.quote.mint, l.curve])).toEqual([
-      ["USDF", USDC.toBase58(), earnedUsdc.toString()],
+      ["USDK", USDC.toBase58(), earnedUsdc.toString()],
       [expect.stringMatching(/^T[A-Z0-9]{6}$/), WSOL, earnedSol.toString()],
     ]);
   });

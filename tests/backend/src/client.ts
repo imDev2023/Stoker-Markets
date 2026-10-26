@@ -45,6 +45,12 @@ export type LaunchForm = {
   airdrop?: { wallet: string; amount: string }[] | string;
   /** Leaves the Creator off the operator's airdrop list, to see the API refuse; otherwise `prepare` allows a Creator who sends an airdrop. */
   unlisted?: boolean;
+  /**
+   * Sends `name` and `symbol` exactly as given. Otherwise a four-character tag is added to both, so that the files that
+   * launch "PAYS" or "Board Sold" from one fresh wallet after another are not refused as copies of each other by Copy
+   * Protection inside the stack's window; the tag keeps a five-letter ticker within the ten the form allows.
+   */
+  exact?: boolean;
 };
 
 /** Operator: allows a Creator wallet an airdrop at launch; nobody may have one until then. */
@@ -65,12 +71,18 @@ export function uniqueTag() {
 
 export async function prepare(form: LaunchForm) {
   const body = new FormData();
-  const { airdrop, unlisted, ...rest } = form;
+  const { airdrop, unlisted, exact, ...rest } = form;
   if (airdrop !== undefined && !unlisted) await allowAirdrops(form.creator);
   // A name and ticker of their own for each launch: Copy Protection refuses a second coin with a launched coin's name or
-  // ticker for the test stack's 20 seconds, and every test's launches would otherwise be copies of the first.
+  // ticker for the test stack's window, and every test's launches would otherwise be copies of the first.
   const tag = uniqueTag();
   const fields = { name: `Tracer ${tag}`, symbol: `T${tag}`, description: "A tracer bullet", quoteMint: WSOL_MINT.toBase58(), ...rest };
+  if (!exact) {
+    const short = tag.slice(0, 4);
+    // An empty name or ticker stays empty: a test that sends one wants it refused.
+    if (rest.name) fields.name = `${rest.name} ${short}`;
+    if (rest.symbol) fields.symbol = `${rest.symbol}${short.slice(0, Math.max(0, 10 - rest.symbol.length))}`;
+  }
   for (const [k, v] of Object.entries(fields)) if (typeof v === "string") body.set(k, v);
   if (airdrop !== undefined) body.set("airdrop", typeof airdrop === "string" ? airdrop : JSON.stringify(airdrop));
   const image = form.image === undefined ? { bytes: PNG, type: "image/png" } : form.image;

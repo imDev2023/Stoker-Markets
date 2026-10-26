@@ -19,6 +19,7 @@ describe("launching a SOL-paired coin", () => {
       website: "https://example.com",
       x: "https://x.com/example",
       telegram: "https://t.me/example",
+      exact: true,
     });
 
     // The pool and the coin exist on-chain, created by our platform and priced in SOL.

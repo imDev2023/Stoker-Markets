@@ -51,7 +51,7 @@ describe("permanent metadata on Arweave", () => {
   it("puts a launched coin's image and metadata on Arweave, where the on-chain URI resolves, once the launch has landed", async () => {
     const creator = await fundedWallet();
     const before = await overview();
-    const res = await prepare({ creator: creator.publicKey.toBase58(), name: "Permanent", symbol: "PERM", description: "Kept for good", website: "https://example.com" });
+    const res = await prepare({ creator: creator.publicKey.toBase58(), name: "Permanent", symbol: "PERM", description: "Kept for good", website: "https://example.com", exact: true });
     expect(res.status).toBe(200);
     const prepared = PreparedLaunch.parse(await res.json());
     // The launch transaction names the Arweave address, and nothing is uploaded until the launch lands.
@@ -94,7 +94,7 @@ describe("permanent metadata on Arweave", () => {
     // A real PNG header followed by enough bytes to cost credits: the API checks the first bytes of an image.
     const bytes = new Uint8Array([...PNG, ...randomBytes(200_000)]);
     const topUpsBefore = (await ledger("arweave_top_up")).length;
-    const { prepared, signature } = await launch(creator, { name: "Heavy", symbol: "HEVY", image: { bytes, type: "image/png" } });
+    const { prepared, signature } = await launch(creator, { name: "Heavy", symbol: "HEVY", image: { bytes, type: "image/png" }, exact: true });
     expect(await (await deliverWebhook([signature])).json()).toMatchObject({ launched: 1 });
     const document = (await (await resolved(prepared.metadataUri)).json()) as { image: string };
     const imageId = idOf(document.image);
