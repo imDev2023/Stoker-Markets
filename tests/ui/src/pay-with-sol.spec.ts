@@ -12,8 +12,11 @@ const panel = (page: Page) => page.getByRole("region", { name: /^Trade( |$)/ });
 const payWith = (page: Page) => panel(page).getByRole("group", { name: "Pay with" });
 const review = (page: Page) => panel(page).getByRole("region", { name: "Review your trade" });
 
+/** A name per ticker, no two within one letter of each other: "Paid SOLN" and "Paid SOLB" were a near copy to Copy Protection. */
+const JTO_NAMES: Record<string, string> = { SOLB: "Bronze Pay", SOLN: "Nickel Pay", SOLS: "Silver Pay", SOLM: "Marble Pay", SOLQ: "Quartz Pay" };
+
 async function jtoCoin(symbol: string) {
-  return launchViaApi(await fundedKeypair(), { name: `Paid ${symbol}`, symbol, quote: "JTO" });
+  return launchViaApi(await fundedKeypair(), { name: JTO_NAMES[symbol] ?? `${symbol} ${symbol}`, symbol, quote: "JTO" });
 }
 
 async function openConnected(page: Page, mint: string) {

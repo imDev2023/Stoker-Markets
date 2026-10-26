@@ -44,7 +44,7 @@ export function CopyCheckCard({ name, symbol, image, creator }: { name: string; 
     };
   }, [anything, trimmedName, trimmedSymbol, image, creator]);
 
-  const days = result ? Math.round(result.protectionSeconds / 86_400) : null;
+  const window = result ? windowWords(result.protectionSeconds) : null;
   const rows: { field: Field; label: string; verdict: CopyVerdict | null }[] = [
     { field: "name", label: "Name", verdict: asked.name ? (result?.name ?? null) : null },
     { field: "symbol", label: "Ticker", verdict: asked.symbol ? (result?.symbol ?? null) : null },
@@ -65,9 +65,9 @@ export function CopyCheckCard({ name, symbol, image, creator }: { name: string; 
         ))}
       </ul>
       <p className={styles.note}>
-        {days === null
+        {window === null
           ? "A launched coin's name, ticker and image are its own for a while; nobody else can launch a copy here meanwhile."
-          : `Once launched, nobody else can use your coin's name, ticker or image here for ${days} ${days === 1 ? "day" : "days"}.`}
+          : `Once launched, nobody else can use your coin's name, ticker or image here for ${window}.`}
       </p>
     </section>
   );
@@ -83,4 +83,14 @@ function describe(r: { field: Field; verdict: CopyVerdict | null }, asked: boole
   if (r.verdict.kind === "near") return `Too close to ${of.symbol} (${of.name}), protected until ${until}`;
   if (r.field === "image") return `A copy of ${of.symbol}'s image, protected until ${until}`;
   return `Taken by ${of.name} (${of.symbol}) until ${until}`;
+}
+
+/** The window as words in its natural unit: "7 days" deployed, "45 seconds" on a test stack, never "0 days". */
+export function windowWords(seconds: number): string {
+  const unit = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  if (seconds >= 86_400 && seconds % 86_400 === 0) return unit(seconds / 86_400, "day");
+  if (seconds >= 3_600 && seconds % 3_600 === 0) return unit(seconds / 3_600, "hour");
+  if (seconds >= 60 && seconds % 60 === 0) return unit(seconds / 60, "minute");
+  if (seconds >= 86_400) return unit(Math.round(seconds / 8_640) / 10, "day");
+  return unit(seconds, "second");
 }

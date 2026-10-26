@@ -2,7 +2,7 @@
 // one without a price, and trading a coin paired with something other than SOL.
 import type { Page } from "@playwright/test";
 import { PreparedLaunch } from "@launchpad/contract";
-import { COIN_PNG, QUOTES, expect, fundQuote, fundedKeypair, launchViaApi, listLaunches, test } from "./fixtures";
+import { QUOTES, coinImage, expect, fundQuote, fundedKeypair, launchViaApi, listLaunches, test } from "./fixtures";
 import { chooseQuote } from "./launchPage";
 import { connectTestWallet } from "./wallet";
 
@@ -20,7 +20,8 @@ async function connectWallet(page: Page) {
 }
 
 async function fillCoin(page: Page, name: string, symbol: string) {
-  await page.locator('input[type="file"]').setInputFiles({ name: "coin.png", mimeType: "image/png", buffer: COIN_PNG });
+  // A picture of its own per ticker: Copy Protection refuses a second coin with a launched coin's image.
+  await page.locator('input[type="file"]').setInputFiles({ name: "coin.png", mimeType: "image/png", buffer: coinImage(symbol) });
   await page.getByLabel("Name").fill(name);
   await page.getByLabel("Ticker").fill(symbol);
 }

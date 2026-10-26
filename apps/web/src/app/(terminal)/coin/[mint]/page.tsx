@@ -132,18 +132,19 @@ export default async function CoinPage({ params, searchParams }: Props) {
             </dd>
           </div>
           <div>
-            <dt>Copy protection</dt>
+            <dt>Copy protection {protectionOpen ? "ended" : "until"}</dt>
             <dd>
-              {protectionOpen ? "Open" : "In force"}
+              <time dateTime={launch.protection.until}>{formatUtc(launch.protection.until)}</time>
               <span>
-                {protectionOpen ? "Anyone may use this coin's name, ticker and image again since " : "Nobody else can launch a coin here with this name, ticker or image until "}
-                <time dateTime={launch.protection.until}>{formatUtc(launch.protection.until)}</time>.
+                {protectionOpen
+                  ? "Anyone may use this coin's name, ticker and image again."
+                  : "Until then nobody else can launch a coin here with this name, ticker or image."}
                 {launch.copyOf && (
                   <>
                     {" "}
                     {copyKind(launch.copyOf.kind)}{" "}
                     <Link href={`/coin/${launch.copyOf.mint}`}>{launch.copyOf.name} ({launch.copyOf.symbol})</Link>, launched{" "}
-                    <time dateTime={launch.copyOf.launchedAt}>{formatUtc(launch.copyOf.launchedAt)}</time>.
+                    <time dateTime={launch.copyOf.launchedAt}>{formatUtc(launch.copyOf.launchedAt)}</time>
                   </>
                 )}
               </span>
