@@ -145,8 +145,8 @@
   pointer-events: none;
 }
 
-/* Under 1200px (where the pill, the wordmark and the actions no longer share a row) the pill gives way to the menu button; the account stays in the header, since the menu it opens is the way to disconnect and to a Creator's earnings. */
-@media (max-width: 1200px) {
+/* Under 1300px (where the pill, the wordmark and the actions no longer share a row; 1200px until the sixth word, Developers, 2026-10-25) the pill gives way to the menu button; the account stays in the header, since the menu it opens is the way to disconnect and to a Creator's earnings. */
+@media (max-width: 1300px) {
   .pill {
     display: none;
   }

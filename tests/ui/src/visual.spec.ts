@@ -1,9 +1,10 @@
 // Every screen at desktop and phone width, light and dark, against committed baselines. Values that change from run to
 // run (addresses, times, costs) are masked; everything else must match to the pixel.
+import { fileURLToPath } from "node:url";
 import type { Page } from "@playwright/test";
 import { LedgerPage, Revenue } from "@launchpad/contract";
 import {
-  allowAirdrops, COIN_PNG, drain, expect, expectNoHorizontalOverflow, expectNoTruncatedText, fixedKeypair, giveCoins, listLaunches, QUOTES, SEED_CREATOR,
+  allowAirdrops, COIN_PNG, drain, expect, expectHydrated, expectNoHorizontalOverflow, expectNoTruncatedText, fixedKeypair, giveCoins, listLaunches, QUOTES, SEED_CREATOR,
   SEED_HOLDER, test,
 } from "./fixtures";
 import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, REWARD_QUOTE } from "./seedData";
@@ -25,6 +26,9 @@ const tradedDynamic = (page: Page) => [
   page.locator("a.mono"),
   page.locator("dl").filter({ hasText: "Launch transaction" }).locator(".mono"),
 ];
+
+/** The suite's screenshot styles plus the dialog's own; a call's `stylePath` replaces the config's, so both are named. */
+const DIALOG_STYLES = ["screenshot.css", "dialog.css"].map((name) => fileURLToPath(new URL(`./${name}`, import.meta.url)));
 
 /**
  * A panel taller than the phone's viewport is captured while the page is scrolled, where the sticky site header would
@@ -48,7 +52,9 @@ async function snap(page: Page, name: string, mask = dynamic) {
     }
     await Promise.all([...document.images].map((img) => img.decode().catch(() => undefined)));
   });
-  // The truncation check waits for hydration, so the overflow check after it sees the finished layout.
+  // Hydrated before the shot, so the caret Playwright hides is on a field React already holds; the truncation check
+  // then polls past the font swaps, so the overflow check after it sees the finished layout.
+  await expectHydrated(page);
   await expectNoTruncatedText(page);
   await expectNoHorizontalOverflow(page);
   // A full-page capture of a scrolled page stitches the sticky header into the middle.
@@ -90,6 +96,17 @@ test("board sorted by market cap, stablecoin pairs only", async ({ page }) => {
 test("assets page", async ({ page }) => {
   await page.goto("/assets");
   await snap(page, "assets.png");
+});
+
+test("api page", async ({ page }) => {
+  await page.goto("/api");
+  // The quickstart's base URL, its request and the live answer carry the stack's own port and addresses (`data-live`).
+  await snap(page, "api.png", (p) => [...dynamic(p), p.locator("[data-live]")]);
+});
+
+test("curated page", async ({ page }) => {
+  await page.goto("/curated");
+  await snap(page, "curated.png");
 });
 
 test("asset page of a tokenized stock, with the coins priced in it", async ({ page }) => {
@@ -137,16 +154,21 @@ test("trade panel, buy and sell, quote and review", async ({ page, wallet }) => 
   await connectTestWallet(page, panel.getByRole("button", { name: "Connect wallet" }));
   await panel.getByRole("button", { name: "0.5 SOL" }).click();
   await expect(panel.getByText("You get about")).toBeVisible();
+  // The pointer rests on what it clicked and would draw its hover into the shot; park it first.
+  await page.mouse.move(0, 0);
   await expect(panel).toHaveScreenshot("trade-buy-quote.png", { mask: tradedDynamic(page) });
 
   await panel.getByRole("button", { name: "Review buy" }).click();
   const dialog = page.getByRole("dialog", { name: "Before you trade" });
   await expect(dialog).toBeVisible();
-  // Masks paint over everything, the modal included, so the dialog is captured on its own.
-  await expect(dialog).toHaveScreenshot("trade-disclaimer.png");
+  // Masks paint over everything, the modal included, so the dialog is captured on its own, with the page hidden under it
+  // (`dialog.css`: one bottom row of `trade-disclaimer.png` on the phone differed between runs, 2026-10-26).
+  await expect(dialog).toHaveScreenshot("trade-disclaimer.png", { stylePath: DIALOG_STYLES });
   await dialog.getByRole("checkbox").check();
   await dialog.getByRole("button", { name: "Continue" }).click();
   await expect(panel.getByRole("region", { name: "Review your trade" })).toBeVisible();
+  // The pointer rests on what it clicked and would draw its hover into the shot; park it first.
+  await page.mouse.move(0, 0);
   await expect(panel).toHaveScreenshot("trade-buy-review.png", { mask: tradedDynamic(page) });
   expect(wallet.requests).toHaveLength(0);
 
@@ -156,6 +178,8 @@ test("trade panel, buy and sell, quote and review", async ({ page, wallet }) => 
   await panel.getByLabel("You pay").fill("1000000");
   await expect(panel.getByText("Your wallet has no HRBR.", { exact: true })).toBeVisible();
   await expect(panel.getByText("You get about")).toBeVisible();
+  // The pointer rests on what it clicked and would draw its hover into the shot; park it first.
+  await page.mouse.move(0, 0);
   await expect(panel).toHaveScreenshot("trade-sell-over-balance.png", { mask: tradedDynamic(page) });
 });
 
@@ -182,6 +206,8 @@ test("trade panel paying with SOL on a USDC-paired coin, quote and review", asyn
   await expect(panel.getByRole("group", { name: "Pay with" }).getByRole("button", { name: "SOL" })).toHaveAttribute("aria-pressed", "true");
   await panel.getByRole("button", { name: "0.5 SOL" }).click();
   await expect(panel.getByText("You pay exactly")).toBeVisible();
+  // The pointer rests on what it clicked and would draw its hover into the shot; park it first.
+  await page.mouse.move(0, 0);
   await expect(panel).toHaveScreenshot("trade-sol-quote.png", { mask: tradedDynamic(page) });
 
   await panel.getByRole("button", { name: "Review buy" }).click();
@@ -189,6 +215,8 @@ test("trade panel paying with SOL on a USDC-paired coin, quote and review", asyn
   await dialog.getByRole("checkbox").check();
   await dialog.getByRole("button", { name: "Continue" }).click();
   await expect(panel.getByRole("region", { name: "Review your trade" })).toBeVisible();
+  // The pointer rests on what it clicked and would draw its hover into the shot; park it first.
+  await page.mouse.move(0, 0);
   await expect(panel).toHaveScreenshot("trade-sol-review.png", { mask: tradedDynamic(page) });
   expect(wallet.requests).toHaveLength(0);
 });

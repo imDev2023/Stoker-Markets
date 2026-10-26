@@ -262,6 +262,23 @@ export async function expectNoTruncatedText(page: Page) {
   await expect.poll(cut, { message: "text cut off with an ellipsis" }).toEqual([]);
 }
 
+/**
+ * Every field claimed by React. Playwright hides the caret for a screenshot by writing an inline style on every input
+ * and restoring it after; React hydrating in that window finds an attribute the server never rendered and reports a
+ * hydration mismatch, a console error that fails the test (`board-empty.png`, 2026-10-26). On a cold `next dev` load
+ * hydration can land after the network is idle, so a shot taken straight after a load waits for it first: a hydrated
+ * element carries React's fiber key.
+ */
+export async function expectHydrated(page: Page) {
+  const unclaimed = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll("input, textarea, [contenteditable]")]
+        .filter((el) => !Object.keys(el).some((key) => key.startsWith("__reactFiber$")))
+        .map((el) => `${el.tagName.toLowerCase()}[aria-label="${el.getAttribute("aria-label") ?? ""}"]`),
+    );
+  await expect.poll(unclaimed, { message: "fields React has not hydrated yet" }).toEqual([]);
+}
+
 export const test = base.extend<{
   stack: StackEnv;
   wallet: TestWallet;

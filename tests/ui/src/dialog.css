@@ -1,0 +1,10 @@
+/* Applied while a dialog alone is shot, with screenshot.css: the page is hidden under it, since the dialog's edge is
+   anti-aliased against the page through the translucent backdrop and the page beneath (a trade's age, a price) changes
+   between runs. */
+body > * {
+  visibility: hidden;
+}
+
+dialog[open] {
+  visibility: visible;
+}

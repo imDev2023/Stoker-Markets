@@ -12,7 +12,7 @@ import styles from "./SiteHeader.module.css";
  * Every page's head (owner, 2026-10-13, H4 on "Stoker Header"): the sections in a detached pill at the bar's middle,
  * raised off a bar with no hairline so the page's colour runs under it, the mark far left and, far right, the gooey
  * search, the light-or-dark toggle, "Stoke a coin" (the one filled action) and the account. The pill sits in the flow
- * between the wordmark and the actions, so it can never run into them; under 1200px it goes and a menu button opens
+ * between the wordmark and the actions, so it can never run into them; under 1300px it goes and a menu button opens
  * the full-height overlay; under 640px the search, the toggle and the launch button keep their glyphs alone.
  */
 export function SiteHeader({ cluster }: { cluster: string }) {

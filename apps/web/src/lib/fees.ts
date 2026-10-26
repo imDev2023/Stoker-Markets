@@ -24,6 +24,12 @@ export function creatorEarnings(platform: PlatformInfo) {
     pool,
     /** The share of what the platform collects that goes on to the Creator, in percent. */
     share: pct(platform.creatorForward.shareBps),
+    /**
+     * The one figure the landing leads with (owner, 2026-10-25: about 0.5% everywhere; the rehearsal's chain pays a
+     * smaller pool share than mainnet's and the hero must not read it out): the curve's, which is the rule's figure on
+     * every cluster. The pages that show a coin's own numbers use `summary`.
+     */
+    headline: `~${curve}% of every trade`,
     /** "about 0.5% of every trade, on the curve and after graduation", or each figure when the two differ. */
     summary: curve === pool
       ? `~${curve}% of every trade, on the curve and after graduation`
