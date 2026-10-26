@@ -13,6 +13,7 @@ import { landedError } from "@/lib/transactions";
 import { creatorEarnings, creatorShareOf, tradingFee } from "@/lib/fees";
 import { COIN_DECIMALS, COIN_SUPPLY, formatAmount, formatUnits, isSol, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { quoteKind } from "@/lib/landing";
+import { CopyCheckCard } from "./CopyCheckCard";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
 import { LaunchOptions, LaunchType, supplyShare, useLaunchOptions } from "./LaunchOptions";
 import { PairMark } from "./PairMark";
@@ -240,6 +241,7 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
                 <p className={styles.hint}>PNG, JPEG, WebP or GIF up to 2 MB, square. A name up to 32 characters, a ticker up to 10.</p>
               </div>
             </div>
+            <CopyCheckCard name={name} symbol={symbol} image={image} creator={publicKey?.toBase58() ?? null} />
             <label className={styles.field}>
               <span>
                 Description <em>optional</em>

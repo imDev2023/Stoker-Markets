@@ -57,11 +57,20 @@ export async function allowAirdrops(wallet: string) {
   if (!res.ok) throw new Error(`allowing ${wallet} an airdrop failed: ${res.status} ${await res.text()}`);
 }
 
+/** Six letters and digits no other launch of this process gets, short enough for a ticker beside a one-letter prefix. */
+export function uniqueTag() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  return Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => alphabet[b % alphabet.length]).join("");
+}
+
 export async function prepare(form: LaunchForm) {
   const body = new FormData();
   const { airdrop, unlisted, ...rest } = form;
   if (airdrop !== undefined && !unlisted) await allowAirdrops(form.creator);
-  const fields = { name: "Tracer", symbol: "TRCR", description: "A tracer bullet", quoteMint: WSOL_MINT.toBase58(), ...rest };
+  // A name and ticker of their own for each launch: Copy Protection refuses a second coin with a launched coin's name or
+  // ticker for the test stack's 20 seconds, and every test's launches would otherwise be copies of the first.
+  const tag = uniqueTag();
+  const fields = { name: `Tracer ${tag}`, symbol: `T${tag}`, description: "A tracer bullet", quoteMint: WSOL_MINT.toBase58(), ...rest };
   for (const [k, v] of Object.entries(fields)) if (typeof v === "string") body.set(k, v);
   if (airdrop !== undefined) body.set("airdrop", typeof airdrop === "string" ? airdrop : JSON.stringify(airdrop));
   const image = form.image === undefined ? { bytes: PNG, type: "image/png" } : form.image;

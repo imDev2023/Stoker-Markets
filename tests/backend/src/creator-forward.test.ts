@@ -101,7 +101,7 @@ describe("the creator page", () => {
       [second, shares[1]!.toString(), "0", "live"],
       [first, (shares[0]! + shares[2]!).toString(), "0", "live"],
     ]);
-    expect(e.launches[0]).toMatchObject({ name: "Tracer", symbol: "TRCR", quote: SOL_QUOTE, image: expect.stringContaining(second) });
+    expect(e.launches[0]).toMatchObject({ name: expect.stringMatching(/^Tracer /), symbol: expect.stringMatching(/^T[A-Z0-9]{6}$/), quote: SOL_QUOTE, image: expect.stringContaining(second) });
     // There is nothing on-chain for the Creator to claim: their LaunchLab vault was never paid into.
     expect(await creatorVault(creator.publicKey)).toBe(0n);
   });
@@ -117,7 +117,7 @@ describe("the creator page", () => {
   it("keeps a coin paired with USDC apart, in USDC, beside the SOL one", async () => {
     const creator = await fundedWallet();
     const solCoin = await coinOf(creator);
-    const usdcCoin = await coinOf(creator, { symbol: "USDP", quoteMint: USDC.toBase58() });
+    const usdcCoin = await coinOf(creator, { symbol: "USDF", quoteMint: USDC.toBase58() });
     const earnedSol = await curveBuy(solCoin, SOL(0.1));
     const trader = await fundedWallet();
     await mintLocalQuote(connection(), USDC, trader.publicKey, units(50));
@@ -131,8 +131,8 @@ describe("the creator page", () => {
       { quote: usdcQuote, earned: earnedUsdc.toString(), forwarded: "0", pending: earnedUsdc.toString() },
     ]);
     expect(e.launches.map((l) => [l.symbol, l.quote.mint, l.curve])).toEqual([
-      ["USDP", USDC.toBase58(), earnedUsdc.toString()],
-      ["TRCR", WSOL, earnedSol.toString()],
+      ["USDF", USDC.toBase58(), earnedUsdc.toString()],
+      [expect.stringMatching(/^T[A-Z0-9]{6}$/), WSOL, earnedSol.toString()],
     ]);
   });
 });
