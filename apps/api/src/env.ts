@@ -63,6 +63,8 @@ export type Bindings = {
   POOL_BACKFILL_SECONDS: string;
   /** Copy Protection (#120, ADR 0012): for this long after a launch nobody else may launch a coin here with its name, ticker or image; seven days unless set. */
   COPY_PROTECTION_SECONDS?: string;
+  /** Bundle Radar (#41, ADR 0013): a buy in the launch's slot or this many after it is a snipe; 5 unless set (about two seconds). */
+  SNIPE_WINDOW_SLOTS?: string;
   /** The Authorization header value Helius sends with every webhook delivery. */
   HELIUS_WEBHOOK_SECRET: string;
   /**
@@ -161,6 +163,8 @@ export type Config = {
   creatorForwardMinLamports: bigint;
   /** Copy Protection's window after a launch, in seconds. */
   copyProtectionSeconds: number;
+  /** Bundle Radar's Snipe Window after a launch, in slots after the launch's own. */
+  snipeWindowSlots: number;
   rewardRulesLeadSeconds: number;
   burnShareBps: number;
   flywheelShareBps: number;
@@ -218,6 +222,8 @@ const BURN_MIN_SPEND_DEFAULT_LAMPORTS = 10_000_000n;
 const CREATOR_FORWARD_MIN_DEFAULT_LAMPORTS = 10_000_000n;
 /** Seven days: the owner's choice (2026-10-26), a setting so it can become 30. */
 export const COPY_PROTECTION_DEFAULT_SECONDS = 7 * 86_400;
+/** Five slots, about two seconds: a bot that watches the program for pool creations buys in the launch's slot or the next few. */
+export const SNIPE_WINDOW_DEFAULT_SLOTS = 5;
 const FEE_CHANGE_LEAD_DEFAULT_SECONDS = 24 * 60 * 60;
 /** Curve rule writes per Quote Registry refresh; a first run over mainnet's hundreds of Quote Assets completes over a few runs. */
 const QUOTE_RULE_WRITES_DEFAULT = 120;
@@ -318,6 +324,7 @@ export function config(env: Bindings): Config {
     graduationAlertAfterSeconds: seconds(env.GRADUATION_ALERT_AFTER_SECONDS, "GRADUATION_ALERT_AFTER_SECONDS"),
     poolBackfillSeconds: seconds(env.POOL_BACKFILL_SECONDS, "POOL_BACKFILL_SECONDS"),
     copyProtectionSeconds: env.COPY_PROTECTION_SECONDS ? seconds(env.COPY_PROTECTION_SECONDS, "COPY_PROTECTION_SECONDS") : COPY_PROTECTION_DEFAULT_SECONDS,
+    snipeWindowSlots: env.SNIPE_WINDOW_SLOTS ? slots(env.SNIPE_WINDOW_SLOTS, "SNIPE_WINDOW_SLOTS") : SNIPE_WINDOW_DEFAULT_SLOTS,
     alertWebhookUrl: env.ALERT_WEBHOOK_URL ? new URL(env.ALERT_WEBHOOK_URL).toString() : null,
     helius: heliusConfig(env),
     mintKeySecret: mintKeySecret(env.MINT_KEY_SECRET),
@@ -395,6 +402,12 @@ function perMinute(raw: string | undefined, name: string, fallback: number) {
   if (raw === undefined || raw === "") return fallback;
   const n = Number(raw);
   if (!Number.isInteger(n) || n <= 0) throw new Error(`${name} must be a whole number of requests above zero (got ${raw})`);
+  return n;
+}
+
+function slots(raw: string, name: string) {
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 0) throw new Error(`${name} must be a whole number of slots (got ${raw})`);
   return n;
 }
 

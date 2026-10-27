@@ -32,9 +32,14 @@ const DIALOG_STYLES = ["screenshot.css", "dialog.css"].map((name) => fileURLToPa
 
 /**
  * A panel taller than the phone's viewport is captured while the page is scrolled, where the sticky site header would
- * sit over its top, wallet address and all; for such a shot the header scrolls away with the page.
+ * sit over its top, wallet address and all; for such a shot the header scrolls away with the page. The page's scroll
+ * padding, which keeps anything scrolled into view clear of that header, goes with it: Playwright scrolls a panel that
+ * fits the viewport into view and then captures the viewport alone, and with the padding kept a panel taller than the
+ * viewport less the padding lands with its top at the padding and its bottom off screen, blank in the shot
+ * (`trade-sol-quote.png` on the phone, 2026-10-27).
  */
-const unstickHeader = (page: Page) => page.addStyleTag({ content: "body > header { position: static !important; }" });
+const unstickHeader = (page: Page) =>
+  page.addStyleTag({ content: "body > header { position: static !important; } html { scroll-padding-top: 0 !important; }" });
 
 async function snap(page: Page, name: string, mask = dynamic) {
   // Check the settled page: hydrated, images in and web fonts swapped.

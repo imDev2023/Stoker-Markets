@@ -67,6 +67,14 @@ export const SECTIONS: readonly Section[] = [
         text: <>Indexed trades (with any referral fee paid), price candles, and the top holders read from the chain.</>,
       },
       {
+        endpoint: ["GET /launches/:mint/trust"],
+        text: (
+          <>
+            The coin&apos;s trust figures, computed from the indexed trades and launches on every request so anyone can recompute them (ADR 0013). <C>creator</C>: how many coins the Creator launched here and how many graduated, and their First Buy in the launch transaction. <C>snipers</C>, Bundle Radar: every wallet but the Creator that bought in the Snipe Window (<C>windowSlots</C>, the launch&apos;s slot and five after it deployed), largest buy first, each with the slot it landed in after the launch&apos;s, what it bought and what it holds by its trades since, and how many others paid exactly the same amount; the totals as shares of the supply, and how many wallets landed in the launch&apos;s own slot or matched another&apos;s amount. A label informs; none stops a trade.
+          </>
+        ),
+      },
+      {
         endpoint: "GET /launches/:mint/quote",
         text: (
           <>
