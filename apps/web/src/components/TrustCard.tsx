@@ -79,7 +79,7 @@ export function TrustCard({ trust, holders }: {
           <div key={r.term} className={styles.row}>
             <dt><span className={`${styles.dot} ${styles[r.tone]}`} aria-hidden /> {r.term}</dt>
             <dd>
-              {r.text}
+              <span>{r.text}</span>
               {r.detail && <span className={styles.detail}>{r.detail}</span>}
             </dd>
           </div>
