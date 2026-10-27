@@ -43,6 +43,11 @@
   list-style: none;
 }
 
+/* The coin's own links first; the places it can be looked up elsewhere follow, set apart by a gap. */
+.links li:not(.elsewhere) + .elsewhere {
+  margin-left: 10px;
+}
+
 .description {
   margin: 0;
   max-width: 64ch;

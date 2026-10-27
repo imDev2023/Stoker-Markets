@@ -1,6 +1,6 @@
 import {
   API_KEY_HEADER, AirdropStatus, ApiError, ApiKeyList, BurnsPage, CandleList, CoinRewards, CopyCheck, CreatorEarnings, CreatorForwardList, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
-  HolderList, IssuedApiKey, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PreparedAirdrop,
+  HolderList, LaunchTrust, IssuedApiKey, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PreparedAirdrop,
   PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAsset, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, TradeList,
   TradeQuote, WalletRewards,
   type AnnounceFeeChange, type CandleInterval, type CreateApiKey, type CurveStatus, type LaunchSort, type PrepareTradeRequest,
@@ -77,6 +77,10 @@ export async function listLaunchQuotes() {
 /** Top holders and the Creator's holding, read from the chain by the API. */
 export async function getHolders(mint: string) {
   return read(await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/holders`, { cache: "no-store" }), HolderList);
+}
+
+export async function getTrust(mint: string) {
+  return read(await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/trust`, { cache: "no-store" }), LaunchTrust);
 }
 
 export async function getLaunch(mint: string): Promise<LaunchSummary | null> {

@@ -18,6 +18,13 @@ export function isSol(quote: Pick<QuoteRef, "mint">) {
 export const COIN_DECIMALS = 6;
 export const COIN_SUPPLY = 1_000_000_000;
 
+/** A share of the supply (0 to 1) as a percentage: two decimals below 1%, one above, and "<0.01%" for a trace. */
+export function formatShare(share: number) {
+  const pct = share * 100;
+  if (pct > 0 && pct < 0.01) return "<0.01%";
+  return `${pct.toFixed(pct < 1 ? 2 : 1)}%`;
+}
+
 export function shortAddress(address: string) {
   return `${address.slice(0, 4)}…${address.slice(-4)}`;
 }

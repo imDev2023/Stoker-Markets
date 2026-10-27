@@ -1,5 +1,5 @@
 import type { HolderList, HolderKind } from "@launchpad/contract";
-import { explorerUrl, shortAddress } from "@/lib/format";
+import { explorerUrl, formatShare as percent, shortAddress } from "@/lib/format";
 import styles from "./Holders.module.css";
 
 /** How many holders the card lists; the API returns up to 20. */
@@ -10,12 +10,8 @@ const LABELS: Partial<Record<HolderKind, string>> = { curve: "Curve", pool: "Ray
 /** Holders named next to their address: the Creator, and the platform's own wallets, which a Fee Key pays in the coin. */
 const BADGES: Partial<Record<HolderKind, string>> = { creator: "Creator", treasury: "Platform treasury", operations: "Platform operations" };
 
-/** A share of the supply as a percentage: two decimals below 1%, one above. */
-function percent(share: number) {
-  const pct = share * 100;
-  if (pct > 0 && pct < 0.01) return "<0.01%";
-  return `${pct.toFixed(pct < 1 ? 2 : 1)}%`;
-}
+/** What a holding is worth at the market cap: the share of the supply times what the whole supply is worth. */
+const usd = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: n < 1 ? 4 : n < 1000 ? 2 : 0 });
 
 function creatorLine(h: HolderList) {
   if (h.creator.status === "holding") return `The Creator holds ${percent(h.creator.share)} of the supply.`;
@@ -27,9 +23,13 @@ function creatorLine(h: HolderList) {
  * The coin's largest holders, read from the chain, and whether its Creator still holds. The curve (and after Graduation,
  * the Raydium pool) is named rather than linked: it holds the coins nobody has bought yet.
  */
-export function Holders({ holders, platform, headingHidden = false }: {
+export function Holders({ holders, platform, snipers = new Set(), marketCapUsd = null, headingHidden = false }: {
   holders: HolderList | null;
   platform: { cluster: string; rpcUrl: string };
+  /** Wallets Bundle Radar saw buy in the Snipe Window (`TrustCard`), marked in the list. */
+  snipers?: Set<string>;
+  /** What the whole supply is worth, for a value beside each share; null when the Quote Asset has no reliable price. */
+  marketCapUsd?: number | null;
   /** When a tab names the panel: the heading stays as the region's name, unseen. */
   headingHidden?: boolean;
 }) {
@@ -54,8 +54,12 @@ export function Holders({ holders, platform, headingHidden = false }: {
                     </a>
                   )}
                   {BADGES[h.kind] && <span className={styles.badge}>{BADGES[h.kind]}</span>}
+                  {snipers.has(h.owner) && <span className={`${styles.badge} ${styles.sniper}`}>Sniper</span>}
                 </span>
-                <span className={`mono ${styles.share}`}>{percent(h.share)}</span>
+                <span className={`mono ${styles.share}`}>
+                  {percent(h.share)}
+                  {marketCapUsd !== null && <span className={styles.value}>{usd(h.share * marketCapUsd)}</span>}
+                </span>
               </li>
             ))}
           </ol>

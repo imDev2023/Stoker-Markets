@@ -41,6 +41,7 @@ import { announcementRoutes, operatorFeeRoutes, operatorViewRoutes, platformFees
 import { runBurns } from "./burn/engine";
 import { runRewardRounds } from "./rewards/engine";
 import { tradeRoutes } from "./routes/trades";
+import { trustRoutes } from "./routes/trust";
 
 const app = new Hono<AppEnv>();
 
@@ -220,6 +221,7 @@ app.route("/v1", launchModeRoutes);
 app.route("/v1", copyRoutes);
 app.route("/v1", quotes);
 app.route("/v1", tradeRoutes);
+app.route("/v1", trustRoutes);
 app.route("/v1", creatorEarningsRoutes);
 app.route("/v1", revenueRoutes);
 app.route("/v1", rewardRoutes);

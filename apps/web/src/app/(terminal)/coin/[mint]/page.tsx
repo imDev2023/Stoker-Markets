@@ -2,7 +2,7 @@ import { creatorEarnings } from "@/lib/fees";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAirdrop, getCandles, getCoinRewards, getHolders, getLaunch, getPlatform, getQuoteAsset, listTrades } from "@/lib/api";
+import { getAirdrop, getCandles, getCoinRewards, getHolders, getLaunch, getPlatform, getQuoteAsset, getTrust, listTrades } from "@/lib/api";
 import { explorerUrl, formatUtc, isSol, quoteTicker, shortAddress } from "@/lib/format";
 import { AirdropCard } from "@/components/AirdropCard";
 import { CoinMarket } from "@/components/CoinMarket";
@@ -33,10 +33,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function CoinPage({ params, searchParams }: Props) {
   const { mint } = await params;
   const referrer = referrerFrom(await searchParams);
-  const [launch, platform, trades, candles, holders, airdrop] = await Promise.all([
+  const [launch, platform, trades, candles, holders, trust, airdrop] = await Promise.all([
     getLaunch(mint), getPlatform(), listTrades(mint), getCandles(mint, "1m"),
-    // A 404 (no such coin) or an unreadable chain leaves the card to retry, rather than failing the page.
+    // A 404 (no such coin) or an unreadable chain leaves the cards to retry, rather than failing the page.
     getHolders(mint).catch(() => null),
+    getTrust(mint).catch(() => null),
     getAirdrop(mint),
   ]);
   if (!launch) notFound();
@@ -63,6 +64,12 @@ export default async function CoinPage({ params, searchParams }: Props) {
     ["X", launch.links.x],
     ["Telegram", launch.links.telegram],
   ].filter((l): l is [string, string] => Boolean(l[1]));
+  // Where else the coin can be looked up or traded (#41): the explorer on this cluster, and the aggregators, which know mainnet alone.
+  const elsewhere: [string, string][] = [
+    ["Explorer", explorerUrl("address", launch.mint, platform)],
+    ["DEX Screener", `https://dexscreener.com/solana/${launch.mint}`],
+    ["Jupiter", `https://jup.ag/swap/${launch.quote.mint}-${launch.mint}`],
+  ];
 
   return (
     <article className={`shell ${styles.page}`}>
@@ -73,15 +80,18 @@ export default async function CoinPage({ params, searchParams }: Props) {
             <PairMark base={launch.symbol} quote={quote} size="fit" />
           </h1>
           <p className={styles.name}>{launch.name}</p>
-          {links.length > 0 && (
-            <ul className={styles.links}>
-              {links.map(([label, href]) => (
-                <li key={label}>
-                  <a href={href} className="chip" target="_blank" rel="noreferrer nofollow">{label}</a>
-                </li>
-              ))}
-            </ul>
-          )}
+          <ul className={styles.links}>
+            {links.map(([label, href]) => (
+              <li key={label}>
+                <a href={href} className="chip" target="_blank" rel="noreferrer nofollow">{label}</a>
+              </li>
+            ))}
+            {elsewhere.map(([label, href]) => (
+              <li key={label} className={styles.elsewhere}>
+                <a href={href} className="chip" target="_blank" rel="noreferrer">{label}</a>
+              </li>
+            ))}
+          </ul>
         </div>
       </header>
 
@@ -92,7 +102,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
       <PairStats launch={launch} quoteAsset={quoteAsset} />
 
       <CoinMarket
-        initial={launch} platform={platform} initialTrades={trades.trades} initialCandles={candles} initialHolders={holders} renderedAt={Date.now()}
+        initial={launch} platform={platform} initialTrades={trades.trades} initialCandles={candles} initialHolders={holders} initialTrust={trust} renderedAt={Date.now()}
         referrer={referrer} aside={<QuoteCard launch={launch} quoteAsset={quoteAsset} />}
       />
 
