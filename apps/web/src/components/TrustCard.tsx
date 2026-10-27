@@ -58,7 +58,7 @@ export function TrustCard({ trust, holders }: {
       rows.push({
         term: "Snipers",
         tone: "caution",
-        text: `${count(s.wallets.length, "wallet")} bought ${percent(s.boughtShare)} in ${window} and hold ${percent(s.heldShare)} now, by their trades here.`,
+        text: `${count(s.wallets.length, "wallet")} bought ${percent(s.boughtShare)} in ${window} and ${s.wallets.length === 1 ? "holds" : "hold"} ${percent(s.heldShare)} now, by ${s.wallets.length === 1 ? "its" : "their"} trades here.`,
         ...(bundle ? { detail: bundle } : {}),
       });
     }
