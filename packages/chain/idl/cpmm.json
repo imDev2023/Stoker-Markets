@@ -1359,7 +1359,7 @@
         "* `init_amount_0` - the initial amount_0 to deposit",
         "* `init_amount_1` - the initial amount_1 to deposit",
         "* `open_time` - the timestamp allowed for swap",
-        "* `creator_fee_on` - creator fee model, 0：both token0 and token1 (depends on the input), 1: only token0, 2: only token1",
+        "* `creator_fee_on` - creator fee model, 0\uff1aboth token0 and token1 (depends on the input), 1: only token0, 2: only token1",
         ""
       ],
       "discriminator": [
@@ -2590,6 +2590,13 @@
             "type": "u64"
           },
           {
+            "name": "creator_fee_share_rate",
+            "docs": [
+              "The share of the creator fee retained by the protocol, denominated in hundredths of a bip (10^-6); zero means the creator receives the whole creator fee. Overridden by a CreatorFeeShare account when one exists for the pool creator. Carved out of the padding, so the account length is unchanged."
+            ],
+            "type": "u64"
+          },
+          {
             "name": "padding",
             "docs": [
               "padding"
@@ -2597,7 +2604,7 @@
             "type": {
               "array": [
                 "u64",
-                15
+                14
               ]
             }
           }

@@ -19,6 +19,8 @@ export { expect };
 export const QUOTES = { SOL: new PublicKey("So11111111111111111111111111111111111111112"), ...LOCAL_QUOTES };
 
 export const COIN_PNG = readFileSync(new URL("../fixtures/coin.png", import.meta.url));
+import { coinImage } from "./coinImage";
+export { coinImage };
 
 export function stackEnv(): StackEnv {
   const raw = process.env.LAUNCHPAD_STACK;
@@ -113,7 +115,8 @@ export async function launchViaApi(creator: Keypair, { quote = "SOL", airdrop, .
     await allowAirdrops(creator.publicKey);
     form.set("airdrop", JSON.stringify(airdrop));
   }
-  form.set("image", new Blob([COIN_PNG], { type: "image/png" }), "coin.png");
+  // A picture of its own per ticker: Copy Protection would refuse a second coin with the same one.
+  form.set("image", new Blob([new Uint8Array(coinImage(fields.symbol))], { type: "image/png" }), "coin.png");
   const res = await fetch(`${stackEnv().apiUrl}/v1/launches/prepare`, { method: "POST", body: form });
   if (!res.ok) throw new Error(`prepare failed: ${res.status} ${await res.text()}`);
   const prepared = PreparedLaunch.parse(await res.json());
@@ -260,6 +263,23 @@ export async function expectNoTruncatedText(page: Page) {
         .map((el) => `${el.textContent} (${el.scrollWidth}px in ${el.clientWidth}px)`),
     );
   await expect.poll(cut, { message: "text cut off with an ellipsis" }).toEqual([]);
+}
+
+/**
+ * Every field claimed by React. Playwright hides the caret for a screenshot by writing an inline style on every input
+ * and restoring it after; React hydrating in that window finds an attribute the server never rendered and reports a
+ * hydration mismatch, a console error that fails the test (`board-empty.png`, 2026-10-26). On a cold `next dev` load
+ * hydration can land after the network is idle, so a shot taken straight after a load waits for it first: a hydrated
+ * element carries React's fiber key.
+ */
+export async function expectHydrated(page: Page) {
+  const unclaimed = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll("input, textarea, [contenteditable]")]
+        .filter((el) => !Object.keys(el).some((key) => key.startsWith("__reactFiber$")))
+        .map((el) => `${el.tagName.toLowerCase()}[aria-label="${el.getAttribute("aria-label") ?? ""}"]`),
+    );
+  await expect.poll(unclaimed, { message: "fields React has not hydrated yet" }).toEqual([]);
 }
 
 export const test = base.extend<{

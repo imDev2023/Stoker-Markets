@@ -1,0 +1,141 @@
+/*
+  The API's reference: the terminal's plain page (title, lead, panels on surface) with its endpoints set in mono down a
+  left column and what each answers beside it, hairlines between rows. Code and answers in blocks on sunken.
+*/
+.contents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.contents a {
+  text-decoration: none;
+}
+
+.section {
+  scroll-margin-top: calc(var(--header-h) + 16px);
+}
+
+.prose {
+  margin: 0;
+  max-width: 76ch;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.prose a {
+  color: var(--accent);
+}
+
+/* A row: the endpoint (one or more forms of it) in mono on the left, what it answers on the right. */
+.rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 19rem) minmax(0, 1fr);
+  gap: 4px 24px;
+  padding: 12px 0;
+}
+
+.row + .row {
+  border-top: 1px solid var(--line);
+}
+
+.row:first-child {
+  padding-top: 0;
+}
+
+.row:last-child {
+  padding-bottom: 0;
+}
+
+.row dt {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.row dd {
+  margin: 0;
+  min-width: 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.row dd a {
+  color: var(--accent);
+}
+
+.endpoint {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.code {
+  padding: 1px 4px;
+  border-radius: 5px;
+  background: var(--sunken);
+  font-family: var(--font-mono);
+  font-size: 0.8125em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.url {
+  font-size: 0.875rem;
+}
+
+/* A request or an answer: plain text in a block on sunken; a long line scrolls sideways within the block. */
+.figure {
+  margin: 0;
+  min-width: 0;
+}
+
+.caption {
+  margin-bottom: 6px;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.block {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--sunken);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--ink);
+  overflow-x: auto;
+  tab-size: 2;
+}
+
+.answer {
+  max-height: 24rem;
+  overflow: auto;
+}
+
+@media (max-width: 720px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+}

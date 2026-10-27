@@ -1,5 +1,5 @@
 {
-  "id": "be2ce093-c688-4e52-9cf3-267b66c45b5f",
+  "id": "2f71e709-988e-4929-91a6-9b00d9f1403a",
   "prevId": "483d129d-a0f8-4b05-af46-a8a1a6a1e68a",
   "version": "7",
   "dialect": "postgresql",
@@ -916,13 +916,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "earnings_destination": {
-          "name": "earnings_destination",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'wallet'"
-        },
         "airdrop_scanned_until": {
           "name": "airdrop_scanned_until",
           "type": "text",
@@ -1069,6 +1062,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "image_hash": {
+          "name": "image_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -1173,13 +1172,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "earnings_destination": {
-          "name": "earnings_destination",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'wallet'"
-        },
         "reward_tax_locked_signature": {
           "name": "reward_tax_locked_signature",
           "type": "text",
@@ -1189,6 +1181,38 @@
         "reward_tax_locked_at": {
           "name": "reward_tax_locked_at",
           "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name_key": {
+          "name": "name_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "symbol_key": {
+          "name": "symbol_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "image_hash": {
+          "name": "image_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "copy_of": {
+          "name": "copy_of",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "copy_kind": {
+          "name": "copy_kind",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -1254,6 +1278,36 @@
           "columns": [
             {
               "expression": "quote_mint",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "launches_name_key_idx": {
+          "name": "launches_name_key_idx",
+          "columns": [
+            {
+              "expression": "name_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "launches_symbol_key_idx": {
+          "name": "launches_symbol_key_idx",
+          "columns": [
+            {
+              "expression": "symbol_key",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

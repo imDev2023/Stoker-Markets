@@ -4,7 +4,8 @@ import {
   curvePrice, decodeTransaction, initialCurveReserves, poolPrice, RATE_DENOMINATOR, writableAccounts, type Graduated,
   type LaunchCreated, type PlatformConfigUpdated, type PoolSwapExecuted, type RawTransaction, type TradeExecuted,
 } from "@launchpad/chain";
-import { curves, feeAnnouncements, graduations, launchDrafts, launches, operatorAlerts, trades, type Db } from "@launchpad/db";
+import { curves, feeAnnouncements, graduations, launchDrafts, launches, launchMetadata, operatorAlerts, trades, type Db } from "@launchpad/db";
+import { checkCopies, firstCopy, launchKeys } from "./copies/check";
 import { indexAirdropPayments } from "./airdrop";
 import type { Config } from "./env";
 import { watchAddresses } from "./helius";
@@ -69,7 +70,7 @@ async function indexTransaction(db: Db, cfg: Config, tx: RawTransaction, result:
         console.warn("ignoring a launch outside our launch shape", e.signature);
         continue;
       }
-      result.launched += await indexLaunch(db, e);
+      result.launched += await indexLaunch(db, cfg, e);
     } else if (e.kind === "trade") result.traded += await indexTrade(db, e);
     else {
       const graduated = await indexGraduation(db, cfg, e);
@@ -139,7 +140,7 @@ export async function indexAccountHistory(
 
 const time = (blockTime: number | null) => new Date((blockTime ?? Math.floor(Date.now() / 1000)) * 1000);
 
-async function indexLaunch(db: Db, e: LaunchCreated) {
+async function indexLaunch(db: Db, cfg: Config, e: LaunchCreated) {
   // A Reward Launch's Payout Asset (ADR 0006, #43) and where the Creator's earnings go (ADR 0011, #113) are the
   // Creator's choices at prepare time, kept with the draft; a coin launched on our PlatformConfig without our API has no
   // draft, pays its Holder Rewards in the coin, as every Reward Launch did before, and its Creator's wallet.
@@ -148,9 +149,19 @@ async function indexLaunch(db: Db, e: LaunchCreated) {
     .from(launchDrafts)
     .where(eq(launchDrafts.mint, e.baseMint.toBase58()))
     .limit(1);
+  // Copy Protection (#120, ADR 0012): the keys the coin is protected under from now on, and whether it took an earlier
+  // coin's name, ticker or image, which labels it (a refusal is prepare's; a launch made without our API, one prepared
+  // in the minute before the original was indexed, and one after the original's window all land, with the label).
+  const [metadata] = await db.select({ imageHash: launchMetadata.imageHash }).from(launchMetadata).where(eq(launchMetadata.id, e.baseMint.toBase58())).limit(1);
+  const imageHash = metadata?.imageHash ?? null;
+  const copy = firstCopy(await checkCopies(db, cfg, { name: e.name, symbol: e.symbol, imageHash, creator: e.creator.toBase58() }, time(e.blockTime), { window: false }));
   const inserted = await db
     .insert(launches)
     .values({
+      ...launchKeys(e.name, e.symbol),
+      imageHash,
+      copyOf: copy?.of?.mint ?? null,
+      copyKind: copy?.kind ?? null,
       mint: e.baseMint.toBase58(),
       pool: e.pool.toBase58(),
       creator: e.creator.toBase58(),

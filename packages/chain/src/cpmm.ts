@@ -27,8 +27,12 @@ export type PoolToken = {
   transferFee: TransferFee | null;
 };
 
-/** CPMM fee rates in its 1e6 denominator. `protocol` and `fund` are shares of the trade fee, not of the trade. */
-export type PoolFeeRates = { trade: BN; creator: BN; protocol: BN; fund: BN };
+/**
+ * CPMM fee rates in its 1e6 denominator. `protocol` and `fund` are shares of the trade fee, not of the trade, and
+ * `creatorShare` is the share of the creator fee Raydium keeps for itself when it is collected (`creator_fee_share_rate`
+ * on the config; 5% on mainnet's 1% config, 0 on devnet's), so the pool's creator receives `creator` less that share.
+ */
+export type PoolFeeRates = { trade: BN; creator: BN; protocol: BN; fund: BN; creatorShare: BN };
 
 export type Pool = {
   address: PublicKey;
@@ -58,7 +62,7 @@ type PoolStateData = {
   protocol_fees_token_0: BN; protocol_fees_token_1: BN; fund_fees_token_0: BN; fund_fees_token_1: BN;
   creator_fees_token_0: BN; creator_fees_token_1: BN; open_time: BN; creator_fee_on: number; enable_creator_fee: boolean;
 };
-type AmmConfigData = { trade_fee_rate: BN; creator_fee_rate: BN; protocol_fee_rate: BN; fund_fee_rate: BN };
+type AmmConfigData = { trade_fee_rate: BN; creator_fee_rate: BN; protocol_fee_rate: BN; fund_fee_rate: BN; creator_fee_share_rate: BN };
 
 // SPL and Token-2022 token accounts both keep the balance right after the mint and the owner.
 const tokenAmount = (data: Buffer) => new BN(data.subarray(64, 72), "le");
@@ -101,6 +105,7 @@ export async function loadPool(connection: Connection, address: PublicKey): Prom
       creator: s.enable_creator_fee ? c.creator_fee_rate : new BN(0),
       protocol: c.protocol_fee_rate,
       fund: c.fund_fee_rate,
+      creatorShare: c.creator_fee_share_rate,
     },
     creatorFeeOn: s.creator_fee_on,
     creatorFees: [s.creator_fees_token_0, s.creator_fees_token_1],

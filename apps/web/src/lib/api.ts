@@ -1,5 +1,5 @@
 import {
-  API_KEY_HEADER, AirdropStatus, ApiError, ApiKeyList, BurnsPage, CandleList, CoinRewards, CreatorEarnings, CreatorForwardList, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
+  API_KEY_HEADER, AirdropStatus, ApiError, ApiKeyList, BurnsPage, CandleList, CoinRewards, CopyCheck, CreatorEarnings, CreatorForwardList, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
   HolderList, IssuedApiKey, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PreparedAirdrop,
   PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAsset, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, TradeList,
   TradeQuote, WalletRewards,
@@ -87,6 +87,14 @@ export async function getLaunch(mint: string): Promise<LaunchSummary | null> {
 
 export async function prepareLaunch(form: FormData) {
   return read(await apiFetch(`${API_URL}/v1/launches/prepare`, { method: "POST", body: form }), PreparedLaunch);
+}
+
+/**
+ * Copy Protection (#120): what prepare would say about a name, a ticker and an image before the Creator sends the form;
+ * the fields and the file travel as prepare's do, each optional.
+ */
+export async function checkCopy(form: FormData, signal?: AbortSignal) {
+  return read(await apiFetch(`${API_URL}/v1/launches/check`, { method: "POST", body: form, signal }), CopyCheck);
 }
 
 /** Prepares an earlier launch again, for the same coin address; a 409 means that coin has already launched. */

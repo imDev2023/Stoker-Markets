@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { Connection, PublicKey, type ParsedAccountData } from "@solana/web3.js";
+import { alias } from "drizzle-orm/pg-core";
 import { and, asc, count, desc, eq, ilike, like, or, sql, type SQL } from "drizzle-orm";
 import { cpmmPdas, launchlabPdas, programsFor } from "@launchpad/chain";
 import {
@@ -33,6 +34,8 @@ function searchClause(q: string) {
  * values from the Quote Registry's prices.
  */
 async function queryLaunches(db: Db, filters: Filters, sort: LaunchListQuery["sort"] = "new", limit = 1, offset = 0) {
+  // The protected coin a copy launched against (Copy Protection, #120), for its label.
+  const original = alias(launches, "original");
   const volume = db.$with("volume").as(
     db
       .select({ mint: trades.mint, raw: sql<string>`sum(${trades.quoteAmount})`.as("raw") })
@@ -73,6 +76,7 @@ async function queryLaunches(db: Db, filters: Filters, sort: LaunchListQuery["so
     .select({
       launch: launches,
       metadata: launchMetadata,
+      original,
       curve: curves,
       graduation: graduations,
       quote: quoteAssets,
@@ -87,6 +91,7 @@ async function queryLaunches(db: Db, filters: Filters, sort: LaunchListQuery["so
     })
     .from(launches)
     .leftJoin(launchMetadata, eq(launchMetadata.id, launches.mint))
+    .leftJoin(original, eq(original.mint, launches.copyOf))
     .leftJoin(curves, eq(curves.mint, launches.mint))
     .leftJoin(graduations, eq(graduations.mint, launches.mint))
     .leftJoin(launchMarkets, eq(launchMarkets.mint, launches.mint))
@@ -143,6 +148,18 @@ function toSummary(cfg: Config, r: Row): LaunchSummary {
       volume24h: { raw: r.volRaw, quote: num(r.volQuote)!, sol: num(r.volSol), usd: num(r.volUsd) },
       lastTradeAt: r.market?.lastTradeAt?.toISOString() ?? null,
     },
+    protection: { until: new Date(l.createdAt.getTime() + cfg.copyProtectionSeconds * 1000).toISOString() },
+    copyOf:
+      l.copyOf && l.copyKind && r.original
+        ? {
+            mint: r.original.mint,
+            symbol: r.original.symbol,
+            name: r.original.name,
+            launchedAt: r.original.createdAt.toISOString(),
+            protectedUntil: new Date(r.original.createdAt.getTime() + cfg.copyProtectionSeconds * 1000).toISOString(),
+            kind: l.copyKind,
+          }
+        : null,
     createdSignature: l.createdSignature,
     createdAt: l.createdAt.toISOString(),
   };

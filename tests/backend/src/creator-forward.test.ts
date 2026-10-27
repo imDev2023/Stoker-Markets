@@ -101,7 +101,7 @@ describe("the creator page", () => {
       [second, shares[1]!.toString(), "0", "live"],
       [first, (shares[0]! + shares[2]!).toString(), "0", "live"],
     ]);
-    expect(e.launches[0]).toMatchObject({ name: "Tracer", symbol: "TRCR", quote: SOL_QUOTE, image: expect.stringContaining(second) });
+    expect(e.launches[0]).toMatchObject({ name: expect.stringMatching(/^Tracer /), symbol: expect.stringMatching(/^T[A-Z0-9]{6}$/), quote: SOL_QUOTE, image: expect.stringContaining(second) });
     // There is nothing on-chain for the Creator to claim: their LaunchLab vault was never paid into.
     expect(await creatorVault(creator.publicKey)).toBe(0n);
   });
@@ -117,7 +117,7 @@ describe("the creator page", () => {
   it("keeps a coin paired with USDC apart, in USDC, beside the SOL one", async () => {
     const creator = await fundedWallet();
     const solCoin = await coinOf(creator);
-    const usdcCoin = await coinOf(creator, { symbol: "USDP", quoteMint: USDC.toBase58() });
+    const usdcCoin = await coinOf(creator, { symbol: "USDK", quoteMint: USDC.toBase58(), exact: true });
     const earnedSol = await curveBuy(solCoin, SOL(0.1));
     const trader = await fundedWallet();
     await mintLocalQuote(connection(), USDC, trader.publicKey, units(50));
@@ -131,8 +131,8 @@ describe("the creator page", () => {
       { quote: usdcQuote, earned: earnedUsdc.toString(), forwarded: "0", pending: earnedUsdc.toString() },
     ]);
     expect(e.launches.map((l) => [l.symbol, l.quote.mint, l.curve])).toEqual([
-      ["USDP", USDC.toBase58(), earnedUsdc.toString()],
-      ["TRCR", WSOL, earnedSol.toString()],
+      ["USDK", USDC.toBase58(), earnedUsdc.toString()],
+      [expect.stringMatching(/^T[A-Z0-9]{6}$/), WSOL, earnedSol.toString()],
     ]);
   });
 });
@@ -140,13 +140,20 @@ describe("the creator page", () => {
 describe("on the curve", () => {
   it("tells every client what the platform forwards, from the fees the chain has", async () => {
     const [platform, rates] = [await platformInfo(), await feeRates()];
-    // Half of the Platform Fee on the curve; after Graduation, half of the creator fee of the CPMM config the
-    // PlatformConfig names, read from the chain.
+    // Half of the Platform Fee on the curve; after Graduation, half of what the platform receives of the creator fee of
+    // the CPMM config the PlatformConfig names: the fee less the share Raydium keeps at collection, both read from the chain.
     const config = await connection().getAccountInfo(CPSWAP_CONFIG, "confirmed");
-    const { creator_fee_rate } = cpmmCoder.accounts.decode("AmmConfig", config!.data) as { creator_fee_rate: { toNumber(): number } };
+    const { creator_fee_rate, creator_fee_share_rate } = cpmmCoder.accounts.decode("AmmConfig", config!.data) as {
+      creator_fee_rate: { toNumber(): number }; creator_fee_share_rate: { toNumber(): number };
+    };
+    const poolBps = creator_fee_rate.toNumber() / 100;
+    const shareBps = creator_fee_share_rate.toNumber() / 100;
+    expect(platform.poolCreatorFeeShareBps).toBe(shareBps);
     expect(platform.creatorForward).toEqual({
-      shareBps: 5000, curveBps: rates.platform / 2, poolBps: creator_fee_rate.toNumber() / 100 / 2, minLamports: env().creatorForwardMinLamports,
+      shareBps: 5000, curveBps: rates.platform / 2, poolBps: (poolBps * (10_000 - shareBps)) / 10_000 / 2, minLamports: env().creatorForwardMinLamports,
     });
+    // Mainnet's config, which the local chain carries: 1% of which Raydium keeps 5%, so 0.475% reaches the Creator.
+    expect(platform.creatorForward.poolBps).toBe(47.5);
     // 1.00% Platform Fee and no on-chain Creator Fee (ADR 0009): the Creator's ~0.5% is all forwarded.
     expect([rates.platform, rates.creator]).toEqual([100, 0]);
     expect(platform.creatorForward.curveBps).toBe(50);
@@ -273,6 +280,12 @@ describe("retries", () => {
 });
 
 describe("after Graduation", () => {
+  /** What the platform receives of a pool's creator fee counter: Raydium keeps `poolCreatorFeeShareBps` of it, floored. */
+  async function received(counter: bigint) {
+    const share = BigInt((await platformInfo()).poolCreatorFeeShareBps);
+    return counter - (counter * share) / 10_000n;
+  }
+
   /** A coin that sold out its curve and was migrated into its pool, open for swaps, all indexed. */
   async function graduatedCoin(quoteMint: PublicKey, buyout: bigint) {
     const creator = await fundedWallet();
@@ -297,7 +310,8 @@ describe("after Graduation", () => {
     await deliverWebhook([buy.signature, sell.signature]);
     // After Graduation the pool's creator fee is the platform's to collect; the chain pays the Creator nothing there either.
     expect([buy.quote.venue, buy.quote.fees.creator, sell.quote.fees.creator]).toEqual(["pool", "0", "0"]);
-    const poolFee = BigInt(buy.quote.fees.platform) + BigInt(sell.quote.fees.platform);
+    // Raydium keeps its share of the pool's creator fee at collection (5% on mainnet's config); the rest is the platform's.
+    const poolFee = await received(BigInt(buy.quote.fees.platform) + BigInt(sell.quote.fees.platform));
 
     const sent = (await collectAndForward()).filter((f) => f.creator === coin.creator.publicKey.toBase58());
     const share = coin.onCurve + poolFee / 2n;

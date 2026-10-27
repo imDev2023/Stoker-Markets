@@ -37,6 +37,21 @@ export const launches = pgTable(
      */
     rewardTaxLockedSignature: text("reward_tax_locked_signature"),
     rewardTaxLockedAt: timestamp("reward_tax_locked_at", { withTimezone: true }),
+    /**
+     * Copy Protection (#120, ADR 0012): the coin's name and ticker folded to their core keys (`apps/api/src/copies/keys.ts`),
+     * so a copy that swaps in lookalike letters, leetspeak or a claim like "official" still matches; and the perceptual
+     * hash of its image (16 hex digits), null when the image was not ours to hash or too small. Set when the launch is
+     * indexed, from the on-chain name and symbol, and never changed.
+     */
+    nameKey: text("name_key").notNull().default(""),
+    symbolKey: text("symbol_key").notNull().default(""),
+    imageHash: text("image_hash"),
+    /**
+     * The protected launch this one copied, when it landed as a copy anyway (a race inside the window, or a launch made
+     * without our API): shown as a label on the coin, never a reason to hide it. Null for an original.
+     */
+    copyOf: text("copy_of"),
+    copyKind: text("copy_kind", { enum: ["ticker", "name", "image", "near"] }),
     createdSignature: text("created_signature").notNull(),
     createdSlot: bigint("created_slot", { mode: "number" }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
@@ -46,6 +61,8 @@ export const launches = pgTable(
     index("launches_created_slot_idx").on(t.createdSlot),
     index("launches_creator_idx").on(t.creator),
     index("launches_quote_mint_idx").on(t.quoteMint),
+    index("launches_name_key_idx").on(t.nameKey),
+    index("launches_symbol_key_idx").on(t.symbolKey),
   ],
 );
 
@@ -76,6 +93,8 @@ export const launchMetadata = pgTable("launch_metadata", {
   website: text("website"),
   x: text("x"),
   telegram: text("telegram"),
+  /** The image's perceptual hash (Copy Protection, #120), computed at prepare time; null when the picture can't be hashed. */
+  imageHash: text("image_hash"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

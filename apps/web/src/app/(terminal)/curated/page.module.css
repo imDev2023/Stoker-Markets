@@ -1,0 +1,28 @@
+/* Curated: the terminal's plain page, with the mechanism as three numbered steps. */
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding-left: 1.25rem;
+  max-width: 70ch;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.steps li::marker {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+.steps strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.action {
+  align-self: flex-start;
+}

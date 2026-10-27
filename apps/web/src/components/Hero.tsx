@@ -26,7 +26,7 @@ export function Hero({ quotes, platform }: { quotes: QuoteAsset[]; platform: Pla
         </h1>
         <p className={`t-lede ${styles.lede}`}>
           Price it in SOL, a stablecoin or a tokenized stock, any of the {count} assets Raydium quotes. Creators earn{" "}
-          {earns.summary}, sent to their wallet, every payment on the public ledger.
+          {earns.headline}, sent to their wallet, every payment on the public ledger.
         </p>
         <div className={styles.actions}>
           <Link href={LAUNCH_LINK.href} className="button button-primary button-lg">{LAUNCH_LINK.label}</Link>

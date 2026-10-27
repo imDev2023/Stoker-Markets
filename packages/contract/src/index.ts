@@ -49,6 +49,53 @@ export const PreparedLaunch = z.object({
 }).extend(LaunchModesSummary.shape);
 export type PreparedLaunch = z.infer<typeof PreparedLaunch>;
 
+/** How a coin copies a protected one: its ticker, its name, its image, or a near miss (one letter off, a word like "baby" added). */
+export const CopyKind = z.enum(["ticker", "name", "image", "near"]);
+export type CopyKind = z.infer<typeof CopyKind>;
+
+/** A launched coin inside its Copy Protection window (#120, ADR 0012). */
+export const ProtectedCoin = z.object({
+  mint: base58,
+  symbol: z.string(),
+  name: z.string(),
+  launchedAt: z.iso.datetime(),
+  /** When anyone may use its name, ticker and image again. */
+  protectedUntil: z.iso.datetime(),
+});
+export type ProtectedCoin = z.infer<typeof ProtectedCoin>;
+
+/**
+ * What the Copy Protection check says about one field: free to use; taken by a protected coin (`of`, `kind`, and the
+ * sentence a prepare would refuse with); or unchecked, for an image the API can't read (WebP and GIF are not hashed yet,
+ * nor a picture under 16 pixels a side).
+ */
+export const CopyVerdict = z.object({
+  status: z.enum(["free", "taken", "unchecked"]),
+  kind: CopyKind.nullable(),
+  of: ProtectedCoin.nullable(),
+  reason: z.string().nullable(),
+});
+export type CopyVerdict = z.infer<typeof CopyVerdict>;
+
+/** Text fields of POST /launches/check; the image, when checked, travels alongside as a multipart file. */
+export const CopyCheckFields = z.object({
+  /** The Creator's wallet: a Creator may reuse their own coins' name, ticker and image. */
+  creator: base58.optional(),
+  name: z.string().trim().max(32).optional(),
+  symbol: z.string().trim().max(10).optional(),
+});
+export type CopyCheckFields = z.infer<typeof CopyCheckFields>;
+
+/** The check's answer: a verdict for each field that was sent, null for one that wasn't. */
+export const CopyCheck = z.object({
+  name: CopyVerdict.nullable(),
+  symbol: CopyVerdict.nullable(),
+  image: CopyVerdict.nullable(),
+  /** The window every launch gets, in seconds. */
+  protectionSeconds: z.number().int(),
+});
+export type CopyCheck = z.infer<typeof CopyCheck>;
+
 export const LaunchSummary = z.object({
   mint: base58,
   pool: base58,
@@ -70,6 +117,14 @@ export const LaunchSummary = z.object({
   /** Where the Creator's earnings go (ADR 0011): a coin launched without our API pays its Creator's wallet. */
   earningsDestination: CreatorEarningsDestination,
   market: LaunchMarket,
+  /** Copy Protection (#120, ADR 0012): until when nobody else may launch a coin here with this one's name, ticker or image. */
+  protection: z.object({ until: z.iso.datetime() }),
+  /**
+   * The earlier coin whose name, ticker or image this one took, with how: a label on the coin, which stays listed. Inside
+   * the original's window only a launch made without our API, or prepared in the minute before the original was indexed,
+   * lands as one; after the window anyone may launch such a coin, and the label still says so. Null for an original.
+   */
+  copyOf: ProtectedCoin.extend({ kind: CopyKind }).nullable(),
   createdSignature: z.string(),
   createdAt: z.iso.datetime(),
 });
@@ -97,11 +152,27 @@ export const PlatformInfo = z.object({
   platformFeeBps: z.number(),
   /** LaunchLab's on-chain creator fee on curve trades, as the chain has it: 0 on our platform (ADR 0009). */
   creatorFeeBps: z.number(),
+  /** The creator fee of the CPMM config graduated pools use, which the platform collects after Graduation (1% on mainnet). */
+  poolCreatorFeeBps: z.number(),
+  /**
+   * The share of that creator fee Raydium keeps for itself when it is collected (`creator_fee_share_rate` on the CPMM
+   * config), in basis points of the fee: 500 on mainnet's 1% config, so of a pool trade's `poolCreatorFeeBps` the
+   * platform receives `poolCreatorFeeBps * (1 - poolCreatorFeeShareBps / 10_000)` and Raydium the rest on top of
+   * `raydiumFee.poolBps`.
+   */
+  poolCreatorFeeShareBps: z.number(),
+  /**
+   * Raydium's own fee on a trade, which a trader pays on top of the platform's: on the curve the GlobalConfig's trade
+   * fee (SOL's, the same on every GlobalConfig when checked), after Graduation the CPMM config's trade fee. A trader
+   * pays `platformFeeBps + creatorFeeBps + raydiumFee.curveBps` on the curve and `poolCreatorFeeBps + raydiumFee.poolBps`
+   * in the pool.
+   */
+  raydiumFee: z.object({ curveBps: z.number(), poolBps: z.number() }),
   /**
    * The Creator Forward (ADR 0009): what the platform pays a Creator, `shareBps` of what it collects on their coin's
    * trades on either venue. That is `curveBps` of every curve trade (out of the Platform Fee) and `poolBps` of every
-   * pool trade (out of the pool creator fee at the rate of the CPMM config graduated pools use). Paid in the Quote
-   * Asset once the amount owed is worth `minLamports`.
+   * pool trade (out of the pool creator fee at the rate of the CPMM config graduated pools use, less Raydium's share
+   * of it). Paid in the Quote Asset once the amount owed is worth `minLamports`.
    */
   creatorForward: z.object({ shareBps: z.number().int(), curveBps: z.number(), poolBps: z.number(), minLamports: z.string() }),
   /** What a referred curve trade pays its referrer, in basis points, where the Quote Asset allows a share fee. */

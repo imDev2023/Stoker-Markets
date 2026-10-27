@@ -31,7 +31,20 @@ export const SOL_GLOBAL_CONFIG = new PublicKey("7ZR4zD7PYfY2XxoG1Gxcy2EgEeGYrpxr
 const SOL_QUOTE_MINT = new PublicKey("So11111111111111111111111111111111111111112");
 
 /** Devnet CPMM config index 0. */
-export const CPSWAP_CONFIG = new PublicKey("5MxLgy9oPdTC3YgkiePHqr3EoCRD9uLVYRQS2ANAs7wy");
+/**
+ * The CPMM config graduated pools use: the data of mainnet's index 11 (`CRRS5i...`, the 1% creator fee the runbook picks,
+ * section 2), placed at the address that index derives under the devnet CPMM program the local chain runs, since LaunchLab
+ * checks the config is its index's PDA. So the local site reads what mainnet will (one creator figure for both venues;
+ * owner, 2026-10-25). Devnet has no such config, so the rehearsal keeps `5MxLgy...` (0.25%), still among the fixtures.
+ */
+export const CPSWAP_CONFIG = new PublicKey("DHHEU8YC277qyBsc3hjZsHkQY1zdDhzumBZdErv6qEes");
+
+/**
+ * The CPMM config of the SOL route pools (routes.ts), which stand in for the real pools Jupiter routes through on
+ * mainnet: devnet's index 0 (0.25% trade fee, 0.25% creator fee), never the graduation config above, whose 1% creator fee
+ * would make every SOL swap cost what no real route does.
+ */
+export const ROUTE_POOL_CONFIG = new PublicKey("5MxLgy9oPdTC3YgkiePHqr3EoCRD9uLVYRQS2ANAs7wy");
 
 /**
  * A Token-2022 quote mint with a 1% transfer fee, made on the local chain at bootstrap (there is no fixture: the chain

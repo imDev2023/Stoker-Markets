@@ -152,8 +152,15 @@
     {
       "idx": 21,
       "version": "7",
-      "when": 1792945102210,
-      "tag": "0021_creator_earnings_destination",
+      "when": 1793048183198,
+      "tag": "0021_copy_protection",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793114219322,
+      "tag": "0022_creator_earnings_destination",
       "breakpoints": true
     }
   ]

@@ -10,13 +10,13 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "re
 import { LAUNCH_IMAGE_MAX_BYTES, type PlatformInfo, type PreparedLaunch, type QuoteAsset } from "@launchpad/contract";
 import { ApiRequestError, prepareLaunch, reportTransaction, retryLaunch } from "@/lib/api";
 import { landedError } from "@/lib/transactions";
-import { creatorEarnings, creatorShareOf } from "@/lib/fees";
+import { creatorEarnings, creatorShareOf, tradingFee } from "@/lib/fees";
 import { COIN_DECIMALS, COIN_SUPPLY, formatAmount, formatUnits, isSol, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { quoteKind } from "@/lib/landing";
+import { CopyCheckCard } from "./CopyCheckCard";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
 import { LaunchOptions, LaunchType, supplyShare, useLaunchOptions } from "./LaunchOptions";
 import { PairMark } from "./PairMark";
-import { QuoteLabelList } from "./QuoteLabels";
 import { QuoteChooser, QuoteSearch } from "./QuoteChooser";
 import { QuoteLogo } from "./QuoteLogo";
 import { WalletButton } from "./WalletButton";
@@ -174,7 +174,7 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
   const failed = step.kind === "failed" ? step : step.kind === "preparing" ? (step.retrying ?? null) : null;
 
   const launchable = quotes.filter((q) => q.launchable).length;
-  const platformFeePct = Number((platform.platformFeeBps / 100).toFixed(3));
+  const fee = tradingFee(platform);
   const ticker = quote ? quoteTicker(quote) : null;
 
   const header = (
@@ -188,16 +188,6 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
   );
 
   const chooser = <QuoteChooser quotes={quotes} value={quoteMint} query={quoteQuery} onChange={setQuoteMint} />;
-  const quoteLabels = quote && (
-    <details className={styles.labels}>
-      <summary>Further information on {ticker}</summary>
-      <p className={styles.labelsNote}>
-        What {ticker}&apos;s mint and the token list say about it. Each fact informs; none stops a launch.
-      </p>
-      <QuoteLabelList quote={quote} />
-      <Link href={`/assets/${quote.mint}`} className={styles.labelsLink}>Everything about {ticker}</Link>
-    </details>
-  );
 
   // The sections of the form, in the order they are shown: the pair first.
   const blocks = {
@@ -251,6 +241,7 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
                 <p className={styles.hint}>PNG, JPEG, WebP or GIF up to 2 MB, square. A name up to 32 characters, a ticker up to 10.</p>
               </div>
             </div>
+            <CopyCheckCard name={name} symbol={symbol} image={image} creator={publicKey?.toBase58() ?? null} />
             <label className={styles.field}>
               <span>
                 Description <em>optional</em>
@@ -269,7 +260,6 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
       node: (
         <>
           {chooser}
-          {quoteLabels}
         </>
       ),
     },
@@ -390,6 +380,10 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
 
           <dl className={styles.facts}>
             <div>
+              <dt>Launchpad</dt>
+              <dd>Raydium LaunchLab</dd>
+            </div>
+            <div>
               <dt>Priced in</dt>
               <dd>
                 {quote ? (
@@ -419,20 +413,30 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
               </dd>
             </div>
             <div>
-              <dt>Platform fee</dt>
+              <dt>Launch type</dt>
               <dd>
-                <span>
-                  <span className="mono">{platformFeePct}%</span> of every trade
-                </span>
-                <span className={styles.factNote}>set on-chain, plus Raydium&apos;s own fee</span>
+                {options.rewardTax === null ? (
+                  <>
+                    Standard coin
+                    <span className={styles.factNote}>no transfer tax</span>
+                  </>
+                ) : (
+                  <>
+                    Reward Launch
+                    <span className={styles.factNote}>
+                      {options.rewardTax / 100}% of every transfer to holders in {options.rewardPayout === "coin" ? symbol || "the coin" : (ticker ?? "the Quote Asset")}
+                    </span>
+                  </>
+                )}
               </dd>
             </div>
             <div>
-              <dt>Reward tax</dt>
+              <dt>Trading fee</dt>
               <dd>
-                {options.rewardTax === null
-                  ? "None"
-                  : `${options.rewardTax / 100}% of every transfer, paid to holders in ${options.rewardPayout === "coin" ? symbol || "the coin" : (ticker ?? "the Quote Asset")}`}
+                <span>
+                  <span className="mono">{fee.curve}%</span>{fee.curve === fee.pool ? " of every trade, on the curve and after graduation" : <> of every trade on the curve, <span className="mono">{fee.pool}%</span> after graduation</>}
+                </span>
+                <span className={styles.factNote}>{fee.split}</span>
               </dd>
             </div>
             <div>

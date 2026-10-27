@@ -116,7 +116,7 @@ describe("launching against a non-SOL Quote Asset", () => {
 
       await deliverWebhook([signature]);
       const { launch: summary } = await getLaunch(prepared.mint);
-      expect(summary).toMatchObject({ symbol: "PAIR", graduationTarget: raw, quote: { mint: mint.toBase58(), symbol, decimals } });
+      expect(summary).toMatchObject({ symbol: expect.stringMatching(/^PAIR/), graduationTarget: raw, quote: { mint: mint.toBase58(), symbol, decimals } });
     },
   );
 

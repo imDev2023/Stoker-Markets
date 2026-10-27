@@ -26,6 +26,10 @@ _Avoid_: Bonding target, market cap target, fund raising
 The existing token a Launch is priced and traded against, such as SOL, a community token or a tokenized stock.
 _Avoid_: Pair token, base, collateral
 
+**Copy Protection**:
+The window after a Launch, seven days unless the operator sets another, during which nobody else may launch a coin here with its name, ticker or image; afterwards anyone may, and a coin that does carries a label naming the original.
+_Avoid_: Anti-vamp (the feature's working name), ticker registry, blacklist
+
 **Quote Risk Label**:
 A fact about a Quote Asset that a Creator or trader should know before using it, such as an unverified issuer, an issuer's power to freeze or move tokens, a transfer fee, or no reliable price.
 Labels inform rather than block, and are shown as further information (the asset's page, the launch form, a coin's page), never beside the asset's name (owner, 2026-10-10).
@@ -52,7 +56,7 @@ _Avoid_: Pair with anything, multi-quote
 
 **Platform Fee**:
 Our share of every trade on a Launch, collected by the platform.
-On the curve LaunchLab pays it into one vault per Quote Asset; after Graduation it is the CPMM pool's creator fee, since the platform is every graduated pool's creator.
+On the curve LaunchLab pays it into one vault per Quote Asset; after Graduation it is the CPMM pool's creator fee, since the platform is every graduated pool's creator, less the share of it Raydium keeps at collection (the config's `creator_fee_share_rate`, 5% on mainnet).
 Half of it is the Creator's, paid on as the Creator Forward (ADR 0009).
 _Avoid_: Protocol fee (that is Raydium's cut)
 
@@ -139,6 +143,11 @@ _Avoid_: Distribution, epoch, cycle
 **Platform Token**:
 Our own coin, fair-launched as the first Launch on our platform with no presale or team allocation.
 _Avoid_: Governance token, utility token, our coin
+
+**Curated Launch**:
+a coin the platform has approved and works on with its team, launched by the platform itself (owner, 2026-10-25, #118).
+Only a wallet that stakes STOKER can buy one, and the more it stakes, the larger its allocation of that launch.
+The header's "Curated" section lists them; none exists before the Platform Token does.
 
 **Burn**:
 Using platform revenue to buy the Platform Token on the market and destroy it, on a public schedule.
