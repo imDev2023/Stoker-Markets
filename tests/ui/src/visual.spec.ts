@@ -287,6 +287,7 @@ test("launch form, step by step", async ({ page, wallet }) => {
   await page.getByLabel("Ticker").fill("TRCR");
   await page.getByLabel("Description").fill("The first coin through the whole system: form, API, wallet, chain, indexer, board.");
   await page.getByLabel("Website").fill("https://example.com/tracer");
+  await copyCheckSettled(page);
   await snap(page, "launch-filled.png");
 
   await page.getByRole("button", { name: "Review launch" }).click();
@@ -301,6 +302,13 @@ test("launch form, step by step", async ({ page, wallet }) => {
   expect(wallet.requests).toHaveLength(0);
 });
 
+/** The copy check answers a moment after the fields are filled; a shot waits for its verdicts so it never catches "Checking". */
+async function copyCheckSettled(page: Page) {
+  const card = page.getByRole("region", { name: "Copy check" });
+  await expect(card).toHaveAttribute("aria-busy", "false");
+  await expect(card.getByText("Checking")).toHaveCount(0);
+}
+
 test("launch review against a tokenized stock", async ({ page, wallet }) => {
   await page.goto("/launch");
   await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
@@ -308,6 +316,7 @@ test("launch review against a tokenized stock", async ({ page, wallet }) => {
   await page.getByLabel("Name").fill("Chipmaker Pair");
   await page.getByLabel("Ticker").fill("CHPX");
   await chooseQuote(page, "NVDAx");
+  await copyCheckSettled(page);
   await snap(page, "launch-filled-stock.png");
 
   await page.getByRole("button", { name: "Review launch" }).click();
@@ -338,6 +347,7 @@ test("launch form with a first buy and an airdrop", async ({ page, wallet }) => 
   await launchFormWithOptions(page, OPTION_WALLETS.map((w, i) => `${w}, ${(i + 1) * 250_000}`).join("\n"));
   await expect(page.getByText(/^You get/)).toBeVisible();
   await expect(page.getByText(/^3 wallets get/)).toBeVisible();
+  await copyCheckSettled(page);
   await snap(page, "launch-options.png");
 
   await page.getByRole("button", { name: "Review launch" }).click();
@@ -359,6 +369,7 @@ test("launch form as a Reward Launch paid in the Quote Asset, and its review", a
   await page.getByRole("radiogroup", { name: "Launch type" }).getByRole("radio", { name: /^Reward Launch paid in SOL/ }).check();
   await page.getByRole("group", { name: "Reward Tax" }).getByRole("button", { name: "3%" }).click();
   await expect(page.getByText(/^The tax is sold for SOL in small slices/)).toBeVisible();
+  await copyCheckSettled(page);
   await snap(page, "launch-reward.png");
 
   await page.getByRole("button", { name: "Review launch" }).click();

@@ -1,6 +1,6 @@
 // What a Creator does on the launch page, shared by every spec that launches through the web app.
 import type { Page } from "@playwright/test";
-import { COIN_PNG, expect } from "./fixtures";
+import { COIN_PNG, coinImage, expect } from "./fixtures";
 import { connectTestWallet } from "./wallet";
 
 export const COIN = {
@@ -18,7 +18,11 @@ export async function connectWallet(page: Page) {
 }
 
 export async function fillForm(page: Page, coin: Partial<typeof COIN> = COIN) {
-  await page.locator('input[type="file"]').setInputFiles({ name: "coin.png", mimeType: "image/png", buffer: COIN_PNG });
+  // The tracer keeps the fixture's picture; every other coin gets one of its own, since Copy Protection refuses a second
+  // coin with a launched coin's image for the stack's window.
+  const symbol = coin.symbol ?? COIN.symbol;
+  const buffer = symbol === COIN.symbol ? COIN_PNG : coinImage(symbol);
+  await page.locator('input[type="file"]').setInputFiles({ name: "coin.png", mimeType: "image/png", buffer });
   await page.getByLabel("Name").fill(coin.name ?? COIN.name);
   await page.getByLabel("Ticker").fill(coin.symbol ?? COIN.symbol);
   if (coin.description) await page.getByLabel("Description").fill(coin.description);

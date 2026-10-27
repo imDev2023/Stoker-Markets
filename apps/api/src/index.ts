@@ -28,6 +28,9 @@ import { creatorEarningsRoutes } from "./routes/creatorEarnings";
 import { quotes } from "./routes/quotes";
 import { launchRoutes } from "./routes/launches";
 import { launchModeRoutes, operatorAirdropRoutes } from "./routes/launchModes";
+import { copyRoutes } from "./routes/copies";
+import { checkCopies, firstCopy } from "./copies/check";
+import { imageHash } from "./copies/imageHash";
 import { operatorMintKeyRoutes } from "./routes/mintKeys";
 import { mintKeypair, nextChosenMint } from "./mintKeys";
 import { mayAirdrop } from "./airdropAccess";
@@ -119,6 +122,10 @@ app.post("/v1/launches/prepare", async (c) => {
 
   const f = fields.data;
   const creator = new PublicKey(f.creator);
+  // Copy Protection (#120, ADR 0012): a launched coin's name, ticker and image are nobody else's for a window after it.
+  const hash = await imageHash(bytes, contentType);
+  const copy = firstCopy(await checkCopies(c.get("db"), cfg, { name: f.name, symbol: f.symbol, imageHash: hash, creator: f.creator }));
+  if (copy) return c.json({ error: copy.reason, copy }, 409);
   const connection = new Connection(cfg.rpcUrl, "confirmed");
   const quote = await launchQuoteAsset(c.get("db"), cfg, quoteMarket(c.env), f.quoteMint);
   const firstBuy = f.firstBuy ? new BN(f.firstBuy) : null;
@@ -151,6 +158,7 @@ app.post("/v1/launches/prepare", async (c) => {
       website: f.website ?? null,
       x: f.x ?? null,
       telegram: f.telegram ?? null,
+      imageHash: hash,
     })
     .returning();
   // Signed now, so the launch transaction names the permanent address; uploaded only once the launch has landed.
@@ -209,6 +217,7 @@ app.post("/v1/transactions/:signature", async (c) => {
 
 app.route("/v1", launchRoutes);
 app.route("/v1", launchModeRoutes);
+app.route("/v1", copyRoutes);
 app.route("/v1", quotes);
 app.route("/v1", tradeRoutes);
 app.route("/v1", creatorEarningsRoutes);

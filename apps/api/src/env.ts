@@ -61,6 +61,8 @@ export type Bindings = {
   GRADUATION_ALERT_AFTER_SECONDS: string;
   /** How long after a Graduation is indexed the graduation watch keeps reading the new pool's history for trades the webhook missed. */
   POOL_BACKFILL_SECONDS: string;
+  /** Copy Protection (#120, ADR 0012): for this long after a launch nobody else may launch a coin here with its name, ticker or image; seven days unless set. */
+  COPY_PROTECTION_SECONDS?: string;
   /** The Authorization header value Helius sends with every webhook delivery. */
   HELIUS_WEBHOOK_SECRET: string;
   /**
@@ -157,6 +159,8 @@ export type Config = {
   sweepFloatLamports: bigint;
   collectMinLamports: bigint;
   creatorForwardMinLamports: bigint;
+  /** Copy Protection's window after a launch, in seconds. */
+  copyProtectionSeconds: number;
   rewardRulesLeadSeconds: number;
   burnShareBps: number;
   flywheelShareBps: number;
@@ -212,6 +216,8 @@ function bps(raw: string | undefined, name: string, fallback: number) {
 const REWARD_RULES_LEAD_DEFAULT_SECONDS = 24 * 60 * 60;
 const BURN_MIN_SPEND_DEFAULT_LAMPORTS = 10_000_000n;
 const CREATOR_FORWARD_MIN_DEFAULT_LAMPORTS = 10_000_000n;
+/** Seven days: the owner's choice (2026-10-26), a setting so it can become 30. */
+export const COPY_PROTECTION_DEFAULT_SECONDS = 7 * 86_400;
 const FEE_CHANGE_LEAD_DEFAULT_SECONDS = 24 * 60 * 60;
 /** Curve rule writes per Quote Registry refresh; a first run over mainnet's hundreds of Quote Assets completes over a few runs. */
 const QUOTE_RULE_WRITES_DEFAULT = 120;
@@ -311,6 +317,7 @@ export function config(env: Bindings): Config {
     graduationTargetLamports: new BN(env.GRADUATION_TARGET_LAMPORTS),
     graduationAlertAfterSeconds: seconds(env.GRADUATION_ALERT_AFTER_SECONDS, "GRADUATION_ALERT_AFTER_SECONDS"),
     poolBackfillSeconds: seconds(env.POOL_BACKFILL_SECONDS, "POOL_BACKFILL_SECONDS"),
+    copyProtectionSeconds: env.COPY_PROTECTION_SECONDS ? seconds(env.COPY_PROTECTION_SECONDS, "COPY_PROTECTION_SECONDS") : COPY_PROTECTION_DEFAULT_SECONDS,
     alertWebhookUrl: env.ALERT_WEBHOOK_URL ? new URL(env.ALERT_WEBHOOK_URL).toString() : null,
     helius: heliusConfig(env),
     mintKeySecret: mintKeySecret(env.MINT_KEY_SECRET),
