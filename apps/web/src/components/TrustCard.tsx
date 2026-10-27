@@ -13,9 +13,9 @@ type Tone = "ok" | "caution" | "down" | "none";
 /** About how long a run of slots takes, at Solana's 400 ms a slot. */
 function slotsTime(slots: number) {
   const seconds = slots * 0.4;
-  if (seconds < 90) return `${Math.max(1, Math.round(seconds))} second${Math.round(seconds) === 1 ? "s" : ""}`;
-  if (seconds < 5400) return `${Math.round(seconds / 60)} minutes`;
-  return `${Math.round(seconds / 3600)} hours`;
+  if (seconds < 90) return count(Math.max(1, Math.round(seconds)), "second");
+  if (seconds < 5400) return count(Math.round(seconds / 60), "minute");
+  return count(Math.round(seconds / 3600), "hour");
 }
 
 const count = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;
