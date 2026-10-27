@@ -19,6 +19,8 @@ export { expect };
 export const QUOTES = { SOL: new PublicKey("So11111111111111111111111111111111111111112"), ...LOCAL_QUOTES };
 
 export const COIN_PNG = readFileSync(new URL("../fixtures/coin.png", import.meta.url));
+import { coinImage } from "./coinImage";
+export { coinImage };
 
 export function stackEnv(): StackEnv {
   const raw = process.env.LAUNCHPAD_STACK;
@@ -113,7 +115,8 @@ export async function launchViaApi(creator: Keypair, { quote = "SOL", airdrop, .
     await allowAirdrops(creator.publicKey);
     form.set("airdrop", JSON.stringify(airdrop));
   }
-  form.set("image", new Blob([COIN_PNG], { type: "image/png" }), "coin.png");
+  // A picture of its own per ticker: Copy Protection would refuse a second coin with the same one.
+  form.set("image", new Blob([new Uint8Array(coinImage(fields.symbol))], { type: "image/png" }), "coin.png");
   const res = await fetch(`${stackEnv().apiUrl}/v1/launches/prepare`, { method: "POST", body: form });
   if (!res.ok) throw new Error(`prepare failed: ${res.status} ${await res.text()}`);
   const prepared = PreparedLaunch.parse(await res.json());

@@ -13,7 +13,7 @@ import { FEE_COLLECTOR_CRON } from "@launchpad/stack";
 import { BurnsPage, CoinRewards, HolderList, JobRun, JobRunList, LaunchList, LedgerPage, Revenue, type LedgerEntry } from "@launchpad/contract";
 import {
   SOL, coinsOf, connection, deliverWebhook, env, feeAt, feeRates, fundedWallet, launch, launchedCoin, networkFee, quote, tokenBalance, trade,
- platformInfo } from "./client";
+ platformInfo, uniqueTag } from "./client";
 
 const programs = programsFor("localnet");
 const WSOL = WSOL_MINT.toBase58();
@@ -131,7 +131,9 @@ async function quoteCreatorFee(pool: PublicKey, quoteMint: PublicKey) {
 async function graduatedCoin(opts: { quoteMint?: PublicKey } = {}) {
   const quoteMint = opts.quoteMint ?? WSOL_MINT;
   const creator = await fundedWallet();
-  const { prepared, signature } = await launch(creator, { quoteMint: quoteMint.toBase58(), symbol: "FEES" });
+  // A ticker of its own per coin: Copy Protection refuses a second "FEES" from another wallet inside the stack's window.
+  const symbol = `FEE${uniqueTag().slice(0, 4)}`;
+  const { prepared, signature } = await launch(creator, { quoteMint: quoteMint.toBase58(), symbol, exact: true });
   await deliverWebhook([signature]);
   const trader = await fundedWallet(10);
   // The local Graduation Target is 1 SOL, which the stack prices at 150 USDC.
@@ -142,7 +144,7 @@ async function graduatedCoin(opts: { quoteMint?: PublicKey } = {}) {
   await deliverWebhook([buyout.signature, migration.signature]);
   for (let i = 0; i < 40 && !(await quote(prepared.mint, { side: "buy", amount: "1000000" })).ok; i++) await new Promise((r) => setTimeout(r, 250));
   // The buyout is the coin's only curve trade, so half of its Platform Fee is all the Creator earned on the curve (ADR 0009).
-  return { mint: prepared.mint, curve: new PublicKey(prepared.pool), pool: migration.pool, trader, quoteMint, creator, curveShare: BigInt(buyout.quote.fees.platform) / 2n };
+  return { mint: prepared.mint, symbol, curve: new PublicKey(prepared.pool), pool: migration.pool, trader, quoteMint, creator, curveShare: BigInt(buyout.quote.fees.platform) / 2n };
 }
 
 /** Trades in a graduated coin's pool, indexed; returns the pool creator fees the trades paid. */
@@ -264,13 +266,13 @@ describe("after Graduation", () => {
     expect(await quoteCreatorFee(coin.pool, WSOL_MINT)).toBe(0n);
 
     const entries = await entriesOf([poolFee.signature, feeKey.signature]);
-    const launch = { mint: coin.mint, symbol: "FEES", name: "Tracer" };
+    const launch = { mint: coin.mint, symbol: coin.symbol, name: expect.stringMatching(/^Tracer /) };
     const pool = coin.pool.toBase58();
     expect(entries.find((e) => e.kind === "pool_fee")).toMatchObject({ asset: { mint: WSOL }, amount: paid.toString(), source: pool, launch });
     const keySol = entries.find((e) => e.kind === "fee_key" && e.asset.mint === WSOL)!;
     const keyCoins = entries.find((e) => e.kind === "fee_key" && e.asset.mint === coin.mint)!;
     expect(keySol).toMatchObject({ source: pool, destination: ops().toBase58(), launch });
-    expect(keyCoins).toMatchObject({ source: pool, launch, asset: { symbol: "FEES", decimals: 6, logo: expect.stringContaining(coin.mint) } });
+    expect(keyCoins).toMatchObject({ source: pool, launch, asset: { symbol: coin.symbol, decimals: 6, logo: expect.stringContaining(coin.mint) } });
     expect(BigInt(keySol.amount)).toBeGreaterThan(0n);
     expect(BigInt(keyCoins.amount)).toBeGreaterThan(0n);
 

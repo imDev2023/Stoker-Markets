@@ -46,6 +46,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
   // An Airdrop still being paid sits above the market, where its Creator sends it; a finished one joins the facts below.
   const earns = creatorEarnings(platform);
   const airdropCard = airdrop && <AirdropCard initial={airdrop} symbol={launch.symbol} platform={platform} />;
+  const protectionOpen = new Date(launch.protection.until).getTime() <= Date.now();
   const airdropDone = airdrop?.recipients.every((r) => r.status === "paid") ?? false;
   const quote = quoteTicker(launch.quote);
   const addresses: (readonly [label: string, value: string, kind: "address" | "tx"])[] = [
@@ -130,6 +131,25 @@ export default async function CoinPage({ params, searchParams }: Props) {
               </time>
             </dd>
           </div>
+          <div>
+            <dt>Copy protection {protectionOpen ? "ended" : "until"}</dt>
+            <dd>
+              <time dateTime={launch.protection.until}>{formatUtc(launch.protection.until)}</time>
+              <span>
+                {protectionOpen
+                  ? "Anyone may use this coin's name, ticker and image again."
+                  : "Until then nobody else can launch a coin here with this name, ticker or image."}
+                {launch.copyOf && (
+                  <>
+                    {" "}
+                    {copyKind(launch.copyOf.kind)}{" "}
+                    <Link href={`/coin/${launch.copyOf.mint}`}>{launch.copyOf.name} ({launch.copyOf.symbol})</Link>, launched{" "}
+                    <time dateTime={launch.copyOf.launchedAt}>{formatUtc(launch.copyOf.launchedAt)}</time>
+                  </>
+                )}
+              </span>
+            </dd>
+          </div>
           {launch.graduation && (
             <div>
               <dt>Graduated</dt>
@@ -171,4 +191,9 @@ export default async function CoinPage({ params, searchParams }: Props) {
       <Link href="/coins" className={`button button-ghost ${styles.back}`}>All coins</Link>
     </article>
   );
+}
+
+/** How a coin took an earlier coin's identity, as the label's opening words. */
+function copyKind(kind: "ticker" | "name" | "image" | "near") {
+  return { ticker: "Its ticker is", name: "Its name is", image: "Its image is", near: "Its name or ticker is a near copy of" }[kind] + (kind === "near" ? "" : " that of");
 }

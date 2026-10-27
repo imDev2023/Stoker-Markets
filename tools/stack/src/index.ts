@@ -371,6 +371,8 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       CREATOR_FORWARD_MIN_LAMPORTS: fees.creatorForwardMinLamports,
       // Short, so a test can announce a rules change and see it refused inside the lead time, then accepted outside it.
       REWARD_RULES_LEAD_SECONDS: "60",
+      // Short, so a test can see a copy refused inside a launch's Copy Protection and only labelled after it.
+      COPY_PROTECTION_SECONDS: "45",
       // Three top Launches, so a test can see one picked and one left out.
       FLYWHEEL_TOP_N: "3",
       // Tiny, so the Flywheel buys on the little revenue a test run makes.

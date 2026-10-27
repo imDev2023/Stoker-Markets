@@ -61,7 +61,7 @@ export const SECTIONS: readonly Section[] = [
         ),
       },
       { endpoint: "GET /launches/quotes", text: <>The Quote Assets that have Launches, for filters; each with its <C>category</C> and, for a tokenized stock, its <C>issuer</C>.</> },
-      { endpoint: "GET /launches/:mint", text: <>One Launch: curve progress, Graduation, Reward Tax (with its <C>payout</C> asset, <C>coin</C> or <C>quote</C>), market.</> },
+      { endpoint: "GET /launches/:mint", text: <>One Launch: curve progress, Graduation, Reward Tax (with its <C>payout</C> asset, <C>coin</C> or <C>quote</C>), market, Copy Protection (<C>protection.until</C>, and <C>copyOf</C> when the coin took an earlier coin&apos;s name, ticker or image).</> },
       {
         endpoint: ["GET /launches/:mint/trades", "GET /launches/:mint/candles?interval=", "GET /launches/:mint/holders"],
         text: <>Indexed trades (with any referral fee paid), price candles, and the top holders read from the chain.</>,
@@ -126,7 +126,15 @@ export const SECTIONS: readonly Section[] = [
         endpoint: ["POST /launches/prepare (multipart)", "POST /launches/:mint/prepare"],
         text: (
           <>
-            A launch: <C>creator</C>, <C>quoteMint</C>, <C>name</C>, <C>symbol</C>, <C>description</C>, <C>website</C>, <C>x</C>, <C>telegram</C>, <C>image</C>, and the launch modes <C>firstBuy</C>, <C>airdrop</C>, <C>rewardTax</C> and, with it, <C>rewardPayout</C> (<C>coin</C> or <C>quote</C>; <C>coin</C> unless set, refused with 400 without <C>rewardTax</C>). An <C>airdrop</C> from a wallet the operator has not allowed is refused with 403. The mint address and the coin&apos;s <C>metadataUri</C> on Arweave are fixed at first prepare; the second form rebuilds the same launch for a retry, so a retry never mints a second coin. The image and metadata JSON are uploaded to Arweave once the launch is indexed; until then the URI answers 404.
+            A launch: <C>creator</C>, <C>quoteMint</C>, <C>name</C>, <C>symbol</C>, <C>description</C>, <C>website</C>, <C>x</C>, <C>telegram</C>, <C>image</C>, and the launch modes <C>firstBuy</C>, <C>airdrop</C>, <C>rewardTax</C> and, with it, <C>rewardPayout</C> (<C>coin</C> or <C>quote</C>; <C>coin</C> unless set, refused with 400 without <C>rewardTax</C>). An <C>airdrop</C> from a wallet the operator has not allowed is refused with 403. The mint address and the coin&apos;s <C>metadataUri</C> on Arweave are fixed at first prepare; the second form rebuilds the same launch for a retry, so a retry never mints a second coin. The image and metadata JSON are uploaded to Arweave once the launch is indexed; until then the URI answers 404. A name, ticker or image that a coin launched inside its Copy Protection window already has is refused with 409 and the verdict (<C>copy</C>), as <C>POST /launches/check</C> would have said.
+          </>
+        ),
+      },
+      {
+        endpoint: "POST /launches/check (multipart)",
+        text: (
+          <>
+            Copy Protection before the form is sent: <C>name</C>, <C>symbol</C> and <C>image</C>, each optional, and <C>creator</C>, whose own coins never count. Answers a verdict per field sent (<C>free</C>, <C>taken</C> with the protected coin and the sentence prepare would refuse with, or <C>unchecked</C> for an image the API can&apos;t read) and <C>protectionSeconds</C>, the window every launch gets.
           </>
         ),
       },
@@ -204,7 +212,7 @@ export const SECTIONS: readonly Section[] = [
         endpoint: "409",
         text: (
           <>
-            A retry of a coin that has already launched (<C>details.mint</C>); an airdrop that can&apos;t be sent right now: every wallet paid, the coin not launched yet, or transactions handed out a moment ago that can still land (<C>details.retryAfterSeconds</C>); a pool Raydium has paused or that opens in a moment; a fee or rules change announced with too short a lead.
+            A launch whose name, ticker or image a coin inside its Copy Protection window already has (<C>copy</C> carries the verdict); a retry of a coin that has already launched (<C>details.mint</C>); an airdrop that can&apos;t be sent right now: every wallet paid, the coin not launched yet, or transactions handed out a moment ago that can still land (<C>details.retryAfterSeconds</C>); a pool Raydium has paused or that opens in a moment; a fee or rules change announced with too short a lead.
           </>
         ),
       },

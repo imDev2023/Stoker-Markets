@@ -24,6 +24,8 @@
     "COLLECT_MIN_LAMPORTS": "1000000",
     // The Creator Forward (ADR 0009) pays a Creator once what they are owed in one Quote Asset is worth 0.01 SOL.
     "CREATOR_FORWARD_MIN_LAMPORTS": "10000000",
+    // Copy Protection (#120, ADR 0012): nobody else may launch a coin with a launched coin's name, ticker or image for this long after it (seven days).
+    "COPY_PROTECTION_SECONDS": "604800",
     // Reward Round rule changes apply no sooner than this after they are announced.
     "REWARD_RULES_LEAD_SECONDS": "86400",
     // Burn and Flywheel shares of revenue, in basis points, and how many top Launches the Flywheel buys.
@@ -114,6 +116,8 @@
         "SWEEP_FLOAT_LAMPORTS": "1900000000",
         "COLLECT_MIN_LAMPORTS": "100000",
         "CREATOR_FORWARD_MIN_LAMPORTS": "1000000",
+        // Copy Protection (#120, ADR 0012): nobody else may launch a coin with a launched coin's name, ticker or image for this long after it (seven days).
+        "COPY_PROTECTION_SECONDS": "604800",
         "REWARD_RULES_LEAD_SECONDS": "86400",
         "BURN_SHARE_BPS": "6000",
         "FLYWHEEL_SHARE_BPS": "500",
@@ -169,6 +173,8 @@
         "SWEEP_FLOAT_LAMPORTS": "1000000000",
         "COLLECT_MIN_LAMPORTS": "1000000",
         "CREATOR_FORWARD_MIN_LAMPORTS": "10000000",
+        // Copy Protection (#120, ADR 0012): nobody else may launch a coin with a launched coin's name, ticker or image for this long after it (seven days).
+        "COPY_PROTECTION_SECONDS": "604800",
         "REWARD_RULES_LEAD_SECONDS": "86400",
         "BURN_SHARE_BPS": "6000",
         "FLYWHEEL_SHARE_BPS": "500",
