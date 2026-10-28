@@ -7,11 +7,11 @@
   height: 40px;
   padding: 0;
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--ink);
   cursor: pointer;
-  transition: background-color var(--fast) var(--ease), opacity var(--fast) var(--ease);
+  transition: background-color var(--dur-fast) var(--ease-standard), opacity var(--dur-fast) var(--ease-standard);
 }
 
 .button:hover:not(:disabled) {
@@ -24,5 +24,36 @@
 }
 
 .button:disabled {
+  cursor: default;
+}
+
+/* A row of the account menu: the glyph and the mode a press brings, styled like the menu's other rows. */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  font-size: var(--text-ui);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-standard);
+}
+
+.row:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.row:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.row:disabled {
   cursor: default;
 }

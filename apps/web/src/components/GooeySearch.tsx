@@ -1,11 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import type { LaunchSummary } from "@launchpad/contract";
 import { listLaunches } from "@/lib/api";
 import { formatMarketValue, SEARCH_MAX } from "@/lib/board";
-import { quoteTicker } from "@/lib/format";
+import { formatPrice, quoteTicker } from "@/lib/format";
+import { CoinImage } from "./CoinImage";
 import { PairMark } from "./PairMark";
 import styles from "./GooeySearch.module.css";
 
@@ -26,11 +27,12 @@ function SearchGlyph() {
 }
 
 /**
- * The header's search (owner, 2026-10-13, after Codrops' gooey search): a pill that reads "Search ⌘K"; pressed, or on
- * ⌘K (Ctrl+K elsewhere), it stretches into a field, a disc with the glyph breaks off its right end, and the coins found
- * through the API's search (the board's, by name, ticker or contract address) drop out of its underside as pills, each
- * merging with the bar as it falls. The merging is Lucas Bebber's goo: the group is blurred and its alpha pushed to hard
- * edges, with the crisp drawing laid back over it. Safari draws the filter wrong, so there the pills simply drop. Arrows
+ * The header's search (owner, 2026-10-13, after Codrops' gooey search; kept 2026-10-28): a pill that reads "Search ⌘K";
+ * pressed, or on ⌘K (Ctrl+K elsewhere), it stretches into a field and a disc with the glyph breaks off its right end,
+ * joined to the bar as it goes by Lucas Bebber's goo (the group is blurred and its alpha pushed to hard edges, with the
+ * crisp drawing laid back over it; Safari draws the filter wrong, so there the disc simply slides). The coins found
+ * through the API's search (the board's, by name, ticker or contract address) open in a panel under the field, a layer
+ * on surface-3 over a scrim that dims the page (#131: results never blend into the page's controls or rows). Arrows
  * move, Enter opens the coin, Escape closes and hands focus back; reduced motion gets the states without the springs.
  */
 export function GooeySearch() {
@@ -139,9 +141,6 @@ export function GooeySearch() {
   const filterId = `${id}goo`;
   const optionId = (l: LaunchSummary) => `${id}-${l.mint}`;
   const activeLaunch = results?.[active];
-  const order = (i: number) => ({ "--i": i }) as CSSProperties;
-  // The pills under the bar: the coins found, or one line saying nothing matched.
-  const pills = results === null ? null : results.length === 0 ? "none" : results;
 
   return (
     <div ref={root} className={`${styles.root} ${open ? styles.open : ""} ${goo ? "" : styles.plain}`} data-search-open={open || undefined}>
@@ -154,6 +153,8 @@ export function GooeySearch() {
           </filter>
         </defs>
       </svg>
+      {/* The page dims under an open search; a press on it closes the search. */}
+      {open && <div className={styles.scrim} aria-hidden="true" />}
       <div className={styles.group} style={goo ? { filter: `url(#${filterId})` } : undefined}>
         <div className={styles.bar}>
           {open ? (
@@ -186,38 +187,40 @@ export function GooeySearch() {
         <div className={styles.disc} aria-hidden="true">
           {searching ? <span className={styles.spinner} /> : <SearchGlyph />}
         </div>
-        {open && pills === "none" && (
-          <ul id={`${id}-list`} className={styles.pills} role="listbox" aria-label="Coins found">
-            <li className={`${styles.pill} ${styles.empty}`} style={order(0)}>
+      </div>
+      {/* The results: a layer of their own, outside the goo (which would blur their text), over the scrim. */}
+      {open && results !== null && (
+        <ul id={`${id}-list`} className={styles.panel} role="listbox" aria-label="Coins found" aria-busy={searching}>
+          {results.length === 0 ? (
+            <li className={styles.empty}>
               No coins match &ldquo;{query.trim()}&rdquo;.
             </li>
-          </ul>
-        )}
-        {open && Array.isArray(pills) && (
-          <ul id={`${id}-list`} className={styles.pills} role="listbox" aria-label="Coins found" aria-busy={searching}>
-            {pills.map((l, i) => (
+          ) : (
+            results.map((l, i) => (
               <li
                 key={l.mint}
                 id={optionId(l)}
                 role="option"
                 aria-selected={i === active}
-                className={`${styles.pill} ${i === active ? styles.active : ""}`}
-                style={order(i)}
+                className={`${styles.result} ${i === active ? styles.active : ""}`}
                 onMouseEnter={() => setActive(i)}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => go(l)}
               >
-                {l.image ? <img className={styles.image} src={l.image} alt="" width={24} height={24} /> : <span className={styles.image} aria-hidden />}
+                <CoinImage src={l.image} symbol={l.symbol} size={28} />
                 <span className={styles.titles}>
-                  <PairMark base={l.symbol} quote={quoteTicker(l.quote)} size="sm" />
+                  <PairMark base={l.symbol} quote={quoteTicker(l.quote)} size="md" />
                   <span className={styles.name}>{l.name}</span>
                 </span>
-                <span className={styles.cap}>{l.market.marketCap ? formatMarketValue(l.market.marketCap, l.quote) : "-"}</span>
+                <span className={styles.figures}>
+                  <span className={styles.price}>{l.market.price === null ? "-" : `${formatPrice(l.market.price)} ${quoteTicker(l.quote)}`}</span>
+                  <span className={styles.cap}>{l.market.marketCap ? `${formatMarketValue(l.market.marketCap, l.quote)} cap` : "No trades yet"}</span>
+                </span>
               </li>
-            ))}
-          </ul>
-        )}
-      </div>
+            ))
+          )}
+        </ul>
+      )}
     </div>
   );
 }

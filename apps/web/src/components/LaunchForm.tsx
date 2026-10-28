@@ -303,9 +303,9 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
 
         {/* One card, five numbered sections: what the coin is paired with, what it is, then the options; the action follows the card. */}
         <fieldset className={`card ${styles.card}`} disabled={busy}>
-          {order.map((key, i) => (
+          {order.map((key) => (
             <section key={key} className={styles.block} aria-labelledby={`block-${key}`}>
-              <SectionHead id={`block-${key}`} index={String(i + 1).padStart(2, "0")} title={blocks[key].title} hint={blocks[key].hint} optional={blocks[key].optional} tools={blocks[key].tools} />
+              <SectionHead id={`block-${key}`} title={blocks[key].title} hint={blocks[key].hint} optional={blocks[key].optional} tools={blocks[key].tools} />
               {blocks[key].node}
             </section>
           ))}
@@ -487,13 +487,12 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
   );
 }
 
-/** A section's head: its number, its title (the section's accessible name) and a line of hint, with room beside them for a tool. */
-function SectionHead({ id, index, title, hint, optional = false, tools }: { id: string; index: string; title: string; hint: string; optional?: boolean; tools?: ReactNode }) {
+/** A section's head: its title (the section's accessible name) and a line of hint, with room beside them for a tool. */
+function SectionHead({ id, title, hint, optional = false, tools }: { id: string; title: string; hint: string; optional?: boolean; tools?: ReactNode }) {
   return (
     <div className={styles.blockHead}>
       <div className={styles.blockTitles}>
         <h2 id={id} className="t-h3">
-          <span className={styles.index} aria-hidden>{index}</span>
           {title}
           {optional && <em>optional</em>}
         </h2>

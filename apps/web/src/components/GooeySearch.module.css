@@ -1,8 +1,9 @@
 /*
- * The pill, the field it becomes, the disc and the result pills are the nav pill's own material (surface-3, the line, the
- * raised shadow) so the two read as one family, and one solid fill, so the goo filter (blur, then alpha pushed to a hard
- * edge, the crisp drawing laid back on top) can join them where they near each other. Translucent paint would come out
- * of the filter as blobs, so nothing inside is translucent but the shadow, which is too faint to survive it.
+ * The pill, the field it becomes and the disc are the nav pill's own material (surface-3, the line, the raised shadow)
+ * so the two read as one family, and one solid fill, so the goo filter (blur, then alpha pushed to a hard edge, the
+ * crisp drawing laid back on top) can join them where they near each other. Translucent paint would come out of the
+ * filter as blobs, so nothing inside the group is translucent but the shadow, which is too faint to survive it. The
+ * results panel sits outside the group: a layer, not goo.
  */
 .root {
   position: relative;
@@ -17,14 +18,31 @@
   height: 0;
 }
 
-/* Anchored to the right end of its slot in the header, so opening grows it leftward and the row around it holds still. */
+/* Under the header's band, over the page: the one scrim on the site, which closes the search when pressed. */
+.scrim {
+  position: fixed;
+  top: var(--header-h);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  animation: fade var(--dur-fast) var(--ease-standard);
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Anchored to the right end of its slot in the header, so opening grows it leftward and the row around it holds still. The stretch keeps a little spring: the one bounce in the terminal, the search's own character (owner, H4). */
 .group {
   position: absolute;
   top: 0;
   right: 0;
   width: 100%;
   height: 40px;
-  transition: width var(--slow) cubic-bezier(0.34, 1.3, 0.64, 1);
+  transition: width var(--dur-base) cubic-bezier(0.34, 1.3, 0.64, 1);
 }
 
 .open .group {
@@ -32,20 +50,19 @@
 }
 
 .bar,
-.disc,
-.pill {
+.disc {
   border: 1px solid var(--line);
   background: var(--surface-3);
   box-shadow: var(--highlight), var(--shadow-raised);
-  color: var(--ink);
+  color: var(--on-surface-3);
 }
 
 .bar {
   position: absolute;
   inset: 0;
   z-index: 1;
-  border-radius: 999px;
-  transition: right var(--slow) cubic-bezier(0.34, 1.3, 0.64, 1);
+  border-radius: var(--radius-pill);
+  transition: right var(--dur-base) cubic-bezier(0.34, 1.3, 0.64, 1);
 }
 
 /* Open, the bar gives up its right end to the disc. */
@@ -61,7 +78,7 @@
   height: 100%;
   padding: 0 10px 0 11px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: none;
   color: inherit;
   font: inherit;
@@ -81,19 +98,19 @@
 .word {
   flex: 1;
   text-align: left;
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
   font-weight: 500;
   color: var(--ink-2);
 }
 
 .kbd {
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: var(--text-label);
   font-weight: 500;
   line-height: 1;
   padding: 4px 6px;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--ink-3);
 }
@@ -103,11 +120,11 @@
   height: 100%;
   padding: 0 16px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: none;
   color: inherit;
   font: inherit;
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
   outline: none;
 }
 
@@ -127,7 +144,7 @@
   border-radius: 50%;
   opacity: 0;
   transform: translateX(-28px) scale(0.5);
-  transition: transform var(--slow) cubic-bezier(0.34, 1.4, 0.64, 1) 60ms, opacity var(--fast) var(--ease) 60ms;
+  transition: transform var(--dur-base) cubic-bezier(0.34, 1.4, 0.64, 1), opacity var(--dur-fast) var(--ease-standard);
 }
 
 .open .disc {
@@ -135,6 +152,7 @@
   transform: none;
 }
 
+/* A loop with a goal (a search is out), so it may run longer than an interaction. */
 .spinner {
   width: 16px;
   height: 16px;
@@ -150,84 +168,93 @@
   }
 }
 
-/* The result pills drop out from under the bar, one a beat after the other, each oozing free of it as it falls. */
-.pills {
+/* The results: the overlay level, under the field's right end, entering from it (continuity with the field). */
+.panel {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 48px;
   right: 48px;
-  z-index: 0;
+  z-index: 2;
+  width: min(440px, calc(100vw - 2 * var(--gutter)));
   margin: 0;
-  padding: 0;
+  padding: 6px;
   list-style: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface-3);
+  color: var(--on-surface-3);
+  box-shadow: var(--highlight), var(--shadow-overlay);
+  transform-origin: top right;
+  animation: enter var(--dur-base) var(--ease-enter);
 }
 
-.pill {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  height: 48px;
-  padding: 0 14px 0 10px;
-  border-radius: 999px;
-  cursor: pointer;
-  transform: translateY(calc((var(--i) + 1) * 54px));
-  animation: drop 0.6s cubic-bezier(0.34, 1.25, 0.64, 1) both;
-  animation-delay: calc(var(--i) * 70ms);
-}
-
-@keyframes drop {
+@keyframes enter {
   from {
-    transform: translateY(0) scale(0.4);
+    opacity: 0;
+    transform: scale(0.96);
   }
 }
 
-.pill.active {
+.result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 6px 10px;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.result.active {
   background: var(--plate);
 }
 
 .empty {
-  height: 40px;
-  padding: 0 16px;
-  font-size: 0.875rem;
+  padding: 12px 10px;
+  font-size: var(--text-ui);
   color: var(--ink-2);
-  cursor: default;
-}
-
-.image {
-  flex: none;
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  object-fit: cover;
-  background: var(--sunken);
 }
 
 .titles {
   display: flex;
-  flex-direction: column;
   flex: 1;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
   line-height: 1.2;
 }
 
 /* A long name runs out under a fade rather than an ellipsis. */
 .name {
-  font-size: 0.75rem;
+  font-size: var(--text-caption);
   color: var(--ink-2);
   white-space: nowrap;
   overflow: hidden;
   mask-image: linear-gradient(90deg, #000 84%, transparent);
 }
 
-.cap {
+.result.active .name {
+  color: var(--on-plate);
+}
+
+.figures {
+  display: flex;
   flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  line-height: 1.2;
+  text-align: right;
+}
+
+.price {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
-  font-variant-numeric: tabular-nums;
+  font-size: var(--text-figure-row);
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+.cap {
+  font-size: var(--text-label);
+  color: var(--ink-3);
 }
 
 @media (max-width: 640px) {
@@ -242,16 +269,23 @@
   .kbd {
     display: none;
   }
-  /*
-   * Open, the bar takes the header's whole width between the gutters. Fixed, which the header's backdrop filter makes
-   * relative to the header itself, so the bar sits in the header's band wherever the search's slot is.
-   */
+  /* Open, the bar takes the header's whole width between the gutters; fixed to the window, whose top the header holds. */
   .open .group {
     position: fixed;
     top: calc((var(--header-h) - 40px) / 2);
     right: var(--gutter);
     left: var(--gutter);
     width: auto;
+  }
+  .panel {
+    position: fixed;
+    top: calc(var(--header-h) + 6px);
+    right: var(--gutter);
+    left: var(--gutter);
+    width: auto;
+  }
+  .figures {
+    display: none;
   }
 }
 
@@ -261,7 +295,8 @@
   .disc {
     transition: none;
   }
-  .pill {
+  .panel,
+  .scrim {
     animation: none;
   }
 }

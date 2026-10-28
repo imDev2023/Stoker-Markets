@@ -68,7 +68,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           {platform.cluster === "devnet" && <ClusterNotice />}
           {upcoming && <FeeChangeBanner announcement={upcoming} platform={platform} />}
           <main>{children}</main>
-          <SiteFooter cluster={platform.cluster} />
+          <SiteFooter platform={platform} />
         </Providers>
       </body>
     </html>

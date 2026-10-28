@@ -22,7 +22,7 @@
 
 .all {
   margin-left: auto;
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
   font-weight: 600;
   color: var(--accent);
   text-decoration: none;
@@ -52,13 +52,13 @@
   padding: 20px;
   text-decoration: none;
   min-width: 0;
-  transition: border-color var(--base) var(--ease), box-shadow var(--base) var(--ease), transform var(--base) var(--ease);
+  transition: border-color var(--dur-base) var(--ease-standard), box-shadow var(--dur-base) var(--ease-standard), transform var(--dur-base) var(--ease-standard);
 }
 
 @media (hover: hover) {
   .card:hover {
     border-color: var(--line-strong);
-    box-shadow: var(--highlight), var(--shadow);
+    box-shadow: var(--highlight), var(--shadow-overlay);
     transform: translateY(-2px);
   }
 }
@@ -79,7 +79,7 @@
   flex: none;
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--radius-card);
   object-fit: cover;
   background: var(--sunken);
 }
@@ -92,7 +92,7 @@
 }
 
 .name {
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   color: var(--ink-2);
   white-space: nowrap;
   overflow: hidden;
@@ -112,11 +112,11 @@
 }
 
 .price {
-  font-size: 1.0625rem;
+  font-size: var(--text-body);
 }
 
 .meta {
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   color: var(--ink-2);
 }
 
@@ -124,7 +124,7 @@
 .track {
   display: block;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--sunken);
   overflow: hidden;
 }
@@ -133,7 +133,7 @@
   display: block;
   height: 100%;
   min-width: 4px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--heat);
 }
 
@@ -153,7 +153,7 @@
 
 .empty p {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: var(--text-body);
   color: var(--ink-2);
 }
 

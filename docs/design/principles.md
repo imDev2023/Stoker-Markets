@@ -188,3 +188,68 @@ Sentence case everywhere; small caps labels only as the eyebrow over a card, at 
 - Colour systems: [Refactoring UI, the tactical principles](https://cdn.jsdelivr.net/npm/claude-code-skills@0.5.0/data/skills/ux-ui-design-system/references/refactoring-ui.md), [the 60-30-10 rule](https://blog.logrocket.com/ux-design/60-30-10-rule), [Radix Colors](https://radix-ui.com/themes/docs/theme/color), [Material 3 tone-based surfaces](https://material.io/blog/tone-based-surface-color-m3), [Material dark theme](https://m2.material.io/design/color/dark-theme).
 - Crypto brands' palettes: [Hyperliquid vs Coinbase](https://www.webdesignhot.com/design.md/hyperliquid/diff/coinbase/), [Phantom](https://www.webdesignhot.com/api/design-md/phantom-app.md).
 - 2026 trends, used with restraint: [Line25, web design trends 2026](https://line25.com/articles/web-design-trends-2026/), [Studio Meyer, web design trends 2026](https://studiomeyer.io/en/blog/webdesign-trends-2026).
+
+## 10. The foundations (2026-10-28, #131, phase 1 of the rework)
+
+The research of 2026-10-28 (`docs/design/research/2026-10-28/`, the review page and the owner's decisions on #130) found that the 2026-10-10 brief treated colour and kept every layout, and that what reads as vibe-coded is the layouts, the use of type and the components.
+Phase 1 rebuilds the foundations in place, with every verdict standing (Teal, the ring, the slogan, the characters, the H4 pill header with its gooey search).
+This section is the standing reference for what phase 1 settled; sections 5 and 6 above describe the 2026-10-10 state and are superseded where they differ.
+
+### The type role table, enforced
+
+Every text style comes from the role table and nothing else: each step is a `--text-*` token and a `t-*` class in `globals.css`, a module sets `font-size` only as one of them, and `apps/web/scripts/type.mjs` (run by `pnpm lint`) fails on any other value, on a radius or shadow outside the tokens, on a transition with a literal duration or `all`, on a label in capitals and on a weight under 400.
+The 23 sizes the critique counted are 13 tokens.
+
+| Step | Token | Size | Use |
+| --- | --- | --- | --- |
+| display | `--text-display` | 40 to 72px | the landing's headline only |
+| h1 | `--text-h1` | 32 to 40px | a page's title |
+| h2 | `--text-h2` | 28px | a section |
+| h3 | `--text-h3` | 20px | a card's title, the amount field |
+| lede | `--text-lede` | 20px | the landing's lede, in ink-2 |
+| body | `--text-body` | 16px | running text, a description, a row's name |
+| ui | `--text-ui` | 14px | buttons, links, chips, labels, table cells, the pill's words |
+| caption | `--text-caption` | 13px | hints, timestamps, the footer's lines, in ink-3 |
+| label | `--text-label` | 12px | a tag, a column header, a key cap; the floor, never tracked |
+| figure-xl | `--text-figure-xl` | 32 to 44px mono | a bento figure |
+| figure-lg | `--text-figure-lg` | 28px mono | a panel's one key figure: the price, a curve's percentage, a tax rate |
+| figure | `--text-figure` | 16px mono | a price, a balance |
+| figure-row | `--text-figure-row` | 13px mono | a dense row's figures |
+
+The sans (Instrument Sans) sets every label, control, chip, segmented control, table header and footer heading; the mono (JetBrains Mono) sets figures, times and addresses only.
+The mono uppercase tracked labels and the launch form's "01" section numerals are gone; the one style in capitals is the `eyebrow`, at most one on a page.
+The marks have a scale of their own: the pair mark at `--pair-row` 14px in rows, `--pair-card` 20px in cards and search results, `--pair-title` 28 to 32px in a coin page's title row and `--pair-max` 96px on share cards and the launch summary only, and the wordmark at `--wordmark` 24px beside the 28px ring.
+
+### Tokens
+
+- Radius, one per role: `--radius-control` (12px on the landing, 8px in the terminal) for buttons, fields and menu items; `--radius-card` (16px, 10px) for panels, menus and dialogs; `--radius-pill` for chips, tags and avatars. A nested corner is `calc()` of its parent's; a circle is `50%`; nothing else.
+- Elevation, four named levels: sunken (`.well`, `--shadow-sunken`), default (`.card`, a hairline and no shadow), raised (`.card-raised`, `--shadow-raised`), overlay (`.card-overlay`, `--shadow-overlay`, for a menu, a popover, a dialog on surface-3). `--shadow` was renamed `--shadow-overlay`.
+- Motion: `--ease-standard` for state changes, `--ease-enter` and `--ease-exit` for a layer that appears or leaves, `--dur-fast` 120ms, `--dur-base` 200ms and `--dur-slow` 280ms. An interaction takes fast or base and never slow, which is for a page's own reveal (the phone menu's links); `prefers-reduced-motion` stops everything; hover changes colour and fill, never weight.
+- On-pairs: every fill has an "on" partner (`--on-plate`, `--on-up-bg`, `--on-down-bg`, `--on-caution-bg`, the surfaces' `--on-surface*`, `--on-tile`, beside the existing `--on-button` and `--on-accent`), and a module puts text on a fill only through it. The heat ramp has no partner: it is a stroke and a text fill, never a ground for text.
+- Contrast is checked by two rulers in `apps/web/scripts/contrast.mjs` (run by `pnpm lint`): WCAG AA and APCA, Lc 75 for body text (ink, ink-2), Lc 60 for the smaller text people must read (ink-3, the accent, a tag's text, a button's word) and Lc 15 for a light hairline. The dark inks moved to pass: ink-2 `#d1dadf` and ink-3 `#b5c2c9` in Teal, and `down` is `#ff99a3` in dark, lighter than before, since a change figure at 13px must reach Lc 60. A dark hairline at 8% white reads as nothing on APCA's ruler (its floor clamps to zero), so it is a warning, not a failure; the light hairline went to 14% ink to reach Lc 15. Cobalt and Violet ride along unpicked and their misses are warnings.
+- The hue fix: the accent and the up colour sit at least 30 degrees of hue apart (until #131 they were fourteen degrees apart in Teal and a positive change read as a link). Candidate A, the build's default, moves `up` to a yellow-green (`#137534` light, `#45df78` dark); candidate B, `?hue=accent` on any page (`ThemeOverride`), moves Teal's accent toward cyan (`#06758a` light, `#44c9e2` dark) and keeps the old mint `up`. The owner picks on the real site.
+
+### The grid
+
+Every page sits on a layout grid: 12 columns with 24px gutters at a desktop, 4 columns with 16px on a phone (`--grid-cols`, `--grid-gap`; `.grid` and `.col-1` to `.col-12`, every span the full width under 640px).
+The header's bar has the terminal column's width and gutters (`--max-terminal`, `--gutter`), so the mark and the account sit on the content's edges; the board is the rail in three columns and the table in nine; the coin page's market is the chart in eight and the fixed column in four, and its facts two cards of six.
+
+### The header, within H4
+
+The bar is opaque (the canvas colour, no blur, no hairline: the pill is the edge) and still, 64px tall and 52px on a phone (`--header-h`, which every sticky offset reads).
+The lockup is the ring at 28px and the word at 24px.
+"Stoke a coin" is the one filled action and is marked current on its own page (an inner ring in its text colour).
+The wallet is a ghost that becomes an avatar (two hues from the address) with the short address once connected; its menu holds the Creator's earnings, disconnect and the light-or-dark toggle, which left the bar.
+The gooey search keeps its stretching pill and its disc; the coins found open in a panel at the overlay level under the field, over a scrim that dims the page, with each result's image (with a fallback), pair, name, price and market cap.
+Under 1300px the pill gives way to the menu button with Explore kept visible beside it; under 640px the launch button reads "Stoke" (its name stays "Stoke a coin"), the search and the account keep their glyphs, and the overlay has a visible close, the product's four sections set large, Stats and Developers a step smaller, and at its foot the launch button, the wallet as a ghost, the socials and the toggle.
+
+### The two footers
+
+Both come from `src/lib/site.ts`.
+The landing's footer groups the site by audience, Trade (Explore, Assets, Rewards), Create (Stoke a coin, Curated), Platform (Revenue, Burns, Announcements, API, GitHub) and Legal (Terms, Privacy, Risk disclosure, Contact), with the lockup, one line, the socials once, a status line (the network and whether the API answers), the PlatformConfig and LaunchLab addresses, and a disclaimer that opens with one bold risk sentence and names the excluded regions.
+Every terminal page ends with one row: the lockup small, API and the legal pages, the socials, the status and the risk sentence.
+`/terms`, `/privacy` and `/risk` are document pages drafted from the site's own facts; the owner approves their text before the site opens.
+
+### What phase 1b adds
+
+`EmptyState` and the four-state convention for every list and panel, the formatting components (numbers with subscript zeros, relative time with the absolute on hover and a caution tag when stale, address truncation, the coin image's fallback everywhere `CoinImage` is not yet used), and the region gate (#131).

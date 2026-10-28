@@ -1,0 +1,24 @@
+/* A user's image on a plate with a hairline, so a white-background logo never glows in dark (Apple's dark-mode guidance). */
+.image {
+  flex: none;
+  border-radius: var(--radius-control);
+  object-fit: cover;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.fallback {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink-3);
+  font-family: var(--font-display);
+  font-stretch: 100%;
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
+}

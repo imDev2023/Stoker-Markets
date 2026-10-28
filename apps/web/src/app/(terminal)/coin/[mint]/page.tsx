@@ -67,10 +67,10 @@ export default async function CoinPage({ params, searchParams }: Props) {
   return (
     <article className={`shell ${styles.page}`}>
       <header className={styles.head}>
-        <PairLockup launch={launch} />
+        <PairLockup launch={launch} size={56} />
         <div className={styles.titles}>
           <h1 className={styles.pair}>
-            <PairMark base={launch.symbol} quote={quote} size="fit" />
+            <PairMark base={launch.symbol} quote={quote} size="lg" />
           </h1>
           <p className={styles.name}>{launch.name}</p>
           {links.length > 0 && (
@@ -96,8 +96,8 @@ export default async function CoinPage({ params, searchParams }: Props) {
         referrer={referrer} aside={<QuoteCard launch={launch} quoteAsset={quoteAsset} />}
       />
 
-      <section className={styles.panels}>
-        <dl className={`card ${styles.facts}`}>
+      <section className={`grid ${styles.panels}`}>
+        <dl className={`card col-6 ${styles.facts}`}>
           <div>
             <dt>Creator earns</dt>
             <dd>
@@ -160,7 +160,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
           )}
         </dl>
 
-        <dl className={`card ${styles.addresses}`}>
+        <dl className={`card col-6 ${styles.addresses}`}>
           {addresses.map(([label, value, kind]) => (
             <div key={label}>
               <dt>{label}</dt>

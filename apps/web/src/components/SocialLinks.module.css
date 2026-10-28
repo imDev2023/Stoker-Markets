@@ -9,9 +9,9 @@
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-control);
   color: var(--ink-2);
-  transition: color var(--fast) var(--ease), background-color var(--fast) var(--ease);
+  transition: color var(--dur-fast) var(--ease-standard), background-color var(--dur-fast) var(--ease-standard);
 }
 
 .icon:hover {

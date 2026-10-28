@@ -7,6 +7,13 @@
   margin-left: auto;
 }
 
+/* In the phone menu's foot the control fills the width like the launch button above it. */
+.inMenu,
+.inMenu .connect,
+.inMenu .connected {
+  width: 100%;
+}
+
 @media (max-width: 560px) {
   .inline {
     width: 100%;
@@ -16,16 +23,21 @@
     width: 100%;
     height: 48px;
   }
-  .inline .menu {
+  .inline .menu,
+  .inMenu .menu {
     left: 0;
     min-width: 0;
   }
 }
 
-/* The button itself is the primitive (ghost in the header, primary inline); these only place the glyph and the address. */
+/* The button itself is the primitive (a ghost in the header, the primary inline); these only place the glyph, the avatar and the address. */
 .connect,
 .connected {
   gap: 8px;
+}
+
+.connected {
+  padding-left: 8px;
 }
 
 .connect:disabled {
@@ -36,16 +48,26 @@
   display: none;
 }
 
-/* The phone's header has no room for the words: the glyph alone, the words kept as the button's name. */
+.avatar {
+  display: inline-block;
+  flex: none;
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* The phone's header has no room for the words: the glyph alone, the words kept as the button's name; connected, the avatar alone, the address kept the same way. */
 @media (max-width: 640px) {
-  .header .connect {
+  .header .connect,
+  .header .connected {
     width: 40px;
     padding: 0;
+    justify-content: center;
   }
   .header .connectGlyph {
     display: inline-flex;
   }
-  .header .connectWord {
+  .header .connectWord,
+  .header .address {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -54,13 +76,6 @@
     clip: rect(0 0 0 0);
     white-space: nowrap;
   }
-  /* Connected, the address alone: with the mark, search, the launch button and the menu beside it, the glyph's 26px would not fit a 390px window. */
-  .header .connected {
-    padding: 0 10px;
-  }
-  .header .connected .glyph {
-    display: none;
-  }
 }
 
 .glyph {
@@ -68,34 +83,36 @@
   color: var(--ink-2);
 }
 
-/* The menu floats on surface-3 with the shadow, the one place the header casts one. */
+/* The menu floats at the overlay level, entering from the button it opens from. */
 .menu {
   position: absolute;
   right: 0;
   top: calc(100% + 8px);
-  min-width: 220px;
+  min-width: 232px;
   padding: 6px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-card);
   background: var(--surface-3);
-  box-shadow: var(--highlight), var(--shadow);
+  color: var(--on-surface-3);
+  box-shadow: var(--highlight), var(--shadow-overlay);
   z-index: 20;
+  transform-origin: top right;
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .menu {
-    animation: open var(--base) var(--ease);
+    animation: open var(--dur-base) var(--ease-enter);
   }
   @keyframes open {
     from {
       opacity: 0;
-      transform: translateY(-4px);
+      transform: scale(0.96);
     }
   }
 }
 
 .menu img {
-  border-radius: 4px;
+  border-radius: var(--radius-control);
 }
 
 .menu button,
@@ -106,13 +123,14 @@
   width: 100%;
   padding: 10px 12px;
   border: 0;
-  border-radius: calc(var(--radius-sm) - 2px);
+  border-radius: var(--radius-control);
   background: none;
   text-align: left;
+  font-size: var(--text-ui);
   font-weight: 500;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color var(--fast) var(--ease);
+  transition: background-color var(--dur-fast) var(--ease-standard);
 }
 
 .menu button:hover,
@@ -126,10 +144,17 @@
   box-shadow: var(--ring);
 }
 
+/* The toggle under a hairline, the menu's last row. */
+.foot {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+
 .empty {
   margin: 0;
   padding: 10px 12px;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   color: var(--ink-2);
 }
 

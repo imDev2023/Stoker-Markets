@@ -33,7 +33,7 @@
 .lede {
   margin: 0;
   max-width: 60ch;
-  font-size: 1rem;
+  font-size: var(--text-body);
   color: var(--ink-2);
   text-wrap: pretty;
 }
@@ -45,7 +45,7 @@
   margin: 0;
   padding: 0;
   min-width: 0;
-  transition: opacity var(--base) var(--ease);
+  transition: opacity var(--dur-base) var(--ease-standard);
 }
 
 .card:disabled {
@@ -89,20 +89,11 @@
   margin: 0;
 }
 
-/* The section's number: small, mono, in the accent, so the five read as one walk down the form. */
-.index {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  color: var(--accent);
-}
-
 .blockHead em,
 .field em {
   font-style: normal;
   font-weight: 400;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   letter-spacing: 0;
   color: var(--ink-3);
 }
@@ -110,7 +101,7 @@
 .blockHead p {
   margin: 0;
   max-width: 64ch;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   line-height: 1.5;
   color: var(--ink-3);
   text-wrap: pretty;
@@ -143,14 +134,14 @@
   width: 112px;
   height: 112px;
   border: 1px dashed var(--line-strong);
-  border-radius: var(--radius);
+  border-radius: var(--radius-card);
   background: var(--sunken);
   color: var(--ink-2);
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   font-weight: 600;
   cursor: pointer;
   overflow: hidden;
-  transition: border-color var(--fast) var(--ease), background-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+  transition: border-color var(--dur-fast) var(--ease-standard), background-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
 }
 
 .dropEmpty {
@@ -166,7 +157,7 @@
   width: 22px;
   height: 22px;
   color: var(--ink-3);
-  transition: color var(--fast) var(--ease);
+  transition: color var(--dur-fast) var(--ease-standard);
 }
 
 .dropPlus::before,
@@ -177,7 +168,7 @@
   left: 50%;
   width: 16px;
   height: 2px;
-  border-radius: 1px;
+  border-radius: var(--radius-pill);
   background: currentColor;
   transform: translate(-50%, -50%);
 }
@@ -211,7 +202,7 @@
 
 .hint {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   line-height: 1.5;
   color: var(--ink-3);
 }
@@ -231,7 +222,7 @@
 }
 
 .field > span {
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   font-weight: 500;
   color: var(--ink-2);
 }
@@ -242,10 +233,10 @@
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: var(--sunken);
   color: var(--ink);
-  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+  transition: border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
 }
 
 .field textarea {
@@ -267,9 +258,8 @@
   box-shadow: var(--ring);
 }
 
-/* Mono like every ticker on the site, at the size of the fields beside it. */
+/* A ticker is a word, set like the fields beside it. */
 .field .ticker {
-  font-family: var(--font-mono);
   letter-spacing: 0.02em;
 }
 
@@ -282,7 +272,7 @@
 .counter {
   align-self: flex-end;
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: var(--text-label);
   font-variant-numeric: tabular-nums;
   color: var(--ink-3);
 }
@@ -338,7 +328,7 @@
   width: 64px;
   height: 64px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--radius-card);
   object-fit: cover;
   background: var(--sunken);
 }
@@ -365,11 +355,11 @@
   gap: 10px;
   padding: 9px 0;
   border-bottom: 1px solid var(--line);
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
 }
 
 .facts dt {
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   color: var(--ink-3);
 }
 
@@ -384,18 +374,18 @@
 }
 
 .facts dd :global(.mono) {
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
 }
 
 .factNote {
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   font-weight: 400;
   color: var(--ink-3);
 }
 
 .factLink {
   color: var(--accent);
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   font-weight: 600;
   text-decoration: none;
 }
@@ -413,7 +403,7 @@
 
 .termsNote {
   display: block;
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   font-weight: 400;
   color: var(--ink-3);
 }
@@ -426,7 +416,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   line-height: 1.5;
   color: var(--ink-2);
 }
@@ -471,17 +461,17 @@
 .disclaimer {
   margin: 0;
   color: var(--ink-3);
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   line-height: 1.5;
 }
 
 .error {
   margin: 0;
   padding: 10px 12px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: var(--down-bg);
   color: var(--down);
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   font-weight: 500;
 }
 
@@ -511,7 +501,7 @@
 /* An amount and its unit stay on one line. */
 .review :global(.mono) {
   white-space: nowrap;
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
 }
 
 .actions {
@@ -533,7 +523,7 @@
   margin: 0;
   flex: 1 1 260px;
   color: var(--ink-2);
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
 }
 
 @media (max-width: 960px) {

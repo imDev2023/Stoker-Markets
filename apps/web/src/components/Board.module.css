@@ -1,8 +1,5 @@
-/* The board in the terminal look: the asset rail on the left, fixed; the table takes the rest, one row a pair, everything numeric in mono. */
+/* The board on the grid: the asset rail in three columns, fixed; the table in the other nine, one row a pair, the figures in mono. */
 .section {
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  gap: 24px;
   align-items: start;
   padding-top: 24px;
   padding-bottom: 64px;
@@ -28,8 +25,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: var(--text-label);
   color: var(--ink-3);
 }
 
@@ -39,7 +35,7 @@
   height: 7px;
   border-radius: 50%;
   background: var(--up);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--up) 25%, transparent);
+  box-shadow: 0 0 0 2px var(--up-bg);
   animation: pulse 2.4s ease-in-out infinite;
 }
 
@@ -67,8 +63,7 @@
 
 .search input {
   height: 100%;
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
 }
 
 .search input::-webkit-search-cancel-button {
@@ -82,25 +77,23 @@
 }
 
 .sortLabel {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: var(--text-label);
   color: var(--ink-3);
 }
 
 .sorts > div > button {
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
 }
 
 .rows[aria-busy="true"],
 .empty[aria-busy="true"] {
   opacity: 0.55;
-  transition: opacity var(--fast) var(--ease) 150ms;
+  transition: opacity var(--dur-fast) var(--ease-standard) var(--dur-fast);
 }
 
 /* The table is one panel: the column names in a well at its top, a row a pair, a hairline between rows. */
 .table {
-  --cols: minmax(250px, 2.6fr) minmax(96px, 1.1fr) minmax(96px, 1.1fr) 140px minmax(96px, 1.1fr) 76px 96px;
+  --cols: minmax(240px, 2.6fr) minmax(96px, 1.1fr) minmax(96px, 1.1fr) 140px minmax(96px, 1.1fr) 76px 96px;
   overflow: hidden;
 }
 
@@ -111,11 +104,8 @@
   padding: 8px 12px;
   border-bottom: 1px solid var(--line);
   background: var(--sunken);
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: var(--text-label);
   font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   color: var(--ink-3);
   white-space: nowrap;
 }
@@ -150,7 +140,7 @@
 
 .empty p {
   margin: 0;
-  font-size: 1.0625rem;
+  font-size: var(--text-body);
   color: var(--ink-2);
 }
 

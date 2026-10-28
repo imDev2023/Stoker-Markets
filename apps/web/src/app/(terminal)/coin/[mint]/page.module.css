@@ -30,7 +30,7 @@
 
 .name {
   margin: 0;
-  font-size: 1.0625rem;
+  font-size: var(--text-body);
   color: var(--ink-2);
 }
 
@@ -46,7 +46,7 @@
 .description {
   margin: 0;
   max-width: 64ch;
-  font-size: 1rem;
+  font-size: var(--text-body);
   color: var(--ink-2);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -54,10 +54,7 @@
 
 /* The facts flow under the market, two cards a row; they share no row grid with the market, so no card waits on another's height. */
 .panels {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
-  gap: 16px;
 }
 
 .wide {
@@ -76,7 +73,7 @@
 
 .facts dt,
 .addresses dt {
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   color: var(--ink-3);
 }
 
@@ -92,7 +89,7 @@
 
 .facts dd > span:not([class]) {
   flex-basis: 100%;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   font-weight: 400;
   color: var(--ink-2);
 }
@@ -101,7 +98,7 @@
   color: var(--ink-2);
   text-decoration: none;
   border-bottom: 1px solid var(--line-strong);
-  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+  transition: color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
 }
 
 .addresses a:hover {
@@ -112,7 +109,7 @@
 .factLink {
   flex-basis: 100%;
   color: var(--accent);
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   font-weight: 600;
   text-decoration: none;
 }
@@ -136,7 +133,7 @@
 
 .quoteLabelsNote {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   color: var(--ink-3);
 }
 
@@ -145,8 +142,8 @@
 }
 
 @media (max-width: 900px) {
-  .panels {
-    grid-template-columns: minmax(0, 1fr);
+  .panels > * {
+    grid-column: 1 / -1;
   }
 }
 

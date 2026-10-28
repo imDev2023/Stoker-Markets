@@ -16,7 +16,7 @@
 
 .count {
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: var(--text-label);
   font-variant-numeric: tabular-nums;
   color: var(--ink-3);
 }
@@ -35,10 +35,10 @@
   height: 36px;
   padding: 0 11px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: var(--sunken);
   color: var(--ink-3);
-  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+  transition: border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
 }
 
 @media (hover: hover) {
@@ -60,8 +60,7 @@
   background: transparent;
   color: var(--ink);
   font: inherit;
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   outline: none;
 }
 
@@ -100,10 +99,10 @@
   min-height: 62px;
   padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: var(--sunken);
   cursor: pointer;
-  transition: border-color var(--fast) var(--ease), background-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+  transition: border-color var(--dur-fast) var(--ease-standard), background-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
 }
 
 /* The radio itself is the card's border: drawn by the card, not by the browser. */
@@ -193,14 +192,13 @@
 }
 
 .ticker {
-  font-family: var(--font-mono);
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
 }
 
 .name {
   min-width: 0;
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   color: var(--ink-2);
   overflow-wrap: anywhere;
 }
@@ -211,7 +209,7 @@
   flex-direction: column;
   gap: 1px;
   min-width: 0;
-  font-size: 0.75rem;
+  font-size: var(--text-label);
   line-height: 1.4;
 }
 
@@ -238,15 +236,14 @@
 
 .note {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   color: var(--ink-3);
 }
 
 /* The way to the rest of a kind: a ghost button (the primitive) the width of the cards, with a chevron that turns when they are open. */
 .more {
   width: 100%;
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   font-weight: 500;
   color: var(--ink-2);
 }
@@ -258,7 +255,7 @@
   border: solid currentColor;
   border-width: 0 1.5px 1.5px 0;
   transform: rotate(45deg);
-  transition: transform var(--base) var(--ease), margin-top var(--base) var(--ease);
+  transition: transform var(--dur-base) var(--ease-standard), margin-top var(--dur-base) var(--ease-standard);
 }
 
 .more[aria-expanded="true"] .chevron {
@@ -295,7 +292,7 @@
 }
 
 .big .ticker {
-  font-size: 1.0625rem;
+  font-size: var(--text-body);
 }
 
 @media (max-width: 640px) {

@@ -22,7 +22,7 @@
 .prose {
   margin: 0;
   max-width: 76ch;
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
   line-height: 1.6;
   color: var(--ink-2);
   text-wrap: pretty;
@@ -68,7 +68,7 @@
 .row dd {
   margin: 0;
   min-width: 0;
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
   line-height: 1.55;
   color: var(--ink-2);
   text-wrap: pretty;
@@ -80,7 +80,7 @@
 
 .endpoint {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   font-weight: 500;
   color: var(--ink);
   overflow-wrap: anywhere;
@@ -88,16 +88,16 @@
 
 .code {
   padding: 1px 4px;
-  border-radius: 5px;
+  border-radius: var(--radius-control);
   background: var(--sunken);
   font-family: var(--font-mono);
-  font-size: 0.8125em;
+  font-size: var(--text-caption);
   color: var(--ink);
   overflow-wrap: anywhere;
 }
 
 .url {
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
 }
 
 /* A request or an answer: plain text in a block on sunken; a long line scrolls sideways within the block. */
@@ -108,9 +108,8 @@
 
 .caption {
   margin-bottom: 6px;
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: var(--text-label);
+  font-weight: 500;
   color: var(--ink-3);
 }
 
@@ -118,10 +117,10 @@
   margin: 0;
   padding: 12px 14px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm, 8px);
+  border-radius: var(--radius-control);
   background: var(--sunken);
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   line-height: 1.55;
   color: var(--ink);
   overflow-x: auto;

@@ -1,0 +1,43 @@
+/* A document page (the terms, the privacy notice, the risk disclosure): a title, a dated line and prose at a measure that reads. */
+.page {
+  padding-top: 32px;
+  padding-bottom: 64px;
+}
+
+.title {
+  margin: 0 0 6px;
+}
+
+.dated {
+  margin: 0 0 28px;
+  font-size: var(--text-caption);
+  color: var(--ink-3);
+}
+
+.prose {
+  max-width: 68ch;
+}
+
+.prose h2 {
+  margin: 28px 0 8px;
+}
+
+.prose p,
+.prose li {
+  margin: 0 0 12px;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.prose ul {
+  margin: 0 0 12px;
+  padding-left: 1.25rem;
+}
+
+.prose a {
+  color: var(--accent);
+}
+
+.prose strong {
+  color: var(--ink);
+}

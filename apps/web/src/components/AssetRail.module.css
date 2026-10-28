@@ -5,9 +5,7 @@
   gap: 2px;
   position: sticky;
   top: calc(var(--header-h) + 32px);
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
-  font-variant-numeric: tabular-nums slashed-zero;
+  font-size: var(--text-caption);
 }
 
 .all,
@@ -19,13 +17,13 @@
   width: 100%;
   padding: 7px 10px;
   border: 0;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--ink-2);
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease);
+  transition: background-color var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard);
 }
 
 .all {
@@ -35,21 +33,20 @@
   font-weight: 600;
 }
 
-/* A kind reads as a heading (small caps, quiet) and acts as the filter the chip was. */
+/* A kind reads as a heading (quiet, in the sans, sentence case) and acts as the filter the chip was. */
 .kind {
   justify-content: space-between;
   margin-top: 6px;
   padding-block: 5px;
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--text-caption);
+  font-weight: 600;
   color: var(--ink-3);
 }
 
-.kind .count {
-  letter-spacing: 0;
-  text-transform: none;
+/* A count is a figure. */
+.count {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums slashed-zero;
 }
 
 /* An asset's row sits a step in under its kind. */
@@ -96,7 +93,7 @@
   align-items: flex-end;
   gap: 1px;
   margin-left: auto;
-  font-size: 0.6875rem;
+  font-size: var(--text-label);
   line-height: 1.2;
 }
 
@@ -126,11 +123,11 @@
     width: auto;
     margin: 0;
     padding: 6px 12px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     box-shadow: inset 0 0 0 1px var(--line);
   }
   .kind {
-    font-size: 0.8125rem;
+    font-size: var(--text-caption);
     font-weight: 500;
     letter-spacing: 0;
     text-transform: none;

@@ -15,7 +15,8 @@ const compactUsd = (usd: number) => `$${usd.toLocaleString("en-US", { notation: 
  * the board as the chips did, an asset narrows it to that one pair; the kinds are there before the first coin, so an
  * empty board still shows what it can do. Narrow windows lay the rail down as a strip of chips.
  */
-export function AssetRail({ quotes, launches, query, onKind, onAsset }: {
+export function AssetRail({ className = "", quotes, launches, query, onKind, onAsset }: {
+  className?: string;
   quotes: LaunchQuote[];
   launches: LaunchSummary[];
   query: BoardQuery;
@@ -32,7 +33,7 @@ export function AssetRail({ quotes, launches, query, onKind, onAsset }: {
   const kindChosen = (chip: PairedChip) => query.quote === null && query.category === chip.category && query.issuer === chip.issuer;
   const coins = (n: number) => (n > 0 ? <span className={styles.count}>{n} {n === 1 ? "coin" : "coins"}</span> : null);
   return (
-    <div className={styles.rail} role="group" aria-label="Paired with">
+    <div className={`${styles.rail} ${className}`} role="group" aria-label="Paired with">
       <button type="button" className={styles.all} aria-pressed={kindChosen(all!)} onClick={() => onKind(all!)}>
         All assets
         {coins(total)}

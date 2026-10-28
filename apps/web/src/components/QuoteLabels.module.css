@@ -3,8 +3,8 @@
   align-items: center;
   flex: none;
   padding: 2px 9px;
-  border-radius: 999px;
-  font-size: 0.75rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-label);
   font-weight: 600;
   line-height: 1.5;
   white-space: nowrap;
@@ -38,18 +38,18 @@
 }
 
 .detail {
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
 .source {
-  font-size: 0.75rem;
+  font-size: var(--text-label);
   color: var(--ink-3);
 }
 
 .empty {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   color: var(--ink-2);
 }
