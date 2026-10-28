@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPlatform, getQuoteAsset, listLaunches, listLaunchQuotes } from "@/lib/api";
-import { assetKind, CATEGORY_NOTES, formatUsd, graduationInWords, marketChartUrl, marketNote, marketTitle, tokenProgramName } from "@/lib/assets";
+import { assetKind, CATEGORY_NOTES, formatUsd, graduationInWords, marketNote, marketTitle, tokenProgramName } from "@/lib/assets";
 import { formatMarketValue } from "@/lib/board";
 import { explorerUrl, formatPrice, formatUtc, quoteTicker, shortAddress } from "@/lib/format";
 import { CopyButton } from "@/components/CopyButton";
@@ -134,9 +134,6 @@ export default async function AssetPage({ params }: Props) {
             <h2 id="market-title" className={`t-h3 ${styles.cardTitle}`}>{marketTitle(quote.market)}</h2>
             <p className={styles.cardNote}>{marketNote(ticker, quote.category)}</p>
             <MarketChart market={quote.market} />
-            <p className={styles.attribution}>
-              <a href={marketChartUrl(quote.market)} target="_blank" rel="noreferrer">{quote.market.ticker} chart</a> by TradingView
-            </p>
           </section>
         )}
 

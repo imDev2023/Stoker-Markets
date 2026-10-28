@@ -48,3 +48,9 @@
     height: 320px;
   }
 }
+
+.status a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

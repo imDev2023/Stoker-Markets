@@ -124,7 +124,7 @@ export function marketNote(ticker: string, category: QuoteCategory) {
   }
 }
 
-/** TradingView's own chart of the market, for the attribution under the widget. */
+/** TradingView's own chart of the market, offered when its widget can't load here. */
 export function marketChartUrl(m: QuoteMarket) {
   return `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(m.symbol)}`;
 }

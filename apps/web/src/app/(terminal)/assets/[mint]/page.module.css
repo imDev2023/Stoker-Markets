@@ -153,25 +153,6 @@
   text-wrap: pretty;
 }
 
-/* Under the market chart: TradingView's attribution, which its widget terms keep. */
-.attribution {
-  margin: 0;
-  font-size: 0.75rem;
-  color: var(--ink-3);
-}
-
-.attribution a {
-  color: var(--ink-2);
-  text-decoration: none;
-  border-bottom: 1px solid var(--line-strong);
-  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
-}
-
-.attribution a:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
 .coins {
   margin: 0;
   padding: 0;

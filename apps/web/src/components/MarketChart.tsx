@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { QuoteMarket } from "@launchpad/contract";
+import { marketChartUrl } from "@/lib/assets";
 import styles from "./MarketChart.module.css";
 
 /**
@@ -9,6 +10,7 @@ import styles from "./MarketChart.module.css";
  * `<tv-advanced-chart>`, which embeds TradingView's hosted chart, reads its colours from the `--tv-widget-*` tokens on its
  * ancestors (`MarketChart.module.css`) and its light or dark look from the page's `color-scheme`. The script answers 403
  * outside a browser, and the UI suite serves it empty (`tests/ui/src/fixtures.ts`), so there the frame keeps its loading line.
+ * The widget draws TradingView's attribution under the chart itself, so the page adds none.
  */
 const WIDGET_SCRIPT = "https://widgets.tradingview-widget.com/w/en/tv-advanced-chart.js";
 const ELEMENT = "tv-advanced-chart";
@@ -68,7 +70,14 @@ export function MarketChart({ market }: { market: QuoteMarket }) {
       />
       {state !== "ready" && (
         <p className={styles.status} role="status">
-          {state === "loading" ? `Loading TradingView's chart of ${market.ticker}` : `TradingView's chart did not load here. Open ${market.ticker} on TradingView instead.`}
+          {state === "loading" ? (
+            `Loading TradingView's chart of ${market.ticker}`
+          ) : (
+            <>
+              TradingView&apos;s chart did not load here.{" "}
+              <a href={marketChartUrl(market)} target="_blank" rel="noreferrer">Open {market.ticker} on TradingView</a> instead.
+            </>
+          )}
         </p>
       )}
     </div>
