@@ -39,8 +39,13 @@
   padding: 16px;
   text-align: center;
   font-size: 0.875rem;
+  line-height: 1.5;
   color: var(--ink-3);
   text-wrap: pretty;
+}
+
+.status span {
+  max-width: 44ch;
 }
 
 @media (max-width: 640px) {

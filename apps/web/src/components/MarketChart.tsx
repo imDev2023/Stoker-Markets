@@ -86,14 +86,17 @@ export function MarketChart({ market }: { market: QuoteMarket }) {
       />
       {state !== "ready" && (
         <p className={styles.status} role="status">
-          {state === "loading" ? (
-            `Loading TradingView's chart of ${market.ticker}`
-          ) : (
-            <>
-              TradingView&apos;s chart did not load here.{" "}
-              <a href={marketChartUrl(market)} target="_blank" rel="noreferrer">Open {market.ticker} on TradingView</a> instead.
-            </>
-          )}
+          {/* One child, so the frame centres the sentence and its link as a whole. */}
+          <span>
+            {state === "loading" ? (
+              `Loading TradingView's chart of ${market.ticker}`
+            ) : (
+              <>
+                TradingView&apos;s chart did not load here.{" "}
+                <a href={marketChartUrl(market)} target="_blank" rel="noreferrer">Open {market.ticker} on TradingView</a> instead.
+              </>
+            )}
+          </span>
         </p>
       )}
     </div>
