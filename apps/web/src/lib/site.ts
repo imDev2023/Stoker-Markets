@@ -6,7 +6,7 @@
  * yet; replace them before the site opens.
  */
 export const SITE_LINKS = {
-  x: { label: "X", href: "https://x.com/stokermarkets" },
+  x: { label: "X", href: "https://x.com/stokermarkets", handle: "@stokermarkets" },
   telegram: { label: "Telegram", href: "https://t.me/stokermarkets" },
   github: { label: "GitHub", href: "https://github.com/imDev2023/Stoker-Markets" },
   email: "info@stoker.markets",
@@ -37,7 +37,8 @@ export const NAV_LINKS = [
  */
 export const API_LINK = { href: "/api", label: "Developers" } as const satisfies NavLink;
 
-const SITE_PAGES = [
+/** The site's pages, as the footer lists them and the sitemap names them. */
+export const SITE_PAGES = [
   NAV_LINKS[0],
   LAUNCH_LINK,
   NAV_LINKS[1],

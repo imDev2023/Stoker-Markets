@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/meta";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLaunch, getPlatform, getRewardRound } from "@/lib/api";
@@ -7,7 +8,10 @@ import styles from "../../page.module.css";
 
 type Props = { params: Promise<{ id: string }> };
 
-export const metadata: Metadata = { title: "Reward Round" };
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  return pageMeta({ path: `/rewards/rounds/${id}`, title: "Reward Round", description: "One Reward Round: the Reward Launch it paid, its snapshot of holders, the pot and every payout." });
+}
 
 export default async function RewardRoundPage({ params }: Props) {
   const { id } = await params;

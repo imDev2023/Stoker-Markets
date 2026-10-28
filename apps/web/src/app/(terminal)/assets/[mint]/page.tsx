@@ -5,7 +5,10 @@ import { getPlatform, getQuoteAsset, listLaunches, listLaunchQuotes } from "@/li
 import { assetKind, CATEGORY_NOTES, formatUsd, graduationInWords, tokenProgramName } from "@/lib/assets";
 import { formatMarketValue } from "@/lib/board";
 import { explorerUrl, formatPrice, formatUtc, quoteTicker, shortAddress } from "@/lib/format";
+import { breadcrumbList, pageMeta } from "@/lib/meta";
+import { siteOrigin } from "@/lib/origin";
 import { CopyButton } from "@/components/CopyButton";
+import { JsonLd } from "@/components/JsonLd";
 import { QuoteLabelList } from "@/components/QuoteLabels";
 import { QuoteLogo } from "@/components/QuoteLogo";
 import styles from "./page.module.css";
@@ -15,10 +18,15 @@ type Props = { params: Promise<{ mint: string }> };
 const COINS_SHOWN = 8;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const quote = await getQuoteAsset((await params).mint).catch(() => null);
-  return quote
-    ? { title: `${quoteTicker(quote)} as a Quote Asset`, description: `Launch a coin priced in ${quoteTicker(quote)}: its price, what a coin raises to graduate, and what is known about it.` }
-    : { title: "Asset not found" };
+  const { mint } = await params;
+  const quote = await getQuoteAsset(mint).catch(() => null);
+  if (!quote) return pageMeta({ path: `/assets/${mint}`, title: "Asset not found", index: false });
+  const ticker = quoteTicker(quote);
+  return pageMeta({
+    path: `/assets/${quote.mint}`,
+    title: `${ticker} as a Quote Asset`,
+    description: `Launch a coin priced in ${ticker}: its price, what a coin raises to graduate, and what is known about it.`,
+  });
 }
 
 /**
@@ -36,12 +44,14 @@ export default async function AssetPage({ params }: Props) {
     listLaunchQuotes(),
   ]);
   const ticker = quoteTicker(quote);
+  const origin = await siteOrigin();
   const coins = inUse.quotes.find((q) => q.mint === mint)?.launches ?? 0;
   const target = graduationInWords(quote);
   const addresses: (readonly [label: string, value: string])[] = [["Mint", quote.mint], ["Raydium GlobalConfig", quote.globalConfig]];
 
   return (
     <article className={`shell ${styles.page}`}>
+      <JsonLd data={breadcrumbList(origin, [["Home", "/"], ["Assets", "/assets"], [ticker, `/assets/${quote.mint}`]])} />
       <header className={styles.head}>
         <QuoteLogo quote={quote} size={64} />
         <div className={styles.titles}>

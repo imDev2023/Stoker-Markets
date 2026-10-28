@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/meta";
 import { getPlatform, listQuotes } from "@/lib/api";
 import { LaunchForm } from "@/components/LaunchForm";
 
-export const metadata: Metadata = { title: "Stoke a coin" };
+export const metadata: Metadata = pageMeta({ path: "/launch", title: "Stoke a coin", description: "Launch a coin on Solana priced in SOL, a stablecoin, a tokenized stock or any asset Raydium quotes: its name and picture, its pair, the launch type and a first buy, in one transaction your wallet signs." });
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 

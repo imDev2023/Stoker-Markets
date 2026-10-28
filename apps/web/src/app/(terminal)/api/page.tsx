@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/meta";
 import { API_URL, getPlatform } from "@/lib/api";
 import base from "../rewards/page.module.css";
 import styles from "./page.module.css";
 import { SECTIONS } from "./reference";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
+  path: "/api",
   title: "API",
   description:
     "The public API's reference: read every coin, trade, holder and reward without a key, and launch or trade through unsigned transactions your wallet signs. A quickstart answered live, every endpoint, the errors and the limits.",
-};
+});
 
 /**
  * The public API, the whole reference on one page (owner, 2026-10-25): a quickstart the API answers for this very
