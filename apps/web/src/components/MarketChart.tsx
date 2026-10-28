@@ -34,24 +34,40 @@ declare module "react" {
 
 type State = "loading" | "ready" | "failed";
 
+let widget: Promise<void> | undefined;
+
+/**
+ * Loads TradingView's module once per page. The promise settles when the element is defined and rejects when the script
+ * can't load; it lives outside any mount, since React's development double-mount would otherwise hand the script's error
+ * to a closure that has already been cleaned up and the frame would say "loading" for ever.
+ */
+function loadWidget(): Promise<void> {
+  if (customElements.get(ELEMENT)) return Promise.resolve();
+  widget ??= new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.type = "module";
+    script.src = WIDGET_SCRIPT;
+    script.onerror = () => reject(new Error(`${WIDGET_SCRIPT} did not load`));
+    document.head.append(script);
+    void customElements.whenDefined(ELEMENT).then(() => resolve());
+  });
+  return widget;
+}
+
 /** TradingView's chart of the market behind a Quote Asset (#124), in a frame that says so while the chart loads, or when it can't. */
 export function MarketChart({ market }: { market: QuoteMarket }) {
   const [state, setState] = useState<State>("loading");
 
   useEffect(() => {
     let gone = false;
-    void customElements.whenDefined(ELEMENT).then(() => {
-      if (!gone) setState("ready");
-    });
-    if (!customElements.get(ELEMENT) && !document.querySelector(`script[src="${WIDGET_SCRIPT}"]`)) {
-      const script = document.createElement("script");
-      script.type = "module";
-      script.src = WIDGET_SCRIPT;
-      script.onerror = () => {
+    loadWidget().then(
+      () => {
+        if (!gone) setState("ready");
+      },
+      () => {
         if (!gone) setState("failed");
-      };
-      document.head.append(script);
-    }
+      },
+    );
     return () => {
       gone = true;
     };
