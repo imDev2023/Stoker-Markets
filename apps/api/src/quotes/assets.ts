@@ -5,6 +5,7 @@ import { RATE_DENOMINATOR, readCurveRules, WSOL_MINT } from "@launchpad/chain";
 import type { GraduationTarget, QuoteAsset, QuoteRef } from "@launchpad/contract";
 import { quoteAssets, type Db } from "@launchpad/db";
 import type { Config } from "../env";
+import { quoteMarket } from "./markets";
 import { graduationTargetRaw, type QuoteMarket } from "./pricing";
 import { bandOf, launchBlocker } from "./rules";
 
@@ -33,6 +34,7 @@ export function toQuoteAsset(cfg: Config, r: Row): QuoteAsset {
     referralShare: referralShare(cfg, r.maxShareFeeRate),
     liquidityUsd: r.liquidityUsd,
     labels: r.labels ?? null,
+    market: quoteMarket(r),
   };
 }
 

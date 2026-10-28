@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPlatform, getQuoteAsset, listLaunches, listLaunchQuotes } from "@/lib/api";
-import { assetKind, CATEGORY_NOTES, formatUsd, graduationInWords, tokenProgramName } from "@/lib/assets";
+import { assetKind, CATEGORY_NOTES, formatUsd, graduationInWords, marketNote, marketTitle, tokenProgramName } from "@/lib/assets";
 import { formatMarketValue } from "@/lib/board";
 import { explorerUrl, formatPrice, formatUtc, quoteTicker, shortAddress } from "@/lib/format";
 import { CopyButton } from "@/components/CopyButton";
+import { MarketChart } from "@/components/MarketChart";
 import { QuoteLabelList } from "@/components/QuoteLabels";
 import { QuoteLogo } from "@/components/QuoteLogo";
 import styles from "./page.module.css";
@@ -22,9 +23,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 /**
- * One Quote Asset (ADR 0010): the facts a Creator or trader checks before pairing with it, the coins already paired
- * with it, and under "Further information" what its mint and the token list say about it, the one place on the site
- * those facts sit beside its name.
+ * One Quote Asset (ADR 0010): the facts a Creator or trader checks before pairing with it, TradingView's chart of the
+ * market behind it when one is known (#124), the coins already paired with it, and under "Further information" what its
+ * mint and the token list say about it, the one place on the site those facts sit beside its name.
  */
 export default async function AssetPage({ params }: Props) {
   const { mint } = await params;
@@ -127,6 +128,14 @@ export default async function AssetPage({ params }: Props) {
             </dd>
           </div>
         </dl>
+
+        {quote.market && (
+          <section className={`card ${styles.wide} ${styles.card}`} aria-labelledby="market-title">
+            <h2 id="market-title" className={`t-h3 ${styles.cardTitle}`}>{marketTitle(quote.market)}</h2>
+            <p className={styles.cardNote}>{marketNote(ticker, quote.category)}</p>
+            <MarketChart market={quote.market} />
+          </section>
+        )}
 
         <section className={`card ${styles.wide} ${styles.card}`} aria-labelledby="paired-coins-title">
           <h2 id="paired-coins-title" className={`t-h3 ${styles.cardTitle}`}>Coins priced in {ticker}</h2>

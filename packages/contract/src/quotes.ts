@@ -55,6 +55,21 @@ export const QuoteLabel = z.object({
 });
 export type QuoteLabel = z.infer<typeof QuoteLabel>;
 
+/**
+ * The market behind a Quote Asset, as TradingView names it (#124): the stock or fund a tokenized stock tracks, the coin a
+ * wrapped coin wraps, or the coin's own market. The map is data in the API (`apps/api/src/quotes/markets.ts`), keyed by
+ * the issuer and its ticker for a stock and by mint for a coin, never read from a name. The asset's page charts it.
+ */
+export const QuoteMarket = z.object({
+  /** TradingView's symbol: the venue and the ticker joined by a colon, "NASDAQ:NVDA" or "CRYPTO:SOLUSD". */
+  symbol: z.string(),
+  /** An exchange's code as TradingView writes it ("NASDAQ", "NYSE", "AMEX", "COINBASE"), or "CRYPTO" for its index of a coin across exchanges. */
+  venue: z.string(),
+  /** The ticker on that venue: "NVDA", "SOLUSD". */
+  ticker: z.string(),
+});
+export type QuoteMarket = z.infer<typeof QuoteMarket>;
+
 /** Enough about a Quote Asset to show an amount in it: every Launch carries one. */
 export const QuoteRef = z.object({
   mint: base58,
@@ -94,6 +109,8 @@ export const QuoteAsset = QuoteRef.extend({
    * when there is nothing to flag. Never a reason to refuse a launch or a trade.
    */
   labels: z.array(QuoteLabel).nullable(),
+  /** The market behind the asset, for the chart on its page; null when none is known: a private company's token, a collectible, a community token. */
+  market: QuoteMarket.nullable(),
 });
 export type QuoteAsset = z.infer<typeof QuoteAsset>;
 
