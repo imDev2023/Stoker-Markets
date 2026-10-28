@@ -40,6 +40,11 @@ What kind of asset a Quote Asset is, one of ten (SOL, stablecoin, tokenized stoc
 The board filters by it and the assets page groups by it; a tokenized stock also carries its issuer.
 _Avoid_: Type, sector, class
 
+**Market behind an asset**:
+The market TradingView charts for a Quote Asset: the stock or fund a tokenized stock tracks, the coin a wrapped coin wraps, or the coin's own market (#124).
+Known from the issuer's ticker or the mint address, never from a name, and absent for an asset with no public market (a private company's token, a collectible); the asset's page charts it.
+_Avoid_: Underlying (on its own), real price, reference price
+
 **First Buy**:
 The Creator's own buy of their coin, made inside the launch transaction right after the curve is created, so no other trade can come before it.
 _Avoid_: Dev buy, initial buy, snipe

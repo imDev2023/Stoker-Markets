@@ -1,4 +1,4 @@
-import { QuoteCategory, QuoteIssuer, type QuoteAsset, type QuoteRef } from "@launchpad/contract";
+import { QuoteCategory, QuoteIssuer, type QuoteAsset, type QuoteMarket, type QuoteRef } from "@launchpad/contract";
 import { CATEGORY_LABELS, CATEGORY_ORDER, ISSUER_LABELS, inChip } from "./board";
 import { formatPrice, formatUnits, SOL_DECIMALS } from "./format";
 
@@ -105,4 +105,26 @@ export function graduationInWords(q: Pick<QuoteAsset, "graduationTarget" | "deci
   const ticker = q.symbol ?? `${q.mint.slice(0, 4)}…${q.mint.slice(-4)}`;
   const amount = formatUnits(q.graduationTarget.raw, q.decimals, BigInt(q.graduationTarget.raw) >= 10n ** BigInt(q.decimals) ? 2 : 4);
   return { amount: `${amount} ${ticker}`, sol: `${formatUnits(q.graduationTarget.lamports, SOL_DECIMALS, 2)} SOL` };
+}
+
+/** The market chart's title (#124): the ticker and where TradingView quotes it, "NVDA on NASDAQ" or "SOLUSD across exchanges". */
+export function marketTitle(m: QuoteMarket) {
+  return m.venue === "CRYPTO" ? `${m.ticker} across exchanges` : `${m.ticker} on ${m.venue}`;
+}
+
+/** What the chart shows for an asset of this kind, in a sentence; a tokenized stock's says why its price and the stock's can part. */
+export function marketNote(ticker: string, category: QuoteCategory) {
+  switch (category) {
+    case "tokenized_stock":
+      return `What ${ticker} tracks, as TradingView charts it. The stock trades in market hours and ${ticker} on Solana around the clock, so the two can part between sessions.`;
+    case "wrapped":
+      return `What ${ticker} wraps, as TradingView charts it.`;
+    default:
+      return `${ticker}'s own market, as TradingView charts it.`;
+  }
+}
+
+/** TradingView's own chart of the market, for the attribution under the widget. */
+export function marketChartUrl(m: QuoteMarket) {
+  return `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(m.symbol)}`;
 }

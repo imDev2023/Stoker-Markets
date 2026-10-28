@@ -288,6 +288,8 @@ export const test = base.extend<{
   /** URLs a test expects to answer with an error status, which the browser logs to the console. */
   expectedHttpErrors: RegExp[];
   browserErrors: void;
+  /** TradingView's widget script, served empty: the asset page's market chart never loads live data into a baseline. */
+  thirdParty: void;
 }>({
   // eslint-disable-next-line no-empty-pattern
   stack: async ({}, use) => use(stackEnv()),
@@ -295,6 +297,16 @@ export const test = base.extend<{
   wallet: async ({ page }, use) => use(await installTestWallet(page, await fundedKeypair())),
   // eslint-disable-next-line no-empty-pattern
   expectedHttpErrors: async ({}, use) => use([]),
+  thirdParty: [
+    async ({ page }, use) => {
+      // The asset page embeds TradingView's chart of the market behind the asset (`MarketChart`), a third-party script
+      // with live data. Served an empty module, the web component is never defined, the frame keeps its loading line,
+      // and the console stays quiet (an aborted request would log a failed load).
+      await page.route(/^https:\/\/[a-z.]*tradingview(-widget)?\.com\//, (route) => route.fulfill({ status: 200, contentType: "text/javascript", body: "" }));
+      await use();
+    },
+    { auto: true },
+  ],
   browserErrors: [
     async ({ page, expectedHttpErrors }, use) => {
       const errors: string[] = [];

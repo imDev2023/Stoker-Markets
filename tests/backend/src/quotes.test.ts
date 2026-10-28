@@ -73,6 +73,19 @@ describe("the Quote Registry", () => {
     expect(bySymbol.BULLWHALE).toMatchObject({ mint: LOCAL_QUOTES.BULLWHALE.toBase58(), decimals: 6, tokenProgram: TOKEN_2022_PROGRAM_ID.toBase58() });
   });
 
+  it("names the market behind each Quote Asset as TradingView does, from the issuer's ticker or the mint, never a name", async () => {
+    const bySymbol = Object.fromEntries((await listQuotes()).map((q) => [q.symbol, q]));
+    // The stock NVDAx tracks, known from xStocks' authorities on the mint and the ticker xStocks gave it.
+    expect(bySymbol.NVDAx!.market).toEqual({ symbol: "NASDAQ:NVDA", venue: "NASDAQ", ticker: "NVDA" });
+    // A coin's own market, by mint: TradingView's index across exchanges.
+    expect(bySymbol.SOL!.market).toEqual({ symbol: "CRYPTO:SOLUSD", venue: "CRYPTO", ticker: "SOLUSD" });
+    expect(bySymbol.USDC!.market).toEqual({ symbol: "CRYPTO:USDCUSD", venue: "CRYPTO", ticker: "USDCUSD" });
+    expect(bySymbol.JTO!.market).toEqual({ symbol: "CRYPTO:JTOUSD", venue: "CRYPTO", ticker: "JTOUSD" });
+    // A pump.fun coin and the local taxed quote are no one's record: no market, whatever they are called.
+    expect(bySymbol.BULLWHALE!.market).toBeNull();
+    expect(bySymbol.TAXQ!.market).toBeNull();
+  });
+
   it("prices each Quote Asset in SOL and USD", async () => {
     const quotes = Object.fromEntries((await listQuotes()).map((q) => [q.symbol, q]));
     expect(quotes.SOL!.price).toMatchObject({ sol: "1", usd: "150" });
