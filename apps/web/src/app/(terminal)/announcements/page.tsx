@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/meta";
 import Link from "next/link";
 import { getPlatform, listAnnouncements } from "@/lib/api";
 import { explorerUrl, formatUtc } from "@/lib/format";
 import styles from "../rewards/page.module.css";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
+  path: "/announcements",
   title: "Fee changes",
   description: "Every announced change to the Platform Fee or Creator Fee, before it applies and after, with the transaction that applied it.",
-};
+});
 
 /** Every fee change ever announced, public: a change to every live curve at once is announced ahead and recorded after. */
 export default async function AnnouncementsPage() {

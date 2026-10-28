@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/meta";
 import Link from "next/link";
 import { SITE_LINKS } from "@/lib/site";
 import base from "../rewards/page.module.css";
 import styles from "./page.module.css";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
+  path: "/curated",
   title: "Curated",
   description: "Coins the platform has approved and works on, bought by the people who stake STOKER: the more a wallet stakes, the larger its allocation of each Curated launch.",
-};
+});
 
 /**
  * Curated (owner, 2026-10-25, #118): the platform's own approved launches, open to STOKER stakers, each wallet's

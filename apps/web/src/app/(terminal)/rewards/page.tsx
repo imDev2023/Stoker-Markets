@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/meta";
 import Link from "next/link";
 import { REWARD_SALE_MAX_RESERVE_BPS, REWARD_SALE_SLIPPAGE_BPS } from "@launchpad/contract";
 import { getRewardRules } from "@/lib/api";
@@ -6,10 +7,11 @@ import { COIN_DECIMALS, formatUnits, formatUtc } from "@/lib/format";
 import { WalletLookup } from "@/components/WalletLookup";
 import styles from "./page.module.css";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
+  path: "/rewards",
   title: "Holder rewards",
   description: "How Reward Rounds pay a Reward Launch's holders, the rules in force, and where any wallet's rewards are.",
-};
+});
 
 export default async function RewardsPage() {
   const rules = await getRewardRules();

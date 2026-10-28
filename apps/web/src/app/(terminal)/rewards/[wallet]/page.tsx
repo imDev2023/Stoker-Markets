@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/meta";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPlatform, getWalletRewards } from "@/lib/api";
@@ -8,7 +9,12 @@ import styles from "../page.module.css";
 type Props = { params: Promise<{ wallet: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  return { title: `Rewards of ${shortAddress((await params).wallet)}` };
+  const { wallet } = await params;
+  return pageMeta({
+    path: `/rewards/${wallet}`,
+    title: `Rewards of ${shortAddress(wallet)}`,
+    description: `Every Holder Reward paid to ${shortAddress(wallet)} across every Reward Launch, and what a round still paying out owes it.`,
+  });
 }
 
 export default async function WalletRewardsPage({ params }: Props) {

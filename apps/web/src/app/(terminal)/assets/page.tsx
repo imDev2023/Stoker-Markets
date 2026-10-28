@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/meta";
 import { listLaunchQuotes, listQuotes } from "@/lib/api";
 import { assetsQueryFrom } from "@/lib/assets";
 import { AssetDirectory } from "@/components/AssetDirectory";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
+  path: "/assets",
   title: "Assets",
   description: "Every asset a coin on Stoker can be priced in, grouped by what it is: stocks, stablecoins, wrapped coins, DeFi tokens, memes and more.",
-};
+});
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 

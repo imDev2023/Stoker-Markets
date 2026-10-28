@@ -4,9 +4,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAirdrop, getCandles, getCoinRewards, getHolders, getLaunch, getPlatform, getQuoteAsset, listTrades } from "@/lib/api";
 import { explorerUrl, formatUtc, isSol, quoteTicker, shortAddress } from "@/lib/format";
+import { breadcrumbList, clip, pageMeta } from "@/lib/meta";
+import { siteOrigin } from "@/lib/origin";
 import { AirdropCard } from "@/components/AirdropCard";
 import { CoinMarket } from "@/components/CoinMarket";
 import { CopyButton } from "@/components/CopyButton";
+import { JsonLd } from "@/components/JsonLd";
 import { PairLockup, PairStats, QuoteCard } from "@/components/PairCards";
 import { PairMark } from "@/components/PairMark";
 import { QuoteLabelList } from "@/components/QuoteLabels";
@@ -22,8 +25,14 @@ function referrerFrom(params: Record<string, string | string[] | undefined>) {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const launch = await getLaunch((await params).mint);
-  return { title: launch ? `${launch.symbol} / ${quoteTicker(launch.quote)}` : "Coin not found" };
+  const { mint } = await params;
+  const [launch, platform] = await Promise.all([getLaunch(mint), getPlatform()]);
+  if (!launch) return pageMeta({ path: `/coin/${mint}`, title: "Coin not found", index: false });
+  const quote = quoteTicker(launch.quote);
+  // Its own description when the Creator wrote one; otherwise its pair and what its Creator earns (#83).
+  const description = launch.description?.trim()
+    || `${launch.name} (${launch.symbol}) trades on Stoker paired with ${quote}; its creator earns ${creatorEarnings(platform).headline}, every payment on the public ledger.`;
+  return pageMeta({ path: `/coin/${launch.mint}`, title: `${launch.symbol} / ${quote}`, description: clip(description), card: "own" });
 }
 
 /**
@@ -49,6 +58,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
   const protectionOpen = new Date(launch.protection.until).getTime() <= Date.now();
   const airdropDone = airdrop?.recipients.every((r) => r.status === "paid") ?? false;
   const quote = quoteTicker(launch.quote);
+  const origin = await siteOrigin();
   const addresses: (readonly [label: string, value: string, kind: "address" | "tx"])[] = [
     ["Creator", launch.creator, "address"],
     ["Coin", launch.mint, "address"],
@@ -66,6 +76,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
 
   return (
     <article className={`shell ${styles.page}`}>
+      <JsonLd data={breadcrumbList(origin, [["Home", "/"], ["Coins", "/coins"], [`${launch.symbol} / ${quote}`, `/coin/${launch.mint}`]])} />
       <header className={styles.head}>
         <PairLockup launch={launch} />
         <div className={styles.titles}>
