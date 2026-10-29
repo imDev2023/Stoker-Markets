@@ -45,6 +45,14 @@ export const SECTIONS: readonly Section[] = [
         ),
       },
       {
+        endpoint: "GET /region",
+        text: (
+          <>
+            The region gate: the visitor&apos;s <C>country</C> as the edge read it (null when it could not) and the features <C>withheld</C> there, from a table the operator keeps per feature; empty until a feature is withheld somewhere. The answer is one visitor&apos;s own and never cached, so ask it from the browser, not a server.
+          </>
+        ),
+      },
+      {
         endpoint: ["GET /quotes", "GET /quotes/:mint"],
         text: (
           <>
@@ -61,7 +69,15 @@ export const SECTIONS: readonly Section[] = [
         ),
       },
       { endpoint: "GET /launches/quotes", text: <>The Quote Assets that have Launches, for filters; each with its <C>category</C> and, for a tokenized stock, its <C>issuer</C>.</> },
-      { endpoint: "GET /launches/:mint", text: <>One Launch: curve progress, Graduation, Reward Tax (with its <C>payout</C> asset, <C>coin</C> or <C>quote</C>), market, Copy Protection (<C>protection.until</C>, and <C>copyOf</C> when the coin took an earlier coin&apos;s name, ticker or image).</> },
+      {
+        endpoint: "GET /launches/:mint",
+        text: (
+          <>
+            One Launch: curve progress, Graduation, Reward Tax (with its <C>payout</C> asset, <C>coin</C> or <C>quote</C>), market (<C>price</C>, <C>marketCap</C>, <C>volume24h</C>, and <C>change24h</C>, the day&apos;s price change as a fraction, null until the first trade), Copy Protection (<C>protection.until</C>, and <C>copyOf</C> when the coin took an earlier coin&apos;s name, ticker or image).
+          </>
+        ),
+      },
+      { endpoint: "GET /stats", text: <>The platform&apos;s figures: <C>since</C> (when the first coin launched), <C>launches</C>, <C>graduated</C>, and <C>volume24h</C> across every coin in SOL and USD at the Quote Registry&apos;s latest prices.</> },
       {
         endpoint: ["GET /launches/:mint/trades", "GET /launches/:mint/candles?interval=", "GET /launches/:mint/holders"],
         text: <>Indexed trades (with any referral fee paid), price candles, and the top holders read from the chain.</>,

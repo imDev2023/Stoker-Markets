@@ -1,0 +1,178 @@
+/* Candidate A: the board's top rows, frameless, hairlines between them. */
+.rows {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto minmax(56px, 88px);
+  align-items: center;
+  gap: 14px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+  transition: background-color var(--dur-fast) var(--ease-standard);
+}
+
+@media (hover: hover) {
+  .row:hover {
+    background-color: var(--surface-2);
+  }
+}
+
+.row:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.image {
+  width: 36px;
+  height: 36px;
+  border-radius: calc(var(--radius-card) - 6px);
+  object-fit: cover;
+}
+
+.titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* The pair fits the box it is given (PairMark measures its parent), so it gets one of its own. */
+.pairBox {
+  display: block;
+  min-width: 0;
+}
+
+.name {
+  min-width: 0;
+  font-size: var(--text-caption);
+  line-height: 1.3;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.figures {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.price {
+  white-space: nowrap;
+}
+
+.curve {
+  display: block;
+}
+
+.track {
+  display: block;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--sunken);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--heat);
+}
+
+.more {
+  align-self: flex-end;
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.more:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Candidate B: the pair cycling. The pair fits its container (`fit` sizes from `cqi`), so the box sets the container. */
+.cycle {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 24px 0;
+}
+
+.cyclePair {
+  display: block;
+  width: 100%;
+  container-type: inline-size;
+  animation: enter var(--dur-slow) var(--ease-enter);
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.cycleAsset {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--text-ui);
+}
+
+.cycleTicker {
+  font-weight: 600;
+}
+
+.cycleKind {
+  color: var(--ink-3);
+}
+
+/* Candidate C: the ring at size, nothing else. */
+.ringBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 24px 0;
+}
+
+.ring {
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .curve {
+    display: none;
+  }
+  .cycle {
+    align-items: center;
+    text-align: center;
+  }
+}

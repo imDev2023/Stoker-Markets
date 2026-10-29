@@ -11,6 +11,7 @@ import {
 } from "@/lib/api";
 import { formatUtc } from "@/lib/format";
 import { CopyButton } from "./CopyButton";
+import { RegionGatesEditor } from "./RegionGatesEditor";
 import styles from "./OperatorView.module.css";
 
 const TOKEN_KEY = "launchpad-operator-token";
@@ -289,6 +290,8 @@ export function OperatorView({ platform }: { platform: PlatformInfo }) {
           </ul>
         )}
       </section>
+
+      <RegionGatesEditor token={token} />
     </div>
   );
 }

@@ -28,6 +28,8 @@ import { creatorEarningsRoutes } from "./routes/creatorEarnings";
 import { quotes } from "./routes/quotes";
 import { launchRoutes } from "./routes/launches";
 import { launchModeRoutes, operatorAirdropRoutes } from "./routes/launchModes";
+import { operatorRegionRoutes, regionRoutes } from "./routes/region";
+import { statsRoutes } from "./routes/stats";
 import { copyRoutes } from "./routes/copies";
 import { checkCopies, firstCopy } from "./copies/check";
 import { imageHash } from "./copies/imageHash";
@@ -226,6 +228,8 @@ app.route("/v1", rewardRoutes);
 app.route("/v1", burnRoutes);
 app.route("/v1", announcementRoutes);
 app.route("/v1", keyRoutes);
+app.route("/v1", regionRoutes);
+app.route("/v1", statsRoutes);
 
 /** Every operator endpoint needs the operator token. */
 app.use("/v1/operator/*", async (c, next) => {
@@ -242,6 +246,7 @@ app.route("/v1/operator", operatorViewRoutes);
 app.route("/v1/operator", operatorFeeRoutes);
 app.route("/v1/operator", operatorAirdropRoutes);
 app.route("/v1/operator", operatorMintKeyRoutes);
+app.route("/v1/operator", operatorRegionRoutes);
 
 /**
  * Runs one scheduled job now, as its Cron Trigger would, and answers with the run: 500 with the failed run when it

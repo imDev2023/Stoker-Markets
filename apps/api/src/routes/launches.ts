@@ -54,6 +54,13 @@ async function queryLaunches(db: Db, filters: Filters, sort: LaunchListQuery["so
   const inSol = (v: SQL) => sql<number | null>`${v} * ${quoteAssets.priceSol}::double precision`;
   const inUsd = (v: SQL) => sql<number | null>`${v} * ${quoteAssets.priceUsd}::double precision`;
   const progress = sql`coalesce(${curves.realQuote}, 0) / nullif(${launches.graduationTarget}, 0)`;
+  // The price 24 hours ago, for the day's change: after the last trade before the window, or, for a coin younger than
+  // that, before its first trade (the curve's starting price). Null until the coin has traded at all.
+  const dayAgo = sql`now() - interval '24 hours'`;
+  const priceAgo = sql<number | null>`coalesce(
+    (select ${trades.priceAfter} from ${trades} where ${trades.mint} = ${launches.mint} and ${trades.blockTime} <= ${dayAgo} order by ${trades.slot} desc, ${trades.eventIndex} desc limit 1),
+    (select ${trades.priceBefore} from ${trades} where ${trades.mint} = ${launches.mint} and ${trades.blockTime} > ${dayAgo} order by ${trades.slot} asc, ${trades.eventIndex} asc limit 1)
+  )`;
 
   const order: Record<LaunchListQuery["sort"], SQL[]> = {
     new: [],
@@ -88,6 +95,7 @@ async function queryLaunches(db: Db, filters: Filters, sort: LaunchListQuery["so
       volQuote: sql<number>`${volQuote}`,
       volSol: inSol(volQuote),
       volUsd: inUsd(volQuote),
+      priceAgo,
     })
     .from(launches)
     .leftJoin(launchMetadata, eq(launchMetadata.id, launches.mint))
@@ -109,6 +117,9 @@ type Row = Awaited<ReturnType<typeof queryLaunches>>[number];
 
 /** Postgres returns doubles computed from numerics as numbers or strings depending on the path; normalise to a number. */
 const num = (v: number | string | null) => (v === null ? null : Number(v));
+
+/** The day's price change as a fraction; null without a trade to measure from (see LaunchMarket.change24h). */
+const change24h = (price: number | null, ago: number | null) => (price === null || ago === null || ago <= 0 ? null : price / ago - 1);
 
 function toSummary(cfg: Config, r: Row): LaunchSummary {
   const l = r.launch;
@@ -145,6 +156,7 @@ function toSummary(cfg: Config, r: Row): LaunchSummary {
       price: r.market?.price ?? null,
       marketCap: cap,
       volume24h: { raw: r.volRaw, quote: num(r.volQuote)!, sol: num(r.volSol), usd: num(r.volUsd) },
+      change24h: change24h(r.market?.price ?? null, num(r.priceAgo)),
       lastTradeAt: r.market?.lastTradeAt?.toISOString() ?? null,
     },
     protection: { until: new Date(l.createdAt.getTime() + cfg.copyProtectionSeconds * 1000).toISOString() },

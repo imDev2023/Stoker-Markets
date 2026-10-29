@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { PlatformInfo } from "@launchpad/contract";
 import { API_URL } from "@/lib/api";
-import { explorerUrl, shortAddress } from "@/lib/format";
 import { COMPACT_FOOTER_LINKS, FOOTER_GROUPS } from "@/lib/site";
+import { Address } from "./Address";
 import { Mark } from "./Mark";
 import { SocialLinks } from "./SocialLinks";
 import styles from "./SiteFooter.module.css";
@@ -116,11 +116,11 @@ export function SiteFooter({ platform }: { platform: PlatformInfo }) {
         <dl className={`col-12 ${styles.chain}`}>
           <div>
             <dt>PlatformConfig</dt>
-            <dd><a className="mono" href={explorerUrl("address", platform.platformConfig, platform)} target="_blank" rel="noreferrer">{shortAddress(platform.platformConfig)}</a></dd>
+            <dd><Address value={platform.platformConfig} platform={platform} /></dd>
           </div>
           <div>
             <dt>LaunchLab program</dt>
-            <dd><a className="mono" href={explorerUrl("address", platform.launchlabProgram, platform)} target="_blank" rel="noreferrer">{shortAddress(platform.launchlabProgram)}</a></dd>
+            <dd><Address value={platform.launchlabProgram} platform={platform} /></dd>
           </div>
         </dl>
         <div className={`col-12 ${styles.legal}`}>

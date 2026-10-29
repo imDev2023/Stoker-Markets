@@ -6,9 +6,9 @@ import type { LaunchQuote, QuoteAsset } from "@launchpad/contract";
 import { assetKind, assetsSearch, ASSETS_SEARCH_MAX, DEFAULT_ASSETS, filterAssets, formatUsd, graduationInWords, groupAssets, type AssetsQuery } from "@/lib/assets";
 import { inChip, PAIRED_CHIPS, type PairedChip } from "@/lib/board";
 import { quoteTicker } from "@/lib/format";
-import { Ring } from "./Mark";
 import { QuoteLogo } from "./QuoteLogo";
 import styles from "./AssetDirectory.module.css";
+import { EmptyState } from "./EmptyState";
 
 const COLUMNS = ["Asset", "Kind", "Price", "A coin graduates at", "Coins", ""] as const;
 
@@ -103,11 +103,9 @@ export function AssetDirectory({ quotes, inUse, initialQuery }: { quotes: QuoteA
       </div>
 
       {shown.length === 0 ? (
-        <div className={`card card-raised ${styles.empty}`}>
-          <Ring size={72} className={styles.ring} />
-          <p>{query.q ? `No asset matches "${query.q}".` : `No ${chosen.label.toLowerCase()} asset is quoted yet.`}</p>
-          <button type="button" className="button button-ghost" onClick={() => change(DEFAULT_ASSETS)}>Show every asset</button>
-        </div>
+        <EmptyState title="Nothing matches" action={<button type="button" className="button button-ghost" onClick={() => change(DEFAULT_ASSETS)}>Show every asset</button>}>
+          {query.q ? `No asset matches "${query.q}".` : `No ${chosen.label.toLowerCase()} asset is quoted yet.`}
+        </EmptyState>
       ) : (
         <div className={`card ${styles.table}`}>
           <div className={styles.columns} aria-hidden>

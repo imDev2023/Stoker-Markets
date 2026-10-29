@@ -13,7 +13,7 @@ export default function PrivacyPage() {
   return (
     <div className={`shell ${styles.page}`}>
       <h1 className={`t-h1 ${styles.title}`}>Privacy</h1>
-      <p className={styles.dated}>Draft of 28 October 2026, pending the operator&apos;s approval.</p>
+      <p className={styles.dated}>Last updated 29 October 2026.</p>
       <div className={styles.prose}>
         <h2 className="t-h3">No account, no tracking</h2>
         <p>Stoker has no accounts. The site sets one cookie, which holds your light-or-dark choice, and keeps your acknowledgement of the disclaimer in your browser&apos;s own storage. There are no analytics scripts and no advertising trackers.</p>
