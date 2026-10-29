@@ -151,7 +151,7 @@
   color: var(--ink-3);
 }
 
-/* Candidate C: the ring at size, nothing else. */
+/* Candidate C: the ring at size, nothing else. D is the same box with the stoke in it. */
 .ringBox {
   display: flex;
   align-items: center;
@@ -162,6 +162,19 @@
 
 .ring {
   display: block;
+}
+
+/* Candidate D2: the stoke with the pair cycle under it, the pair at the width of the ring's bloom and a little more. */
+.stokeCycle {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cycleUnder {
+  align-items: center;
+  text-align: center;
+  max-width: 360px;
+  padding: 0;
 }
 
 @media (max-width: 640px) {

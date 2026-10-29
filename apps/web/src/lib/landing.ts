@@ -35,10 +35,11 @@ export function deepestQuotes(launchable: QuoteAsset[], count = 8): QuoteAsset[]
 
 /**
  * The hero's visual candidates (#133; the owner picks by elimination on the real site, `?hero=`): the board's top rows,
- * live; the pair mark cycling through the assets a coin is priced in; the ring at size. `rows` is the build's default and
- * shows the cycle until the first coin launches.
+ * live; the pair mark cycling through the assets a coin is priced in; the ring at size; the stoke (the ring heating
+ * from coal in a slow loop, asked for by the owner on 2026-10-29); the stoke with the pair cycle under it. `rows` is
+ * the build's default and shows the cycle until the first coin launches.
  */
-export const HERO_VARIANTS = ["rows", "cycle", "ring"] as const;
+export const HERO_VARIANTS = ["rows", "cycle", "ring", "stoke", "stoke-cycle"] as const;
 export type HeroVariant = (typeof HERO_VARIANTS)[number];
 export const heroVariantFrom = (value: string | string[] | undefined): HeroVariant =>
   (HERO_VARIANTS as readonly string[]).includes(typeof value === "string" ? value : "") ? (value as HeroVariant) : "rows";

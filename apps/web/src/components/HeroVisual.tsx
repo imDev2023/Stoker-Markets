@@ -13,6 +13,7 @@ import { Ring } from "./Mark";
 import { PairMark } from "./PairMark";
 import { Price } from "./Price";
 import { QuoteLogo } from "./QuoteLogo";
+import { Stoke } from "./Stoke";
 import styles from "./HeroVisual.module.css";
 
 const REFRESH_MS = 4_000;
@@ -86,7 +87,7 @@ function Rows({ initial, quotes }: { initial: LaunchSummary[]; quotes: QuoteAsse
  * stablecoin and two stocks in turn, each with its logo and kind. Still under `prefers-reduced-motion`, and still in the
  * UI suite, which asks for that; the first asset is then the one shown.
  */
-function Cycle({ quotes }: { quotes: QuoteAsset[] }) {
+function Cycle({ quotes, under = false }: { quotes: QuoteAsset[]; under?: boolean }) {
   const [step, setStep] = useState(0);
   useEffect(() => {
     if (quotes.length < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -96,7 +97,7 @@ function Cycle({ quotes }: { quotes: QuoteAsset[] }) {
   const quote = quotes[step] ?? quotes[0];
   if (!quote) return <RingAtSize />;
   return (
-    <div className={styles.cycle} aria-live="off">
+    <div className={`${styles.cycle} ${under ? styles.cycleUnder : ""}`} aria-live="off">
       <span className={styles.cyclePair} key={quote.mint}>
         <PairMark base={CYCLE_BASE} quote={quoteTicker(quote)} size="fit" />
       </span>
@@ -118,9 +119,25 @@ function RingAtSize() {
   );
 }
 
-/** The hero's visual, one of the three candidates (src/lib/landing.ts). */
+/**
+ * The stoke (#133, candidate D): the ring at size heating from coal through the ramp with its bloom and a few embers,
+ * a slow loop (`Stoke`); still at full heat under reduced motion. D2 puts the pair cycle under it, so the brand's
+ * moment and the mechanism share the one visual.
+ */
+function StokeAtSize({ quotes }: { quotes?: QuoteAsset[] }) {
+  return (
+    <div className={`${styles.ringBox} ${quotes ? styles.stokeCycle : ""}`}>
+      <Stoke size={RING} className={styles.ring} />
+      {quotes && <Cycle quotes={quotes} under />}
+    </div>
+  );
+}
+
+/** The hero's visual, one of the candidates (src/lib/landing.ts). */
 export function HeroVisual({ variant, launches, quotes }: { variant: HeroVariant; launches: LaunchSummary[]; quotes: QuoteAsset[] }) {
   if (variant === "ring") return <RingAtSize />;
+  if (variant === "stoke") return <StokeAtSize />;
+  if (variant === "stoke-cycle") return <StokeAtSize quotes={quotes} />;
   if (variant === "cycle") return <Cycle quotes={quotes} />;
   return <Rows initial={launches} quotes={quotes} />;
 }
