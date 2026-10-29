@@ -5,8 +5,10 @@ import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } f
 import type { LaunchSummary } from "@launchpad/contract";
 import { listLaunches } from "@/lib/api";
 import { formatMarketValue, SEARCH_MAX } from "@/lib/board";
-import { formatPrice, quoteTicker } from "@/lib/format";
+import { quoteTicker } from "@/lib/format";
 import { CoinImage } from "./CoinImage";
+import { Price } from "./Price";
+import { Skeleton } from "./Skeleton";
 import { PairMark } from "./PairMark";
 import styles from "./GooeySearch.module.css";
 
@@ -189,9 +191,13 @@ export function GooeySearch() {
         </div>
       </div>
       {/* The results: a layer of their own, outside the goo (which would blur their text), over the scrim. */}
-      {open && results !== null && (
+      {open && (results !== null || searching) && (
         <ul id={`${id}-list`} className={styles.panel} role="listbox" aria-label="Coins found" aria-busy={searching}>
-          {results.length === 0 ? (
+          {results === null ? (
+            <li className={styles.loading}>
+              <Skeleton lines={3} height={44} />
+            </li>
+          ) : results.length === 0 ? (
             <li className={styles.empty}>
               No coins match &ldquo;{query.trim()}&rdquo;.
             </li>
@@ -213,7 +219,7 @@ export function GooeySearch() {
                   <span className={styles.name}>{l.name}</span>
                 </span>
                 <span className={styles.figures}>
-                  <span className={styles.price}>{l.market.price === null ? "-" : `${formatPrice(l.market.price)} ${quoteTicker(l.quote)}`}</span>
+                  <span className={styles.price}>{l.market.price === null ? "-" : <><Price value={l.market.price} /> {quoteTicker(l.quote)}</>}</span>
                   <span className={styles.cap}>{l.market.marketCap ? `${formatMarketValue(l.market.marketCap, l.quote)} cap` : "No trades yet"}</span>
                 </span>
               </li>

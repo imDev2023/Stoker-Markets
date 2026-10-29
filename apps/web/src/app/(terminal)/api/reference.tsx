@@ -45,6 +45,14 @@ export const SECTIONS: readonly Section[] = [
         ),
       },
       {
+        endpoint: "GET /region",
+        text: (
+          <>
+            The region gate: the visitor&apos;s <C>country</C> as the edge read it (null when it could not) and the features <C>withheld</C> there, from a table the operator keeps per feature; empty until a feature is withheld somewhere. The answer is one visitor&apos;s own and never cached, so ask it from the browser, not a server.
+          </>
+        ),
+      },
+      {
         endpoint: ["GET /quotes", "GET /quotes/:mint"],
         text: (
           <>

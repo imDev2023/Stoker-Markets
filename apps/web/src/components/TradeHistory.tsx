@@ -1,7 +1,10 @@
 import { Fragment } from "react";
 import type { Graduation, QuoteRef, Trade } from "@launchpad/contract";
-import { COIN_DECIMALS, explorerUrl, formatUnits, quoteTicker, shortAddress, timeAgo } from "@/lib/format";
+import { COIN_DECIMALS, explorerUrl, formatUnits, quoteTicker } from "@/lib/format";
+import { Address } from "./Address";
+import { EmptyState } from "./EmptyState";
 import { Price } from "./Price";
+import { RelativeTime } from "./RelativeTime";
 import styles from "./TradeHistory.module.css";
 
 /** The latest trades of a Launch's coin, on its curve and after Graduation in its pool, newest first. */
@@ -23,7 +26,7 @@ export function TradeHistory({
     <section className={`card ${styles.card}`} aria-labelledby="trades-title">
       <h2 id="trades-title" className={headingHidden ? "visually-hidden" : `t-h3 ${styles.title}`}>Trades</h2>
       {trades.length === 0 ? (
-        <p className={styles.empty}>No trades yet. Be the first to buy.</p>
+        <EmptyState bare title="The book opens with the first trade">No trades yet. Be the first to buy.</EmptyState>
       ) : (
         <table className={styles.table}>
           <thead>
@@ -56,13 +59,11 @@ export function TradeHistory({
                   <td className={`mono ${styles.num}`}>{formatUnits(t.quoteAmount, quote.decimals)}</td>
                   <td className={`${styles.num} ${styles.wide}`}><Price value={t.price} /></td>
                   <td className={styles.wide}>
-                    <a className="mono" href={explorerUrl("address", t.trader, platform)} target="_blank" rel="noreferrer">
-                      {shortAddress(t.trader)}
-                    </a>
+                    <Address value={t.trader} platform={platform} />
                   </td>
                   <td className={styles.num}>
-                    <a href={explorerUrl("tx", t.signature, platform)} target="_blank" rel="noreferrer" title="View transaction">
-                      <time dateTime={t.time}>{timeAgo(t.time, now)}</time>
+                    <a href={explorerUrl("tx", t.signature, platform)} target="_blank" rel="noreferrer">
+                      <RelativeTime iso={t.time} now={now} />
                     </a>
                   </td>
                 </tr>

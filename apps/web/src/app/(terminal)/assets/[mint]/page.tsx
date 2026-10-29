@@ -4,11 +4,16 @@ import { notFound } from "next/navigation";
 import { getPlatform, getQuoteAsset, listLaunches, listLaunchQuotes } from "@/lib/api";
 import { assetKind, CATEGORY_NOTES, formatUsd, graduationInWords, tokenProgramName } from "@/lib/assets";
 import { formatMarketValue } from "@/lib/board";
-import { explorerUrl, formatPrice, formatUtc, quoteTicker, shortAddress } from "@/lib/format";
+import { quoteTicker } from "@/lib/format";
 import { CopyButton } from "@/components/CopyButton";
 import { QuoteLabelList } from "@/components/QuoteLabels";
 import { QuoteLogo } from "@/components/QuoteLogo";
 import styles from "./page.module.css";
+import { Address } from "@/components/Address";
+import { CoinImage } from "@/components/CoinImage";
+import { EmptyState } from "@/components/EmptyState";
+import { Price } from "@/components/Price";
+import { RelativeTime } from "@/components/RelativeTime";
 
 type Props = { params: Promise<{ mint: string }> };
 
@@ -68,9 +73,10 @@ export default async function AssetPage({ params }: Props) {
             <dd>
               {quote.price ? (
                 <>
-                  <span className="mono">{quote.price.usd ? formatUsd(quote.price.usd) : `${formatPrice(Number(quote.price.sol))} SOL`}</span>
-                  {quote.price.usd && <span className={styles.aside}>{formatPrice(Number(quote.price.sol))} SOL</span>}
-                  <time className={styles.aside} dateTime={quote.price.at}>at {formatUtc(quote.price.at)}</time>
+                  <span className="mono">{quote.price.usd ? formatUsd(quote.price.usd) : <><Price value={Number(quote.price.sol)} /> SOL</>}</span>
+                  {quote.price.usd && <span className={styles.aside}><Price value={Number(quote.price.sol)} /> SOL</span>}
+                  {/* Priced when the registry last read the market; a reading older than an hour is marked, so nobody trusts it unawares. */}
+                  <span className={styles.aside}>priced <RelativeTime iso={quote.price.at} now={Date.now()} staleAfter={3600} /></span>
                 </>
               ) : (
                 "No reliable price"
@@ -112,9 +118,7 @@ export default async function AssetPage({ params }: Props) {
             <div key={label}>
               <dt>{label}</dt>
               <dd>
-                <a className="mono" href={explorerUrl("address", value, platform)} target="_blank" rel="noreferrer">
-                  {shortAddress(value)}
-                </a>
+                <Address value={value} platform={platform} />
                 <CopyButton value={value} label={`Copy ${label.toLowerCase()}`} />
               </dd>
             </div>
@@ -131,15 +135,19 @@ export default async function AssetPage({ params }: Props) {
         <section className={`card ${styles.wide} ${styles.card}`} aria-labelledby="paired-coins-title">
           <h2 id="paired-coins-title" className={`t-h3 ${styles.cardTitle}`}>Coins priced in {ticker}</h2>
           {paired.launches.length === 0 ? (
-            <p className={styles.cardNote}>
-              {quote.launchable ? `None yet. The first coin paired with ${ticker} could be yours.` : `None yet.`}
-            </p>
+            <EmptyState
+              bare
+              title={quote.launchable ? `Be the first to pair a coin with ${ticker}` : `Coins paired with ${ticker} appear here`}
+              action={quote.launchable ? <Link href={`/launch?quote=${quote.mint}`} className="button button-primary">Stoke a coin paired with {ticker}</Link> : undefined}
+            >
+              {quote.launchable ? `None yet. The first coin paired with ${ticker} could be yours.` : `None yet: ${ticker} cannot be launched against today.`}
+            </EmptyState>
           ) : (
             <ul className={styles.coins} aria-label={`Coins paired with ${ticker}`}>
               {paired.launches.map((l) => (
                 <li key={l.mint}>
                   <Link href={`/coin/${l.mint}`} className={styles.coin}>
-                    {l.image ? <img src={l.image} alt="" width={22} height={22} /> : <span className={styles.coinImage} />}
+                    <CoinImage src={l.image} symbol={l.symbol} size={22} />
                     <span className={styles.coinSymbol}>{l.symbol}</span>
                     <span className={styles.coinName}>{l.name}</span>
                     <span className={`mono ${styles.coinCap}`}>{l.market.marketCap ? formatMarketValue(l.market.marketCap, l.quote) : "-"}</span>

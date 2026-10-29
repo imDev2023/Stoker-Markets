@@ -1,12 +1,13 @@
 import { Fragment } from "react";
 import type { LedgerPage, PlatformInfo, Revenue, RevenueAsset } from "@launchpad/contract";
 import { creatorEarnings } from "@/lib/fees";
-import { explorerUrl, formatAmount, formatUnits, formatUtcDay, quoteTicker, shortAddress, SOL_DECIMALS } from "@/lib/format";
+import { formatAmount, formatUnits, formatUtcDay, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { CopyButton } from "./CopyButton";
 import { LedgerList } from "./LedgerList";
-import { Ring } from "./Mark";
 import { QuoteLogo } from "./QuoteLogo";
 import styles from "./RevenueDashboard.module.css";
+import { Address } from "./Address";
+import { EmptyState } from "./EmptyState";
 
 /** Totals show up to six decimals; the Ledger shows every one. */
 const TOTAL_DECIMALS = 6;
@@ -38,13 +39,9 @@ export function RevenueDashboard({ revenue, ledger, platform }: { revenue: Reven
           <section className={styles.section} aria-labelledby="totals-title">
             <h2 id="totals-title" className="visually-hidden">All time</h2>
             {revenue.totals.length === 0 ? (
-              <div className={`card card-raised ${styles.emptyCard}`}>
-                <Ring size={72} className={styles.ring} />
-                <p>
-                  No revenue collected yet. The Fee Collector runs every hour, and each collection shows up here with its
-                  transaction.
-                </p>
-              </div>
+              <EmptyState title="Revenue starts with the first trade">
+                No revenue collected yet. The Fee Collector runs every hour, and each collection shows up here with its transaction.
+              </EmptyState>
             ) : (
               <ul className={styles.totals}>
                 {revenue.totals.map((t) => (
@@ -161,9 +158,7 @@ export function RevenueDashboard({ revenue, ledger, platform }: { revenue: Reven
               <div>
                 <dt>Operations wallet</dt>
                 <dd>
-                  <a className="mono" href={explorerUrl("address", revenue.operationsWallet, platform)} target="_blank" rel="noreferrer">
-                    {shortAddress(revenue.operationsWallet)}
-                  </a>
+                  <Address value={revenue.operationsWallet} platform={platform} />
                   <CopyButton value={revenue.operationsWallet} label="Copy operations wallet address" />
                 </dd>
               </div>
@@ -172,9 +167,7 @@ export function RevenueDashboard({ revenue, ledger, platform }: { revenue: Reven
                 <dd>
                   {revenue.treasury ? (
                     <>
-                      <a className="mono" href={explorerUrl("address", revenue.treasury, platform)} target="_blank" rel="noreferrer">
-                        {shortAddress(revenue.treasury)}
-                      </a>
+                      <Address value={revenue.treasury} platform={platform} />
                       <CopyButton value={revenue.treasury} label="Copy treasury address" />
                     </>
                   ) : (

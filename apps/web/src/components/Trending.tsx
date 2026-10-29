@@ -1,10 +1,12 @@
 import Link from "next/link";
 import type { LaunchSummary } from "@launchpad/contract";
 import { formatMarketValue } from "@/lib/board";
-import { formatPrice, quoteTicker } from "@/lib/format";
+import { quoteTicker } from "@/lib/format";
 import { LAUNCH_LINK } from "@/lib/site";
-import { Ring } from "./Mark";
+import { CoinImage } from "./CoinImage";
+import { EmptyState } from "./EmptyState";
 import { PairMark } from "./PairMark";
+import { Price } from "./Price";
 import styles from "./Trending.module.css";
 
 /** Where each chip takes a visitor: the board, sorted by what trades most, narrowed to one kind of pairing. */
@@ -32,11 +34,7 @@ function CoinCard({ launch }: { launch: LaunchSummary }) {
     <li>
       <Link href={`/coin/${launch.mint}`} className={`card card-raised ${styles.card}`}>
         <div className={styles.top}>
-          {launch.image ? (
-            <img className={styles.image} src={launch.image} alt="" width={44} height={44} loading="lazy" />
-          ) : (
-            <div className={styles.image} aria-hidden />
-          )}
+          <CoinImage src={launch.image} symbol={launch.symbol} size={44} className={styles.image} loading="lazy" />
           <div className={styles.titles}>
             <PairMark base={launch.symbol} quote={quote} size="sm" />
             <span className={styles.name}>{launch.name}</span>
@@ -44,7 +42,7 @@ function CoinCard({ launch }: { launch: LaunchSummary }) {
           <span className={`tag ${launch.quote.category === "tokenized_stock" ? "tag-accent" : ""} ${styles.pair}`}>Paired with {quote}</span>
         </div>
         <div className={styles.row}>
-          <span className={`t-figure ${styles.price}`}>{launch.market.price === null ? "-" : `${formatPrice(launch.market.price)} ${quote}`}</span>
+          <span className={`t-figure ${styles.price}`}>{launch.market.price === null ? "-" : <><Price value={launch.market.price} /> {quote}</>}</span>
           <span className={styles.meta}>{launch.market.marketCap ? `${formatMarketValue(launch.market.marketCap, launch.quote)} market cap` : "no trades yet"}</span>
         </div>
         {live ? (
@@ -68,7 +66,7 @@ function CoinCard({ launch }: { launch: LaunchSummary }) {
 
 /**
  * The landing's coins: the six that trade most, as cards a visitor could tap on a phone; the dense board is one tap
- * away. With nothing launched yet it invites the first launch with the ring at size, since a new platform is judged on
+ * away. With nothing launched yet it invites the first launch (the one EmptyState), since a new platform is judged on
  * this view and an empty state is designed, never a sentence in a box.
  */
 export function Trending({ launches }: { launches: LaunchSummary[] }) {
@@ -84,11 +82,9 @@ export function Trending({ launches }: { launches: LaunchSummary[] }) {
         <Link href="/coins" className={styles.all}>Every coin</Link>
       </div>
       {launches.length === 0 ? (
-        <div className={`card card-raised ${styles.empty}`}>
-          <Ring size={96} className={styles.ring} />
-          <p>No coins yet. The first one could be yours.</p>
-          <Link href={LAUNCH_LINK.href} className="button button-primary button-lg">{LAUNCH_LINK.label}</Link>
-        </div>
+        <EmptyState title="Be the first to stoke a coin" action={<Link href={LAUNCH_LINK.href} className="button button-primary button-lg">{LAUNCH_LINK.label}</Link>}>
+          Nothing has launched yet. Pair a coin with any asset Raydium quotes and open the board.
+        </EmptyState>
       ) : (
         <ul className={styles.grid} aria-label="Trending coins">
           {launches.map((l) => (

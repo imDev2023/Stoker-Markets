@@ -7,7 +7,7 @@ test("the empty landing invites the first launch", async ({ page }) => {
   // The card beside the slogan and the figures are live even before the first coin: the registry has its assets.
   await expect(page.getByRole("heading", { name: /^Priced in any of \d+ assets$/ })).toBeVisible();
   await expect(page.getByText("assets to pair with")).toBeVisible();
-  await expect(page.getByText("No coins yet. The first one could be yours.")).toBeVisible();
+  await expect(page.getByText("Be the first to stoke a coin")).toBeVisible();
   await expectNoHorizontalOverflow(page);
   await expectHydrated(page);
   await expect(page).toHaveScreenshot("home-empty.png", { fullPage: true });
@@ -21,7 +21,7 @@ test("a cluster other than mainnet tells search engines not to index it", async 
 
 test("the empty board shows every control", async ({ page }) => {
   await page.goto("/coins");
-  await expect(page.getByText("No coins yet. The first one could be yours.")).toBeVisible();
+  await expect(page.getByText("Be the first to stoke a coin")).toBeVisible();
   // The search, the sorts and every kind in the asset rail are there before the first coin, so a visitor sees what the board does.
   await expect(page.getByRole("searchbox", { name: "Search coins" })).toBeVisible();
   await expect(page.getByRole("group", { name: "Sort coins" }).getByRole("button")).toHaveText(["Market cap", "Newest", "24h volume", "Near graduation"]);

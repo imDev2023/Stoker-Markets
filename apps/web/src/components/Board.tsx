@@ -7,7 +7,7 @@ import { listLaunchQuotes, listLaunches, type BoardQuery } from "@/lib/api";
 import { boardSearch, DEFAULT_BOARD, inChip, SEARCH_MAX, SORT_LABELS, SORT_ORDER, type PairedChip } from "@/lib/board";
 import { AssetRail } from "./AssetRail";
 import { COLUMNS, CoinRow } from "./CoinRow";
-import { Ring } from "./Mark";
+import { EmptyState } from "./EmptyState";
 import styles from "./Board.module.css";
 
 const REFRESH_MS = 4_000;
@@ -89,18 +89,17 @@ export function Board({
   const nothingLaunched = launches.length === 0 && !shown.category && !shown.issuer && !shown.quote && !shown.q;
 
   const body = nothingLaunched ? (
-    <div className={`card card-raised ${styles.empty}`}>
-      <Ring size={80} className={styles.ring} />
-      <p>No coins yet. The first one could be yours.</p>
-      <Link href="/launch" className="button button-primary">Stoke a coin</Link>
-    </div>
+    <EmptyState title="Be the first to stoke a coin" action={<Link href="/launch" className="button button-primary">Stoke a coin</Link>}>
+      Nothing has launched yet. Pair a coin with any asset Raydium quotes and open the board.
+    </EmptyState>
   ) : launches.length === 0 ? (
-    <div className={`card ${styles.empty}`} aria-busy={loading}>
-      <p>{shown.q ? `No coins match "${shown.q}".` : "No coins match these filters."}</p>
-      <button type="button" className="button button-ghost" onClick={reset}>
-        Show all coins
-      </button>
-    </div>
+    <EmptyState
+      title="Nothing matches"
+      busy={loading}
+      action={<button type="button" className="button button-ghost" onClick={reset}>Show all coins</button>}
+    >
+      {shown.q ? `No coins match "${shown.q}".` : "No coins match these filters."}
+    </EmptyState>
   ) : (
     <div className={`card ${styles.table}`}>
       {/* The column names once, above the rows; each row names its own figures where the window is too narrow for columns. */}

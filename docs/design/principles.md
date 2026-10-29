@@ -250,6 +250,23 @@ The landing's footer groups the site by audience, Trade (Explore, Assets, Reward
 Every terminal page ends with one row: the lockup small, API and the legal pages, the socials, the status and the risk sentence.
 `/terms`, `/privacy` and `/risk` are document pages drafted from the site's own facts; the owner approves their text before the site opens.
 
-### What phase 1b adds
+### The four states and the one empty state (phase 1b, 2026-10-29)
 
-`EmptyState` and the four-state convention for every list and panel, the formatting components (numbers with subscript zeros, relative time with the absolute on hover and a caution tag when stale, address truncation, the coin image's fallback everywhere `CoinImage` is not yet used), and the region gate (#131).
+Every list and panel has four states, decided by its caller and never inside the component: loading, empty, populated and error.
+`Skeleton` is the loading state: blocks in the shape of what is coming, held back for 200ms so a fast answer never flickers, one per panel and never for a button.
+`EmptyState` is the empty one, rendered only once a fetch has answered with nothing: the ring at one size (72px), a positive title, one sentence and one action, with at most a quieter second; `bare` inside a panel that is a card already.
+Its tone follows the scenario: inviting on the blank slate ("Be the first to stoke a coin"), matter-of-fact on an empty filter ("Nothing matches"), plain on an error.
+`ErrorState` is the error one: what could not be read, in plain words, and a way to try again; where there is last good data the panel keeps showing it and retries on its own.
+A zero is never a headline: the landing's figures leave out a figure with nothing behind it yet, and the row grows as the platform does.
+
+### The formatting components (phase 1b)
+
+`Price` writes every price in one notation: four significant digits, a run of leading zeros as a subscript count (0.0₈2791), the full number on hover and for screen readers.
+`RelativeTime` writes a moment as "3m ago" with the absolute UTC time on hover, from the page's clock so the server and the browser agree; with `staleAfter` it marks an older reading with a caution tag (the asset page's price, after an hour).
+`Address` writes an address or a signature as its first and last four characters in the mono with the whole on hover, linked to the explorer with `platform` or inside the site with `href`.
+`CoinImage` draws every coin image, with the same fallback tile for a missing or failed one.
+
+### The region gate (phase 1b)
+
+ADR 0014: the API answers `GET /v1/region` with the visitor's country as Cloudflare read it and the features withheld there, from a table the operator keeps (`region_gates`, edited on the operator view); the web asks from the browser and `Gated` renders a feature only once the answer allows it.
+The table starts empty, so nothing is withheld anywhere until an engagement feature lands (#146).

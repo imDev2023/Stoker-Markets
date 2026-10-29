@@ -1,4 +1,5 @@
 import type { BurnsPage, QuoteAsset, Revenue } from "@launchpad/contract";
+import type { Figure } from "@/components/Stats";
 import { ISSUER_LABELS } from "./board";
 
 /** What the hero's card and the board call an asset, one or two words beside its ticker. */
@@ -56,22 +57,24 @@ export function formatSol(sol: number) {
   return `${sol.toLocaleString("en-US", { maximumFractionDigits: sol < 10 ? 2 : 0 })} SOL`;
 }
 
-/** The landing's four figures, every one of them live from the API. */
+/**
+ * The landing's figures, every one of them live from the API. A figure with nothing behind it yet is null and the
+ * row leaves it out: a zero is never a headline (#131, after the research), the row simply grows as the platform does.
+ */
 export function landingFigures({ quotes, revenue, burns }: { quotes: QuoteAsset[]; revenue: Revenue | null; burns: BurnsPage | null }) {
   const launchable = quotes.filter((q) => q.launchable);
   const platformToken = burns?.burned.find((b) => b.coin.mint === burns.platformToken) ?? null;
   const burnedCoins = platformToken ? Number(platformToken.amount) / 10 ** platformToken.coin.decimals : 0;
-  return [
-    { value: launchable.length.toLocaleString("en-US"), label: "assets to pair with" },
+  const toCreators = revenue ? sumInSol(revenue.totals.map((t) => ({ asset: t.asset, amount: t.creatorForwarded })), quotes) : 0;
+  const onLedger = burns ? Number(burns.budgets.revenueLamports) / 1e9 : 0;
+  const figures: Figure[] = [
+    { value: launchable.length > 0 ? launchable.length.toLocaleString("en-US") : null, label: "assets to pair with" },
+    { value: toCreators > 0 ? formatSol(toCreators) : null, label: "paid to creators", heat: true },
     {
-      value: formatSol(revenue ? sumInSol(revenue.totals.map((t) => ({ asset: t.asset, amount: t.creatorForwarded })), quotes) : 0),
-      label: "paid to creators",
-      heat: true,
-    },
-    {
-      value: burnedCoins.toLocaleString("en-US", { notation: "compact", maximumSignificantDigits: 3 }),
+      value: burnedCoins > 0 ? burnedCoins.toLocaleString("en-US", { notation: "compact", maximumSignificantDigits: 3 }) : null,
       label: `${platformToken?.coin.symbol ?? "STOKER"} burned`,
     },
-    { value: formatSol(burns ? Number(burns.budgets.revenueLamports) / 1e9 : 0), label: "revenue on the ledger" },
+    { value: onLedger > 0 ? formatSol(onLedger) : null, label: "revenue on the ledger" },
   ];
+  return figures;
 }

@@ -134,6 +134,10 @@ _Avoid_: Dump, conversion, swap (on its own)
 One published cycle of collecting Reward Tax and paying Holder Rewards, with its snapshot, rules version and payout transactions public.
 _Avoid_: Distribution, epoch, cycle
 
+**Region gate**:
+The mechanism that withholds a feature from visitors in the countries a regulator objects in: the API reads the visitor's country from Cloudflare and answers which features are withheld there, from a per-feature table the operator keeps; the web hides a withheld feature. The table starts empty (ADR 0014).
+_Avoid_: Geoblock, ban
+
 ### Platform Token
 
 **Platform Token**:

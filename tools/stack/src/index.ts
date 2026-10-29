@@ -373,6 +373,8 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       REWARD_RULES_LEAD_SECONDS: "60",
       // Short, so a test can see a copy refused inside a launch's Copy Protection and only labelled after it.
       COPY_PROTECTION_SECONDS: "45",
+      // A test visits from any country by naming it in this header; Cloudflare's reading is what production uses.
+      COUNTRY_HEADER: "x-test-country",
       // Three top Launches, so a test can see one picked and one left out.
       FLYWHEEL_TOP_N: "3",
       // Tiny, so the Flywheel buys on the little revenue a test run makes.

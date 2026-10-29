@@ -106,7 +106,7 @@ export function CoinMarket({
             {tab === "trades" ? (
               <TradeHistory trades={trades} symbol={launch.symbol} quote={launch.quote} platform={platform} now={now} graduation={launch.graduation} headingHidden />
             ) : (
-              <Holders holders={holders} platform={platform} headingHidden />
+              <Holders holders={holders} platform={platform} onRetry={() => void refreshHolders()} headingHidden />
             )}
           </div>
         </div>

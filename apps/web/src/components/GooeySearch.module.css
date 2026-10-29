@@ -208,6 +208,11 @@
   background: var(--plate);
 }
 
+/* Before the first answer: three rows' worth of shape, held back 200ms by the skeleton itself. */
+.loading {
+  padding: 8px 6px;
+}
+
 .empty {
   padding: 12px 10px;
   font-size: var(--text-ui);

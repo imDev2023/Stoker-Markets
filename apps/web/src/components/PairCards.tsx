@@ -1,8 +1,10 @@
 import Link from "next/link";
 import type { LaunchSummary, QuoteAsset } from "@launchpad/contract";
 import { formatMarketValue } from "@/lib/board";
-import { formatPrice, quoteTicker } from "@/lib/format";
+import { quoteTicker } from "@/lib/format";
 import { quoteKind } from "@/lib/landing";
+import { CoinImage } from "./CoinImage";
+import { Price } from "./Price";
 import { QuoteLogo } from "./QuoteLogo";
 import styles from "./PairCards.module.css";
 
@@ -25,7 +27,7 @@ function progressOf(launch: LaunchSummary) {
 export function PairLockup({ launch, size = 96 }: { launch: LaunchSummary; size?: number }) {
   return (
     <span className={styles.lockup} style={{ width: size, height: size }}>
-      {launch.image ? <img className={styles.image} src={launch.image} alt="" width={size} height={size} /> : <span className={styles.image} aria-hidden />}
+      <CoinImage src={launch.image} symbol={launch.symbol} size={size} className={styles.image} />
       <span className={styles.quoteLogo}><QuoteLogo quote={launch.quote} size={Math.round(size * 0.4)} /></span>
     </span>
   );
@@ -43,7 +45,7 @@ export function PairStats({ launch, quoteAsset }: { launch: LaunchSummary; quote
       <div>
         <dt>Price</dt>
         <dd>
-          <span className={styles.figure}>{price === null ? "-" : formatPrice(price)} <small>{quote}</small></span>
+          <span className={styles.figure}>{price === null ? "-" : <Price value={price} />} <small>{quote}</small></span>
           {price !== null && quoteUsd !== null && <span className={styles.sub}>{usd(price * quoteUsd)}</span>}
         </dd>
       </div>
@@ -97,7 +99,7 @@ export function QuoteCard({ launch, quoteAsset }: { launch: LaunchSummary; quote
         </div>
         <div>
           <dt>Graduates at</dt>
-          <dd>{quoteAsset?.graduationTarget ? `${formatPrice(Number(quoteAsset.graduationTarget.raw) / 10 ** q.decimals)} ${ticker}` : "-"}</dd>
+          <dd>{quoteAsset?.graduationTarget ? <><Price value={Number(quoteAsset.graduationTarget.raw) / 10 ** q.decimals} /> {ticker}</> : "-"}</dd>
         </div>
         <div>
           <dt>Labels</dt>

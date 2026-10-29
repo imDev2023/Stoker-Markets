@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { getPlatform, getWalletRewards } from "@/lib/api";
 import { explorerUrl, formatUnits, formatUtc, shortAddress } from "@/lib/format";
 import styles from "../page.module.css";
+import { Address } from "@/components/Address";
+import { EmptyState } from "@/components/EmptyState";
 
 type Props = { params: Promise<{ wallet: string }> };
 
@@ -17,7 +19,7 @@ export default async function WalletRewardsPage({ params }: Props) {
   if (!rewards) notFound();
   return (
     <div className={`shell ${styles.page}`}>
-      <h1 className={`t-h1 ${styles.title}`}>Rewards of <span className="mono">{shortAddress(rewards.wallet)}</span></h1>
+      <h1 className={`t-h1 ${styles.title}`}>Rewards of <Address value={rewards.wallet} /></h1>
       <p className={styles.lead}>
         Every Holder Reward this wallet was paid, or is owed by a round still paying out, across every Reward Launch.{" "}
         <a href={explorerUrl("address", rewards.wallet, platform)} target="_blank" rel="noreferrer">See the wallet on the explorer</a>.
@@ -25,9 +27,9 @@ export default async function WalletRewardsPage({ params }: Props) {
       <section className={`card ${styles.card}`} aria-labelledby="rewards-list-title">
         <h2 id="rewards-list-title" className={`t-h3 ${styles.cardTitle}`}>Rewards</h2>
         {rewards.rewards.length === 0 ? (
-          <p className={styles.note}>
+          <EmptyState bare title="Rewards are paid at a round's snapshot">
             No rewards for this wallet yet. A wallet is paid when it holds at least the minimum of a Reward Launch&apos;s coin at a round&apos;s snapshot.
-          </p>
+          </EmptyState>
         ) : (
           <ul className={styles.list}>
             {rewards.rewards.map((r) => (

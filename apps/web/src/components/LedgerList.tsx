@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useState } from "react";
 import type { LedgerEntry, LedgerKind, LedgerPage, PlatformInfo } from "@launchpad/contract";
 import { listLedger } from "@/lib/api";
-import { explorerUrl, formatUnits, formatUtc, quoteTicker, shortAddress } from "@/lib/format";
+import { explorerUrl, formatUnits, formatUtc, quoteTicker } from "@/lib/format";
 import styles from "./LedgerList.module.css";
+import { Address } from "./Address";
 
 const KIND: Record<LedgerKind, string> = {
   platform_fee: "Platform Fee from curves",
@@ -31,7 +32,7 @@ function origin(e: LedgerEntry, platform: PlatformInfo) {
   if (e.kind === "sweep") return "From the operations wallet";
   // A Creator's page is their own; the wallet a forward reached is public on the explorer.
   if (e.kind === "creator_forward")
-    return <>To <a href={explorerUrl("address", e.destination, platform)} target="_blank" rel="noreferrer" className="mono">{shortAddress(e.destination)}</a></>;
+    return <>To <Address value={e.destination} platform={platform} /></>;
   if (e.kind === "arweave_top_up") return "SOL to ArDrive Turbo";
   if (e.kind === "metadata_upload")
     return e.launch ? <>Uploaded for <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link>, in credits</> : "Uploaded, in credits";

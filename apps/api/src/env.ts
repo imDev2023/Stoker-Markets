@@ -79,6 +79,11 @@ export type Bindings = {
   /** Bearer token for the operator endpoints; they refuse every request without it. */
   OPERATOR_TOKEN?: string;
   /**
+   * Local only: a request header the region gate reads the visitor's country from instead of Cloudflare's reading,
+   * so a test can visit from any country (the test stack sets `x-test-country`). Refused on mainnet.
+   */
+  COUNTRY_HEADER?: string;
+  /**
    * Derives each launch's mint key from a nonce stored with its draft, so a retry signs for the same coin address and
    * can never create a second coin. A secret: anyone holding it could sign for the address of a coin not launched yet.
    */
@@ -151,6 +156,8 @@ export type Config = {
   graduationAlertAfterSeconds: number;
   poolBackfillSeconds: number;
   alertWebhookUrl: string | null;
+  /** The request header the region gate trusts for the visitor's country, lowercased; null in production, where Cloudflare's reading is used. */
+  countryHeader: string | null;
   helius: HeliusConfig | null;
   mintKeySecret: string;
   lock: PublicKey;
@@ -268,6 +275,7 @@ function refuseLocalOnlySettingsOnMainnet(env: Bindings) {
   if (env.SOL_ROUTE_SOURCE === "raydium-cpmm") throw new Error('SOL_ROUTE_SOURCE "raydium-cpmm" names the local chain\'s pools, which do not exist on mainnet; use "jupiter" or "none"');
   if (!env.RPC_URL.startsWith("https://")) throw new Error(`RPC_URL must be https on mainnet (got ${env.RPC_URL})`);
   if (env.JUPITER_API_URL) throw new Error("JUPITER_API_URL names the local stand-in; on mainnet Jupiter's own host is chosen by the key, so leave it unset");
+  if (env.COUNTRY_HEADER) throw new Error("COUNTRY_HEADER lets a request name its own country, which is for tests; on mainnet the region gate reads Cloudflare's reading alone");
   if (env.FEE_CHANGE_LEAD_SECONDS && seconds(env.FEE_CHANGE_LEAD_SECONDS, "FEE_CHANGE_LEAD_SECONDS") < FEE_CHANGE_LEAD_MAINNET_MIN_SECONDS)
     throw new Error(`FEE_CHANGE_LEAD_SECONDS must be at least ${FEE_CHANGE_LEAD_MAINNET_MIN_SECONDS} on mainnet: a fee change hits every live curve at once`);
 }
@@ -319,6 +327,7 @@ export function config(env: Bindings): Config {
     poolBackfillSeconds: seconds(env.POOL_BACKFILL_SECONDS, "POOL_BACKFILL_SECONDS"),
     copyProtectionSeconds: env.COPY_PROTECTION_SECONDS ? seconds(env.COPY_PROTECTION_SECONDS, "COPY_PROTECTION_SECONDS") : COPY_PROTECTION_DEFAULT_SECONDS,
     alertWebhookUrl: env.ALERT_WEBHOOK_URL ? new URL(env.ALERT_WEBHOOK_URL).toString() : null,
+    countryHeader: env.COUNTRY_HEADER ? env.COUNTRY_HEADER.toLowerCase() : null,
     helius: heliusConfig(env),
     mintKeySecret: mintKeySecret(env.MINT_KEY_SECRET),
     lock: key("LOCK_PROGRAM"),
