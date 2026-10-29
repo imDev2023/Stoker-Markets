@@ -1,52 +1,49 @@
-/* No hairline: the pill is the header's edge, and the page's colour shows through the bar as it scrolls under. */
+/*
+ * Opaque and still (NN/g's sticky-header rules): the page's canvas colour, no blur, no hairline, since the pill is the
+ * header's edge. Opaque everywhere, so nothing inside it is ever contained by a backdrop filter (the trap of 2026-10-13).
+ */
 .header {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: color-mix(in srgb, var(--bg) 78%, transparent);
-  backdrop-filter: saturate(140%) blur(12px);
+  background: var(--bg);
 }
 
-/* The bar spans the window at the page's gutters: it carries more than the content column is wide. */
+/* The bar's edges are the page column's (the terminal's width on every page), so the mark and the account sit on the grid. */
 .bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   height: var(--header-h);
+  max-width: var(--max-terminal);
+  margin: 0 auto;
   padding: 0 var(--gutter);
 }
 
+/* The lockup: the ring at 28px and the word at 24px, close enough to read as one mark. */
 .wordmark {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 7px;
   font-family: var(--font-display);
   font-stretch: 100%;
   font-weight: 800;
-  font-size: 1.25rem;
-  letter-spacing: 0;
+  font-size: var(--wordmark);
+  letter-spacing: -0.01em;
   text-decoration: none;
   white-space: nowrap;
-  transition: opacity var(--fast) var(--ease);
+  transition: opacity var(--dur-fast) var(--ease-standard);
 }
 
 .mark {
+  flex: none;
   width: 28px;
   height: 28px;
-  border-radius: 7px;
 }
 
 .cluster {
-  font-family: var(--font-mono);
-  font-stretch: 100%;
-  font-weight: 500;
-  font-size: 0.6875rem;
-  letter-spacing: 0.02em;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: var(--plate);
-  color: var(--accent-strong);
+  margin-left: 4px;
 }
 
 /*
@@ -60,24 +57,25 @@
   margin: 0 auto;
   padding: 4px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface-3);
   box-shadow: var(--highlight), var(--shadow-raised);
-  transition: opacity var(--base) var(--ease), transform var(--base) var(--ease);
+  transition: opacity var(--dur-base) var(--ease-standard), transform var(--dur-base) var(--ease-standard);
 }
 
+/* A section: the UI sans at 14px; the current one on the plate, a change of fill and colour, never of weight. */
 .link {
   display: inline-flex;
   align-items: center;
-  height: 36px;
-  padding: 0 15px;
-  border-radius: 999px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
   color: var(--ink-2);
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
   font-weight: 500;
   white-space: nowrap;
   text-decoration: none;
-  transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease);
+  transition: background-color var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard);
 }
 
 .link:hover {
@@ -86,7 +84,7 @@
 
 .link[aria-current="page"] {
   background: var(--plate);
-  color: var(--accent-strong);
+  color: var(--on-plate);
 }
 
 /* The word and its twin stacked in a clipped box; the hover slides both up by one line. */
@@ -111,7 +109,7 @@
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .word,
   .under {
-    transition: transform var(--base) var(--ease);
+    transition: transform var(--dur-base) var(--ease-standard);
   }
   .link:hover .word {
     transform: translateY(-100%);
@@ -127,10 +125,34 @@
   gap: 8px;
 }
 
+/* Explore beside the menu button, only while the pill is away. */
+.explore {
+  display: none;
+  align-items: center;
+  height: 40px;
+  padding: 0 10px;
+  border-radius: var(--radius-control);
+  color: var(--ink-2);
+  font-size: var(--text-ui);
+  font-weight: 500;
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-standard), background-color var(--dur-fast) var(--ease-standard);
+}
+
+.explore:hover {
+  color: var(--ink);
+  background: var(--hover);
+}
+
 .launch {
   gap: 7px;
   padding: 0 16px 0 14px;
-  transition: opacity var(--fast) var(--ease);
+  transition: opacity var(--dur-fast) var(--ease-standard);
+}
+
+/* On its own page the one filled action is marked current: an inner ring in its text colour, which a hover never gives it. */
+.launch[aria-current="page"] {
+  box-shadow: var(--glow), inset 0 0 0 2px color-mix(in srgb, var(--on-button) 45%, transparent);
 }
 
 /* Two classes, so this wins over the menu button's own display rule whichever module loads last. */
@@ -145,11 +167,12 @@
   pointer-events: none;
 }
 
-/* Under 1300px (where the pill, the wordmark and the actions no longer share a row; 1200px until the sixth word, Developers, 2026-10-25) the pill gives way to the menu button; the account stays in the header, since the menu it opens is the way to disconnect and to a Creator's earnings. */
+/* Under 1300px (where the pill, the wordmark and the actions no longer share a row) the pill gives way to the menu button, with Explore kept beside it; the account stays in the header, since its menu is the way to disconnect and to a Creator's earnings. */
 @media (max-width: 1300px) {
   .pill {
     display: none;
   }
+  .explore,
   .actions .menu {
     display: inline-flex;
   }
@@ -160,22 +183,17 @@
     gap: 8px;
   }
   .actions {
-    gap: 8px;
+    gap: 6px;
   }
-  .cluster {
+  .cluster,
+  .explore {
     display: none;
   }
-  /* Two classes, so this wins over the toggle's own display rule whichever module loads last; it sits in the menu's foot instead. */
-  .actions .scheme {
-    display: none;
-  }
+  /* "Stoke" on a phone, the rest of the words kept as the button's name. */
   .launch {
-    width: 40px;
-    padding: 0;
-    justify-content: center;
+    padding: 0 12px 0 10px;
   }
-  /* Hidden from sight, kept as the button's name. */
-  .launchWord {
+  .launchRest {
     position: absolute;
     width: 1px;
     height: 1px;

@@ -29,3 +29,40 @@ test("the Curated page says what a Curated launch is before one exists", async (
   await expect(page.getByRole("region", { name: "No Curated launch yet" }).getByRole("link", { name: "Explore the board" })).toHaveAttribute("href", "/coins");
   await expectNoHorizontalOverflow(page);
 });
+
+// The two footers and the legal pages (#131): the landing's grouped footer with its status line and the one-row footer
+// on every terminal page, both linking the legal pages, which answer; and the one filled action marked current on its page.
+test("the landing ends with the full footer, every terminal page with one row, and the legal pages answer", async ({ page }) => {
+  await page.goto("/");
+  const foot = page.getByRole("contentinfo");
+  await expect(foot.getByRole("heading", { level: 2 })).toHaveText(["Trade", "Create", "Platform", "Legal"]);
+  await expect(foot.getByText("Localnet · API online")).toBeVisible();
+  await expect(foot.getByRole("link", { name: "Read the risk disclosure" })).toHaveAttribute("href", "/risk");
+  await page.goto("/coins");
+  await expect(page.getByRole("contentinfo").getByRole("heading")).toHaveCount(0);
+  await expect(page.getByRole("contentinfo").getByRole("link", { name: "Terms" })).toHaveAttribute("href", "/terms");
+  await expect(page.getByRole("contentinfo").getByText("Localnet · API online")).toBeVisible();
+  for (const [path, title] of [["/terms", "Terms of use"], ["/privacy", "Privacy"], ["/risk", "Risk disclosure"]] as const) {
+    await page.goto(path);
+    await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+  }
+  await page.goto("/launch");
+  await expect(page.getByRole("banner").getByRole("link", { name: "Stoke a coin" })).toHaveAttribute("aria-current", "page");
+});
+
+test("on a phone the launch button keeps its name and the menu has a visible close", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/coins");
+  await expect(page.getByRole("banner").getByRole("link", { name: "Stoke a coin" })).toBeVisible();
+  // A click before hydration does nothing, so the menu is asked for until it opens.
+  const menu = page.getByRole("dialog", { name: "Menu" });
+  await expect(async () => {
+    if (!(await menu.isVisible())) await page.getByRole("button", { name: "Menu" }).click();
+    await expect(menu).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 30_000 });
+  await expect(menu.getByRole("link", { name: "Explore" })).toHaveAttribute("aria-current", "page");
+  await expect(menu.getByRole("link", { name: "Developers" })).toBeVisible();
+  await menu.getByRole("button", { name: "Close menu" }).click();
+  await expect(menu).toHaveCount(0);
+});

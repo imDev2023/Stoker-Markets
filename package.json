@@ -8,7 +8,7 @@
   },
   "scripts": {
     "typecheck": "pnpm -r typecheck",
-    "lint": "eslint .",
+    "lint": "eslint . && node apps/web/scripts/type.mjs && node apps/web/scripts/contrast.mjs",
     "localnet": "pnpm --filter @launchpad/localnet start",
     "test:backend": "pnpm --filter @launchpad/tests-backend test",
     "test:ui": "pnpm --filter @launchpad/tests-ui test",

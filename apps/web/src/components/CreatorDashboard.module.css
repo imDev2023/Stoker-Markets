@@ -20,7 +20,7 @@
 
 .lede {
   margin: 0;
-  font-size: 1.0625rem;
+  font-size: var(--text-body);
   color: var(--ink-2);
   text-wrap: pretty;
 }
@@ -44,7 +44,7 @@
   margin: 0;
   flex: 1 1 260px;
   color: var(--ink-2);
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
 }
 
 .layout {
@@ -84,7 +84,7 @@
 .rule p,
 .muted {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
   line-height: 1.55;
   text-wrap: pretty;
 }
@@ -114,7 +114,7 @@
 .emptyCard p {
   margin: 0;
   max-width: 40ch;
-  font-size: 1.0625rem;
+  font-size: var(--text-body);
   color: var(--ink-2);
   text-wrap: pretty;
 }
@@ -145,10 +145,10 @@
   gap: 14px;
   margin: 0 -8px;
   padding: 12px 8px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   text-decoration: none;
   min-width: 0;
-  transition: background-color var(--fast) var(--ease);
+  transition: background-color var(--dur-fast) var(--ease-standard);
 }
 
 @media (hover: hover) {
@@ -167,7 +167,7 @@
   flex: none;
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--radius-card);
   object-fit: cover;
   background: var(--sunken);
 }
@@ -183,13 +183,13 @@
   font-family: var(--font-display);
   font-stretch: 100%;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: var(--text-body);
   overflow-wrap: anywhere;
 }
 
 .coinName {
   color: var(--ink-2);
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   overflow-wrap: anywhere;
 }
 
@@ -199,13 +199,13 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 4px;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   font-weight: 500;
   text-align: right;
 }
 
 .coinEarned :global(.mono) {
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   font-weight: 500;
 }
 
@@ -213,10 +213,10 @@
 .earning {
   display: inline-flex;
   padding: 1px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--plate);
   color: var(--accent-strong);
-  font-size: 0.75rem;
+  font-size: var(--text-label);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -244,11 +244,11 @@
   font-family: var(--font-display);
   font-stretch: 100%;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .assetLabel {
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   font-weight: 500;
   color: var(--ink-3);
 }
@@ -264,7 +264,7 @@
 }
 
 .assetAmount :global(.mono) {
-  font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.25rem);
+  font-size: var(--text-figure-xl);
   font-weight: 500;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -279,7 +279,7 @@
   font-family: var(--font-display);
   font-stretch: 100%;
   font-weight: 600;
-  font-size: 1.125rem;
+  font-size: var(--text-h3);
   color: var(--ink-2);
 }
 
@@ -289,7 +289,7 @@
   margin: 0;
   padding-top: 12px;
   border-top: 1px solid var(--line);
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
 }
 
 .assetFacts > div {
@@ -311,7 +311,7 @@
 }
 
 .assetFacts dd :global(.mono) {
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   font-weight: 500;
 }
 
@@ -330,7 +330,7 @@
   align-items: baseline;
   gap: 2px 12px;
   padding: 10px 0;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
 }
 
 .payments li:first-child {
@@ -350,16 +350,16 @@
 }
 
 .paymentAmount :global(.mono) {
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   font-weight: 500;
 }
 
 .payments a {
   color: var(--ink-2);
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   text-decoration: none;
   border-bottom: 1px solid var(--line-strong);
-  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+  transition: color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
 }
 
 .payments a:hover {
@@ -370,7 +370,7 @@
 .paymentTime {
   grid-column: 1 / -1;
   color: var(--ink-3);
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
 }
 
 @media (max-width: 900px) {

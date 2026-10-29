@@ -25,7 +25,7 @@
 
 /* A wallet's address in the title keeps the title's size, in mono. */
 .title :global(.mono) {
-  font-size: 0.8em;
+  font-size: var(--text-figure-lg);
   font-weight: 500;
   letter-spacing: -0.01em;
 }
@@ -33,7 +33,7 @@
 .lead {
   margin: -4px 0 4px;
   max-width: 64ch;
-  font-size: 1.0625rem;
+  font-size: var(--text-body);
   color: var(--ink-2);
   text-wrap: pretty;
 }
@@ -68,7 +68,7 @@
 
 .lookup input {
   height: 38px;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
 }
 
 .lookup [role="alert"] {
@@ -85,19 +85,19 @@
 }
 
 .rules dt {
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   color: var(--ink-3);
 }
 
 .rules dd {
   margin: 4px 0 0;
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
   font-weight: 500;
   overflow-wrap: anywhere;
 }
 
 .rules dd :global(.mono) {
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
   font-weight: 500;
 }
 
@@ -110,7 +110,7 @@
 }
 
 .key dd :global(.mono) {
-  font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.25rem);
+  font-size: var(--text-figure-xl);
   font-weight: 500;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -125,7 +125,7 @@
   display: block;
   height: 6px;
   margin-top: 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--sunken);
   overflow: hidden;
 }
@@ -134,13 +134,13 @@
   display: block;
   height: 100%;
   min-width: 3px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--heat);
 }
 
 .note {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   line-height: 1.55;
   color: var(--ink-3);
   text-wrap: pretty;
@@ -165,7 +165,7 @@
   gap: 2px 16px;
   align-items: baseline;
   padding: 10px 0;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
 }
 
 .list li + li {
@@ -184,7 +184,7 @@
   color: var(--ink);
   text-decoration: none;
   border-bottom: 1px solid var(--line-strong);
-  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+  transition: color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
 }
 
 .list a:hover {
@@ -193,7 +193,7 @@
 }
 
 .list :global(.mono) {
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
 }
 
 .amount {
@@ -212,7 +212,7 @@
 
 .when {
   text-align: right;
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
 }
 
 .back {

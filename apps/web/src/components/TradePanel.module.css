@@ -11,7 +11,7 @@
 .closed {
   margin: 0;
   color: var(--ink-2);
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
 }
 
 .form {
@@ -26,19 +26,19 @@
   grid-template-columns: 1fr 1fr;
   gap: 3px;
   padding: 3px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: var(--sunken);
 }
 
 .sides button {
   height: 38px;
   border: 0;
-  border-radius: calc(var(--radius-sm) - 3px);
+  border-radius: calc(var(--radius-control) - 3px);
   background: transparent;
   color: var(--ink-2);
   font-weight: 600;
   cursor: pointer;
-  transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+  transition: background-color var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
 }
 
 @media (hover: hover) {
@@ -90,12 +90,12 @@
 }
 
 .amountHead label {
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   font-weight: 600;
 }
 
 .balance {
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   color: var(--ink-3);
 }
 
@@ -111,7 +111,7 @@
 
 .amount input {
   height: 54px;
-  font-size: 1.375rem;
+  font-size: var(--text-h3);
 }
 
 .amount input::placeholder {
@@ -124,7 +124,7 @@
   font-family: var(--font-display);
   font-stretch: 100%;
   font-weight: 800;
-  font-size: 1rem;
+  font-size: var(--text-body);
   color: var(--ink-2);
   max-width: 9ch;
   overflow: hidden;
@@ -135,7 +135,7 @@
 .hint,
 .hintError {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   color: var(--ink-3);
 }
 
@@ -161,7 +161,7 @@
   justify-content: space-between;
   gap: 8px 12px;
   flex-wrap: wrap;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   font-weight: 600;
 }
 
@@ -172,7 +172,6 @@
 
 .slippage button {
   padding: 0 10px;
-  font-family: var(--font-mono);
   font-weight: 500;
 }
 
@@ -187,9 +186,9 @@
   gap: 10px;
   padding: 14px 16px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: var(--sunken);
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
 }
 
 .quote dl {
@@ -222,12 +221,12 @@
 }
 
 .receive dd {
-  font-size: 1rem;
+  font-size: var(--text-body);
   font-weight: 600;
 }
 
 .receive dd :global(.mono) {
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .move {
@@ -244,7 +243,7 @@
 
 .fee {
   padding-left: 12px;
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
 }
 
 .fee dt,
@@ -258,7 +257,7 @@
 }
 
 .fee :global(.mono) {
-  font-size: 0.75rem;
+  font-size: var(--text-label);
 }
 
 .quoteHint,
@@ -270,7 +269,7 @@
 }
 
 .routeNote {
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
 }
 
 .quoteError {
@@ -288,9 +287,9 @@
 .done {
   margin: 0;
   padding: 12px 14px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   font-weight: 500;
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
 }
 
 .error {
@@ -324,13 +323,13 @@
   gap: 14px;
   padding: 16px;
   border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: color-mix(in srgb, var(--plate) 55%, transparent);
 }
 
 .review p {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
 }
 
 .actions {
@@ -350,7 +349,7 @@
 .connect p {
   margin: 0;
   color: var(--ink-2);
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
 }
 
 @media (max-width: 560px) {

@@ -120,9 +120,9 @@ export function Board({
   );
 
   return (
-    <section className={`shell ${styles.section}`} aria-labelledby="board-title">
-      <AssetRail quotes={quotes} launches={launches} query={query} onKind={chooseKind} onAsset={chooseAsset} />
-      <div className={styles.main}>
+    <section className={`shell grid ${styles.section}`} aria-labelledby="board-title">
+      <AssetRail className="col-3" quotes={quotes} launches={launches} query={query} onKind={chooseKind} onAsset={chooseAsset} />
+      <div className={`col-9 ${styles.main}`}>
         <div className={styles.head}>
           <h2 id="board-title" className={`t-h2 ${styles.title}`}>Coins</h2>
           <span className={styles.live}>Updates every few seconds</span>

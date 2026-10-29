@@ -37,11 +37,11 @@
   The sizes are a step up from the Archivo build's: Bricolage's full width is a fifth narrower than Archivo's 125%,
   and at the old sizes a pair sat small in a cell cut for the wider face (the spacing fault of 2026-10-11).
 */
-.sm { font-size: 1.0625rem; min-height: 1.0625rem; }
-.md { font-size: 1.5rem; min-height: 1.5rem; }
-.lg { font-size: clamp(2rem, 4.5vw, 2.75rem); min-height: clamp(2rem, 4.5vw, 2.75rem); }
+.sm { font-size: var(--pair-row); min-height: var(--pair-row); }
+.md { font-size: var(--pair-card); min-height: var(--pair-card); }
+.lg { font-size: var(--pair-title); min-height: var(--pair-title); }
 .fit {
   /* Bricolage Grotesque at full width and weight 800 averages about 0.7em per capital (measured 0.63 to 0.69); size so the whole pair fits the container. */
-  font-size: min(6rem, calc(100cqi / (var(--chars) * 0.7)));
+  font-size: min(var(--pair-max), calc(100cqi / (var(--chars) * 0.7)));
   letter-spacing: -0.015em;
 }

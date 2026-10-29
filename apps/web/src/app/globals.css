@@ -1,25 +1,32 @@
 /*
-  Colour is one set of role tokens, one block per direction and mode (docs/design/principles.md, 2026-10-10): C Teal is
-  the owner's pick (2026-10-10, seen on the real site in all three), A Cobalt and B Violet ride along as alternates.
-  `data-theme` on <html> picks the block (src/lib/theme.ts), and light and dark follow the visitor. The heat ramp, the
-  direction colours and the caution are the same in every direction, so the mark and the live data are identical across
-  them; what changes is the neutral's tint and the signature accent.
+  The foundations (docs/design/principles.md; rebuilt for #131, phase 1 of the 2026-10-28 rework): one set of role
+  tokens per direction and mode, and on top of them the roles every module composes from and never restates:
 
-  Surfaces, a ladder by tone before any border (principle 2):
+    colour      the surface ladder, three inks, the accent and its partners; every fill has an "on" partner (section
+                "On-pairs") and no module puts text on a fill without one
+    elevation   four named levels, sunken, default, raised, overlay, each a shadow token (section "Elevation")
+    type        the role table as --text-* tokens and t-* classes; no module sets a font-size that is not a token
+                (apps/web/scripts/type.mjs fails the lint when one does); the sans for every label and control, the
+                mono for figures and addresses only; nothing under 12px
+    radius      one per role: control, card, pill; no other radius on the site
+    motion      three curves and three durations; an interaction is 200ms or less; reduced motion stops everything
+    grid        12 columns with 24px gutters, 4 with 16px on a phone (.grid and .col-*), which the header's edges, the
+                board's table and the coin page's panels sit on
+
+  C Teal is the owner's pick (2026-10-10, confirmed 2026-10-28); A Cobalt and B Violet ride along as alternates
+  (`data-theme`, src/lib/theme.ts). Light and dark follow the visitor, and the header's toggle pins one (`data-scheme`),
+  so every dark block is written twice: under the media query guarded against an explicit light, and pinned by an
+  explicit dark. Keep the two copies the same.
+
+  Surfaces, a ladder by tone before any border:
     sunken     a well: an input, a ticker bar, the footer       bg         the page
     surface    a panel or card                                  surface-2  a hovered row, a nested well, a raised card in dark
-    surface-3  a popover, a menu, a dialog                      raised     a card that stands off the page (surface-2 in dark,
-                                                                           white with shadow-raised in light)
+    surface-3  a popover, a menu, a dialog                      raised     a card that stands off the page
     line / line-strong   hairlines, ink or white at low alpha so they sit right on every surface
     highlight  the 1px inner top light on a raised card in dark; none in light
-  Text: ink, ink-2, ink-3, all AA on every surface they sit on (checked by tools/contrast.py from these values).
-  The accent: one hue for action, focus, links and live data (principle 4): accent (text and icons on surface),
-  accent-strong (text on plate, hover), on-accent, plate (a tinted plate behind the accent), button / on-button (the
-  primary fill and its text), glow (the primary action's halo) and ring (the focus ring).
-  Meaning: up / down are direction and nothing else; caution only on label chips; brand is the heat as text, heat-low to
-  heat-high the ramp (a curve filling towards Graduation, a burn, the slogan's emphasised phrase, what a Creator earns).
-  Depth: shadow (a floating surface-3), shadow-raised (a raised card), one light source top-left in both modes.
-  tile is the mark's ground, the direction's dark canvas in both modes, so one mark serves everywhere.
+  The accent: one hue for action, focus and links. Meaning: up / down are direction and nothing else (and sit at least
+  30 degrees of hue from the accent, section "Shared"); caution only on label chips; the heat ramp is the brand's and
+  appears on "You do.", the brand's own figures and a curve's fill. tile is the mark's ground in both modes.
 */
 
 /* A Cobalt: a blue-shifted near-black and an electric cobalt for action, the ember's complement. */
@@ -30,7 +37,7 @@
   --surface-3: #ffffff;
   --raised: #ffffff;
   --sunken: #eceff6;
-  --line: rgb(11 16 32 / 11%);
+  --line: rgb(11 16 32 / 14%);
   --line-strong: rgb(11 16 32 / 22%);
   --highlight: none;
   --ink: #0b1020;
@@ -45,18 +52,14 @@
   --on-button: #ffffff;
   --tile: #070a12;
   --lift: black;
-  --shadow: 0 1px 2px rgb(11 16 32 / 6%), 0 12px 32px -12px rgb(36 87 245 / 18%);
+  --shadow-sunken: inset 0 1px 2px rgb(11 16 32 / 6%);
   --shadow-raised: 0 1px 2px rgb(11 16 32 / 6%), 0 8px 24px -12px rgb(36 87 245 / 18%);
+  --shadow-overlay: 0 1px 2px rgb(11 16 32 / 6%), 0 12px 32px -12px rgb(36 87 245 / 18%);
   --glow: 0 0 0 1px rgb(36 87 245 / 25%), 0 8px 24px -8px rgb(36 87 245 / 35%);
   --ring: 0 0 0 3px rgb(36 87 245 / 35%);
   color-scheme: light;
 }
 
-/*
- * Light and dark follow the visitor's system setting, and the header's toggle (SchemeToggle, a `scheme` cookie the
- * layout puts on <html> as `data-scheme`) overrides it either way. So every dark block is written twice: under the
- * media query, guarded against an explicit light, and again pinned by an explicit dark. Keep the two copies the same.
- */
 @media (prefers-color-scheme: dark) {
   :root[data-theme="cobalt"]:not([data-scheme="light"]) {
     --bg: #070a12;
@@ -69,8 +72,8 @@
     --line-strong: rgb(255 255 255 / 16%);
     --highlight: inset 0 1px 0 rgb(255 255 255 / 4%);
     --ink: #eef2ff;
-    --ink-2: #a9b3cc;
-    --ink-3: #7d88a3;
+    --ink-2: #cad2e6;
+    --ink-3: #aab4ca;
     --accent: #5b84ff;
     --accent-strong: #8aa6ff;
     --accent-rgb: 91 132 255;
@@ -79,8 +82,9 @@
     --button: #3560ff;
     --on-button: #ffffff;
     --lift: white;
-    --shadow: 0 4px 16px rgb(0 0 0 / 50%);
+    --shadow-sunken: inset 0 1px 2px rgb(0 0 0 / 40%);
     --shadow-raised: 0 8px 24px -12px rgb(0 0 0 / 50%);
+    --shadow-overlay: 0 4px 16px rgb(0 0 0 / 50%);
     --glow: 0 0 0 1px rgb(91 132 255 / 35%), 0 0 24px rgb(91 132 255 / 25%);
     --ring: 0 0 0 3px rgb(91 132 255 / 55%);
     color-scheme: dark;
@@ -98,8 +102,8 @@
   --line-strong: rgb(255 255 255 / 16%);
   --highlight: inset 0 1px 0 rgb(255 255 255 / 4%);
   --ink: #eef2ff;
-  --ink-2: #a9b3cc;
-  --ink-3: #7d88a3;
+  --ink-2: #cad2e6;
+  --ink-3: #aab4ca;
   --accent: #5b84ff;
   --accent-strong: #8aa6ff;
   --accent-rgb: 91 132 255;
@@ -108,8 +112,9 @@
   --button: #3560ff;
   --on-button: #ffffff;
   --lift: white;
-  --shadow: 0 4px 16px rgb(0 0 0 / 50%);
+  --shadow-sunken: inset 0 1px 2px rgb(0 0 0 / 40%);
   --shadow-raised: 0 8px 24px -12px rgb(0 0 0 / 50%);
+  --shadow-overlay: 0 4px 16px rgb(0 0 0 / 50%);
   --glow: 0 0 0 1px rgb(91 132 255 / 35%), 0 0 24px rgb(91 132 255 / 25%);
   --ring: 0 0 0 3px rgb(91 132 255 / 55%);
   color-scheme: dark;
@@ -123,7 +128,7 @@
   --surface-3: #ffffff;
   --raised: #ffffff;
   --sunken: #ecebf6;
-  --line: rgb(18 15 42 / 11%);
+  --line: rgb(18 15 42 / 14%);
   --line-strong: rgb(18 15 42 / 22%);
   --highlight: none;
   --ink: #120f2a;
@@ -138,8 +143,9 @@
   --on-button: #ffffff;
   --tile: #09081a;
   --lift: black;
-  --shadow: 0 1px 2px rgb(18 15 42 / 6%), 0 12px 32px -12px rgb(91 69 230 / 18%);
+  --shadow-sunken: inset 0 1px 2px rgb(18 15 42 / 6%);
   --shadow-raised: 0 1px 2px rgb(18 15 42 / 6%), 0 8px 24px -12px rgb(91 69 230 / 18%);
+  --shadow-overlay: 0 1px 2px rgb(18 15 42 / 6%), 0 12px 32px -12px rgb(91 69 230 / 18%);
   --glow: 0 0 0 1px rgb(91 69 230 / 25%), 0 8px 24px -8px rgb(91 69 230 / 35%);
   --ring: 0 0 0 3px rgb(91 69 230 / 35%);
   color-scheme: light;
@@ -157,8 +163,8 @@
     --line-strong: rgb(255 255 255 / 16%);
     --highlight: inset 0 1px 0 rgb(255 255 255 / 4%);
     --ink: #f0eefc;
-    --ink-2: #aca7cc;
-    --ink-3: #8882aa;
+    --ink-2: #ccc8e4;
+    --ink-3: #aca7c9;
     --accent: #8b7cff;
     --accent-strong: #aa9fff;
     --accent-rgb: 139 124 255;
@@ -167,8 +173,9 @@
     --button: #8b7cff;
     --on-button: #0b0a1f;
     --lift: white;
-    --shadow: 0 4px 16px rgb(0 0 0 / 50%);
+    --shadow-sunken: inset 0 1px 2px rgb(0 0 0 / 40%);
     --shadow-raised: 0 8px 24px -12px rgb(0 0 0 / 50%);
+    --shadow-overlay: 0 4px 16px rgb(0 0 0 / 50%);
     --glow: 0 0 0 1px rgb(139 124 255 / 35%), 0 0 24px rgb(139 124 255 / 25%);
     --ring: 0 0 0 3px rgb(139 124 255 / 55%);
     color-scheme: dark;
@@ -186,8 +193,8 @@
   --line-strong: rgb(255 255 255 / 16%);
   --highlight: inset 0 1px 0 rgb(255 255 255 / 4%);
   --ink: #f0eefc;
-  --ink-2: #aca7cc;
-  --ink-3: #8882aa;
+  --ink-2: #ccc8e4;
+  --ink-3: #aca7c9;
   --accent: #8b7cff;
   --accent-strong: #aa9fff;
   --accent-rgb: 139 124 255;
@@ -196,8 +203,9 @@
   --button: #8b7cff;
   --on-button: #0b0a1f;
   --lift: white;
-  --shadow: 0 4px 16px rgb(0 0 0 / 50%);
+  --shadow-sunken: inset 0 1px 2px rgb(0 0 0 / 40%);
   --shadow-raised: 0 8px 24px -12px rgb(0 0 0 / 50%);
+  --shadow-overlay: 0 4px 16px rgb(0 0 0 / 50%);
   --glow: 0 0 0 1px rgb(139 124 255 / 35%), 0 0 24px rgb(139 124 255 / 25%);
   --ring: 0 0 0 3px rgb(139 124 255 / 55%);
   color-scheme: dark;
@@ -212,7 +220,7 @@
   --surface-3: #ffffff;
   --raised: #ffffff;
   --sunken: #e9eff2;
-  --line: rgb(10 20 24 / 11%);
+  --line: rgb(10 20 24 / 14%);
   --line-strong: rgb(10 20 24 / 22%);
   --highlight: none;
   --ink: #0a1418;
@@ -227,8 +235,9 @@
   --on-button: #ffffff;
   --tile: #05090e;
   --lift: black;
-  --shadow: 0 1px 2px rgb(10 20 24 / 6%), 0 12px 32px -12px rgb(7 116 102 / 18%);
+  --shadow-sunken: inset 0 1px 2px rgb(10 20 24 / 6%);
   --shadow-raised: 0 1px 2px rgb(10 20 24 / 6%), 0 8px 24px -12px rgb(7 116 102 / 18%);
+  --shadow-overlay: 0 1px 2px rgb(10 20 24 / 6%), 0 12px 32px -12px rgb(7 116 102 / 18%);
   --glow: 0 0 0 1px rgb(7 116 102 / 25%), 0 8px 24px -8px rgb(7 116 102 / 35%);
   --ring: 0 0 0 3px rgb(7 116 102 / 35%);
   color-scheme: light;
@@ -246,8 +255,8 @@
     --line-strong: rgb(255 255 255 / 16%);
     --highlight: inset 0 1px 0 rgb(255 255 255 / 4%);
     --ink: #eaf3f5;
-    --ink-2: #a3b4bc;
-    --ink-3: #768a94;
+    --ink-2: #d1dadf;
+    --ink-3: #b5c2c9;
     --accent: #2fd3c0;
     --accent-strong: #6fe8d8;
     --accent-rgb: 47 211 192;
@@ -256,8 +265,9 @@
     --button: #2fd3c0;
     --on-button: #04120f;
     --lift: white;
-    --shadow: 0 4px 16px rgb(0 0 0 / 50%);
+    --shadow-sunken: inset 0 1px 2px rgb(0 0 0 / 40%);
     --shadow-raised: 0 8px 24px -12px rgb(0 0 0 / 50%);
+    --shadow-overlay: 0 4px 16px rgb(0 0 0 / 50%);
     --glow: 0 0 0 1px rgb(47 211 192 / 35%), 0 0 24px rgb(47 211 192 / 25%);
     --ring: 0 0 0 3px rgb(47 211 192 / 55%);
     color-scheme: dark;
@@ -275,8 +285,8 @@
   --line-strong: rgb(255 255 255 / 16%);
   --highlight: inset 0 1px 0 rgb(255 255 255 / 4%);
   --ink: #eaf3f5;
-  --ink-2: #a3b4bc;
-  --ink-3: #768a94;
+  --ink-2: #d1dadf;
+  --ink-3: #b5c2c9;
   --accent: #2fd3c0;
   --accent-strong: #6fe8d8;
   --accent-rgb: 47 211 192;
@@ -285,20 +295,26 @@
   --button: #2fd3c0;
   --on-button: #04120f;
   --lift: white;
-  --shadow: 0 4px 16px rgb(0 0 0 / 50%);
+  --shadow-sunken: inset 0 1px 2px rgb(0 0 0 / 40%);
   --shadow-raised: 0 8px 24px -12px rgb(0 0 0 / 50%);
+  --shadow-overlay: 0 4px 16px rgb(0 0 0 / 50%);
   --glow: 0 0 0 1px rgb(47 211 192 / 35%), 0 0 24px rgb(47 211 192 / 25%);
   --ring: 0 0 0 3px rgb(47 211 192 / 55%);
   color-scheme: dark;
 }
 
-/* The same in every direction: the heat, the direction colours, the caution (principle 4). */
+/*
+  Shared: the heat, the direction colours and the caution, the same in every direction.
+  The up colour sits a yellow-green (hue 140) so it reads apart from Teal's accent (hue 173): until #131 the two were
+  fourteen degrees apart and a positive change looked like a link. The owner sees the other fix, the accent moved to
+  cyan with up as it was, under `?hue=accent` (the block at the foot of this section) before the hue is settled.
+*/
 :root {
   --brand: #c7410c;
   --heat-low: #f59e0b;
   --heat-high: #ea4a1c;
-  --up: #0b7a52;
-  --up-bg: #dff5ea;
+  --up: #137534;
+  --up-bg: #dcf5e2;
   --down: #c4262f;
   --down-bg: #fde6e8;
   --caution: #9a5d05;
@@ -310,9 +326,9 @@
     --brand: #ff9a5c;
     --heat-low: #ffb020;
     --heat-high: #ff5a1f;
-    --up: #34d399;
-    --up-bg: #0f2b22;
-    --down: #ff5c6c;
+    --up: #45df78;
+    --up-bg: #10301d;
+    --down: #ff99a3;
     --down-bg: #3a1a22;
     --caution: #fbbf24;
     --caution-bg: #3a2d12;
@@ -323,15 +339,80 @@
   --brand: #ff9a5c;
   --heat-low: #ffb020;
   --heat-high: #ff5a1f;
-  --up: #34d399;
-  --up-bg: #0f2b22;
-  --down: #ff5c6c;
+  --up: #45df78;
+  --up-bg: #10301d;
+  --down: #ff99a3;
   --down-bg: #3a1a22;
   --caution: #fbbf24;
   --caution-bg: #3a2d12;
 }
 
+/* The other candidate for the hue fix (owner's question on #131): Teal's accent moved thirty degrees toward cyan, up as it was. */
+:root[data-hue="accent"] {
+  --accent: #06758a;
+  --accent-strong: #055f6e;
+  --accent-rgb: 6 117 138;
+  --plate: #d9f1f6;
+  --button: #06758a;
+  --shadow-raised: 0 1px 2px rgb(10 20 24 / 6%), 0 8px 24px -12px rgb(6 117 138 / 18%);
+  --shadow-overlay: 0 1px 2px rgb(10 20 24 / 6%), 0 12px 32px -12px rgb(6 117 138 / 18%);
+  --glow: 0 0 0 1px rgb(6 117 138 / 25%), 0 8px 24px -8px rgb(6 117 138 / 35%);
+  --ring: 0 0 0 3px rgb(6 117 138 / 35%);
+  --up: #0b7a52;
+  --up-bg: #dff5ea;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-hue="accent"]:not([data-scheme="light"]) {
+    --accent: #44c9e2;
+    --accent-strong: #74dcef;
+    --accent-rgb: 68 201 226;
+    --on-accent: #04131a;
+    --plate: #0d2f38;
+    --button: #44c9e2;
+    --on-button: #04131a;
+    --shadow-raised: 0 8px 24px -12px rgb(0 0 0 / 50%);
+    --shadow-overlay: 0 4px 16px rgb(0 0 0 / 50%);
+    --glow: 0 0 0 1px rgb(68 201 226 / 35%), 0 0 24px rgb(68 201 226 / 25%);
+    --ring: 0 0 0 3px rgb(68 201 226 / 55%);
+    --up: #34d399;
+    --up-bg: #0f2b22;
+  }
+}
+
+:root[data-hue="accent"][data-scheme="dark"] {
+  --accent: #44c9e2;
+  --accent-strong: #74dcef;
+  --accent-rgb: 68 201 226;
+  --on-accent: #04131a;
+  --plate: #0d2f38;
+  --button: #44c9e2;
+  --on-button: #04131a;
+  --shadow-raised: 0 8px 24px -12px rgb(0 0 0 / 50%);
+  --shadow-overlay: 0 4px 16px rgb(0 0 0 / 50%);
+  --glow: 0 0 0 1px rgb(68 201 226 / 35%), 0 0 24px rgb(68 201 226 / 25%);
+  --ring: 0 0 0 3px rgb(68 201 226 / 55%);
+  --up: #34d399;
+  --up-bg: #0f2b22;
+}
+
 :root {
+  /*
+    On-pairs: the text and icon colour for every fill (Material 3's roles in pairs). A module puts text on a fill only
+    through its partner; apps/web/scripts/contrast.mjs checks each pair in both schemes. The heat ramp has no partner:
+    it is a stroke and a text fill, never a ground for text.
+  */
+  --on-surface: var(--ink);
+  --on-surface-2: var(--ink);
+  --on-surface-3: var(--ink);
+  --on-sunken: var(--ink);
+  --on-raised: var(--ink);
+  --on-plate: var(--accent-strong);
+  --on-up-bg: var(--up);
+  --on-down-bg: var(--down);
+  --on-caution-bg: var(--caution);
+  --on-tile: #ffffff;
+
   /* The heat ramp as one stroke: a curve's fill, a burn's bar; and as a text fill for the brand's own figures. */
   --heat: linear-gradient(90deg, var(--heat-low), var(--heat-high));
   --brand-gradient: linear-gradient(100deg, var(--heat-low) 0%, var(--heat-high) 70%, var(--brand) 100%);
@@ -344,20 +425,64 @@
   --font-body: var(--font-instrument-sans), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 
-  /* Motion constants (principles, section 6): hover and focus at fast, panels and menus at base, page reveals at slow. */
-  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --fast: 120ms;
-  --base: 200ms;
-  --slow: 320ms;
+  /*
+    The type role table (docs/design/principles.md, section 5), each step a token and a t-* class below. A module sets
+    a font-size only as one of these; the pair mark has its own scale (--pair-*), the one text that is a mark.
+  */
+  --text-display: clamp(2.5rem, 1.5rem + 4.2vw, 4.5rem);
+  --text-h1: clamp(2rem, 1.6rem + 1.2vw, 2.5rem);
+  --text-h2: 1.75rem;
+  --text-h3: 1.25rem;
+  --text-lede: 1.25rem;
+  --text-body: 1rem;
+  --text-ui: 0.875rem;
+  --text-caption: 0.8125rem;
+  --text-label: 0.75rem;
+  --text-figure-xl: clamp(2rem, 1.5rem + 1.6vw, 2.75rem);
+  --text-figure-lg: 1.75rem;
+  --text-figure: 1rem;
+  --text-figure-row: 0.8125rem;
+  /* The pair mark's scale: a row, a card or a search result, a page's title row, and the share cards and the launch summary alone at the largest. */
+  --pair-row: 0.875rem;
+  --pair-card: 1.25rem;
+  --pair-title: clamp(1.75rem, 1.5rem + 0.8vw, 2rem);
+  --pair-max: 6rem;
+  /* The wordmark beside the 28px ring in the header and the footer. */
+  --wordmark: 1.5rem;
 
-  /* The landing's corners: 16px cards, 12px controls; the terminal sets its own, tighter ones below. */
-  --radius: 16px;
-  --radius-sm: 12px;
-  --radius-xs: 8px;
+  /*
+    Motion (principles, section 9): the standard curve for every state change, the enter and exit curves for a layer
+    that appears or leaves (a menu, a panel, a dialog). An interaction takes fast or base, never slow, which is for a
+    page's own reveal alone.
+  */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 280ms;
+
+  /* One radius per role: a control (a button, a field, a menu item), a card (a panel, a menu, a dialog), a pill (a chip, a tag, an avatar). The terminal tightens the first two below. */
+  --radius-control: 12px;
+  --radius-card: 16px;
+  --radius-pill: 999px;
+
+  /* The grid: twelve columns at a desktop, four on a phone (below), and the page column they sit in. */
+  --grid-cols: 12;
+  --grid-gap: 24px;
   --gutter: clamp(16px, 4vw, 40px);
   --max: 1180px;
-  /* The sticky header's height (72px gives the pill its air), which anything pinned under it (the asset rail, a coin page's side column) clears. */
-  --header-h: 72px;
+  --max-terminal: 1320px;
+  /* The sticky header's height, which anything pinned under it (the asset rail, a coin page's side column) clears. */
+  --header-h: 64px;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --grid-cols: 4;
+    --grid-gap: 16px;
+    --header-h: 52px;
+  }
 }
 
 *,
@@ -381,7 +506,7 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-body);
-  font-size: 1rem;
+  font-size: var(--text-body);
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -412,7 +537,7 @@ select {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--radius-control);
 }
 
 ::selection {
@@ -431,6 +556,7 @@ select {
   border: 0;
 }
 
+/* The page column: the content's width and its side gutters, the same on every page and on the header's bar. */
 .shell {
   width: 100%;
   max-width: var(--max);
@@ -439,69 +565,112 @@ select {
 }
 
 /*
-  The type scale (principles, section 5): one display family, a short modular scale, tight tracking at display sizes,
-  tabular figures on every value that can change. A label sits one step smaller and two steps lighter than its value.
+  The layout grid every page sits on: 12 columns with 24px gutters, 4 columns with 16px on a phone. A column span is
+  a class (col-3, col-9); on a phone every span takes the whole width.
+*/
+.grid {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-cols), minmax(0, 1fr));
+  gap: var(--grid-gap);
+}
+
+.col-1 { grid-column: span 1; }
+.col-2 { grid-column: span 2; }
+.col-3 { grid-column: span 3; }
+.col-4 { grid-column: span 4; }
+.col-5 { grid-column: span 5; }
+.col-6 { grid-column: span 6; }
+.col-7 { grid-column: span 7; }
+.col-8 { grid-column: span 8; }
+.col-9 { grid-column: span 9; }
+.col-10 { grid-column: span 10; }
+.col-11 { grid-column: span 11; }
+.col-12 { grid-column: 1 / -1; }
+
+@media (max-width: 640px) {
+  [class*="col-"] {
+    grid-column: 1 / -1;
+  }
+}
+
+/*
+  The type roles as classes (the table in docs/design/principles.md, section 5): one display family, a short scale,
+  tight tracking at display sizes, tabular figures on every value that can change. A label sits one step smaller and
+  two steps lighter than its value. Only the display step narrows Bricolage (92%); the heading steps sit at its full
+  width with the tracking open, since at text sizes its optical size is already tight.
 */
 .t-display {
   font-family: var(--font-display);
   font-stretch: 92%;
   font-weight: 700;
-  font-size: clamp(2.5rem, 1.5rem + 4.2vw, 4.5rem);
+  font-size: var(--text-display);
   line-height: 0.95;
   letter-spacing: -0.03em;
+  text-wrap: balance;
 }
 
-/*
-  Only the display step narrows (92%, the hero as picked on "Stoker Type"); the heading steps sit at Bricolage's full
-  width with the tracking open, since at text sizes its optical size is already tight and a narrowed heading reads as
-  a thin line in a box cut for a wider face (the spacing fault of 2026-10-11).
-*/
 .t-h1 {
   font-family: var(--font-display);
   font-stretch: 100%;
   font-weight: 700;
-  font-size: clamp(2rem, 1.6rem + 1.2vw, 2.5rem);
+  font-size: var(--text-h1);
   line-height: 1.1;
   letter-spacing: -0.015em;
+  text-wrap: balance;
 }
 
 .t-h2 {
   font-family: var(--font-display);
   font-stretch: 100%;
   font-weight: 600;
-  font-size: 1.75rem;
+  font-size: var(--text-h2);
   line-height: 1.2;
   letter-spacing: -0.01em;
+  text-wrap: balance;
 }
 
 .t-h3 {
   font-family: var(--font-display);
   font-stretch: 100%;
   font-weight: 600;
-  font-size: 1.25rem;
+  font-size: var(--text-h3);
   line-height: 1.3;
   letter-spacing: 0;
 }
 
 .t-lede {
-  font-size: 1.25rem;
+  font-size: var(--text-lede);
   line-height: 1.5;
   color: var(--ink-2);
 }
 
+.t-body {
+  font-size: var(--text-body);
+  line-height: 1.55;
+}
+
 .t-ui {
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   line-height: 1.4;
   font-weight: 500;
 }
 
 .t-caption {
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   line-height: 1.4;
   color: var(--ink-3);
 }
 
+/* The smallest step, and the floor: a tag, a column header, a key cap; sentence case, never tracked. */
+.t-label {
+  font-size: var(--text-label);
+  line-height: 1.4;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
 .t-figure-xl,
+.t-figure-lg,
 .t-figure,
 .t-figure-row,
 .mono {
@@ -511,30 +680,38 @@ select {
 }
 
 .t-figure-xl {
-  font-size: clamp(2rem, 1.5rem + 1.6vw, 2.75rem);
+  font-size: var(--text-figure-xl);
   font-weight: 500;
   line-height: 1;
   letter-spacing: -0.02em;
 }
 
+/* A panel's one key figure: the price in a title row, a curve's percentage, a tax rate. */
+.t-figure-lg {
+  font-size: var(--text-figure-lg);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
 .t-figure {
-  font-size: 1rem;
+  font-size: var(--text-figure);
   font-weight: 500;
   line-height: 1.3;
 }
 
 .t-figure-row,
 .mono {
-  font-size: 0.8125rem;
+  font-size: var(--text-figure-row);
   line-height: 1.3;
 }
 
-/* A small-caps label over a card, the one place the site sets type in capitals. */
+/* A small-caps label over a card, the one place the site sets type in capitals, and at most one on a page. */
 .eyebrow {
-  font-size: 0.75rem;
+  font-size: var(--text-label);
   font-weight: 600;
   line-height: 1.4;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-3);
 }
@@ -549,7 +726,8 @@ select {
 
 /*
   The primitives (principles, section 6): every interactive element has designed states, default, hover, focus, active,
-  disabled, each distinct in colour, transition and feel, and never the browser's focus ring.
+  disabled, each distinct in colour, transition and feel, and never the browser's focus ring. A hover changes colour
+  and background only, never weight; a press moves one pixel.
 */
 .button {
   display: inline-flex;
@@ -557,19 +735,20 @@ select {
   justify-content: center;
   gap: 8px;
   height: 40px;
-  padding: 0 18px;
+  padding: 0 16px;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--ink);
   font-weight: 600;
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
   line-height: 1;
   white-space: nowrap;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color var(--fast) var(--ease), border-color var(--fast) var(--ease), color var(--fast) var(--ease),
-    box-shadow var(--fast) var(--ease), transform var(--fast) var(--ease);
+  transition: background-color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard),
+    transform var(--dur-fast) var(--ease-standard);
 }
 
 .button:focus-visible {
@@ -623,13 +802,13 @@ select {
 .button-lg {
   height: 50px;
   padding: 0 26px;
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .button-sm {
   height: 32px;
   padding: 0 12px;
-  font-size: 0.875rem;
+  font-size: var(--text-caption);
 }
 
 /* A busy primary keeps its colour and shows progress. */
@@ -637,7 +816,7 @@ select {
   cursor: progress;
 }
 
-/* A chip chooses one of a set; chosen, it takes the plate with the accent's text. */
+/* A chip chooses one of a set; chosen, it takes the plate with the plate's text. */
 .chip {
   display: inline-flex;
   align-items: center;
@@ -645,17 +824,17 @@ select {
   height: 28px;
   padding: 0 11px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--ink-2);
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   font-weight: 500;
   line-height: 1;
   white-space: nowrap;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color var(--fast) var(--ease), border-color var(--fast) var(--ease), color var(--fast) var(--ease),
-    box-shadow var(--fast) var(--ease);
+  transition: background-color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
 }
 
 @media (hover: hover) {
@@ -675,19 +854,19 @@ select {
 .chip[aria-current] {
   border-color: color-mix(in srgb, var(--accent) 45%, transparent);
   background: var(--plate);
-  color: var(--accent-strong);
+  color: var(--on-plate);
 }
 
-/* A tag states something and is not pressed: a kind, a caution, a result. */
+/* A tag states something and is not pressed: a kind, a caution, a result; each fill with its partner. */
 .tag {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 2px 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface-2);
   color: var(--ink-2);
-  font-size: 0.75rem;
+  font-size: var(--text-label);
   font-weight: 600;
   line-height: 1.5;
   white-space: nowrap;
@@ -695,22 +874,22 @@ select {
 
 .tag-accent {
   background: var(--plate);
-  color: var(--accent-strong);
+  color: var(--on-plate);
 }
 
 .tag-up {
   background: var(--up-bg);
-  color: var(--up);
+  color: var(--on-up-bg);
 }
 
 .tag-down {
   background: var(--down-bg);
-  color: var(--down);
+  color: var(--on-down-bg);
 }
 
 .tag-caution {
   background: var(--caution-bg);
-  color: var(--caution);
+  color: var(--on-caution-bg);
 }
 
 /* A field: a well on sunken, the line on its edge, the ring when it has focus. */
@@ -722,10 +901,11 @@ select {
   min-height: 40px;
   padding: 0 12px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: var(--sunken);
-  color: var(--ink);
-  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease), background-color var(--fast) var(--ease);
+  color: var(--on-sunken);
+  transition: border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard),
+    background-color var(--dur-fast) var(--ease-standard);
 }
 
 @media (hover: hover) {
@@ -771,7 +951,7 @@ select {
   display: inline-flex;
   gap: 2px;
   padding: 3px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: var(--sunken);
 }
 
@@ -779,14 +959,15 @@ select {
   height: 30px;
   padding: 0 12px;
   border: 0;
-  border-radius: calc(var(--radius-sm) - 3px);
+  border-radius: calc(var(--radius-control) - 3px);
   background: transparent;
   color: var(--ink-2);
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+  transition: background-color var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
 }
 
 @media (hover: hover) {
@@ -802,14 +983,24 @@ select {
 
 .segmented > button[aria-pressed="true"] {
   background: var(--surface-3);
-  color: var(--ink);
+  color: var(--on-surface-3);
   box-shadow: var(--highlight), var(--shadow-raised);
 }
 
-/* Cards on the ladder: a panel on surface; a raised card stands off the page; a floating one carries the shadow. */
+/*
+  Elevation, four named levels (Atlassian's; principles, section 7): a well sits in the page (sunken), a panel sits on
+  it with a hairline and no shadow (default), a card that stands off the page carries the raised shadow (raised), and a
+  menu, a popover or a dialog floats over everything on surface-3 with the overlay shadow (overlay).
+*/
+.well {
+  border-radius: var(--radius-card);
+  background: var(--sunken);
+  box-shadow: var(--shadow-sunken);
+}
+
 .card {
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--radius-card);
   background: var(--surface);
   box-shadow: var(--highlight);
 }
@@ -819,9 +1010,9 @@ select {
   box-shadow: var(--highlight), var(--shadow-raised);
 }
 
-.card-floating {
+.card-overlay {
   background: var(--surface-3);
-  box-shadow: var(--highlight), var(--shadow);
+  box-shadow: var(--highlight), var(--shadow-overlay);
 }
 
 /*
@@ -829,10 +1020,9 @@ select {
   Panels at 24px, dense rows at 8 to 12px.
 */
 .terminal {
-  --radius: 10px;
-  --radius-sm: 8px;
-  --radius-xs: 6px;
-  --max: 1320px;
+  --radius-control: 8px;
+  --radius-card: 10px;
+  --max: var(--max-terminal);
   --row: 36px;
 }
 

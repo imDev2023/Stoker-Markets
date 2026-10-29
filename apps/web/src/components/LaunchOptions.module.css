@@ -13,7 +13,7 @@
 }
 
 .field > label {
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   font-weight: 500;
   color: var(--ink-2);
 }
@@ -31,9 +31,9 @@
   gap: 8px;
   padding: 0 12px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: var(--sunken);
-  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+  transition: border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
 }
 
 /* Hovers only with a real pointer, so a tap on a phone doesn't leave one behind. */
@@ -60,7 +60,7 @@
   border: 0;
   background: transparent;
   color: var(--ink);
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .amount input:focus {
@@ -73,19 +73,18 @@
   opacity: 0.8;
 }
 
-/* The unit is a ticker, written as the site writes tickers: mono. */
+/* The unit is a ticker, a word in the sans. */
 .unit {
   flex: none;
-  font-family: var(--font-mono);
-  font-weight: 500;
-  font-size: 0.875rem;
+  font-weight: 600;
+  font-size: var(--text-ui);
   color: var(--ink-2);
 }
 
 .hint,
 .hintError {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   line-height: 1.5;
   color: var(--ink-3);
 }
@@ -110,7 +109,7 @@
   gap: 10px;
   align-items: flex-start;
   align-self: flex-start;
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
   font-weight: 500;
   cursor: pointer;
 }
@@ -127,21 +126,21 @@
 .toggle input:focus-visible {
   outline: none;
   box-shadow: var(--ring);
-  border-radius: 4px;
+  border-radius: var(--radius-control);
 }
 
 .list {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: var(--sunken);
   color: var(--ink);
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   line-height: 1.7;
   resize: vertical;
-  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+  transition: border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
 }
 
 /*
@@ -159,7 +158,7 @@
 /* A 44-character address plus padding fits a 390px phone at 12px mono; its amount wraps to the next line. */
 @media (max-width: 560px) {
   .list {
-    font-size: 0.75rem;
+    font-size: var(--text-label);
   }
 }
 
@@ -181,7 +180,7 @@
 }
 
 .ratesLabel {
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   font-weight: 500;
   color: var(--ink-2);
 }
@@ -200,10 +199,10 @@
   gap: 6px 10px;
   padding: 12px 14px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: var(--sunken);
   cursor: pointer;
-  transition: border-color var(--fast) var(--ease), background-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+  transition: border-color var(--dur-fast) var(--ease-standard), background-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
 }
 
 /* Drawn here rather than by the browser, whose unchecked radio is a grey disc on the dark theme. */
@@ -217,7 +216,7 @@
   border-radius: 50%;
   background: transparent;
   cursor: inherit;
-  transition: border-color var(--fast) var(--ease), background-color var(--fast) var(--ease);
+  transition: border-color var(--dur-fast) var(--ease-standard), background-color var(--dur-fast) var(--ease-standard);
 }
 
 /* Checked: a disc in the accent with a tick drawn from two borders, so the choice never rests on colour alone. */
@@ -239,7 +238,7 @@
 }
 
 .typeName {
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
   font-weight: 600;
   line-height: 1.35;
   overflow-wrap: anywhere;
@@ -253,7 +252,7 @@
 
 .typeHint {
   grid-column: 1 / -1;
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   line-height: 1.45;
   color: var(--ink-3);
   overflow-wrap: anywhere;
@@ -311,7 +310,6 @@
 .rates :global(.chip) {
   min-width: 3.5rem;
   justify-content: center;
-  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 

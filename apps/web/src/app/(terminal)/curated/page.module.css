@@ -6,14 +6,13 @@
   margin: 0;
   padding-left: 1.25rem;
   max-width: 70ch;
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
   line-height: 1.55;
   color: var(--ink-2);
   text-wrap: pretty;
 }
 
 .steps li::marker {
-  font-family: var(--font-mono);
   font-weight: 500;
   color: var(--ink-3);
 }

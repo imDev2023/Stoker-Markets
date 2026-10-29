@@ -20,8 +20,7 @@ export type NavLink = { href: string; label: string; also?: string };
 /**
  * The header's sections, in order (owner, 2026-10-25: the board's link reads "Explore"; "Curated" is the platform's
  * own approved launches, open to STOKER stakers, #118; Burns and Revenue sit under "Stats" (owner, 2026-10-25, renamed
- * from Ledger the same night; the Ledger stays the glossary's word for the public record), current on either page). The footer lists the pages themselves under "Site",
- * the launch link among them.
+ * from Ledger the same night; the Ledger stays the glossary's word for the public record), current on either page).
  */
 export const NAV_LINKS = [
   { href: "/coins", label: "Explore" },
@@ -33,36 +32,37 @@ export const NAV_LINKS = [
 
 /**
  * The API's reference is a page of the site (owner, 2026-10-25: everything on the page, no link out to the repository),
- * set last in the pill and the menu as "Developers" (owner, 2026-10-25), and under the footer's Developers group as "API".
+ * set last in the pill and the menu as "Developers" (owner, 2026-10-25), and in the footer as "API".
  */
 export const API_LINK = { href: "/api", label: "Developers" } as const satisfies NavLink;
 
-const SITE_PAGES = [
-  NAV_LINKS[0],
-  LAUNCH_LINK,
-  NAV_LINKS[1],
-  NAV_LINKS[2],
-  NAV_LINKS[3],
-  { href: "/burns", label: "Burns" },
-  { href: "/revenue", label: "Revenue" },
-  { href: "/announcements", label: "Announcements" },
+/** The legal pages (#131): drafts the owner approves before the site opens, linked from both footers. */
+export const LEGAL_LINKS = [
+  { href: "/terms", label: "Terms" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/risk", label: "Risk disclosure" },
+] as const satisfies readonly NavLink[];
+
+/**
+ * The landing's footer, grouped by audience (#131, after the research's footers): what a trader opens, what a creator
+ * opens, the platform's own records, and the legal pages with the contact. A Creator's earnings page is their own
+ * (owner, 2026-10-08): nothing links to it but the account menu, once the connected wallet has launched a coin.
+ */
+export const FOOTER_GROUPS = [
+  { title: "Trade", links: [NAV_LINKS[0], NAV_LINKS[2], NAV_LINKS[3]] },
+  { title: "Create", links: [LAUNCH_LINK, NAV_LINKS[1]] },
+  {
+    title: "Platform",
+    links: [
+      { href: "/revenue", label: "Revenue" },
+      { href: "/burns", label: "Burns" },
+      { href: "/announcements", label: "Announcements" },
+      { href: API_LINK.href, label: "API" },
+      SITE_LINKS.github,
+    ],
+  },
+  { title: "Legal", links: [...LEGAL_LINKS, { href: `mailto:${SITE_LINKS.email}`, label: "Contact" }] },
 ] as const;
 
-// A Creator's earnings page is their own (owner, 2026-10-08): nothing links to it but the account menu, once the
-// connected wallet has launched a coin.
-export const FOOTER_GROUPS = [
-  { title: "Site", links: SITE_PAGES },
-  {
-    title: "Creators",
-    links: [LAUNCH_LINK],
-  },
-  {
-    title: "Developers",
-    // The footer names the page itself, among the developers' links, where the pill names the audience.
-    links: [{ href: API_LINK.href, label: "API" }, SITE_LINKS.github],
-  },
-  {
-    title: "Community",
-    links: [SITE_LINKS.x, SITE_LINKS.telegram, { href: `mailto:${SITE_LINKS.email}`, label: SITE_LINKS.email }],
-  },
-] as const;
+/** The one-row footer of every terminal page: the developers' page and the legal pages, so the page ends with its data. */
+export const COMPACT_FOOTER_LINKS = [{ href: API_LINK.href, label: "API" }, ...LEGAL_LINKS] as const satisfies readonly NavLink[];

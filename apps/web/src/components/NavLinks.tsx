@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { API_LINK, NAV_LINKS, type NavLink } from "@/lib/site";
+import { API_LINK, LAUNCH_LINK, NAV_LINKS, type NavLink } from "@/lib/site";
 import styles from "./SiteHeader.module.css";
 
 const under = (href: string, pathname: string) => pathname === href || pathname.startsWith(`${href}/`) || (href === "/coins" && pathname.startsWith("/coin/"));
@@ -36,5 +36,23 @@ export function NavLinks() {
         </Link>
       ))}
     </nav>
+  );
+}
+
+/**
+ * The one filled action, marked current on the launch page (Baymard: the current place is marked in the navigation).
+ * Its words are "Stoke a coin"; a phone shows "Stoke" and keeps the rest as the button's name (`wordClassName`).
+ */
+export function LaunchLink({ className = "", wordClassName = "" }: { className?: string; wordClassName?: string }) {
+  const pathname = usePathname();
+  return (
+    <Link href={LAUNCH_LINK.href} className={`button button-primary ${className}`} aria-current={pathname === LAUNCH_LINK.href ? "page" : undefined}>
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+        <path d="M8 2.5v11M2.5 8h11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+      <span>
+        Stoke<span className={wordClassName}> a coin</span>
+      </span>
+    </Link>
   );
 }

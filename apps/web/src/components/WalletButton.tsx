@@ -6,6 +6,7 @@ import { WalletReadyState } from "@solana/wallet-adapter-base";
 import { useEffect, useRef, useState } from "react";
 import { listLaunches } from "@/lib/api";
 import { shortAddress } from "@/lib/format";
+import { SchemeToggle } from "./SchemeToggle";
 import styles from "./WalletButton.module.css";
 
 /** The wallet's glyph: a card with its clasp. */
@@ -21,8 +22,29 @@ function Glyph() {
   );
 }
 
-/** `inline` sits inside page content: it fills the width on phones, like the page's other main actions. */
-export function WalletButton({ variant = "header" }: { variant?: "header" | "inline" }) {
+/**
+ * A connected wallet's avatar: a disc whose two hues come from the address, so the same wallet looks the same on every
+ * visit and two wallets look different, with nothing fetched and nothing stored.
+ */
+export function Avatar({ address, size = 24 }: { address: string; size?: number }) {
+  let a = 0;
+  let b = 0;
+  for (let i = 0; i < address.length; i++) {
+    const c = address.charCodeAt(i);
+    if (i % 2 === 0) a = (a * 31 + c) % 360;
+    else b = (b * 37 + c) % 360;
+  }
+  const style = { width: size, height: size, background: `linear-gradient(135deg, hsl(${a} 70% 56%), hsl(${(a + 40 + (b % 80)) % 360} 72% 38%))` };
+  return <span className={styles.avatar} style={style} aria-hidden="true" />;
+}
+
+/**
+ * The account control. In the header it is the ghost beside the one filled action (`header`): "Connect wallet", or
+ * the wallet's avatar and short address once connected, each opening a menu that also holds the light-or-dark toggle
+ * (the toggle left the bar in #131; a preference used once lives in the account menu). `inline` sits inside page
+ * content as the action itself; `menu` fills the phone menu's foot as a ghost under the launch button.
+ */
+export function WalletButton({ variant = "header" }: { variant?: "header" | "inline" | "menu" }) {
   const { wallets, wallet, publicKey, connecting, select, connect, disconnect } = useWallet();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
@@ -68,9 +90,15 @@ export function WalletButton({ variant = "header" }: { variant?: "header" | "inl
     }
   }, [pending, wallet, publicKey, connect]);
 
-  const wrap = `${styles.wrap} ${styles[variant]}`;
-  // In the header the launch button is the one filled action, so connecting is a ghost there; inline it is the action.
-  const connectKind = variant === "header" ? "button-ghost" : "button-primary";
+  const wrap = `${styles.wrap} ${variant === "header" ? styles.header : variant === "inline" ? styles.inline : styles.inMenu}`;
+  // Inline the connection is the page's action; in the header and the phone menu it is a ghost beside the filled one.
+  const connectKind = variant === "inline" ? "button-primary" : "button-ghost";
+  // The toggle rides in the header's menus only: the phone menu shows it in its own foot.
+  const toggle = variant === "header" && (
+    <div className={styles.foot}>
+      <SchemeToggle variant="menu" />
+    </div>
+  );
 
   if (publicKey) {
     return (
@@ -82,8 +110,8 @@ export function WalletButton({ variant = "header" }: { variant?: "header" | "inl
           aria-expanded={open}
           title={wallet ? `Connected with ${wallet.adapter.name}` : undefined}
         >
-          <Glyph />
-          <span className="mono">{shortAddress(publicKey.toBase58())}</span>
+          <Avatar address={publicKey.toBase58()} />
+          <span className={`mono ${styles.address}`}>{shortAddress(publicKey.toBase58())}</span>
         </button>
         {open && (
           <div className={styles.menu} role="menu" aria-label={wallet ? `Connected with ${wallet.adapter.name}` : "Wallet"}>
@@ -95,6 +123,7 @@ export function WalletButton({ variant = "header" }: { variant?: "header" | "inl
             <button type="button" role="menuitem" onClick={() => { setOpen(false); void disconnect(); }}>
               Disconnect
             </button>
+            {toggle}
           </div>
         )}
       </div>
@@ -129,6 +158,7 @@ export function WalletButton({ variant = "header" }: { variant?: "header" | "inl
               </button>
             ))
           )}
+          {toggle}
         </div>
       )}
     </div>

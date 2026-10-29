@@ -13,7 +13,7 @@
 .empty {
   margin: 0;
   color: var(--ink-3);
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
 }
 
 /* Dense rows: figures in mono, a hairline between rows, the side told by a square of its colour. */
@@ -21,7 +21,7 @@
   width: 100%;
   border-collapse: collapse;
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   font-variant-numeric: tabular-nums slashed-zero;
 }
 
@@ -29,10 +29,9 @@
   padding: 0 8px 8px;
   border-bottom: 1px solid var(--line);
   color: var(--ink-3);
-  font-size: 0.6875rem;
+  font-family: var(--font-body);
+  font-size: var(--text-label);
   font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   text-align: left;
   white-space: nowrap;
 }
@@ -69,7 +68,7 @@
   color: var(--ink-2);
   text-decoration: none;
   border-bottom: 1px solid var(--line-strong);
-  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+  transition: color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
 }
 
 .table a:hover {
@@ -88,7 +87,7 @@
   content: "";
   width: 7px;
   height: 7px;
-  border-radius: 2px;
+  border-radius: var(--radius-pill);
 }
 
 .buy {
@@ -111,7 +110,7 @@
   padding: 7px 0;
   text-align: center;
   font-family: var(--font-body);
-  font-size: 0.75rem;
+  font-size: var(--text-label);
   font-weight: 600;
 }
 

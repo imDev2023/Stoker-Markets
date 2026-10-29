@@ -1,8 +1,5 @@
-/* The chart column stretches to the fixed column's height, the activity panel taking the room, so no canvas shows under it. */
+/* On the grid: the chart in eight columns, the fixed column in four; the chart column stretches to the fixed column's height, the activity panel taking the room, so no canvas shows under it. */
 .market {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
-  gap: 16px;
   align-items: stretch;
 }
 
@@ -53,10 +50,10 @@
   background: none;
   color: var(--ink-3);
   font: inherit;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   font-weight: 600;
   cursor: pointer;
-  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+  transition: color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
 }
 
 .tabBar button[aria-selected="true"] {
@@ -67,7 +64,7 @@
 .tabBar button:focus-visible {
   outline: none;
   box-shadow: var(--ring);
-  border-radius: 6px 6px 0 0;
+  border-radius: var(--radius-control) var(--radius-control) 0 0;
 }
 
 /* The tabbed panels drop their own card chrome: the tab panel is the card around them. */

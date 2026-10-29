@@ -29,13 +29,13 @@
 
 .name {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--text-body);
   color: var(--ink-2);
 }
 
 .note {
   margin: 2px 0 0;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   color: var(--ink-3);
   text-wrap: pretty;
 }
@@ -53,9 +53,9 @@
   margin: 0;
   padding: 10px 14px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: var(--surface-2);
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   color: var(--ink-2);
   text-wrap: pretty;
 }
@@ -83,7 +83,7 @@
 
 .facts dt,
 .addresses dt {
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   color: var(--ink-3);
 }
 
@@ -94,18 +94,18 @@
   flex-wrap: wrap;
   gap: 4px 10px;
   margin: 4px 0 0;
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
   font-weight: 500;
 }
 
 .facts dd :global(.mono),
 .addresses dd :global(.mono) {
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
   font-weight: 500;
 }
 
 .aside {
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   font-weight: 400;
   color: var(--ink-3);
 }
@@ -113,7 +113,7 @@
 .addresses a {
   text-decoration: none;
   border-bottom: 1px solid var(--line-strong);
-  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+  transition: color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
 }
 
 .addresses a:hover {
@@ -124,7 +124,7 @@
 .factLink {
   flex-basis: 100%;
   color: var(--accent);
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   font-weight: 600;
   text-decoration: none;
 }
@@ -148,7 +148,7 @@
 
 .cardNote {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   color: var(--ink-3);
   text-wrap: pretty;
 }
@@ -169,12 +169,10 @@
   margin: 0 -8px;
   padding: 0 8px;
   border-top: 1px solid var(--line);
-  border-radius: var(--radius-xs);
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
-  font-variant-numeric: tabular-nums;
+  border-radius: var(--radius-control);
+  font-size: var(--text-caption);
   text-decoration: none;
-  transition: background-color var(--fast) var(--ease);
+  transition: background-color var(--dur-fast) var(--ease-standard);
 }
 
 .coins li:first-child .coin {
@@ -191,7 +189,7 @@
 .coinImage {
   width: 22px;
   height: 22px;
-  border-radius: 5px;
+  border-radius: var(--radius-control);
   object-fit: cover;
   background: var(--sunken);
 }

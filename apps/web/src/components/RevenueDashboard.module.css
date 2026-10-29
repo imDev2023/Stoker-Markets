@@ -20,7 +20,7 @@
 
 .lede {
   margin: 0;
-  font-size: 1.0625rem;
+  font-size: var(--text-body);
   color: var(--ink-2);
   text-wrap: pretty;
 }
@@ -79,7 +79,7 @@
 .emptyCard p {
   margin: 0;
   max-width: 44ch;
-  font-size: 1.0625rem;
+  font-size: var(--text-body);
   color: var(--ink-2);
   text-wrap: pretty;
 }
@@ -90,7 +90,7 @@
 
 .muted {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
   line-height: 1.55;
   color: var(--ink-3);
   text-wrap: pretty;
@@ -117,14 +117,14 @@
   font-family: var(--font-display);
   font-stretch: 100%;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: var(--text-body);
   overflow-wrap: anywhere;
 }
 
 .name {
   min-width: 0;
   color: var(--ink-3);
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   overflow-wrap: anywhere;
 }
 
@@ -139,13 +139,13 @@
 
 .amountLabel {
   color: var(--ink-3);
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
 }
 
 /* Sized to the tile as well as the window: three tiles share the column at desktop width, and a figure in the hundreds of
    thousands (a coin a Fee Key pays in) must still sit on one line. */
 .amount :global(.mono) {
-  font-size: min(clamp(1.75rem, 1.4rem + 1.2vw, 2.25rem), 12cqi);
+  font-size: min(var(--text-figure-xl), 12cqi);
   font-weight: 500;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -158,7 +158,7 @@
   display: grid;
   gap: 6px;
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
 }
 
 .streams {
@@ -187,7 +187,7 @@
 }
 
 .streams dd:global(.mono) {
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
 }
 
 /* What went to Creators is the brand's moment on this page. */
@@ -209,7 +209,7 @@
 .subTitle {
   margin: 0;
   color: var(--ink-2);
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   font-weight: 600;
 }
 
@@ -217,7 +217,7 @@
   display: grid;
   gap: 6px;
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
 }
 
 .swept > div {
@@ -237,12 +237,12 @@
 }
 
 .swept dd:global(.mono) {
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
 }
 
 .explain {
   gap: 12px;
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
 }
 
 .explain dt {
@@ -257,7 +257,7 @@
 
 .wallets {
   gap: 10px;
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
 }
 
 .wallets dd {
@@ -269,7 +269,7 @@
 .wallets a {
   text-decoration: none;
   border-bottom: 1px solid var(--line-strong);
-  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+  transition: color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
 }
 
 .wallets a:hover {
@@ -280,17 +280,15 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
 }
 
 .table th {
   padding: 0 8px 8px;
   border-bottom: 1px solid var(--line);
   color: var(--ink-3);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: var(--text-label);
+  font-weight: 500;
   text-align: left;
   white-space: nowrap;
 }
@@ -302,13 +300,13 @@
 }
 
 .table td:global(.mono) {
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
 }
 
 .table tbody th {
   border-bottom: 0;
   color: var(--ink);
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
@@ -345,7 +343,7 @@
 }
 
 .table td.ticker {
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
 }
 
 @media (max-width: 900px) {

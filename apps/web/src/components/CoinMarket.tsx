@@ -91,8 +91,8 @@ export function CoinMarket({
   }
 
   return (
-    <div className={styles.market}>
-      <div className={styles.main}>
+    <div className={`grid ${styles.market}`}>
+      <div className={`col-8 ${styles.main}`}>
         <div className={styles.chart}>
           <PriceChart data={candles} interval={candleInterval} onIntervalChange={changeInterval} price={price} quote={quote} />
         </div>
@@ -111,7 +111,7 @@ export function CoinMarket({
           </div>
         </div>
       </div>
-      <div className={styles.side}>
+      <div className={`col-4 ${styles.side}`}>
         <div className={styles.aside}>{aside}</div>
         <div className={styles.progress}>
           <CurveProgress launch={launch} platform={platform} />

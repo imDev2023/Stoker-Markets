@@ -1,4 +1,4 @@
-/* The foot of every page: a well under a hairline, the site's own pages and where to find us. */
+/* The landing's foot: a well under a hairline, the brand in four columns and the groups in eight, then the addresses and the disclaimer. */
 .footer {
   margin-top: 64px;
   border-top: 1px solid var(--line);
@@ -6,9 +6,7 @@
 }
 
 .inner {
-  display: grid;
-  grid-template-columns: minmax(220px, 1.2fr) 3fr;
-  gap: 40px;
+  row-gap: 32px;
   padding-top: 48px;
   padding-bottom: 32px;
 }
@@ -20,29 +18,33 @@
   gap: 14px;
 }
 
-.wordmark {
+.wordmark,
+.lockup {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 7px;
   font-family: var(--font-display);
   font-stretch: 100%;
   font-weight: 800;
-  font-size: 1.25rem;
-  letter-spacing: 0;
+  letter-spacing: -0.01em;
   text-decoration: none;
 }
 
+.wordmark {
+  font-size: var(--wordmark);
+}
+
 .mark {
+  flex: none;
   width: 28px;
   height: 28px;
-  border-radius: 7px;
 }
 
 .tagline {
   margin: 0;
-  max-width: 28ch;
+  max-width: 30ch;
   color: var(--ink-2);
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
   line-height: 1.5;
 }
 
@@ -52,14 +54,13 @@
   gap: 24px;
 }
 
+/* A group's heading: the UI sans, sentence case, a step darker than its links. */
 .title {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   font-family: var(--font-body);
-  font-size: 0.75rem;
+  font-size: var(--text-caption);
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-3);
+  color: var(--ink);
 }
 
 .list {
@@ -71,42 +72,151 @@
   gap: 8px;
 }
 
-.list a {
+.list a,
+.links a {
   color: var(--ink-2);
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
   text-decoration: none;
   overflow-wrap: anywhere;
-  transition: color var(--fast) var(--ease);
+  transition: color var(--dur-fast) var(--ease-standard);
 }
 
-.list a:hover {
+.list a:hover,
+.links a:hover {
   color: var(--accent);
 }
 
-.legal {
-  grid-column: 1 / -1;
-  margin-top: 8px;
-  padding-top: 20px;
+/* The status: a dot in the direction colour and the network, in the caption step. */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-caption);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+}
+
+.online {
+  background: var(--up);
+  box-shadow: 0 0 0 3px var(--up-bg);
+}
+
+.offline {
+  background: var(--down);
+  box-shadow: 0 0 0 3px var(--down-bg);
+}
+
+/* The addresses as a definition list in a row, the label a step lighter than its value. */
+.chain {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin: 0;
+  padding-top: 24px;
   border-top: 1px solid var(--line);
+}
+
+.chain div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.chain dt {
+  font-size: var(--text-caption);
   color: var(--ink-3);
-  font-size: 0.8125rem;
+}
+
+.chain dd {
+  margin: 0;
+}
+
+.chain a {
+  color: var(--ink-2);
+  text-decoration: none;
+}
+
+.chain a:hover {
+  color: var(--accent);
+}
+
+/* The disclaimer at the caption step, opening with its one bold sentence in the ink. */
+.legal {
+  color: var(--ink-3);
+  font-size: var(--text-caption);
   line-height: 1.5;
 }
 
 .legal p {
-  margin: 0 0 6px;
+  margin: 0;
+  max-width: 100ch;
 }
 
-.cluster {
-  font-family: var(--font-mono);
-  color: var(--accent-strong);
+.legal strong,
+.line strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.legal a,
+.line a {
+  color: var(--accent);
+}
+
+/* The terminal's foot: one row on the well, the lockup small, the links, the socials and the status; the risk line wraps under them when the row is full. */
+.compact {
+  margin-top: 48px;
+  border-top: 1px solid var(--line);
+  background: var(--sunken);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 24px;
+  min-height: 56px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.lockup {
+  font-size: var(--text-body);
+}
+
+.markSmall {
+  flex: none;
+  width: 22px;
+  height: 22px;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+}
+
+.line {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--ink-3);
+}
+
+@media (min-width: 1100px) {
+  .line {
+    flex: 1 1 auto;
+    text-align: right;
+  }
 }
 
 @media (max-width: 880px) {
-  .inner {
-    grid-template-columns: 1fr;
-    gap: 32px;
-  }
   .groups {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

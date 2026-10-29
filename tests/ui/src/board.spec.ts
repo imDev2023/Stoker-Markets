@@ -236,14 +236,23 @@ test("the header's toggle switches light and dark and the choice holds", async (
   await page.goto("/coins");
   const html = page.locator("html");
   const ground = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  // The toggle is a row of the account menu (#131): open the menu from the header's wallet button (a click before hydration does nothing, so until the row shows), then flip.
+  const flip = async (name: string) => {
+    const row = page.getByRole("menuitem", { name });
+    await expect(async () => {
+      if (!(await row.isVisible())) await page.getByRole("banner").getByRole("button", { name: "Connect wallet" }).click();
+      await expect(row).toBeVisible({ timeout: 1_000 });
+    }).toPass({ timeout: 30_000 });
+    await row.click();
+  };
   // The flows run in light; the toggle offers dark, applies it at once and keeps it across a reload (a cookie the layout reads).
   const before = await ground();
-  await page.getByRole("button", { name: "Switch to dark mode" }).click();
+  await flip("Switch to dark mode");
   await expect(html).toHaveAttribute("data-scheme", "dark");
   expect(await ground()).not.toBe(before);
   await page.reload();
   await expect(html).toHaveAttribute("data-scheme", "dark");
-  await page.getByRole("button", { name: "Switch to light mode" }).click();
+  await flip("Switch to light mode");
   await expect(html).toHaveAttribute("data-scheme", "light");
   expect(await ground()).toBe(before);
 });
