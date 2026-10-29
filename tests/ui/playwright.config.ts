@@ -37,5 +37,6 @@ export default defineConfig({
   // Baselines are rendered per platform: fonts rasterise differently on macOS and Linux.
   snapshotPathTemplate: "{testDir}/../screenshots/{platform}/{projectName}/{arg}{ext}",
   reporter: [["list"], ["html", { open: "never" }]],
-  use: { trace: "retain-on-failure", screenshot: "only-on-failure" },
+  // Motion is stilled: a baseline must not depend on where a cycle stands (the landing's pair cycle holds its first asset).
+  use: { trace: "retain-on-failure", screenshot: "only-on-failure", reducedMotion: "reduce" },
 });

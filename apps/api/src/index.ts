@@ -29,6 +29,7 @@ import { quotes } from "./routes/quotes";
 import { launchRoutes } from "./routes/launches";
 import { launchModeRoutes, operatorAirdropRoutes } from "./routes/launchModes";
 import { operatorRegionRoutes, regionRoutes } from "./routes/region";
+import { statsRoutes } from "./routes/stats";
 import { copyRoutes } from "./routes/copies";
 import { checkCopies, firstCopy } from "./copies/check";
 import { imageHash } from "./copies/imageHash";
@@ -228,6 +229,7 @@ app.route("/v1", burnRoutes);
 app.route("/v1", announcementRoutes);
 app.route("/v1", keyRoutes);
 app.route("/v1", regionRoutes);
+app.route("/v1", statsRoutes);
 
 /** Every operator endpoint needs the operator token. */
 app.use("/v1/operator/*", async (c, next) => {

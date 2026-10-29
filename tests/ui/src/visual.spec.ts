@@ -75,7 +75,8 @@ async function mintOf(name: string) {
 test("home", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "No one picks your pair. You do." })).toBeVisible();
-  await expect(page.getByRole("list", { name: "Trending coins" }).getByRole("link").first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Most traded today" })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Most traded today" }).last().getByRole("link").first()).toBeVisible();
   await expect(page.locator("ul li img").first()).toHaveJSProperty("complete", true);
   await snap(page, "home.png");
 });

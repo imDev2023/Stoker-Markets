@@ -1,28 +1,43 @@
 .stats {
-  padding-bottom: clamp(48px, 6vw, 80px);
+  padding-bottom: clamp(56px, 7vw, 96px);
 }
 
-/* As many cards as there are figures with something behind them: the row fills whatever it has. */
-.list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+/* One row: as many figures as have something behind them, a hairline between each. */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px 0;
   margin: 0;
 }
 
-/* The value above its label, as a figure is read; the dl keeps the pair together for a screen reader. */
 .stat {
   display: flex;
   flex-direction: column-reverse;
   justify-content: flex-end;
-  gap: 10px;
-  padding: 24px;
+  gap: 8px;
+  flex: 1 1 180px;
   min-width: 0;
+  padding: 4px 28px 4px 0;
 }
 
+.stat + .stat {
+  padding-left: 28px;
+  border-left: 1px solid var(--line);
+}
+
+/* The value above its label, as a figure is read; the dl keeps the pair together for a screen reader. */
 .value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.unit {
+  font-size: var(--text-ui);
+  font-weight: 600;
+  color: var(--ink-2);
 }
 
 .label {
@@ -31,12 +46,25 @@
   color: var(--ink-2);
 }
 
+.since {
+  margin: 20px 0 0;
+  color: var(--ink-3);
+}
+
 @media (max-width: 860px) {
-  .list {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 12px;
+  .row {
+    gap: 20px 0;
   }
   .stat {
-    padding: 20px;
+    flex-basis: 45%;
+    padding-right: 16px;
+  }
+  /* Two a row on a phone: the hairline marks the second of each pair only. */
+  .stat + .stat {
+    padding-left: 16px;
+  }
+  .stat:nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
   }
 }
