@@ -1,26 +1,34 @@
+import { formatUtcDay } from "@/lib/format";
 import styles from "./Stats.module.css";
 
-/** A figure for the row; null while there is nothing behind it, and the row leaves it out rather than headline a zero. */
-export type Figure = { value: string | null; label: string; heat?: boolean };
+/** A figure for the strip; null while there is nothing behind it, and the strip leaves it out rather than headline a zero. */
+export type Figure = { value: string | null; unit?: string; label: string; heat?: boolean };
 
 /**
- * The landing's figures as a bento of raised cards: what the platform has done so far, each one read from the API at
- * render, the value in figure-xl mono over its label, and the money moving to Creators in the heat. A figure still
- * at zero is left out (#131): the row shows what has happened, never what has not.
+ * The landing's figures as one row on the canvas (#133): each value in figure-xl mono with its unit beside it and its
+ * label under, hairlines between, the money moving to Creators in the heat. Only figures with something behind them
+ * (#131), so a new platform shows its assets alone and the row grows as the platform does; the line under it dates the
+ * figures from the first launch.
  */
-export function Stats({ figures }: { figures: Figure[] }) {
+export function Stats({ figures, since }: { figures: Figure[]; since: string | null }) {
   const shown = figures.filter((f): f is Figure & { value: string } => f.value !== null);
   if (shown.length === 0) return null;
   return (
     <section className={`shell ${styles.stats}`} aria-label="Figures">
-      <dl className={styles.list}>
+      <dl className={styles.row}>
         {shown.map((f) => (
-          <div key={f.label} className={`card card-raised ${styles.stat}`}>
+          <div key={f.label} className={styles.stat}>
             <dt className={styles.label}>{f.label}</dt>
-            <dd className={`t-figure-xl ${styles.value} ${f.heat ? "heat-text" : ""}`}>{f.value}</dd>
+            <dd className={styles.value}>
+              <span className={`t-figure-xl ${styles.figure} ${f.heat ? "heat-text" : ""}`}>{f.value}</span>
+              {f.unit && <span className={styles.unit}>{f.unit}</span>}
+            </dd>
           </div>
         ))}
       </dl>
+      <p className={`t-caption ${styles.since}`} data-since>
+        Live from the chain{since && <>, since <time dateTime={since}>{formatUtcDay(since.slice(0, 10))}</time></>}.
+      </p>
     </section>
   );
 }

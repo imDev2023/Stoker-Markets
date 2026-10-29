@@ -2,22 +2,11 @@ import Link from "next/link";
 import type { LaunchSummary } from "@launchpad/contract";
 import { formatMarketValue } from "@/lib/board";
 import { quoteTicker } from "@/lib/format";
-import { LAUNCH_LINK } from "@/lib/site";
+import { Change } from "./Change";
 import { CoinImage } from "./CoinImage";
-import { EmptyState } from "./EmptyState";
 import { PairMark } from "./PairMark";
 import { Price } from "./Price";
 import styles from "./Trending.module.css";
-
-/** Where each chip takes a visitor: the board, sorted by what trades most, narrowed to one kind of pairing. */
-const CHIPS = [
-  { label: "All", href: "/coins?sort=trending" },
-  { label: "xStocks", href: "/coins?sort=trending&issuer=xstocks" },
-  { label: "PreStocks", href: "/coins?sort=trending&issuer=prestocks" },
-  { label: "Backpack", href: "/coins?sort=trending&issuer=backpack" },
-  { label: "Currencies", href: "/coins?sort=trending&category=stablecoin" },
-  { label: "Solana", href: "/coins?sort=trending&category=sol" },
-] as const;
 
 /** How far the curve is toward its Graduation Target, as a whole percentage; a sold-out curve is done. */
 function progressOf(launch: LaunchSummary) {
@@ -26,38 +15,40 @@ function progressOf(launch: LaunchSummary) {
   return target === 0n ? 0 : Math.min(100, Number((BigInt(launch.curve.raised) * 1000n) / target) / 10);
 }
 
+/**
+ * One coin as a card (#133, after the research): the image with its fallback, the pair mark and the name, the price with
+ * the day's change, the curve as the one thing drawn, and the day's volume; every card the same rows, so a grid of six
+ * lines up. The pair is said once, by the mark.
+ */
 function CoinCard({ launch }: { launch: LaunchSummary }) {
   const quote = quoteTicker(launch.quote);
   const pct = progressOf(launch);
   const live = launch.curve.status === "live";
   return (
-    <li>
+    <li className={styles.item}>
       <Link href={`/coin/${launch.mint}`} className={`card card-raised ${styles.card}`}>
         <div className={styles.top}>
-          <CoinImage src={launch.image} symbol={launch.symbol} size={44} className={styles.image} loading="lazy" />
+          <CoinImage src={launch.image} symbol={launch.symbol} size={44} className={styles.image} />
           <div className={styles.titles}>
-            <PairMark base={launch.symbol} quote={quote} size="sm" />
+            <span className={styles.pairBox}><PairMark base={launch.symbol} quote={quote} size="md" /></span>
             <span className={styles.name}>{launch.name}</span>
           </div>
-          <span className={`tag ${launch.quote.category === "tokenized_stock" ? "tag-accent" : ""} ${styles.pair}`}>Paired with {quote}</span>
         </div>
         <div className={styles.row}>
           <span className={`t-figure ${styles.price}`}>{launch.market.price === null ? "-" : <><Price value={launch.market.price} /> {quote}</>}</span>
-          <span className={styles.meta}>{launch.market.marketCap ? `${formatMarketValue(launch.market.marketCap, launch.quote)} market cap` : "no trades yet"}</span>
+          <Change value={launch.market.change24h} />
         </div>
-        {live ? (
-          <>
-            <span className={styles.track} aria-hidden>
-              {pct > 0 && <span className={styles.fill} style={{ width: `${pct}%` }} />}
-            </span>
-            <span className={styles.meta}>{pct.toFixed(pct > 0 && pct < 10 ? 1 : 0)}% of the way to graduation</span>
-          </>
-        ) : (
-          <span className={styles.meta}>{launch.curve.status === "graduating" ? "Sold out, graduating" : "Graduated: trading in its Raydium pool"}</span>
-        )}
+        <div className={styles.curve}>
+          <span className={styles.track} aria-hidden>
+            <span className={styles.fill} style={{ width: `${pct}%` }} />
+          </span>
+          <span className={styles.meta}>
+            {live ? `${pct.toFixed(pct > 0 && pct < 10 ? 1 : 0)}% of the way to graduation` : launch.curve.status === "graduating" ? "Sold out, graduating" : "Graduated, in its Raydium pool"}
+          </span>
+        </div>
         <div className={styles.row}>
           <span className={styles.meta}>{formatMarketValue(launch.market.volume24h, launch.quote)} traded today</span>
-          {launch.rewardTax && <span className="tag tag-caution">Reward launch, {launch.rewardTax.bps / 100}% to holders</span>}
+          {launch.rewardTax && <span className="tag tag-caution">{launch.rewardTax.bps / 100}% to holders</span>}
         </div>
       </Link>
     </li>
@@ -65,33 +56,22 @@ function CoinCard({ launch }: { launch: LaunchSummary }) {
 }
 
 /**
- * The landing's coins: the six that trade most, as cards a visitor could tap on a phone; the dense board is one tap
- * away. With nothing launched yet it invites the first launch (the one EmptyState), since a new platform is judged on
- * this view and an empty state is designed, never a sentence in a box.
+ * The coins that trade most today, named as the fact it is (#133): six cards in a 3x2 grid at a desktop, a row that
+ * scrolls sideways on a phone, and the board one tap away; no filter here, which is the board's. Rendered only once
+ * there is something to show: with nothing launched the page's invitation stands in its place.
  */
 export function Trending({ launches }: { launches: LaunchSummary[] }) {
   return (
     <section className={`shell ${styles.section}`} aria-labelledby="trending-title">
       <div className={styles.head}>
-        <h2 id="trending-title" className={`t-h2 ${styles.title}`}>Trending now</h2>
-        <nav className={styles.chips} aria-label="Paired with">
-          {CHIPS.map((c, i) => (
-            <Link key={c.label} href={c.href} className="chip" aria-current={i === 0 ? "true" : undefined}>{c.label}</Link>
-          ))}
-        </nav>
-        <Link href="/coins" className={styles.all}>Every coin</Link>
+        <h2 id="trending-title" className={`t-h2 ${styles.title}`}>Most traded today</h2>
+        <Link href="/coins?sort=trending" className={styles.all}>Every coin <span aria-hidden>→</span></Link>
       </div>
-      {launches.length === 0 ? (
-        <EmptyState title="Be the first to stoke a coin" action={<Link href={LAUNCH_LINK.href} className="button button-primary button-lg">{LAUNCH_LINK.label}</Link>}>
-          Nothing has launched yet. Pair a coin with any asset Raydium quotes and open the board.
-        </EmptyState>
-      ) : (
-        <ul className={styles.grid} aria-label="Trending coins">
-          {launches.map((l) => (
-            <CoinCard key={l.mint} launch={l} />
-          ))}
-        </ul>
-      )}
+      <ul className={styles.grid} aria-label="Most traded today" data-scrolls>
+        {launches.map((l) => (
+          <CoinCard key={l.mint} launch={l} />
+        ))}
+      </ul>
     </section>
   );
 }

@@ -1,0 +1,156 @@
+.ideas {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(56px, 7vw, 96px);
+  padding-bottom: clamp(64px, 8vw, 112px);
+}
+
+.idea {
+  align-items: center;
+}
+
+/* The text and the visual swap sides on every other idea; on a phone the text comes first in every one. */
+.flip .text {
+  order: 2;
+}
+
+.flip .visual {
+  order: 1;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+}
+
+.body {
+  margin: 0;
+  max-width: 54ch;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.link {
+  color: var(--accent);
+  font-size: var(--text-ui);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.visual {
+  min-width: 0;
+}
+
+/* The pair's visual: three pairs, each the brand's coin against one asset, the asset's logo and kind beside. */
+.pairs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pairRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.pairRow:first-child {
+  border-top: 1px solid var(--line);
+}
+
+.pairBox {
+  display: block;
+  min-width: 0;
+}
+
+.pairKind {
+  font-size: var(--text-caption);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* The Creator's cut: the one figure, in the heat, with its line and the exact split under it. */
+.cut {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+}
+
+.cutFigure {
+  line-height: 1;
+}
+
+.cutLabel {
+  font-size: var(--text-lede);
+  color: var(--ink);
+}
+
+.cutNote {
+  color: var(--ink-3);
+  max-width: 40ch;
+}
+
+/* The trust layer: four facts as small cards in two columns. */
+.facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 18px;
+  min-width: 0;
+}
+
+.factTitle {
+  font-size: var(--text-ui);
+  font-weight: 600;
+}
+
+.factText {
+  font-size: var(--text-caption);
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+@media (max-width: 640px) {
+  .flip .text {
+    order: 1;
+  }
+  .flip .visual {
+    order: 2;
+  }
+  .idea {
+    row-gap: 24px;
+  }
+  .facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

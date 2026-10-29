@@ -249,10 +249,11 @@ test("the header's toggle switches light and dark and the choice holds", async (
   const before = await ground();
   await flip("Switch to dark mode");
   await expect(html).toHaveAttribute("data-scheme", "dark");
-  expect(await ground()).not.toBe(before);
+  // The ground transitions to the new colour: polled, since right after the attribute flips a transition still sits at its start.
+  await expect.poll(ground).not.toBe(before);
   await page.reload();
   await expect(html).toHaveAttribute("data-scheme", "dark");
   await flip("Switch to light mode");
   await expect(html).toHaveAttribute("data-scheme", "light");
-  expect(await ground()).toBe(before);
+  await expect.poll(ground).toBe(before);
 });

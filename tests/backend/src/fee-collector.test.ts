@@ -498,7 +498,9 @@ describe("the operator's view of the job", () => {
   it("lists every run with what it did, and nothing left pending", async () => {
     const { runs, pending } = await jobRuns();
     expect(runs.length).toBeGreaterThan(5);
-    expect(runs.every((r) => r.job === "fee-collector" && ["succeeded", "skipped"].includes(r.status))).toBe(true);
+    // operator.test.ts makes one run fail on purpose (`?fail=simulated`), and the files run in any order.
+    const simulated = (r: JobRun) => r.status === "failed" && r.error === "failure simulated by the operator";
+    expect(runs.every((r) => r.job === "fee-collector" && (["succeeded", "skipped"].includes(r.status) || simulated(r)))).toBe(true);
     expect(pending).toEqual([]);
   });
 });

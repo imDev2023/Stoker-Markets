@@ -4,10 +4,14 @@ import { expect, expectHydrated, expectNoHorizontalOverflow, test } from "./fixt
 test("the empty landing invites the first launch", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "No one picks your pair. You do." })).toBeVisible();
-  // The card beside the slogan and the figures are live even before the first coin: the registry has its assets.
-  await expect(page.getByRole("heading", { name: /^Priced in any of \d+ assets$/ })).toBeVisible();
-  await expect(page.getByText("assets to pair with")).toBeVisible();
-  await expect(page.getByText("Be the first to stoke a coin")).toBeVisible();
+  // The proof row and the figures are live even before the first coin: the registry has its assets. With nothing launched
+  // the hero's rows give way to the pair cycle, and the invitation stands where the most traded coins will.
+  await expect(page.getByRole("list", { name: "Pairs from" }).getByRole("listitem").first()).toBeVisible();
+  // The labels whole and exact: the footer's risk sentence also says "coins launched".
+  await expect(page.getByText("assets to pair with", { exact: true })).toBeVisible();
+  await expect(page.getByText("coins launched", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Most traded today" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Be the first to stoke a coin" })).toBeVisible();
   await expectNoHorizontalOverflow(page);
   await expectHydrated(page);
   await expect(page).toHaveScreenshot("home-empty.png", { fullPage: true });

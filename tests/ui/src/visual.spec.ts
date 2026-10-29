@@ -52,7 +52,13 @@ async function snap(page: Page, name: string, mask = dynamic) {
       window.scrollTo(0, y);
       await new Promise((r) => requestAnimationFrame(r));
     }
-    await Promise.all([...document.images].map((img) => img.decode().catch(() => undefined)));
+    // Only images within the page's width: one hidden sideways in a scrolling row never loads without a sideways scroll,
+    // and its decode would wait forever (the landing's trending row on a phone, 2026-10-29).
+    const within = (img: HTMLImageElement) => {
+      const r = img.getBoundingClientRect();
+      return r.right > 0 && r.left < window.innerWidth;
+    };
+    await Promise.all([...document.images].filter(within).map((img) => img.decode().catch(() => undefined)));
   });
   // Hydrated before the shot, so the caret Playwright hides is on a field React already holds; the truncation check
   // then polls past the font swaps, so the overflow check after it sees the finished layout.
@@ -75,7 +81,8 @@ async function mintOf(name: string) {
 test("home", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "No one picks your pair. You do." })).toBeVisible();
-  await expect(page.getByRole("list", { name: "Trending coins" }).getByRole("link").first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Most traded today" })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Most traded today" }).last().getByRole("link").first()).toBeVisible();
   await expect(page.locator("ul li img").first()).toHaveJSProperty("complete", true);
   await snap(page, "home.png");
 });

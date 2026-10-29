@@ -1,6 +1,6 @@
 import {
   API_KEY_HEADER, AirdropStatus, ApiError, ApiKeyList, BurnsPage, CandleList, CoinRewards, CopyCheck, CreatorEarnings, CreatorForwardList, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
-  HolderList, IssuedApiKey, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PreparedAirdrop,
+  HolderList, IssuedApiKey, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PlatformStats, PreparedAirdrop,
   PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAsset, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, TradeList,
   Region, RegionGatesView, TradeQuote, WalletRewards,
   type AnnounceFeeChange, type CandleInterval, type CreateApiKey, type CurveStatus, type LaunchSort, type PrepareTradeRequest,
@@ -183,6 +183,11 @@ export async function getCoinRewards(mint: string): Promise<CoinRewards | null> 
 /** Burn and Flywheel: shares, rule, budgets and every buy and burn so far. */
 export async function getBurns() {
   return read(await apiFetch(`${API_URL}/v1/burns`, { cache: "no-store" }), BurnsPage);
+}
+
+/** The platform's figures in one read: what has launched here since the first coin, and the last day's volume (#133). */
+export async function getStats() {
+  return read(await apiFetch(`${API_URL}/v1/stats`, { cache: "no-store" }), PlatformStats);
 }
 
 export async function getRewardRules() {

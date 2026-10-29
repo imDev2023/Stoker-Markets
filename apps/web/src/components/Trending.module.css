@@ -1,10 +1,11 @@
 .section {
-  padding-bottom: clamp(64px, 8vw, 96px);
+  padding-bottom: clamp(64px, 8vw, 112px);
 }
 
 .head {
   display: flex;
-  align-items: center;
+  align-items: baseline;
+  justify-content: space-between;
   gap: 20px;
   flex-wrap: wrap;
   margin-bottom: 20px;
@@ -14,14 +15,7 @@
   margin: 0;
 }
 
-.chips {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
 .all {
-  margin-left: auto;
   font-size: var(--text-ui);
   font-weight: 600;
   color: var(--accent);
@@ -34,7 +28,13 @@
   text-underline-offset: 3px;
 }
 
+/*
+  The list is its own containing block: the cards' visually-hidden spans (a pair's spoken form, a full price) are
+  absolutely positioned, and in the phone's scrolling row they would otherwise sit against the page at their scrolled
+  positions and widen it by a pixel each, far past the edge (found on the candidate shots, 2026-10-29).
+*/
 .grid {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
@@ -43,13 +43,18 @@
   list-style: none;
 }
 
-/* A coin as a card: a raised card that lifts a step on hover. */
+.item {
+  min-width: 0;
+}
+
+/* A coin as a card: the same rows on every card, a raised card that lifts a step on hover. */
 .card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   height: 100%;
   padding: 20px;
+  color: inherit;
   text-decoration: none;
   min-width: 0;
   transition: border-color var(--dur-base) var(--ease-standard), box-shadow var(--dur-base) var(--ease-standard), transform var(--dur-base) var(--ease-standard);
@@ -79,40 +84,44 @@
   flex: none;
   width: 44px;
   height: 44px;
-  border-radius: var(--radius-card);
+  border-radius: calc(var(--radius-card) - 4px);
   object-fit: cover;
-  background: var(--sunken);
 }
 
+/* The titles take the row's remaining width, so the pair mark's box is the column and never its own width: fitted to a box no wider than itself, a short pair shrank by a varying hair (the phone home baseline, 2026-10-29). */
 .titles {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
 }
 
-.name {
-  font-size: var(--text-ui);
-  color: var(--ink-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.pairBox {
+  display: block;
+  min-width: 0;
 }
 
-.pair {
-  margin-left: auto;
+.name {
+  min-width: 0;
+  font-size: var(--text-caption);
+  line-height: 1.3;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
 }
 
 .row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
-  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .price {
-  font-size: var(--text-body);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .meta {
@@ -120,7 +129,13 @@
   color: var(--ink-2);
 }
 
-/* The curve's progress as a heat bar, the one thing drawn on the card. */
+/* The curve's progress as a heat bar, the one thing drawn on the card, with its figure under it. */
+.curve {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .track {
   display: block;
   height: 6px;
@@ -137,37 +152,28 @@
   background: var(--heat);
 }
 
-/* The invitation: the ring at size, one line and the action. */
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
-  padding: clamp(40px, 7vw, 72px) 20px;
-  text-align: center;
-}
-
-.ring {
-  margin-bottom: 6px;
-}
-
-.empty p {
-  margin: 0;
-  font-size: var(--text-body);
-  color: var(--ink-2);
-}
-
-@media (max-width: 860px) {
+@media (max-width: 1000px) {
   .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .all {
-    margin-left: 0;
-  }
 }
 
-@media (max-width: 560px) {
+/* A phone: one row that scrolls sideways, each card most of the width, snapping card by card; the page itself never scrolls sideways. */
+@media (max-width: 640px) {
   .grid {
-    grid-template-columns: minmax(0, 1fr);
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    margin: 0 calc(-1 * var(--gutter));
+    padding: 0 var(--gutter) 8px;
+  }
+  .grid::-webkit-scrollbar {
+    display: none;
+  }
+  .item {
+    flex: 0 0 82%;
+    scroll-snap-align: start;
   }
 }
