@@ -28,7 +28,7 @@ function CoinCard({ launch }: { launch: LaunchSummary }) {
     <li className={styles.item}>
       <Link href={`/coin/${launch.mint}`} className={`card card-raised ${styles.card}`}>
         <div className={styles.top}>
-          <CoinImage src={launch.image} symbol={launch.symbol} size={44} className={styles.image} loading="lazy" />
+          <CoinImage src={launch.image} symbol={launch.symbol} size={44} className={styles.image} />
           <div className={styles.titles}>
             <span className={styles.pairBox}><PairMark base={launch.symbol} quote={quote} size="md" /></span>
             <span className={styles.name}>{launch.name}</span>

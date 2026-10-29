@@ -20,13 +20,13 @@ export function Stats({ figures, since }: { figures: Figure[]; since: string | n
           <div key={f.label} className={styles.stat}>
             <dt className={styles.label}>{f.label}</dt>
             <dd className={styles.value}>
-              <span className={`t-figure-xl ${f.heat ? "heat-text" : ""}`}>{f.value}</span>
+              <span className={`t-figure-xl ${styles.figure} ${f.heat ? "heat-text" : ""}`}>{f.value}</span>
               {f.unit && <span className={styles.unit}>{f.unit}</span>}
             </dd>
           </div>
         ))}
       </dl>
-      <p className={`t-caption ${styles.since}`}>
+      <p className={`t-caption ${styles.since}`} data-since>
         Live from the chain{since && <>, since <time dateTime={since}>{formatUtcDay(since.slice(0, 10))}</time></>}.
       </p>
     </section>

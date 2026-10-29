@@ -87,9 +87,9 @@ export function sumInSol(entries: { asset: { mint: string; decimals: number }; a
   return sol;
 }
 
-/** A SOL amount for a headline figure, without its unit: whole SOL with a thousands separator, two decimals under ten, compact above a million. */
+/** A SOL amount for a headline figure, without its unit: two decimals under ten, whole SOL to 9,999, compact from there (12.3K), so a figure is never more than five characters. */
 export function formatSolFigure(sol: number) {
-  if (sol >= 1_000_000) return sol.toLocaleString("en-US", { notation: "compact", maximumSignificantDigits: 3 });
+  if (sol >= 10_000) return sol.toLocaleString("en-US", { notation: "compact", maximumSignificantDigits: 3 });
   return sol.toLocaleString("en-US", { maximumFractionDigits: sol < 10 ? 2 : 0 });
 }
 

@@ -37,7 +37,7 @@ export function Proof({ quotes }: { quotes: QuoteAsset[] }) {
                 <li key={i.issuer}>
                   <Link href="/assets" className={styles.issuer}>
                     <span className={styles.issuerName}>{i.label}</span>
-                    <span className={styles.issuerCount}>{i.stocks.toLocaleString("en-US")} stocks</span>
+                    <span className={styles.issuerCount}>{i.stocks.toLocaleString("en-US")} {i.stocks === 1 ? "stock" : "stocks"}</span>
                   </Link>
                 </li>
               ))}

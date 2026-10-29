@@ -9,16 +9,18 @@ const LOOKS = [
 ] as const;
 
 const chrome = devices["Desktop Chrome"];
+/** The projects that take screenshots run with motion stilled: a baseline must not depend on where a cycle stands (the landing's pair cycle holds its first asset). */
+const still = { reducedMotion: "reduce" } as const;
 
 /**
  * One stack serves every project, so projects run in an order that keeps what each one sees deterministic:
  * the empty board first, then the behaviour flows (which launch and trade coins), then a fixed board is seeded, then the visuals.
  */
 const projects: Project[] = [
-  ...LOOKS.map((l) => ({ name: `empty-${l.name}`, testMatch: "empty.spec.ts", use: { ...chrome, ...l } })),
+  ...LOOKS.map((l) => ({ name: `empty-${l.name}`, testMatch: "empty.spec.ts", use: { ...chrome, ...l, ...still } })),
   { name: "flows", testMatch: /(flows|trading|pairing|graduation|board|assets|launchModes|rewards|pay-with-sol|operator|labels|serverKey|pages|copies)\.spec\.ts/, dependencies: LOOKS.map((l) => `empty-${l.name}`), use: { ...chrome, ...LOOKS[0] } },
   { name: "seed", testMatch: "seed.setup.ts", dependencies: ["flows"] },
-  ...LOOKS.map((l) => ({ name: `visual-${l.name}`, testMatch: "visual.spec.ts", dependencies: ["seed"], use: { ...chrome, ...l } })),
+  ...LOOKS.map((l) => ({ name: `visual-${l.name}`, testMatch: "visual.spec.ts", dependencies: ["seed"], use: { ...chrome, ...l, ...still } })),
 ];
 
 export default defineConfig({
@@ -37,6 +39,5 @@ export default defineConfig({
   // Baselines are rendered per platform: fonts rasterise differently on macOS and Linux.
   snapshotPathTemplate: "{testDir}/../screenshots/{platform}/{projectName}/{arg}{ext}",
   reporter: [["list"], ["html", { open: "never" }]],
-  // Motion is stilled: a baseline must not depend on where a cycle stands (the landing's pair cycle holds its first asset).
-  use: { trace: "retain-on-failure", screenshot: "only-on-failure", reducedMotion: "reduce" },
+  use: { trace: "retain-on-failure", screenshot: "only-on-failure" },
 });
