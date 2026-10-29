@@ -1,10 +1,11 @@
 import { z } from "zod";
 
 /**
- * The region gate (#131; owner, 2026-10-28: an engagement pattern is never refused on research grounds, it is built
- * where it works and withheld where a regulator objects). The API reads the visitor's country from Cloudflare and
+ * The region gate (#131; owner, 2026-10-28 and 2026-10-29: an engagement pattern is never refused on research grounds,
+ * it is built, it works in every country, and it is removed from one country only when someone asks for that there).
+ * The API reads the visitor's country from Cloudflare and
  * answers which features are withheld there, from a per-feature table the operator keeps; the web hides a withheld
- * feature. The table starts empty and stays so until an engagement feature lands (#146).
+ * feature. The table starts empty and is filled only on such a request, never ahead of one (ADR 0014).
  */
 
 /** A country as Cloudflare reports it: ISO 3166-1 alpha-2, plus `T1` for Tor and `XX` when unknown. */

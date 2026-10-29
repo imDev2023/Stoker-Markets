@@ -57,7 +57,7 @@ export function TradeHistory({
                   </td>
                   <td className={`mono ${styles.num}`}>{formatUnits(t.baseAmount, COIN_DECIMALS, 0)}</td>
                   <td className={`mono ${styles.num}`}>{formatUnits(t.quoteAmount, quote.decimals)}</td>
-                  <td className={`${styles.num} ${styles.wide}`}><Price value={t.price} /></td>
+                  <td className={`${styles.num} ${styles.wide}`}><Price className="mono" value={t.price} /></td>
                   <td className={styles.wide}>
                     <Address value={t.trader} platform={platform} />
                   </td>

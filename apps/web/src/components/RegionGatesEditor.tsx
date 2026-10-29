@@ -22,8 +22,8 @@ function toGates(rows: Row[]): RegionGates {
 
 /**
  * The region gate's table (#131; owner, 2026-10-28): for each feature the web gates by name, the countries it is
- * withheld in, as ISO codes. The table is replaced whole on save and starts empty; nothing is withheld anywhere until
- * an engagement feature lands and a regulator objects somewhere (#146).
+ * withheld in, as ISO codes. The table is replaced whole on save and starts empty: nothing is withheld upfront, and a
+ * row is added only when someone asks for a feature's removal in their country (owner, 2026-10-29; ADR 0014).
  */
 export function RegionGatesEditor({ token }: { token: string }) {
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -66,7 +66,7 @@ export function RegionGatesEditor({ token }: { token: string }) {
       <h2 id="gates-title" className={`t-h3 ${styles.cardTitle}`}>Region gates</h2>
       <p className={styles.note}>
         A feature named here is hidden from visitors in the countries listed (two-letter codes, as Cloudflare reads them) and shown
-        everywhere else. Nothing is gated until a feature is named.
+        everywhere else. Nothing is withheld upfront: a row is added only when someone asks for a feature&apos;s removal in their country.
       </p>
       {rows && (
         <form className={styles.feeForm} onSubmit={(e) => void save(e)}>

@@ -13,7 +13,7 @@ export default function TermsPage() {
   return (
     <div className={`shell ${styles.page}`}>
       <h1 className={`t-h1 ${styles.title}`}>Terms of use</h1>
-      <p className={styles.dated}>Draft of 28 October 2026, pending the operator&apos;s approval.</p>
+      <p className={styles.dated}>Last updated 29 October 2026.</p>
       <div className={styles.prose}>
         <h2 className="t-h3">What Stoker is</h2>
         <p>Stoker (stoker.markets) is a website and an API that build Solana transactions for Raydium&apos;s LaunchLab and CPMM programs and show what the Solana blockchain records. Stoker holds no funds and none of your keys. Every transaction is signed in your own wallet, which shows you what it does before you sign.</p>

@@ -1,6 +1,6 @@
 // The region gate (#131; owner, 2026-10-28): which features are withheld in which countries, as one platform setting
-// the operator edits, and the visitor's country as Cloudflare read it. The table starts empty, so nothing is withheld
-// anywhere until an engagement feature lands and a regulator objects somewhere (#146).
+// the operator edits, and the visitor's country as Cloudflare read it. The table starts empty and is filled only when
+// someone asks for a feature's removal in their country, never ahead of a request (owner, 2026-10-29; ADR 0014).
 import { eq } from "drizzle-orm";
 import { RegionGates, type Region } from "@launchpad/contract";
 import { platformSettings, type Db } from "@launchpad/db";

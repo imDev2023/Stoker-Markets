@@ -16,10 +16,10 @@ const UNKNOWN: RegionState = { known: false, country: null, withheld: new Set() 
 const RegionContext = createContext<RegionState>(UNKNOWN);
 
 /**
- * The region gate (#131; owner, 2026-10-28): an engagement feature is built where it works and withheld where a
- * regulator objects. The gate is asked from the browser, so Cloudflare reads the visitor's own address and never the
- * web Worker's, and until it answers nothing gated is shown: a withheld feature is never shown by accident, and the
- * page renders the same on the server and on the first paint.
+ * The region gate (#131; owner, 2026-10-28 and 2026-10-29): every feature works in every country until someone asks for
+ * its removal there, and then one row of the operator's table removes it. The gate is asked from the browser, so
+ * Cloudflare reads the visitor's own address and never the web Worker's, and until it answers nothing gated is shown:
+ * a withheld feature is never shown by accident, and the page renders the same on the server and on the first paint.
  */
 export function RegionProvider({ children }: { children: ReactNode }) {
   const [region, setRegion] = useState(UNKNOWN);

@@ -76,7 +76,7 @@ export default async function AssetPage({ params }: Props) {
                   <span className="mono">{quote.price.usd ? formatUsd(quote.price.usd) : <><Price value={Number(quote.price.sol)} /> SOL</>}</span>
                   {quote.price.usd && <span className={styles.aside}><Price value={Number(quote.price.sol)} /> SOL</span>}
                   {/* Priced when the registry last read the market; a reading older than an hour is marked, so nobody trusts it unawares. */}
-                  <span className={styles.aside}>priced <RelativeTime iso={quote.price.at} now={Date.now()} staleAfter={3600} /></span>
+                  <span className={styles.aside} data-priced>priced <RelativeTime iso={quote.price.at} now={Date.now()} staleAfter={3600} /></span>
                 </>
               ) : (
                 "No reliable price"

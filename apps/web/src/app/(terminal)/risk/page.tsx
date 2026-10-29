@@ -14,7 +14,7 @@ export default function RiskPage() {
   return (
     <div className={`shell ${styles.page}`}>
       <h1 className={`t-h1 ${styles.title}`}>Risk disclosure</h1>
-      <p className={styles.dated}>Draft of 28 October 2026, pending the operator&apos;s approval.</p>
+      <p className={styles.dated}>Last updated 29 October 2026.</p>
       <div className={styles.prose}>
         <p><strong>Coins launched here are speculative and can lose all their value.</strong> Most new coins do. Nobody sets or supports a coin&apos;s price: it comes from what other people pay for it, and it can fall to nothing at any time.</p>
 

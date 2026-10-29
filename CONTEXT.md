@@ -135,7 +135,7 @@ One published cycle of collecting Reward Tax and paying Holder Rewards, with its
 _Avoid_: Distribution, epoch, cycle
 
 **Region gate**:
-The mechanism that withholds a feature from visitors in the countries a regulator objects in: the API reads the visitor's country from Cloudflare and answers which features are withheld there, from a per-feature table the operator keeps; the web hides a withheld feature. The table starts empty (ADR 0014).
+The table that removes a feature from the visitors of one country once someone has asked for its removal there (owner, 2026-10-29: nothing is withheld upfront, every feature works everywhere and the disclosure does its job): the API reads the visitor's country from Cloudflare and answers which features are withheld there; the web hides a withheld feature. The table starts empty (ADR 0014).
 _Avoid_: Geoblock, ban
 
 ### Platform Token

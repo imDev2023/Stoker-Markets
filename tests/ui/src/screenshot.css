@@ -13,6 +13,12 @@ time {
   overflow: hidden;
 }
 
+/* The asset page's "priced 2m ago" sits in a flex item sized by its content, so there a time's 100% is its own text's width
+   ("2m ago" against "12m ago" moved the box by 4px between runs); a fixed box keeps the mask the same size every run. */
+[data-priced] time {
+  width: 9ch;
+}
+
 /* The latest candle's prices depend on whether the seed trades straddled a minute, so they are masked; a fixed box keeps
    the mask the same size every run. */
 dl[aria-label$="candle"] .mono {

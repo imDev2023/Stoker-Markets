@@ -144,7 +144,7 @@ export function PriceChart({
                 <span aria-hidden>{label[0]}</span>
                 <span className="visually-hidden">{label}</span>
               </dt>
-              <dd><Price value={shown[label.toLowerCase() as "open" | "high" | "low" | "close"]} /></dd>
+              <dd><Price className="mono" value={shown[label.toLowerCase() as "open" | "high" | "low" | "close"]} /></dd>
             </div>
           ))}
         </dl>
