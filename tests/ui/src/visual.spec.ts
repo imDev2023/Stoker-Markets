@@ -145,6 +145,16 @@ test("coin page", async ({ page }) => {
 
 test("coin page with the longest name and ticker", async ({ page }) => {
   await page.goto(`/coin/${await mintOf("Maximum Length Coin Name Here 32")}`);
+  // The page says "Copy protection until" inside the stack's 45-second window and "ended" after it, and the first look's
+  // shot can land either side of that line depending on the run's speed (the light desktop baseline flipped once, 2026-10-29),
+  // so the shot waits for the window to end; the label is rendered on the server, so it takes a reload to change.
+  await expect
+    .poll(async () => {
+      if (await page.getByText("Copy protection ended").isVisible()) return true;
+      await page.reload();
+      return false;
+    }, { timeout: 60_000, intervals: [2_000] })
+    .toBe(true);
   await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
   await snap(page, "coin-longest.png");
 });
