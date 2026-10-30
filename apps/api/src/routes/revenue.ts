@@ -88,19 +88,23 @@ revenueRoutes.get("/ledger", async (c) => {
   if (!q.success) return c.json({ error: "invalid ledger query", details: q.error.issues }, 400);
   const { limit, before, kind } = q.data;
   const db = c.get("db");
-  const [slot, signature, index] = before?.split(".") ?? [];
+  const [slot, recorded, signature, index] = before?.split(".") ?? [];
+  // Within a slot the entries list in the order the platform recorded them (two transactions of one job can land in
+  // one slot, and a Graduation Fee is written in the slot of the collection it follows), which the signature alone would
+  // leave to chance; the cursor carries that moment to the microsecond, as the same integer expression on both sides.
+  const recordedMicros = sql`(extract(epoch from ${ledgerEntries.recordedAt}) * 1000000)::bigint`;
   const rows = await db
-    .select({ e: ledgerEntries, symbol: launches.symbol, name: launches.name })
+    .select({ e: ledgerEntries, recordedMicros: sql<string>`${recordedMicros}::text`, symbol: launches.symbol, name: launches.name })
     .from(ledgerEntries)
     .leftJoin(launches, eq(launches.mint, ledgerEntries.launchMint))
     .where(sql`true
       ${kind ? sql`and ${ledgerEntries.kind} = ${kind}` : sql``}
-      ${before ? sql`and (${ledgerEntries.slot}, ${ledgerEntries.signature}, ${ledgerEntries.eventIndex}) < (${Number(slot)}, ${signature}, ${Number(index)})` : sql``}`)
-    .orderBy(desc(ledgerEntries.slot), desc(ledgerEntries.signature), desc(ledgerEntries.eventIndex))
+      ${before ? sql`and (${ledgerEntries.slot}, ${recordedMicros}, ${ledgerEntries.signature}, ${ledgerEntries.eventIndex}) < (${Number(slot)}, ${recorded}::bigint, ${signature}, ${Number(index)})` : sql``}`)
+    .orderBy(desc(ledgerEntries.slot), desc(recordedMicros), desc(ledgerEntries.signature), desc(ledgerEntries.eventIndex))
     .limit(limit + 1);
   const page = rows.slice(0, limit);
   const asset = await revenueAssets(db, c.get("cfg").publicApiUrl, new Map(page.map((r) => [r.e.assetMint, r.e.assetDecimals])));
-  const last = page.at(-1)?.e;
+  const last = page.at(-1);
   const res: LedgerPage = {
     entries: page.map(({ e, symbol, name }) => ({
       signature: e.signature,
@@ -114,7 +118,7 @@ revenueRoutes.get("/ledger", async (c) => {
       slot: e.slot,
       time: e.blockTime.toISOString(),
     })),
-    next: rows.length > limit && last ? `${last.slot}.${last.signature}.${last.eventIndex}` : null,
+    next: rows.length > limit && last ? `${last.e.slot}.${last.recordedMicros}.${last.e.signature}.${last.e.eventIndex}` : null,
   };
   return c.json(res);
 });

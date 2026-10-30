@@ -53,11 +53,9 @@ export async function withholdGraduationFees(db: Db, connection: Connection, ope
   }));
 
   const result: Withheld[] = [];
-  // The entry's slot: the chain's clock now, and past every entry already on the Ledger, so a withholding always lists
-  // after the collections it follows (the fee key collection it was computed from can land in the very slot it is
-  // written in, and the Ledger breaks a tie by signature, which says nothing).
+  // The entry's slot is the chain's clock at the withholding; within a slot the Ledger lists entries in the order they
+  // were recorded, so a withholding always follows the collection it was computed from.
   let slot: number | null = null;
-  const [latest] = await db.select({ slot: sql<number>`coalesce(max(${ledgerEntries.slot}), 0)::int` }).from(ledgerEntries);
   for (const g of open) {
     const key = `${g.creator} ${g.quoteMint}`;
     const available = min(owed.get(key) ?? 0n, (ownShares.get(g.mint) ?? 0n) - BigInt(g.withheld));
@@ -70,7 +68,7 @@ export async function withholdGraduationFees(db: Db, connection: Connection, ope
     const amount = min(available, remainingRaw);
     const settled = amount >= remainingRaw;
     const lamports = settled ? remainingLamports : lamportsWorth(g.quoteMint, amount, price)!;
-    slot ??= Math.max(await connection.getSlot("confirmed"), (latest?.slot ?? 0) + 1);
+    slot ??= await connection.getSlot("confirmed");
     const now = new Date();
     const [earlier] = await db
       .select({ count: sql<number>`count(*)::int` })

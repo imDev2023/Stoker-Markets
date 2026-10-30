@@ -59,14 +59,18 @@ export const LedgerEntry = z.object({
 });
 export type LedgerEntry = z.infer<typeof LedgerEntry>;
 
-/** Newest first. `next` is the cursor for the page after this one (pass it as `before`); null on the last page. */
+/**
+ * Newest first: by slot, then by the order the platform recorded the entries within a slot (two transactions of one
+ * job can land in one slot, and a Graduation Fee is written in the slot of the collection it follows), then by
+ * transaction and index. `next` is the opaque cursor for the page after this one (pass it as `before`); null on the last page.
+ */
 export const LedgerPage = z.object({ entries: z.array(LedgerEntry), next: z.string().nullable() });
 export type LedgerPage = z.infer<typeof LedgerPage>;
 
 export const LedgerQuery = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
   /** A `next` cursor from a previous page. */
-  before: z.string().regex(/^\d+\.[1-9A-HJ-NP-Za-km-z]{64,88}\.\d+$/, "must be a cursor from a previous page").optional(),
+  before: z.string().regex(/^\d+\.\d+\.[1-9A-HJ-NP-Za-km-z]{64,88}\.\d+$/, "must be a cursor from a previous page").optional(),
   kind: LedgerKind.optional(),
 });
 export type LedgerQuery = z.infer<typeof LedgerQuery>;
