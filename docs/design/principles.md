@@ -246,7 +246,7 @@ Under 1300px the pill gives way to the menu button with Explore kept visible bes
 ### The two footers
 
 Both come from `src/lib/site.ts`.
-The landing's footer groups the site by audience, Trade (Explore, Assets, Rewards), Create (Stoke a coin, Curated), Platform (Revenue, Burns, Announcements, API, GitHub) and Legal (Terms, Privacy, Risk disclosure, Contact), with the lockup, one line, the socials once, a status line (the network and whether the API answers), the PlatformConfig and LaunchLab addresses, and a disclaimer that opens with one bold risk sentence and names the excluded regions.
+The landing's footer groups the site by audience, Trade (Explore, Assets, Rewards), Create (Stoke a coin, Curated), Platform (Revenue, Burns, Announcements, API; the GitHub link was removed by the owner on 2026-10-30) and Legal (Terms, Privacy, Risk disclosure, Contact), with the lockup, one line, the socials once, a status line (the network and whether the API answers), the PlatformConfig and LaunchLab addresses, and a disclaimer that opens with one bold risk sentence and names the excluded regions.
 Every terminal page ends with one row: the lockup small, API and the legal pages, the socials, the status and the risk sentence.
 `/terms`, `/privacy` and `/risk` are document pages drafted from the site's own facts; the owner approves their text before the site opens.
 
