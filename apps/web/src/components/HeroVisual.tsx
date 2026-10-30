@@ -155,7 +155,7 @@ export function HeroVisual({
   if (variant === "picker") return <HeroPicker quotes={quotes} />;
   // The trade panel wants a coin; until the first launch the cycle stands here, as it does for the rows.
   if (variant === "trade") return launches[0] ? <HeroTrade initial={launches[0]} platform={platform} /> : <Cycle quotes={cycle} />;
-  // The owner's pick (2026-10-30), with their second choice, the rows, standing in wherever the Plugin can't load.
+  // The swap as a hero (the owner's pick of 2026-10-30, moved to `/swap` the same day), the rows standing in wherever the Plugin can't load.
   if (variant === "swap") return <SwapWidget fallback={<Rows initial={launches} quotes={cycle} />} />;
   return <Rows initial={launches} quotes={cycle} />;
 }

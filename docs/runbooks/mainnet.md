@@ -246,14 +246,14 @@ Built against the mainnet API the same pages read 614 Quote Assets, 585 launchab
 
 ## 13. The swap widget's referral account (owner)
 
-The landing's hero is Jupiter's swap widget (owner's pick of 2026-10-30, #133), and it takes a swap fee through Jupiter's Referral Program (https://developers.jup.ag/docs/tool-kits/referral-program): a referral account the widget names on every swap, into which Jupiter pays the fee, less the fifth it keeps.
+The Swap section (`/swap`) is Jupiter's swap widget (owner, 2026-10-30, #133; first picked as the landing's hero, then given a section of its own the same day), and it takes a swap fee through Jupiter's Referral Program (https://developers.jup.ag/docs/tool-kits/referral-program): a referral account the widget names on every swap, into which Jupiter pays the fee, less the fifth it keeps.
 Only the owner can create it, since the account's admin is a wallet that signs.
 
 1. Open https://referral.jup.ag/ in the browser that holds the treasury's Phantom wallet, connect it, and create a referral account named `Stoker`.
 2. Copy the referral account's address (not the wallet's), and keep it in `~/.config/stoker/mainnet/jupiter-referral` for the deploy command.
 3. Build the web with it: `NEXT_PUBLIC_JUPITER_REFERRAL=<address> NEXT_PUBLIC_API_URL=https://api.stoker.markets pnpm exec opennextjs-cloudflare build` in `apps/web`, then deploy as usual (section 12); the devnet rehearsal takes the same variable, since the widget swaps on mainnet whatever cluster the API is on.
    The fee is `NEXT_PUBLIC_JUPITER_REFERRAL_FEE_BPS`, 50 basis points (0.5%) unless set; Jupiter accepts 50 to 255.
-4. Prove it: swap a small amount on the live landing, then see the fee land on the dashboard's referral account.
+4. Prove it: swap a small amount on the live Swap page, then see the fee land on the dashboard's referral account.
    The dashboard is where the fees are claimed (they sit in token accounts the Referral Program owns until claimed, one per asset); claiming is a wallet action, so it is the owner's too, and what is claimed goes to the treasury like any revenue (ADR 0004).
 
-Until the account exists the widget takes no fee and its line under the frame says nothing about one; the Fees page states the rate.
+Until the account exists the widget takes no fee and its line under the frame says nothing about one; the Fees page states the rate. The landing's hero stays the live rows (the swap was its hero for an hour on 2026-10-30, `?hero=swap` still shows it).

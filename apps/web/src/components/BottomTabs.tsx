@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { LAUNCH_LINK, NAV_LINKS, type NavLink } from "@/lib/site";
+import { ASSETS_LINK, CURATED_LINK, EXPLORE_LINK, LAUNCH_LINK, REWARDS_LINK, STATS_LINK, SWAP_LINK, type NavLink } from "@/lib/site";
 import { isCurrent } from "./NavLinks";
 import { SchemeToggle } from "./SchemeToggle";
 import { SocialLinks } from "./SocialLinks";
@@ -13,10 +13,10 @@ import { Avatar, WalletButton } from "./WalletButton";
 import styles from "./BottomTabs.module.css";
 
 /** The tabs: what a trader opens most, with the launch in the middle as the one filled target, and the account last. */
-const LEFT: readonly NavLink[] = [NAV_LINKS[0], NAV_LINKS[2]];
-const RIGHT: readonly NavLink[] = [NAV_LINKS[3]];
+const LEFT: readonly NavLink[] = [EXPLORE_LINK, ASSETS_LINK];
+const RIGHT: readonly NavLink[] = [REWARDS_LINK];
 /** What the five tabs leave out, offered in the account sheet with the wallet and the toggle. */
-const MORE: readonly NavLink[] = [NAV_LINKS[4], NAV_LINKS[1]];
+const MORE: readonly NavLink[] = [SWAP_LINK, STATS_LINK, CURATED_LINK];
 
 function Glyph({ name }: { name: string }) {
   const d: Record<string, string> = {

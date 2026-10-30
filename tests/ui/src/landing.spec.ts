@@ -31,18 +31,21 @@ test("the most traded coin's trade panel stands in the hero", async ({ page }) =
   await expectNoHorizontalOverflow(page);
 });
 
-test("the swap is the hero, and the live rows stand in where Jupiter's plugin can't load, as the suite serves it", async ({ page }) => {
-  await page.goto("/");
-  const h = hero(page);
-  // The Plugin's script comes back empty here (tests/ui/src/fixtures.ts), so the owner's second choice stands: the rows.
-  await expect(h.getByRole("list", { name: "Most traded today" }).getByRole("link").first()).toBeVisible();
-  await expect(h.getByRole("status")).toHaveCount(0);
+test("the Swap section frames Jupiter's plugin, which the suite serves empty, and the swap hero falls back to the rows", async ({ page }) => {
+  await page.goto("/swap");
+  await expect(page.getByRole("heading", { level: 1, name: "Swap" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Swap" })).toHaveAttribute("aria-current", "page");
+  // The Plugin's script comes back empty here (tests/ui/src/fixtures.ts), so the frame shows its fallback line.
+  await expect(page.getByRole("status")).toHaveText(/Jupiter's swap did not load here/);
+  await expect(page.getByRole("link", { name: "Open jup.ag" })).toHaveAttribute("href", "https://jup.ag/swap/SOL-USDC");
+  await page.goto("/?hero=swap");
+  await expect(hero(page).getByRole("list", { name: "Most traded today" }).getByRole("link").first()).toBeVisible();
 });
 
 test("header H9: five words in the bar with the current one marked, held across the site, and a tab bar on a phone", async ({ page }) => {
   await page.goto("/coins?header=h9");
   const main = page.getByRole("navigation", { name: "Main" });
-  await expect(main.getByRole("link")).toHaveText(["Explore", "Assets", "Rewards", "Stats", /Curated/]);
+  await expect(main.getByRole("link")).toHaveText(["Explore", "Swap", "Assets", "Rewards", "Stats", /Curated/]);
   await expect(main.getByRole("link", { name: "Explore" })).toHaveAttribute("aria-current", "page");
   // Developers left the bar for the footer, which names the page "API".
   await expect(page.getByRole("link", { name: "Developers" })).toHaveCount(0);
@@ -63,6 +66,6 @@ test("header H9: five words in the bar with the current one marked, held across 
   await tabs.getByRole("button", { name: "Account" }).click();
   const sheet = page.getByRole("dialog", { name: "Account" });
   await expect(sheet.getByRole("button", { name: "Connect wallet" })).toBeVisible();
-  await expect(sheet.getByRole("navigation", { name: "More" }).getByRole("link")).toHaveText(["Stats", /Curated/]);
+  await expect(sheet.getByRole("navigation", { name: "More" }).getByRole("link")).toHaveText(["Swap", "Stats", /Curated/]);
   await expectNoHorizontalOverflow(page);
 });

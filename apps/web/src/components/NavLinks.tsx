@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { API_LINK, LAUNCH_LINK, NAV_LINKS, type NavLink } from "@/lib/site";
+import { API_LINK, ASSETS_LINK, CURATED_LINK, EXPLORE_LINK, LAUNCH_LINK, NAV_LINKS, REWARDS_LINK, STATS_LINK, SWAP_LINK, type NavLink } from "@/lib/site";
 import styles from "./SiteHeader.module.css";
 import h9 from "./SiteHeaderH9.module.css";
 
@@ -59,10 +59,10 @@ export function LaunchLink({ className = "", wordClassName = "" }: { className?:
 }
 
 /**
- * H9's five words (#133, owner 2026-10-30), ordered by a trader's frequency: Explore, Assets, Rewards, Stats, then
- * Curated tagged "soon" until a Curated Launch exists (#118). Developers is the footer's; the names stay.
+ * H9's words (#133, owner 2026-10-30), ordered by a trader's frequency: Explore, Swap (a section since the same day),
+ * Assets, Rewards, Stats, then Curated tagged "soon" until a Curated Launch exists (#118). Developers is the footer's.
  */
-export const H9_LINKS: readonly NavLink[] = [NAV_LINKS[0], NAV_LINKS[2], NAV_LINKS[3], NAV_LINKS[4], NAV_LINKS[1]];
+export const H9_LINKS: readonly NavLink[] = [EXPLORE_LINK, SWAP_LINK, ASSETS_LINK, REWARDS_LINK, STATS_LINK, CURATED_LINK];
 
 /** The words in the bar, the current one marked by the ink, the weight and a bar in the accent under it. */
 export function NavLinksH9() {

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { NAV_LINKS } from "@/lib/site";
+import { EXPLORE_LINK } from "@/lib/site";
 import { GooeySearch } from "./GooeySearch";
 import { Mark } from "./Mark";
 import { LaunchLink, NavLinks } from "./NavLinks";
@@ -30,7 +30,7 @@ export function SiteHeader({ cluster }: { cluster: string }) {
         <NavLinks />
         <div className={styles.actions}>
           {/* Visible beside the menu button once the pill has gone (NN/g: hidden navigation halves its use). */}
-          <Link href={NAV_LINKS[0].href} className={styles.explore}>{NAV_LINKS[0].label}</Link>
+          <Link href={EXPLORE_LINK.href} className={styles.explore}>{EXPLORE_LINK.label}</Link>
           <GooeySearch />
           <LaunchLink className={styles.launch} wordClassName={styles.launchRest} />
           <div className={styles.wallet}>

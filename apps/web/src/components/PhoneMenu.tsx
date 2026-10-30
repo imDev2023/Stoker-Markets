@@ -4,16 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { API_LINK, LAUNCH_LINK, NAV_LINKS, type NavLink } from "@/lib/site";
+import { API_LINK, ASSETS_LINK, CURATED_LINK, EXPLORE_LINK, LAUNCH_LINK, REWARDS_LINK, STATS_LINK, SWAP_LINK, type NavLink } from "@/lib/site";
 import { isCurrent } from "./NavLinks";
 import { SchemeToggle } from "./SchemeToggle";
 import { SocialLinks } from "./SocialLinks";
 import { WalletButton } from "./WalletButton";
 import styles from "./PhoneMenu.module.css";
 
-/** The six sections in the pill's order, the product's four set large and the platform's two a step smaller under them. */
-const PRODUCT: readonly NavLink[] = [NAV_LINKS[0], NAV_LINKS[1], NAV_LINKS[2], NAV_LINKS[3]];
-const PLATFORM: readonly NavLink[] = [NAV_LINKS[4], API_LINK];
+/** The sections in the pill's order, the product's five set large and the platform's two a step smaller under them. */
+const PRODUCT: readonly NavLink[] = [EXPLORE_LINK, SWAP_LINK, CURATED_LINK, ASSETS_LINK, REWARDS_LINK];
+const PLATFORM: readonly NavLink[] = [STATS_LINK, API_LINK];
 
 /**
  * The narrow window's menu behind a button in the header: an overlay the window's height with a visible close, the

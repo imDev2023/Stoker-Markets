@@ -18,17 +18,22 @@ export const LAUNCH_LINK = { href: "/launch", label: "Stoke a coin" } as const;
 export type NavLink = { href: string; label: string; also?: string };
 
 /**
- * The header's sections, in order (owner, 2026-10-25: the board's link reads "Explore"; "Curated" is the platform's
+ * The header's sections, in order (owner, 2026-10-25: the board's link reads "Explore"; "Swap" is Jupiter's swap as a
+ * section of its own, owner 2026-10-30, after it was built as a hero candidate; "Curated" is the platform's
  * own approved launches, open to STOKER stakers, #118; Burns and Revenue sit under "Stats" (owner, 2026-10-25, renamed
  * from Ledger the same night; the Ledger stays the glossary's word for the public record), current on either page).
  */
 export const NAV_LINKS = [
   { href: "/coins", label: "Explore" },
+  { href: "/swap", label: "Swap" },
   { href: "/curated", label: "Curated" },
   { href: "/assets", label: "Assets" },
   { href: "/rewards", label: "Rewards" },
   { href: "/revenue", label: "Stats", also: "/burns" },
 ] as const satisfies readonly NavLink[];
+
+/** The sections by name, so a list that picks a few never counts on the order above. */
+export const [EXPLORE_LINK, SWAP_LINK, CURATED_LINK, ASSETS_LINK, REWARDS_LINK, STATS_LINK] = NAV_LINKS;
 
 /**
  * The API's reference is a page of the site (owner, 2026-10-25: everything on the page, no link out to the repository),
@@ -49,8 +54,8 @@ export const LEGAL_LINKS = [
  * (owner, 2026-10-08): nothing links to it but the account menu, once the connected wallet has launched a coin.
  */
 export const FOOTER_GROUPS = [
-  { title: "Trade", links: [NAV_LINKS[0], NAV_LINKS[2], NAV_LINKS[3]] },
-  { title: "Create", links: [LAUNCH_LINK, NAV_LINKS[1]] },
+  { title: "Trade", links: [EXPLORE_LINK, SWAP_LINK, ASSETS_LINK, REWARDS_LINK] },
+  { title: "Create", links: [LAUNCH_LINK, CURATED_LINK] },
   {
     title: "Platform",
     links: [

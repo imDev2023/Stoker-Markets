@@ -87,7 +87,7 @@ function requestConnect() {
 }
 
 /**
- * The token swap in the hero (#133, candidate H, owner 2026-10-30): Jupiter Plugin in integrated mode, SOL to USDC as
+ * The token swap (#133, candidate H, owner 2026-10-30; the Swap section's since the same day): Jupiter Plugin in integrated mode, SOL to USDC as
  * the opening pair, the wallet passed through from our adapter so one connect serves the whole site, and the colours
  * from our tokens on a dark tile in both schemes. The widget swaps on Solana mainnet from the browser whatever cluster the API is on;
  * everything else on the site stays a client of our API. A referral fee applies once `NEXT_PUBLIC_JUPITER_REFERRAL` is set.

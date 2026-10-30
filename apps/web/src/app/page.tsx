@@ -8,9 +8,9 @@ import { Trending } from "@/components/Trending";
 
 /**
  * The home page is the landing (owner, 2026-10-08), rebuilt in phase 2 of the rework (#133, after the research of
- * 2026-10-28): the hero with the product beside the slogan (Jupiter's swap since the owner's pick of 2026-10-30; the
- * proof row under it was removed the same day), the figures as one row, one section per idea, the most traded coins,
- * and the invitation, then the full footer. Every figure is live and a read that is down leaves
+ * 2026-10-28): the hero with the product beside the slogan (the live rows; the proof row under it was removed by the
+ * owner on 2026-10-30, the day Jupiter's swap was picked as the hero and then given a section of its own, `/swap`), the
+ * figures as one row, one section per idea, the most traded coins, and the invitation, then the full footer. Every figure is live and a read that is down leaves
  * its figure out rather than failing the page. `?hero=` shows one of the hero's visual candidates (src/lib/landing.ts).
  */
 export default async function HomePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

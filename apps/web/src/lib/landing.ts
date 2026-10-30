@@ -38,14 +38,14 @@ export function deepestQuotes(launchable: QuoteAsset[], count = 8): QuoteAsset[]
  * live; the pair mark cycling through the assets a coin is priced in; the ring at size; the stoke (the ring heating
  * from coal in a slow loop, asked for by the owner on 2026-10-29); the stoke with the pair cycle under it; and the three
  * the owner asked for on 2026-10-30 with the right side made live: the pair picker (name, ticker and the asset, which
- * opens the launch form filled), the most traded coin's real trade panel, and Jupiter's swap, which the owner picked
- * on 2026-10-30 (`swap`, the default) with the rows as their second choice (`rows` stands in when the Plugin's script
- * can't load, and shows the cycle until the first coin launches).
+ * opens the launch form filled), the most traded coin's real trade panel, and Jupiter's swap (picked on 2026-10-30,
+ * then moved the same day to a section of its own, `/swap`, with the rows back in the hero). `rows` is the default
+ * and shows the cycle until the first coin launches.
  */
 export const HERO_VARIANTS = ["rows", "cycle", "ring", "stoke", "stoke-cycle", "picker", "trade", "swap"] as const;
 export type HeroVariant = (typeof HERO_VARIANTS)[number];
 export const heroVariantFrom = (value: string | string[] | undefined): HeroVariant =>
-  (HERO_VARIANTS as readonly string[]).includes(typeof value === "string" ? value : "") ? (value as HeroVariant) : "swap";
+  (HERO_VARIANTS as readonly string[]).includes(typeof value === "string" ? value : "") ? (value as HeroVariant) : "rows";
 
 /**
  * The recommended few ahead of the hundreds (docs/design/layout.md): SOL, the deepest stablecoin and the deepest stock,

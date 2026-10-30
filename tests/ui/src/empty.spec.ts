@@ -4,9 +4,8 @@ import { expect, expectHydrated, expectNoHorizontalOverflow, test } from "./fixt
 test("the empty landing invites the first launch", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "No one picks your pair. You do." })).toBeVisible();
-  // The figures are live even before the first coin: the registry has its assets. The hero is Jupiter's swap (owner,
-  // 2026-10-30), which the suite serves empty, so the rows stand in and, with nothing launched, give way to the pair
-  // cycle; the invitation stands where the most traded coins will.
+  // The figures are live even before the first coin: the registry has its assets. With nothing launched the hero's rows
+  // give way to the pair cycle, and the invitation stands where the most traded coins will.
   // The labels whole and exact: the footer's risk sentence also says "coins launched".
   await expect(page.getByText("assets to pair with", { exact: true })).toBeVisible();
   await expect(page.getByText("coins launched", { exact: true })).toHaveCount(0);
