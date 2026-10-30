@@ -265,13 +265,14 @@ test("trade panel after graduation, with the pool's fees", async ({ page, wallet
   await panel.getByRole("button", { name: "0.5 SOL" }).click();
   // The pointer rests on the preset it clicked, which draws its hover; park it so the shot is the same every run.
   await page.mouse.move(0, 0);
-  await expect(panel.getByText("Raydium pool fee")).toBeVisible();
+  // The quote carries one Fees line and the link to the Fees page (owner, 2026-10-30), no rates.
+  await expect(panel.getByText("Raydium's pool fees and the platform's")).toBeVisible();
   await expect(panel).toHaveScreenshot("trade-pool-buy-quote.png", { mask: tradedDynamic(page) });
 
   await panel.getByRole("group", { name: "Buy or sell" }).getByRole("button", { name: "Sell" }).click();
   await panel.getByRole("button", { name: "50%", exact: true }).click();
   await page.mouse.move(0, 0);
-  await expect(panel.getByText("Raydium pool fee")).toBeVisible();
+  await expect(panel.getByText("Raydium's pool fees and the platform's")).toBeVisible();
   await expect(panel).toHaveScreenshot("trade-pool-sell-quote.png", { mask: tradedDynamic(page) });
   // Handed back, so the coin page's top holders look the same in every project whatever order they run in.
   await giveCoins(wallet.keypair, SEED_HOLDER.publicKey, mint, 1_000_000n * 1_000_000n);

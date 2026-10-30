@@ -117,10 +117,9 @@ function Earnings({ earnings, forwards, platform }: { earnings: CreatorEarnings;
                       <span>
                         <span className="mono">{formatUnits(earned.toString(), l.quote.decimals, 6)}</span> {quoteTicker(l.quote)}
                       </span>
-                      <span className={styles.earning}>
-                        {EARNING[l.status]}
-                        {l.graduationFee && (l.graduationFee.settledAt ? "; Graduation Fee paid" : "; Graduation Fee coming out of the next payments")}
-                      </span>
+                      <span className={styles.earning}>{EARNING[l.status]}</span>
+                      {/* A second pill, never a longer one: the row's names keep their room on a phone. */}
+                      {l.graduationFee && <span className={styles.earning}>{l.graduationFee.settledAt ? "Graduation Fee paid" : "Graduation Fee due"}</span>}
                     </span>
                   </Link>
                 </li>

@@ -169,20 +169,20 @@ export default async function FeesPage() {
       receives: platform.solRoute === "jupiter" ? "Jupiter and the pools it routes through" : "The route’s pools",
     },
     {
-      fee: "Swapping any Solana token on the landing’s widget",
+      fee: "Swapping any Solana token on the Swap page",
       amount: `${pct(JUPITER_REFERRAL_FEE_BPS)} of every swap`,
       note: (
         <>
-          The landing&apos;s swap is Jupiter&apos;s, and a swap made through it pays Jupiter&apos;s referral fee: Jupiter keeps a fifth of it
+          The Swap page is Jupiter&apos;s widget, and a swap made through it pays Jupiter&apos;s referral fee: Jupiter keeps a fifth of it
           ({pct(JUPITER_REFERRAL_FEE_BPS - referralToPlatform)} of the swap) and the platform receives the rest ({pct(referralToPlatform)} of the swap).
           {JUPITER_REFERRAL
-            ? " It applies to every swap made on the landing."
+            ? " It applies to every swap made on the Swap page."
             : " It applies once the platform’s referral account is set; until then the swap is Jupiter’s plain one and pays no referral fee."}{" "}
           Nothing of it is forwarded to a Creator: no coin is involved.
         </>
       ),
       pays: "The swapper",
-      when: "Every swap made through the landing’s widget",
+      when: "Every swap made on the Swap page",
       asset: "The asset swapped",
       receives: "The platform, through Jupiter’s referral program; Jupiter keeps a fifth",
     },
