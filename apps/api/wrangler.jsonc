@@ -24,6 +24,9 @@
     "COLLECT_MIN_LAMPORTS": "1000000",
     // The Creator Forward (ADR 0009) pays a Creator once what they are owed in one Quote Asset is worth 0.01 SOL.
     "CREATOR_FORWARD_MIN_LAMPORTS": "10000000",
+    // The Graduation Fee (ADR 0015): 0.015 SOL's worth, withheld from the Creator's earnings on a coin once it graduates,
+    // in the coin's Quote Asset at the Quote Registry's price, recorded on the Ledger against the graduation; "0" charges none.
+    "GRADUATION_FEE_LAMPORTS": "15000000",
     // Copy Protection (#120, ADR 0012): nobody else may launch a coin with a launched coin's name, ticker or image for this long after it (seven days).
     "COPY_PROTECTION_SECONDS": "604800",
     // Reward Round rule changes apply no sooner than this after they are announced.
@@ -116,6 +119,7 @@
         "SWEEP_FLOAT_LAMPORTS": "1900000000",
         "COLLECT_MIN_LAMPORTS": "100000",
         "CREATOR_FORWARD_MIN_LAMPORTS": "1000000",
+        "GRADUATION_FEE_LAMPORTS": "15000000",
         // Copy Protection (#120, ADR 0012): nobody else may launch a coin with a launched coin's name, ticker or image for this long after it (seven days).
         "COPY_PROTECTION_SECONDS": "604800",
         "REWARD_RULES_LEAD_SECONDS": "86400",
@@ -173,6 +177,8 @@
         "SWEEP_FLOAT_LAMPORTS": "1000000000",
         "COLLECT_MIN_LAMPORTS": "1000000",
         "CREATOR_FORWARD_MIN_LAMPORTS": "10000000",
+        // The Graduation Fee (ADR 0015): 0.015 SOL's worth, withheld from the Creator's earnings once their coin graduates.
+        "GRADUATION_FEE_LAMPORTS": "15000000",
         // Copy Protection (#120, ADR 0012): nobody else may launch a coin with a launched coin's name, ticker or image for this long after it (seven days).
         "COPY_PROTECTION_SECONDS": "604800",
         "REWARD_RULES_LEAD_SECONDS": "86400",

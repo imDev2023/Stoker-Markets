@@ -260,6 +260,18 @@
   font-size: var(--text-label);
 }
 
+/* The one link out of the quote: to the Fees page, where every rate is. */
+.feeLink {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.feeLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .quoteHint,
 .quoteError,
 .completes,

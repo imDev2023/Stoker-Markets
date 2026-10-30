@@ -206,6 +206,17 @@ export const graduations = pgTable("graduations", {
   backfilledUntil: text("backfilled_until"),
   /** When the pool backfill made its last pass: the pool's trades arrive through the webhook alone from then on. Null while it runs. */
   backfillClosedAt: timestamp("backfill_closed_at", { withTimezone: true }),
+  /**
+   * The Graduation Fee (ADR 0015): what the platform charges for this Graduation, in lamports, as `GRADUATION_FEE_LAMPORTS`
+   * stood when it was indexed; 0 for one indexed before the fee existed, which is never charged.
+   */
+  feeLamports: numeric("fee_lamports", { precision: 40, scale: 0 }).notNull().default("0"),
+  /** What has been withheld toward it from the Creator's share, in raw units of the Launch's Quote Asset. */
+  feeWithheld: numeric("fee_withheld", { precision: 40, scale: 0 }).notNull().default("0"),
+  /** The worth of that in lamports at the Quote Registry's price at each withholding; the fee is settled once it reaches `feeLamports`. */
+  feePaidLamports: numeric("fee_paid_lamports", { precision: 40, scale: 0 }).notNull().default("0"),
+  /** When the fee was withheld in full; null while any of it is still owed. */
+  feeSettledAt: timestamp("fee_settled_at", { withTimezone: true }),
 });
 
 /**
@@ -306,7 +317,7 @@ export const ledgerEntries = pgTable(
     signature: text("signature").notNull(),
     /** Position among the movements in the transaction. */
     eventIndex: integer("event_index").notNull(),
-    /** platform_fee, pool_fee, fee_key, sweep, creator_forward, burn or flywheel so far. */
+    /** platform_fee, pool_fee, fee_key, sweep, creator_forward, burn, flywheel, arweave_top_up, metadata_upload, reward_sale or graduation_fee so far. */
     kind: text("kind").notNull(),
     /** What moved: a Quote Asset or a coin; SOL as the wrapped-SOL mint. */
     assetMint: text("asset_mint").notNull(),

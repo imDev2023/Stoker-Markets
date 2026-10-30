@@ -12,10 +12,10 @@ import { cpmmCoder, launchlabPdas, WSOL_MINT } from "@launchpad/chain";
 import { CPSWAP_CONFIG, LOCAL_QUOTES, localnetKeys, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
 import { FEE_COLLECTOR_CRON } from "@launchpad/stack";
 import { CreatorEarnings, CreatorForwardList, JobRun, LedgerPage, OperatorAlertList, Revenue } from "@launchpad/contract";
+import { freePort, startApi } from "@launchpad/stack";
 import {
-  SOL, coinsOf, connection, deliverWebhook, env, feeAt, feeRates, fundedWallet, launch, launchedCoin, listQuotes, networkFee, platformInfo, quote,
-  solOf,
-  tokenBalance, trade,
+  SOL, coinsOf, connection, deliverWebhook, env, feeAt, feeRates, fundedWallet, getLaunch, graduationFeeIn, launch, launchedCoin, listQuotes, networkFee,
+  platformInfo, quote, rawTransaction, solOf, tokenBalance, trade,
 } from "./client";
 
 const WSOL = WSOL_MINT.toBase58();
@@ -28,7 +28,8 @@ const api = (path: string, init?: RequestInit) => fetch(`${env().apiUrl}${path}`
 const operator = () => ({ authorization: `Bearer ${env().operatorToken}`, "content-type": "application/json" });
 
 type Forward = { creator: string; mint: string; amount: string; signature: string; outcome: string; error?: string };
-type Summary = { settled: unknown[]; sent: Forward[]; belowMinimum: number; problems: string[] };
+type Withheld = { mint: string; creator: string; assetMint: string; amount: string; lamports: string; settled: boolean };
+type Summary = { settled: unknown[]; graduationFees: Withheld[]; sent: Forward[]; belowMinimum: number; problems: string[] };
 
 /** Half of a trade's Platform Fee, rounded down: the Creator's share of it (ADR 0009). */
 const halfOf = (platformFee: string) => BigInt(platformFee) / 2n;
@@ -279,12 +280,13 @@ describe("retries", () => {
   });
 });
 
+/** What the platform receives of a pool's creator fee counter: Raydium keeps `poolCreatorFeeShareBps` of it, floored. */
+async function received(counter: bigint) {
+  const share = BigInt((await platformInfo()).poolCreatorFeeShareBps);
+  return counter - (counter * share) / 10_000n;
+}
+
 describe("after Graduation", () => {
-  /** What the platform receives of a pool's creator fee counter: Raydium keeps `poolCreatorFeeShareBps` of it, floored. */
-  async function received(counter: bigint) {
-    const share = BigInt((await platformInfo()).poolCreatorFeeShareBps);
-    return counter - (counter * share) / 10_000n;
-  }
 
   /** A coin that sold out its curve and was migrated into its pool, open for swaps, all indexed. */
   async function graduatedCoin(quoteMint: PublicKey, buyout: bigint) {
@@ -315,12 +317,17 @@ describe("after Graduation", () => {
 
     const sent = (await collectAndForward()).filter((f) => f.creator === coin.creator.publicKey.toBase58());
     const share = coin.onCurve + poolFee / 2n;
-    expect(sent).toMatchObject([{ mint: WSOL, amount: share.toString(), outcome: "paid" }]);
-    expect((await solOf(coin.creator)) - held).toBe(share);
+    // The coin graduated, so its Graduation Fee (ADR 0015) comes out of the share before it is paid.
+    const fee = await graduationFeeIn(WSOL);
+    expect(sent).toMatchObject([{ mint: WSOL, amount: (share - fee).toString(), outcome: "paid" }]);
+    expect((await solOf(coin.creator)) - held).toBe(share - fee);
 
     const e = await earnings(coin.creator.publicKey);
-    expect(e.launches).toMatchObject([{ mint: coin.mint, status: "graduated", curve: coin.onCurve.toString(), pool: (poolFee / 2n).toString() }]);
-    expect(e.assets[0]).toMatchObject({ earned: share.toString(), forwarded: share.toString(), pending: "0" });
+    expect(e.launches).toMatchObject([{
+      mint: coin.mint, status: "graduated", curve: coin.onCurve.toString(), pool: (poolFee / 2n).toString(),
+      graduationFee: { lamports: fee.toString(), withheld: fee.toString(), paidLamports: fee.toString(), settledAt: expect.any(String) },
+    }]);
+    expect(e.assets[0]).toMatchObject({ earned: share.toString(), withheld: fee.toString(), forwarded: (share - fee).toString(), pending: "0" });
     // The platform keeps the other half, and all of the Fee Key's LP fees.
     const revenue = Revenue.parse(await (await api("/v1/revenue")).json());
     const solTotals = revenue.totals.find((t) => t.asset.mint === WSOL)!;
@@ -338,7 +345,8 @@ describe("after Graduation", () => {
     const poolFee = LedgerPage.parse(await (await api("/v1/ledger?kind=pool_fee&limit=100")).json()).entries.find((e) => e.launch?.mint === coin.mint)!;
     expect(poolFee.asset.mint).toBe(TAXQ.toBase58());
     expect(BigInt(poolFee.amount)).toBeLessThan(BigInt(buy.quote.fees.platform));
-    const share = coin.onCurve + BigInt(poolFee.amount) / 2n;
+    // Less the Graduation Fee (ADR 0015), the fee's worth in TAXQ at the registry's price.
+    const share = coin.onCurve + BigInt(poolFee.amount) / 2n - (await graduationFeeIn(TAXQ.toBase58()));
 
     const forwarded = await runJob("creator-forward");
     expect(forwarded.status, JSON.stringify(forwarded.run)).toBe(200);
@@ -351,6 +359,120 @@ describe("after Graduation", () => {
     expect(await tokenBalance(getAssociatedTokenAddressSync(TAXQ, coin.creator.publicKey, false, TOKEN_2022_PROGRAM_ID))).toBe(share - withheld);
     expect((await ledgerForwards()).find((e) => e.signature === sent[0]!.signature)).toMatchObject({ asset: { symbol: "TAXQ" }, amount: share.toString() });
     expect(await networkFee(sent[0]!.signature)).toBeGreaterThan(0n);
+  });
+});
+
+describe("the Graduation Fee", () => {
+  const ledgerFees = async () => LedgerPage.parse(await (await api("/v1/ledger?kind=graduation_fee&limit=100")).json()).entries;
+
+  it("is fixed when the coin graduates, withheld from the Creator's next forward in the Quote Asset, and on the Ledger against the graduation", async () => {
+    const creator = await fundedWallet();
+    const { prepared, signature } = await launch(creator, { symbol: "GFEE" });
+    await deliverWebhook([signature]);
+    const trader = await fundedWallet(10);
+    const buyout = await trade(trader, prepared.mint, "buy", SOL(2));
+    expect(buyout.quote.completesCurve).toBe(true);
+    const migration = await migrateCurve(connection(), new PublicKey(prepared.pool));
+    await deliverWebhook([buyout.signature, migration.signature]);
+    const onCurve = halfOf(buyout.quote.fees.platform);
+    const fee = BigInt(env().graduationFeeLamports);
+    expect(fee).toBeGreaterThan(0n);
+    expect(onCurve).toBeGreaterThan(fee);
+
+    // Fixed at the setting the moment the Graduation is indexed; nothing withheld before anything is collected.
+    const unpaid = { lamports: fee.toString(), withheld: "0", paidLamports: "0", settledAt: null };
+    expect((await getLaunch(prepared.mint)).launch!.graduation).toMatchObject({ signature: migration.signature, fee: unpaid });
+    expect((await earnings(creator.publicKey)).launches).toMatchObject([{ mint: prepared.mint, graduationFee: unpaid }]);
+    expect((await runJob("creator-forward")).status).toBe(200);
+    expect((await ledgerFees()).filter((e) => e.launch?.mint === prepared.mint)).toEqual([]);
+
+    // The Fee Collector claims the buyout's Platform Fee, and with the Creator's share collected the fee comes out of
+    // it, before the sweep; the forward then pays the rest, as plain SOL.
+    const held = await solOf(creator);
+    const collected = await runJob("fee-collector");
+    expect(collected.status, JSON.stringify(collected.run)).toBe(200);
+    const withheld = (collected.run.summary as { graduationFees: Withheld[] }).graduationFees.filter((w) => w.mint === prepared.mint);
+    expect(withheld).toEqual([{ mint: prepared.mint, creator: creator.publicKey.toBase58(), assetMint: WSOL, amount: fee.toString(), lamports: fee.toString(), settled: true }]);
+    const forwarded = await runJob("creator-forward");
+    expect(forwarded.status, JSON.stringify(forwarded.run)).toBe(200);
+    expect((forwarded.run.summary as Summary).graduationFees.filter((w) => w.mint === prepared.mint)).toEqual([]);
+    expect((forwarded.run.summary as Summary).sent.filter((f) => f.creator === creator.publicKey.toBase58())).toMatchObject([{ mint: WSOL, amount: (onCurve - fee).toString(), outcome: "paid" }]);
+    expect((await solOf(creator)) - held).toBe(onCurve - fee);
+
+    // One Ledger entry, keyed by the graduation's own transaction: the Creator's share to the platform, in SOL, with the coin.
+    const entries = (await ledgerFees()).filter((e) => e.launch?.mint === prepared.mint);
+    expect(entries).toEqual([{
+      signature: migration.signature, index: 1000, kind: "graduation_fee", asset: expect.objectContaining({ mint: WSOL, symbol: "SOL" }), amount: fee.toString(),
+      source: creator.publicKey.toBase58(), destination: ops().toBase58(), launch: { mint: prepared.mint, symbol: expect.stringMatching(/^GFEE/), name: expect.any(String) },
+      slot: expect.any(Number), time: expect.any(String),
+    }]);
+    expect(entries[0]!.slot).toBeGreaterThanOrEqual((await rawTransaction(migration.signature)).slot);
+
+    // The earnings say what was kept; the launch and the Ledger agree; the revenue page counts it as the platform's.
+    const paid = { lamports: fee.toString(), withheld: fee.toString(), paidLamports: fee.toString(), settledAt: expect.any(String) };
+    const e = await earnings(creator.publicKey);
+    expect(e.assets[0]).toMatchObject({ earned: onCurve.toString(), withheld: fee.toString(), forwarded: (onCurve - fee).toString(), pending: "0" });
+    expect(e.launches).toMatchObject([{ mint: prepared.mint, graduationFee: paid }]);
+    expect((await getLaunch(prepared.mint)).launch!.graduation!.fee).toEqual(paid);
+    const revenue = Revenue.parse(await (await api("/v1/revenue")).json());
+    expect(BigInt(revenue.totals.find((t) => t.asset.mint === WSOL)!.graduationFee)).toBeGreaterThanOrEqual(fee);
+
+    // Settled: another collection and forward withhold nothing more, and the Ledger keeps its one entry.
+    const again = await runJob("fee-collector");
+    expect(again.status).toBe(200);
+    expect((again.run.summary as { graduationFees: Withheld[] }).graduationFees.filter((w) => w.mint === prepared.mint)).toEqual([]);
+    expect((await runJob("creator-forward")).status).toBe(200);
+    expect((await ledgerFees()).filter((e) => e.launch?.mint === prepared.mint)).toHaveLength(1);
+  });
+
+  it("never makes a forward negative: a fee larger than the share so far takes all of it, sends nothing, and waits for the next collection", async () => {
+    // A coin graduated under a fee ten times the stack's, through a second API on the same database.
+    const h = env();
+    const bigFee = BigInt(h.graduationFeeLamports) * 10n;
+    const creator = await fundedWallet();
+    const { prepared, signature } = await launch(creator, { symbol: "GBIG" });
+    await deliverWebhook([signature]);
+    const trader = await fundedWallet(10);
+    const buyout = await trade(trader, prepared.mint, "buy", SOL(2));
+    expect(buyout.quote.completesCurve).toBe(true);
+    await deliverWebhook([buyout.signature]);
+    const migration = await migrateCurve(connection(), new PublicKey(prepared.pool));
+    const other = await startApi({ port: await freePort(), databaseUrl: h.databaseUrl, vars: { ...h.apiVars, GRADUATION_FEE_LAMPORTS: bigFee.toString() } });
+    try {
+      const delivered = await fetch(`${other.url}/v1/webhooks/helius`, {
+        method: "POST", headers: { "content-type": "application/json", authorization: h.webhookSecret }, body: JSON.stringify([await rawTransaction(migration.signature)]),
+      });
+      expect(delivered.ok).toBe(true);
+    } finally {
+      await other.stop();
+    }
+    for (let i = 0; i < 40 && !(await quote(prepared.mint, { side: "buy", amount: "1000000" })).ok; i++) await new Promise((r) => setTimeout(r, 250));
+    const onCurve = halfOf(buyout.quote.fees.platform);
+    expect(onCurve).toBeLessThan(bigFee);
+    expect((await getLaunch(prepared.mint)).launch!.graduation!.fee).toEqual({ lamports: bigFee.toString(), withheld: "0", paidLamports: "0", settledAt: null });
+
+    // The whole share so far goes toward the fee; the Creator is sent nothing and nothing goes below zero.
+    const held = await solOf(creator);
+    const sent = await collectAndForward();
+    expect(sent.filter((f) => f.creator === creator.publicKey.toBase58())).toEqual([]);
+    expect(await solOf(creator)).toBe(held);
+    let e = await earnings(creator.publicKey);
+    expect(e.assets[0]).toMatchObject({ earned: onCurve.toString(), withheld: onCurve.toString(), forwarded: "0", pending: "0" });
+    expect(e.launches[0]!.graduationFee).toEqual({ lamports: bigFee.toString(), withheld: onCurve.toString(), paidLamports: onCurve.toString(), settledAt: null });
+
+    // Pool trades bring in more for the Creator, and the next collection takes the rest of the fee, then pays what is left.
+    const buy = await trade(trader, prepared.mint, "buy", SOL(3));
+    await deliverWebhook([buy.signature]);
+    const poolShare = (await received(BigInt(buy.quote.fees.platform))) / 2n;
+    expect(poolShare).toBeGreaterThan(bigFee - onCurve);
+    const more = (await collectAndForward()).filter((f) => f.creator === creator.publicKey.toBase58());
+    expect(more).toMatchObject([{ mint: WSOL, amount: (onCurve + poolShare - bigFee).toString(), outcome: "paid" }]);
+    expect((await solOf(creator)) - held).toBe(onCurve + poolShare - bigFee);
+    e = await earnings(creator.publicKey);
+    expect(e.assets[0]).toMatchObject({ earned: (onCurve + poolShare).toString(), withheld: bigFee.toString(), forwarded: (onCurve + poolShare - bigFee).toString(), pending: "0" });
+    expect(e.launches[0]!.graduationFee).toEqual({ lamports: bigFee.toString(), withheld: bigFee.toString(), paidLamports: bigFee.toString(), settledAt: expect.any(String) });
+    // Two withholdings, two entries on the one graduation transaction.
+    expect((await ledgerFees()).filter((e) => e.launch?.mint === prepared.mint).map((e) => [e.index, e.amount]).sort()).toEqual([[1000, onCurve.toString()], [1001, (bigFee - onCurve).toString()]]);
   });
 });
 

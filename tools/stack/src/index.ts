@@ -54,6 +54,8 @@ export type StackEnv = {
   collectMinLamports: string;
   /** What a Creator must be owed, in lamports' worth, before the Creator Forward pays it. */
   creatorForwardMinLamports: string;
+  /** The Graduation Fee (ADR 0015), in lamports, withheld from a Creator's share once their coin graduates. */
+  graduationFeeLamports: string;
   /** What a referred trade pays its referrer, in basis points, as the API has it. */
   referralShareBps: number;
   /** How long before it applies a fee change must be announced; short, so a test can wait it out. */
@@ -337,6 +339,8 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       sweepFloatLamports: String(2 * LAMPORTS_PER_SOL),
       collectMinLamports: "100000",
       creatorForwardMinLamports: "100000",
+      // Small (0.001 SOL; production charges 0.015), so a test's graduated coin still forwards most of its Creator's share.
+      graduationFeeLamports: "1000000",
     };
     const vars = {
       RPC_URL: chain.rpcUrl,
@@ -369,6 +373,7 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       COLLECT_MIN_LAMPORTS: fees.collectMinLamports,
       // Small, so the Creator Forward pays on the little a test trades; a test that wants to see a share wait trades less.
       CREATOR_FORWARD_MIN_LAMPORTS: fees.creatorForwardMinLamports,
+      GRADUATION_FEE_LAMPORTS: fees.graduationFeeLamports,
       // Short, so a test can announce a rules change and see it refused inside the lead time, then accepted outside it.
       REWARD_RULES_LEAD_SECONDS: "60",
       // Short, so a test can see a copy refused inside a launch's Copy Protection and only labelled after it.

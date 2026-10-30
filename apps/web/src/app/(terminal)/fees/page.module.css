@@ -1,0 +1,210 @@
+/* The Fees page: a title, a lead, the dated line, one table of every fee in a card, and what the platform does with its share. */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-block: clamp(28px, 4vw, 40px) 48px;
+}
+
+.title {
+  margin: 0;
+}
+
+.lead {
+  margin: -4px 0 0;
+  max-width: 72ch;
+  font-size: var(--text-body);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.lead a,
+.dated a,
+.note a,
+.feeNote a {
+  color: var(--accent);
+}
+
+.dated {
+  margin: -8px 0 4px;
+  font-size: var(--text-caption);
+  color: var(--ink-3);
+  text-wrap: pretty;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px;
+  min-width: 0;
+}
+
+.cardTitle {
+  margin: 0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-ui);
+}
+
+.table thead th {
+  padding: 0 12px 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-3);
+  font-size: var(--text-label);
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table tbody th,
+.table td {
+  padding: 14px 12px;
+  vertical-align: top;
+  text-align: left;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.table tbody tr + tr > * {
+  border-top: 1px solid var(--line);
+}
+
+.table tr > :first-child {
+  padding-left: 0;
+}
+
+.table tr > :last-child {
+  padding-right: 0;
+}
+
+/* The fee's own column carries its name, its figure and its note; the other four are a few words each. */
+.table tbody th {
+  width: 38%;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.feeName {
+  display: block;
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.feeAmount {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--text-ui);
+  color: var(--accent);
+}
+
+.feeNote {
+  display: block;
+  margin-top: 6px;
+  font-size: var(--text-caption);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+.feeNote code {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+}
+
+.uses {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.uses li {
+  display: grid;
+  grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
+  gap: 4px 20px;
+  padding: 10px 0;
+  font-size: var(--text-ui);
+}
+
+.uses li + li {
+  border-top: 1px solid var(--line);
+}
+
+.uses li:first-child {
+  padding-top: 0;
+}
+
+.uses li:last-child {
+  padding-bottom: 0;
+}
+
+.uses li > :first-child {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.uses li > :last-child {
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.note {
+  margin: 0;
+  font-size: var(--text-caption);
+  line-height: 1.55;
+  color: var(--ink-3);
+}
+
+/* Under 800px the table is one fee after another: the fee's column on top, then each of the four facts under its label. */
+@media (max-width: 800px) {
+  .table thead {
+    display: none;
+  }
+  .table,
+  .table tbody,
+  .table tr,
+  .table tbody th,
+  .table td {
+    display: block;
+    width: auto;
+  }
+  .table tr {
+    padding: 14px 0;
+  }
+  .table tbody tr + tr {
+    border-top: 1px solid var(--line);
+  }
+  .table tbody tr + tr > * {
+    border-top: 0;
+  }
+  .table tbody th,
+  .table td {
+    padding: 0;
+  }
+  .table td {
+    display: grid;
+    grid-template-columns: minmax(0, 120px) minmax(0, 1fr);
+    gap: 12px;
+    margin-top: 8px;
+    font-size: var(--text-caption);
+  }
+  .table td::before {
+    content: attr(data-label);
+    color: var(--ink-3);
+  }
+  .uses li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .card {
+    padding: 18px;
+  }
+}

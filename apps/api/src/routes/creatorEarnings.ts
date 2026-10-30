@@ -3,16 +3,17 @@ import { HTTPException } from "hono/http-exception";
 import { PublicKey } from "@solana/web3.js";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { WSOL_MINT } from "@launchpad/chain";
-import type { CreatorEarnings, CreatorForwardList, QuoteRef } from "@launchpad/contract";
+import type { CreatorEarnings, CreatorForwardList, GraduationFee, QuoteRef } from "@launchpad/contract";
 import { creatorForwards, curves, graduations, launches, launchMetadata, quoteAssets, type Db } from "@launchpad/db";
 import type { AppEnv } from "../env";
-import { committedForwards, creatorShares, creatorSharesByLaunch } from "../fees/creatorShares";
+import { committedForwards, creatorShares, creatorSharesByLaunch, withheldGraduationFees } from "../fees/creatorShares";
 import { toQuoteRef } from "../quotes/assets";
 
 /**
  * Creator Earnings (ADR 0009): what a Creator has earned from the trades on their Launches, half of what the platform
- * collected on them, per Quote Asset and per Launch, with what has been forwarded to their wallet and what is still to
- * come; and the public history of those Creator Forwards. There is nothing to claim: the platform pays it all.
+ * collected on them, per Quote Asset and per Launch, with what has been forwarded to their wallet, what a Graduation
+ * Fee kept (ADR 0015) and what is still to come; and the public history of those Creator Forwards. There is nothing to
+ * claim: the platform pays it all.
  */
 export const creatorEarningsRoutes = new Hono<AppEnv>();
 
@@ -37,11 +38,17 @@ async function quoteRefs(db: Db, decimals: Map<string, number>) {
     listed.get(mint) ?? { mint, symbol: null, name: null, decimals: decimals.get(mint)!, logo: null, category: "community", issuer: null };
 }
 
+/** A graduated coin's Graduation Fee as the API shows it (ADR 0015); null before Graduation and for a coin that was charged none. */
+export function graduationFeeOf(g: typeof graduations.$inferSelect | null): GraduationFee | null {
+  if (!g || g.feeLamports === "0") return null;
+  return { lamports: g.feeLamports, withheld: g.feeWithheld, paidLamports: g.feePaidLamports, settledAt: g.feeSettledAt?.toISOString() ?? null };
+}
+
 creatorEarningsRoutes.get("/creators/:address/earnings", async (c) => {
   const address = creatorParam(c.req.param("address")).toBase58();
   const db = c.get("db");
   const cfg = c.get("cfg");
-  const [ownLaunches, shares, committed, byLaunch] = await Promise.all([
+  const [ownLaunches, shares, committed, withheld, byLaunch] = await Promise.all([
     db
       .select({
         mint: launches.mint,
@@ -51,6 +58,7 @@ creatorEarningsRoutes.get("/creators/:address/earnings", async (c) => {
         hasMetadata: sql<boolean>`${launchMetadata.id} is not null`,
         status: curves.status,
         graduated: sql<boolean>`${graduations.mint} is not null`,
+        graduation: graduations,
       })
       .from(launches)
       .innerJoin(quoteAssets, eq(quoteAssets.mint, launches.quoteMint))
@@ -61,6 +69,7 @@ creatorEarningsRoutes.get("/creators/:address/earnings", async (c) => {
       .orderBy(desc(launches.createdSlot)),
     creatorShares(db, { collectedOnly: false, creator: address }),
     committedForwards(db, address),
+    withheldGraduationFees(db, address),
     creatorSharesByLaunch(db, address),
   ]);
 
@@ -72,8 +81,10 @@ creatorEarningsRoutes.get("/creators/:address/earnings", async (c) => {
     assets: mints.map((mint) => {
       const share = shares.find((s) => s.mint === mint);
       const earned = share ? share.curve + share.pool : 0n;
+      const kept = withheld.get(`${address} ${mint}`) ?? 0n;
       const forwarded = committed.get(`${address} ${mint}`) ?? 0n;
-      return { quote: quotes.get(mint)!, earned: earned.toString(), forwarded: forwarded.toString(), pending: (earned > forwarded ? earned - forwarded : 0n).toString() };
+      const pending = earned - kept - forwarded;
+      return { quote: quotes.get(mint)!, earned: earned.toString(), withheld: kept.toString(), forwarded: forwarded.toString(), pending: (pending > 0n ? pending : 0n).toString() };
     }),
     launches: ownLaunches.map((l) => ({
       mint: l.mint,
@@ -85,6 +96,7 @@ creatorEarningsRoutes.get("/creators/:address/earnings", async (c) => {
       status: l.graduated ? "graduated" : (l.status ?? "live"),
       curve: byLaunch.curve.get(l.mint) ?? "0",
       pool: byLaunch.pool.get(l.mint) ?? "0",
+      graduationFee: graduationFeeOf(l.graduation),
     })),
   };
   return c.json(res);

@@ -5,7 +5,8 @@ import { creatorForwards, ledgerEntries, type Db } from "@launchpad/db";
 import type { Config } from "../env";
 import { fetchRawTransaction } from "../indexer";
 import { JobFailure } from "../jobs";
-import { committedForwards, creatorShares } from "./creatorShares";
+import { committedForwards, creatorShares, withheldGraduationFees } from "./creatorShares";
+import { withholdGraduationFees, type Withheld } from "./graduationFee";
 import { valuer } from "./value";
 
 const WSOL = WSOL_MINT.toBase58();
@@ -21,6 +22,8 @@ type Sent = { creator: string; mint: string; amount: string; signature: string; 
 export type ForwardSummary = {
   /** Forwards of earlier runs that were still in flight, now settled. */
   settled: { signature: string; outcome: Outcome }[];
+  /** Graduation Fees withheld this run (ADR 0015), each out of what its coin's Creator was owed, before anything was sent. */
+  graduationFees: Withheld[];
   sent: Sent[];
   /**
    * Creators owed something in an asset that is not yet worth the minimum, or SOL too little for an empty wallet to
@@ -37,11 +40,12 @@ export type ForwardSummary = {
  * written down with its signature before it is sent, and what a Creator is owed counts every forward that landed or
  * may still land, so a run that dies half way, or is retried, never pays the same share twice. A landed forward goes
  * on the Ledger. One that fails does not stop the others; the run then fails with its summary, for the operator.
+ * A graduated coin's Graduation Fee (ADR 0015) comes out first: what the Creator is owed on it is paid less the fee.
  */
 export async function forwardCreatorShares({ db, cfg, operations }: ForwardDeps): Promise<ForwardSummary> {
   const connection = new Connection(cfg.rpcUrl, "confirmed");
   const ops = operations.publicKey;
-  const summary: ForwardSummary = { settled: [], sent: [], belowMinimum: 0, problems: [] };
+  const summary: ForwardSummary = { settled: [], graduationFees: [], sent: [], belowMinimum: 0, problems: [] };
 
   // Anything an earlier run sent but could not see land is settled first; a Creator's asset still in flight waits.
   const busy = new Set<string>();
@@ -51,13 +55,15 @@ export async function forwardCreatorShares({ db, cfg, operations }: ForwardDeps)
     else busy.add(`${p.creator} ${p.assetMint}`);
   }
 
-  const [shares, committed, worth] = await Promise.all([
+  summary.graduationFees = await withholdGraduationFees(db, connection, ops);
+  const [shares, committed, withheld, worth] = await Promise.all([
     creatorShares(db, { collectedOnly: true }),
     committedForwards(db),
+    withheldGraduationFees(db),
     valuer(db, cfg.creatorForwardMinLamports),
   ]);
   const owed = shares
-    .map((s) => ({ creator: s.creator, mint: s.mint, amount: s.curve + s.pool - (committed.get(`${s.creator} ${s.mint}`) ?? 0n) }))
+    .map((s) => ({ creator: s.creator, mint: s.mint, amount: s.curve + s.pool - (committed.get(`${s.creator} ${s.mint}`) ?? 0n) - (withheld.get(`${s.creator} ${s.mint}`) ?? 0n) }))
     .filter((o) => o.amount > 0n && !busy.has(`${o.creator} ${o.mint}`))
     // Asset by asset, the largest share first: the Ledger lists a run's forwards in the order they were paid, and a
     // Creator's address says nothing to a reader.

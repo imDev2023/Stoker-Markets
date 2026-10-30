@@ -2,6 +2,7 @@
 
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey, SendTransactionError, VersionedTransaction } from "@solana/web3.js";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type {
   LaunchSummary, PayWith, PlatformInfo, PreparedTrade, SolRoute, TradeQuote, TradeSide, TradeStep, TradeVenue,
@@ -278,57 +279,16 @@ export function TradePanel({
   const shown = r?.prepared.quote ?? quote;
   const route = shown?.route ?? null;
   const moved = shown ? ((shown.priceAfter - shown.priceBefore) / shown.priceBefore) * 100 : 0;
-  // In the pool a sell pays the pool's own fee in the coins going in; every other fee is in the Quote Asset, except the
-  // swap's own fee in front of a buy paid with SOL.
+  // One "Fees" line in the asset paid (owner, 2026-10-30: no rates anywhere but the Fees page): the platform's and
+  // Raydium's fees and any referral fee in the Quote Asset, plus the Quote Asset's own transfer fee where its issuer
+  // takes one; in the pool a sell pays the pool's own fee in the coins going in, and a Reward Launch withholds its
+  // Reward Tax in the coin; a buy paid with SOL pays the swap's own fee in SOL in front.
   const poolFeeInCoins = shown?.venue === "pool" && shown.side === "sell";
   const quoteFees = shown
-    ? BigInt(shown.fees.platform) + BigInt(shown.fees.creator) + (poolFeeInCoins ? 0n : BigInt(shown.fees.raydium)) + BigInt(shown.referral?.fee ?? "0")
+    ? BigInt(shown.fees.platform) + BigInt(shown.fees.creator) + (poolFeeInCoins ? 0n : BigInt(shown.fees.raydium)) + BigInt(shown.referral?.fee ?? "0") +
+      BigInt(shown.transferFees.quote)
     : 0n;
-  type Fee = { label: string; pct: number | null; raw: string; unit: "quote" | "coin" | "sol" };
-  // What the issuers withhold on the way: the Quote Asset's transfer fee, and the coin's Reward Tax on a Reward Launch.
-  const transferFees: Fee[] = !shown
-    ? []
-    : [
-        ...(shown.transferFees.quote !== "0"
-          ? [{ label: `${quoteSymbol} transfer fee`, pct: shown.transferFeeBps.quote / 100, raw: shown.transferFees.quote, unit: "quote" as const }]
-          : []),
-        ...(shown.transferFees.base !== "0"
-          ? [{ label: `${launch.symbol} reward tax`, pct: shown.transferFeeBps.base / 100, raw: shown.transferFees.base, unit: "coin" as const }]
-          : []),
-      ];
-  // Raydium floors its share of a pool trade's creator fee and the platform receives the rest (raydium-cp-swap `settle_creator_fee`).
-  const raydiumShare = shown ? (BigInt(shown.fees.platform) * BigInt(platform.poolCreatorFeeShareBps)) / 10_000n : 0n;
-  const fees: Fee[] = !shown
-    ? []
-    : [
-        ...(route?.fee ? [{ label: `Swap to ${quoteSymbol}`, pct: route.feeBps === null ? null : route.feeBps / 100, raw: route.fee, unit: "sol" as const }] : []),
-        ...(shown.venue === "pool"
-          ? [
-              { label: "Raydium pool fee", pct: shown.feeBps.raydium / 100, raw: shown.fees.raydium, unit: poolFeeInCoins ? ("coin" as const) : ("quote" as const) },
-              // The pool's creator fee is the platform's, less the share Raydium keeps of it when collected (5% on mainnet).
-              { label: "Platform fee", pct: (shown.feeBps.platform * (10_000 - platform.poolCreatorFeeShareBps)) / 1_000_000, raw: (BigInt(shown.fees.platform) - raydiumShare).toString(), unit: "quote" as const },
-              ...(platform.poolCreatorFeeShareBps > 0
-                ? [{ label: "Raydium keeps", pct: (shown.feeBps.platform * platform.poolCreatorFeeShareBps) / 1_000_000, raw: raydiumShare.toString(), unit: "quote" as const }]
-                : []),
-            ]
-          : [
-              { label: "Raydium", pct: shown.feeBps.raydium / 100, raw: shown.fees.raydium, unit: "quote" as const },
-              { label: "Platform fee", pct: shown.feeBps.platform / 100, raw: shown.fees.platform, unit: "quote" as const },
-              // Our platform pays no Creator Fee on-chain (ADR 0009); the row only appears if the admin ever sets one.
-              ...(shown.feeBps.creator > 0
-                ? [{ label: "Creator fee", pct: shown.feeBps.creator / 100, raw: shown.fees.creator, unit: "quote" as const }]
-                : []),
-            ]),
-        ...(shown.referral?.applies ? [{ label: "Referral fee", pct: shown.referral.bps / 100, raw: shown.referral.fee, unit: "quote" as const }] : []),
-      ];
-  const amountOf = (raw: string, unit: Fee["unit"]) =>
-    unit === "coin" ? (
-      <><span className="mono">{formatUnits(raw, COIN_DECIMALS, 0)}</span> {launch.symbol}</>
-    ) : unit === "sol" ? (
-      <><span className="mono">{sol(BigInt(raw))}</span> SOL</>
-    ) : (
-      <><span className="mono">{formatUnits(raw, quoteDecimals, 6)}</span> {quoteSymbol}</>
-    );
+  const coinFees = shown ? (poolFeeInCoins ? BigInt(shown.fees.raydium) : 0n) + BigInt(shown.transferFees.base) : 0n;
 
   return (
     <section className={`card card-raised ${styles.card}`} aria-labelledby="trade-title">
@@ -493,9 +453,9 @@ export function TradePanel({
                 <dt>Fees</dt>
                 <dd>
                   <span className="mono">{formatUnits(quoteFees.toString(), quoteDecimals, 6)}</span> {quoteSymbol}
-                  {poolFeeInCoins && (
+                  {coinFees > 0n && (
                     <>
-                      {" "}+ <span className="mono">{formatUnits(shown.fees.raydium, COIN_DECIMALS, 0)}</span> {launch.symbol}
+                      {" "}+ <span className="mono">{formatUnits(coinFees.toString(), COIN_DECIMALS, 0)}</span> {launch.symbol}
                     </>
                   )}
                   {route?.fee && (
@@ -505,15 +465,10 @@ export function TradePanel({
                   )}
                 </dd>
               </div>
-              {[...fees, ...transferFees].map((f) => (
-                <div key={f.label} className={styles.fee}>
-                  <dt>
-                    {f.label}
-                    {f.pct !== null && <> <span className="mono">{f.pct}%</span></>}
-                  </dt>
-                  <dd>{amountOf(f.raw, f.unit)}</dd>
-                </div>
-              ))}
+              <div className={styles.fee}>
+                <dt>{shown.venue === "pool" ? "Raydium's pool fees and the platform's" : "Raydium's fee and the Platform Fee"}{shown.referral?.applies ? ", the referral share" : ""}{shown.transferFees.base !== "0" ? `, ${launch.symbol}'s reward tax` : ""}{shown.transferFees.quote !== "0" ? `, ${quoteSymbol}'s transfer fee` : ""}</dt>
+                <dd><Link href="/fees" className={styles.feeLink}>Every fee, explained</Link></dd>
+              </div>
             </dl>
           ) : (
             <p className={styles.quoteHint}>

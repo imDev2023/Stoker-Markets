@@ -5,7 +5,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useEffect, useState } from "react";
 import type { CreatorEarnings, CreatorEarningsAsset, CreatorForward, CurveStatus, PlatformInfo } from "@launchpad/contract";
 import { getCreatorEarnings, listCreatorForwards } from "@/lib/api";
-import { creatorEarnings } from "@/lib/fees";
+import { graduationFeeSol } from "@/lib/fees";
 import { explorerUrl, formatUnits, formatUtc, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { Ring } from "./Mark";
 import { QuoteLogo } from "./QuoteLogo";
@@ -29,7 +29,6 @@ export function CreatorDashboard({ platform }: { platform: PlatformInfo }) {
   const { publicKey } = useWallet();
   const creator = publicKey?.toBase58() ?? null;
   const [loaded, setLoaded] = useState<Loaded | null>(null);
-  const earns = creatorEarnings(platform);
 
   useEffect(() => {
     if (!creator) return;
@@ -58,8 +57,7 @@ export function CreatorDashboard({ platform }: { platform: PlatformInfo }) {
       <header className={styles.head}>
         <h1 className={`t-h1 ${styles.title}`}>Your creator earnings</h1>
         <p className={styles.lede}>
-          Your coins earn you {earns.summary}: half of what the platform collects on them, sent straight to your wallet
-          with nothing to claim.
+          Your coins earn you half of what the platform collects on them, sent straight to your wallet with nothing to claim.
         </p>
       </header>
       {!creator ? (
@@ -84,7 +82,7 @@ export function CreatorDashboard({ platform }: { platform: PlatformInfo }) {
 
 /** What the wallet's coins earned, per Quote Asset and per coin, with how it is paid and every payment so far. */
 function Earnings({ earnings, forwards, platform }: { earnings: CreatorEarnings; forwards: CreatorForward[]; platform: PlatformInfo }) {
-  const earns = creatorEarnings(platform);
+  const graduationFee = graduationFeeSol(platform);
   // A Quote Asset whose coins have never traded has earned nothing: nothing to show for it yet.
   const assets = earnings.assets.filter((a) => a.earned !== "0" || a.forwarded !== "0");
   return (
@@ -119,7 +117,10 @@ function Earnings({ earnings, forwards, platform }: { earnings: CreatorEarnings;
                       <span>
                         <span className="mono">{formatUnits(earned.toString(), l.quote.decimals, 6)}</span> {quoteTicker(l.quote)}
                       </span>
-                      <span className={styles.earning}>{EARNING[l.status]}</span>
+                      <span className={styles.earning}>
+                        {EARNING[l.status]}
+                        {l.graduationFee && (l.graduationFee.settledAt ? "; Graduation Fee paid" : "; Graduation Fee coming out of the next payments")}
+                      </span>
                     </span>
                   </Link>
                 </li>
@@ -133,18 +134,20 @@ function Earnings({ earnings, forwards, platform }: { earnings: CreatorEarnings;
         <section className={`card ${styles.rule}`} aria-labelledby="rule-title">
           <h2 id="rule-title" className={`t-h3 ${styles.cardTitle}`}>How you are paid</h2>
           <p>
-            While a coin trades on its curve, every trade pays the Platform Fee, and half of it is yours: ~{earns.curve}% of
-            every trade.
-          </p>
-          <p>
-            After graduation the coin trades in its Raydium pool, where the Platform Fee is {platform.poolCreatorFeeBps / 100}% of
-            every trade, and half of it is yours: ~{earns.pool}% of every trade.
+            While a coin trades on its curve, every trade pays the Platform Fee, and half of it is yours. After graduation the coin
+            trades in its Raydium pool, where the platform collects the pool&apos;s creator fee, and half of what arrives is yours.
           </p>
           <p>
             It arrives in your wallet within about an hour of being collected, once it is worth{" "}
             {formatUnits(platform.creatorForward.minLamports, SOL_DECIMALS)} SOL, with nothing to claim. Every payment is on
-            the <Link href="/revenue">public ledger</Link>.
+            the <Link href="/revenue">public ledger</Link>, and every rate on the <Link href="/fees">Fees page</Link>.
           </p>
+          {graduationFee && (
+            <p>
+              Once a coin graduates, the platform keeps {graduationFee}&apos;s worth of its Quote Asset out of your earnings on it, the
+              Graduation Fee, from your next payments until it is paid; it never comes out of your wallet.
+            </p>
+          )}
         </section>
 
         <section className={`card ${styles.card}`} aria-labelledby="forwards-title">
@@ -196,6 +199,12 @@ function AssetCard({ asset }: { asset: CreatorEarningsAsset }) {
           <dt>Still to be sent</dt>
           <dd><span className="mono">{units(asset.pending)}</span> {symbol}</dd>
         </div>
+        {asset.withheld !== "0" && (
+          <div>
+            <dt>Kept as Graduation Fees</dt>
+            <dd><span className="mono">{units(asset.withheld)}</span> {symbol}</dd>
+          </div>
+        )}
       </dl>
     </section>
   );

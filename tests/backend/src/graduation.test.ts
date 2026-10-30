@@ -109,6 +109,9 @@ describe("Graduation", () => {
       signature: migration.signature,
       graduatedAt: expect.any(String),
       price: null,
+      // The Graduation Fee (ADR 0015) is fixed as the migration is indexed, and nothing of it is withheld until the
+      // Fee Collector has collected something for the Creator.
+      fee: { lamports: env().graduationFeeLamports, withheld: "0", paidLamports: "0", settledAt: null },
     });
     expect(Date.parse(graduated.graduation!.graduatedAt)).toBeGreaterThanOrEqual(Date.parse(graduating.curve.completedAt!));
 

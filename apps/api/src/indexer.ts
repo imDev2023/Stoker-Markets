@@ -270,14 +270,15 @@ async function indexPlatformConfigUpdate(db: Db, e: PlatformConfigUpdated) {
 /**
  * Raydium migrated one of our curves: the Launch has graduated, and any alert about it waiting is resolved. The new
  * pool joins the Helius webhook first, where one is configured, so its swaps keep arriving; if that fails the
- * migration is not recorded, the batch fails, and Helius delivers it again.
+ * migration is not recorded, the batch fails, and Helius delivers it again. The Graduation Fee (ADR 0015) is fixed
+ * here, as the setting stands, for the Fee Collector and the Creator Forward to withhold from the Creator's share.
  */
 async function indexGraduation(db: Db, cfg: Config, e: Graduated) {
   const mint = e.baseMint.toBase58();
   await watchAddresses(cfg, [e.pool.toBase58()]);
   const inserted = await db
     .insert(graduations)
-    .values({ mint, pool: e.pool.toBase58(), signature: e.signature, slot: e.slot, graduatedAt: time(e.blockTime) })
+    .values({ mint, pool: e.pool.toBase58(), signature: e.signature, slot: e.slot, graduatedAt: time(e.blockTime), feeLamports: cfg.graduationFeeLamports.toString() })
     .onConflictDoNothing()
     .returning({ mint: graduations.mint });
   await db

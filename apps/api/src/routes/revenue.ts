@@ -14,7 +14,8 @@ import { toJobRun } from "../jobs";
 export const revenueRoutes = new Hono<AppEnv>();
 
 const WSOL = WSOL_MINT.toBase58();
-const REVENUE_DAYS = 30;
+/** Days with revenue the answer carries: enough for the Stats page's 90-day average. */
+const REVENUE_DAYS = 90;
 
 type StreamSums = { platform_fee?: bigint; pool_fee?: bigint; fee_key?: bigint };
 
@@ -46,7 +47,7 @@ revenueRoutes.get("/revenue", async (c) => {
   ]);
   const asset = await revenueAssets(db, cfg.publicApiUrl, new Map([...totals, ...daily].map((r) => [r.mint, Number(r.decimals)])));
 
-  const byAsset = new Map<string, StreamSums & { sweep?: bigint; creator_forward?: bigint }>();
+  const byAsset = new Map<string, StreamSums & { sweep?: bigint; creator_forward?: bigint; graduation_fee?: bigint }>();
   for (const r of totals) byAsset.set(r.mint, { ...byAsset.get(r.mint), [r.kind]: BigInt(r.amount) });
   const collected = (s: StreamSums) => (s.platform_fee ?? 0n) + (s.pool_fee ?? 0n) + (s.fee_key ?? 0n);
   // SOL first, then by ticker: amounts in different assets don't compare.
@@ -73,6 +74,7 @@ revenueRoutes.get("/revenue", async (c) => {
       .map(([mint, s]) => ({
         asset: asset(mint), ...streams(s), swept: (s.sweep ?? 0n).toString(),
         creatorForwarded: (s.creator_forward ?? 0n).toString(), creatorPending: unforwarded(creators, mint).toString(),
+        graduationFee: (s.graduation_fee ?? 0n).toString(),
       })),
     days: [...days.entries()]
       .sort(([a], [b]) => b.localeCompare(a))

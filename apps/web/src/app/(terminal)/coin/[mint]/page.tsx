@@ -1,9 +1,8 @@
-import { creatorEarnings } from "@/lib/fees";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAirdrop, getCandles, getCoinRewards, getHolders, getLaunch, getPlatform, getQuoteAsset, listTrades } from "@/lib/api";
-import { explorerUrl, formatUtc, isSol, quoteTicker, shortAddress } from "@/lib/format";
+import { explorerUrl, formatUnits, formatUtc, isSol, quoteTicker, shortAddress, SOL_DECIMALS } from "@/lib/format";
 import { AirdropCard } from "@/components/AirdropCard";
 import { CoinMarket } from "@/components/CoinMarket";
 import { CopyButton } from "@/components/CopyButton";
@@ -44,7 +43,6 @@ export default async function CoinPage({ params, searchParams }: Props) {
   // The Quote Asset's card and the stats strip want its price and liquidity; its labels are shown for any asset but SOL (#11).
   const quoteAsset = await getQuoteAsset(launch.quote.mint).catch(() => null);
   // An Airdrop still being paid sits above the market, where its Creator sends it; a finished one joins the facts below.
-  const earns = creatorEarnings(platform);
   const airdropCard = airdrop && <AirdropCard initial={airdrop} symbol={launch.symbol} platform={platform} />;
   const protectionOpen = new Date(launch.protection.until).getTime() <= Date.now();
   const airdropDone = airdrop?.recipients.every((r) => r.status === "paid") ?? false;
@@ -101,10 +99,26 @@ export default async function CoinPage({ params, searchParams }: Props) {
           <div>
             <dt>Creator earns</dt>
             <dd>
-              {earns.summary}
-              <span>Half of what the platform collects on this coin, sent to the Creator&apos;s wallet with nothing to claim.</span>
+              Half of what the platform collects on this coin
+              <span>Sent to the Creator&apos;s wallet with nothing to claim, on the curve and after graduation.</span>
+              <Link href="/fees" className={styles.factLink}>Every fee, explained</Link>
             </dd>
           </div>
+          {launch.graduation?.fee && (
+            <div>
+              <dt>Graduation Fee</dt>
+              <dd>
+                {formatUnits(launch.graduation.fee.lamports, SOL_DECIMALS, 4)} SOL&apos;s worth
+                <span>
+                  {launch.graduation.fee.settledAt
+                    ? `Withheld from the Creator's earnings in full: ${formatUnits(launch.graduation.fee.withheld, launch.quote.decimals, launch.quote.decimals)} ${quote}.`
+                    : launch.graduation.fee.withheld === "0"
+                      ? "Withheld from the Creator's next earnings, in the coin's Quote Asset, once something is collected for them."
+                      : `${formatUnits(launch.graduation.fee.withheld, launch.quote.decimals, launch.quote.decimals)} ${quote} withheld from the Creator's earnings so far; the rest comes out of their next ones.`}
+                </span>
+              </dd>
+            </div>
+          )}
           {launch.rewardTax && (
             <div>
               <dt>Reward tax</dt>

@@ -147,6 +147,11 @@ export const PlatformInfo = z.object({
   platformConfig: base58,
   /** Every Launch's Graduation Target is worth this much SOL, in lamports, at the moment it launches. */
   graduationTargetLamports: z.string(),
+  /**
+   * The Graduation Fee (ADR 0015): what the platform charges when a coin graduates, in lamports, withheld from the
+   * Creator's share of what it collects on the coin in the coin's Quote Asset; "0" when no fee is charged.
+   */
+  graduationFeeLamports: z.string(),
   platformFeeBps: z.number(),
   /** LaunchLab's on-chain creator fee on curve trades, as the chain has it: 0 on our platform (ADR 0009). */
   creatorFeeBps: z.number(),
@@ -165,7 +170,16 @@ export const PlatformInfo = z.object({
    * pays `platformFeeBps + creatorFeeBps + raydiumFee.curveBps` on the curve and `poolCreatorFeeBps + raydiumFee.poolBps`
    * in the pool.
    */
-  raydiumFee: z.object({ curveBps: z.number(), poolBps: z.number() }),
+  raydiumFee: z.object({
+    curveBps: z.number(),
+    poolBps: z.number(),
+    /**
+     * The share of the pool trade fee that stays with the liquidity providers, in basis points of that fee (8400 on
+     * mainnet's config; Raydium keeps the rest as its protocol and fund fees). Every graduated pool's liquidity is locked
+     * with the platform holding its Fee Key, so this share reaches the platform.
+     */
+    poolLpShareBps: z.number(),
+  }),
   /**
    * The Creator Forward (ADR 0009): what the platform pays a Creator, `shareBps` of what it collects on their coin's
    * trades on either venue. That is `curveBps` of every curve trade (out of the Platform Fee) and `poolBps` of every
@@ -177,6 +191,8 @@ export const PlatformInfo = z.object({
   referralShareBps: z.number().int(),
   /** Where buys paid with SOL on a Launch paired with anything else get their Quote Asset; null when this deployment has no route. */
   solRoute: SolRouteSource.nullable(),
+  /** How much less of the Quote Asset than the price gives such a swap may deliver before the buy fails, in basis points: the route's slippage limit, fixed. */
+  solRouteToleranceBps: z.number().int(),
 });
 export type PlatformInfo = z.infer<typeof PlatformInfo>;
 

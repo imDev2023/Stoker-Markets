@@ -18,6 +18,7 @@ const KIND: Record<LedgerKind, string> = {
   arweave_top_up: "Arweave credits bought",
   metadata_upload: "Permanent metadata",
   reward_sale: "Reward Tax sold for holders",
+  graduation_fee: "Graduation Fee, kept from a Creator's share",
 };
 
 /** Entries that move revenue out of the operations wallet rather than into it. */
@@ -36,6 +37,8 @@ function origin(e: LedgerEntry, platform: PlatformInfo) {
   if (e.kind === "metadata_upload")
     return e.launch ? <>Uploaded for <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link>, in credits</> : "Uploaded, in credits";
   if (e.kind === "reward_sale") return e.launch ? <>For the holders of <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link></> : "For holders";
+  // Nothing moved: the Creator's share of what was already collected becomes the platform's, against the graduation.
+  if (e.kind === "graduation_fee") return e.launch ? <>Out of the Creator&apos;s earnings on <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link></> : "Out of a Creator's earnings";
   if (e.kind === "burn" || e.kind === "flywheel")
     return e.launch ? <>Bought and burned <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link></> : "Bought and burned";
   if (e.launch) return <>From <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link></>;

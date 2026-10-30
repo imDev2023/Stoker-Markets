@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "re
 import { LAUNCH_IMAGE_MAX_BYTES, type PlatformInfo, type PreparedLaunch, type QuoteAsset } from "@launchpad/contract";
 import { ApiRequestError, prepareLaunch, reportTransaction, retryLaunch } from "@/lib/api";
 import { landedError } from "@/lib/transactions";
-import { creatorEarnings, creatorShareOf, tradingFee } from "@/lib/fees";
+import { creatorShareOf, graduationFeeSol } from "@/lib/fees";
 import { COIN_DECIMALS, COIN_SUPPLY, formatAmount, formatUnits, isSol, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { quoteKind } from "@/lib/landing";
 import { CopyCheckCard } from "./CopyCheckCard";
@@ -47,7 +47,6 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
   const router = useRouter();
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
-  const earns = creatorEarnings(platform);
   const [name, setName] = useState("");
   const [symbol, setSymbol] = useState("");
   const [description, setDescription] = useState("");
@@ -174,7 +173,6 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
   const failed = step.kind === "failed" ? step : step.kind === "preparing" ? (step.retrying ?? null) : null;
 
   const launchable = quotes.filter((q) => q.launchable).length;
-  const fee = tradingFee(platform);
   const ticker = quote ? quoteTicker(quote) : null;
 
   const header = (
@@ -182,7 +180,7 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
       <h1 className={`t-h1 ${styles.title}`}>Stoke a coin</h1>
       <p className={styles.lede}>
         A fixed-supply coin on a Raydium curve, priced in any of the {launchable.toLocaleString("en-US")} assets Raydium quotes. It moves to
-        its own Raydium pool at its target, and you earn {earns.summary}.
+        its own Raydium pool at its target, and you earn half of what the platform collects on its trades.
       </p>
     </header>
   );
@@ -431,19 +429,20 @@ export function LaunchForm({ platform, quotes, initialQuote = null }: { platform
               </dd>
             </div>
             <div>
-              <dt>Trading fee</dt>
+              <dt>Fees</dt>
               <dd>
-                <span>
-                  <span className="mono">{fee.curve}%</span>{fee.curve === fee.pool ? " of every trade, on the curve and after graduation" : <> of every trade on the curve, <span className="mono">{fee.pool}%</span> after graduation</>}
+                <span>Every trade pays a fee to Raydium and to the platform, on the curve and after graduation</span>
+                <span className={styles.factNote}>
+                  no fee to launch{graduationFeeSol(platform) ? `; ${graduationFeeSol(platform)}'s worth comes out of your earnings once the coin graduates` : ""}.{" "}
+                  <Link href="/fees" className={styles.factLink}>Every fee, explained</Link>
                 </span>
-                <span className={styles.factNote}>{fee.split}</span>
               </dd>
             </div>
             <div>
               <dt>You earn</dt>
               <dd>
-                <span className={`heat-text ${styles.heat}`}>{earns.summary}</span>
-                <span className={styles.factNote}>half of what the platform collects, nothing to claim</span>
+                <span className={`heat-text ${styles.heat}`}>Half of what the platform collects on your coin</span>
+                <span className={styles.factNote}>sent to your wallet in {ticker ?? "the Quote Asset"}, on the curve and after graduation, nothing to claim</span>
               </dd>
             </div>
             <div>
@@ -503,6 +502,12 @@ function SectionHead({ id, title, hint, optional = false, tools }: { id: string;
   );
 }
 
+/** The Graduation Fee (ADR 0015), in the review's words: what the platform keeps of the Creator's earnings once the coin graduates. */
+function graduationFeeNote(platform: PlatformInfo, ticker: string) {
+  const fee = graduationFeeSol(platform);
+  return fee ? ` Once it graduates, ${fee}'s worth of ${ticker} comes out of your earnings on it as the Graduation Fee, never out of your wallet.` : "";
+}
+
 /** What the launch will do, with every amount in the unit it is paid in. */
 function ReviewText({ review, symbol, platform }: { review: Review; symbol: string; platform: PlatformInfo }) {
   const { prepared, quote } = review;
@@ -529,12 +534,12 @@ function ReviewText({ review, symbol, platform }: { review: Review; symbol: stri
           )}{" "}
           Like any trade, the first buy pays the Platform Fee, and half of it,{" "}
           <span className="mono">{formatUnits(creatorShareOf(platform, firstBuy.fees.platform).toString(), quote.decimals, quote.decimals)}</span> {ticker},
-          comes back to you as the coin&apos;s creator.
+          comes back to you as the coin&apos;s creator.{graduationFeeNote(platform, ticker)}
         </p>
       ) : (
         <p>
           Launching <strong>{symbol}</strong> paired with {ticker}. {graduates} Your wallet pays about {sol} in network fees
-          and account rent.
+          and account rent.{graduationFeeNote(platform, ticker)}
         </p>
       )}
       {prepared.rewardTax && (

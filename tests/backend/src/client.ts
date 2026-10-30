@@ -245,6 +245,20 @@ export async function feeRates() {
 /** A fee of `bps` basis points on an amount, rounded up as LaunchLab rounds it. */
 export const feeAt = (amount: bigint, bps: number) => (amount * BigInt(Math.round(bps * 100)) + 999_999n) / 1_000_000n;
 
+/**
+ * The Graduation Fee (ADR 0015) in raw units of a Quote Asset, as the API values it: the stack's `GRADUATION_FEE_LAMPORTS`
+ * at the Quote Registry's price, rounded up so it covers the fee; lamports for SOL itself. `lamports` overrides the
+ * stack's fee for a coin graduated under another setting.
+ */
+export async function graduationFeeIn(mint: string, lamports = BigInt(env().graduationFeeLamports)) {
+  if (mint === WSOL_MINT.toBase58()) return lamports;
+  const q = (await listQuotes()).find((q) => q.mint === mint);
+  if (!q?.price) throw new Error(`${mint} has no price to value the Graduation Fee in`);
+  const [whole, fraction = ""] = q.price.sol.split(".");
+  const divisor = BigInt(whole! + fraction) * 1_000_000_000n;
+  return (lamports * 10n ** BigInt(q.decimals) * 10n ** BigInt(fraction.length) + divisor - 1n) / divisor;
+}
+
 /** A coin launched through the API and indexed, ready to trade. */
 export async function launchedCoin() {
   const creator = await fundedWallet();

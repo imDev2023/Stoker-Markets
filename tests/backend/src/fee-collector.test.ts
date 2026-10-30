@@ -12,7 +12,7 @@ import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet"
 import { FEE_COLLECTOR_CRON } from "@launchpad/stack";
 import { BurnsPage, CoinRewards, HolderList, JobRun, JobRunList, LaunchList, LedgerPage, Revenue, type LedgerEntry } from "@launchpad/contract";
 import {
-  SOL, coinsOf, connection, deliverWebhook, env, feeAt, feeRates, fundedWallet, launch, launchedCoin, networkFee, quote, tokenBalance, trade,
+  SOL, coinsOf, connection, deliverWebhook, env, feeAt, feeRates, fundedWallet, graduationFeeIn, launch, launchedCoin, networkFee, quote, tokenBalance, trade,
  platformInfo, uniqueTag } from "./client";
 
 const programs = programsFor("localnet");
@@ -284,10 +284,17 @@ describe("after Graduation", () => {
     const solIn = sum((await entriesOf(sent.map((s) => s.signature))).filter((e) => e.asset.mint === WSOL && e.kind !== "sweep").map((e) => BigInt(e.amount)));
     expect(solIn).toBe(platformFee + paid + BigInt(keySol.amount));
     const rent = BigInt(await connection().getMinimumBalanceForRentExemption(ACCOUNT_SIZE));
-    // The Creator's share of it (ADR 0009) went on to the Creator: half of the curve's Platform Fee, and half of the pool fee.
+    // The Creator's share of it (ADR 0009) went on to the Creator: half of the curve's Platform Fee, and half of the pool
+    // fee, less the coin's Graduation Fee (ADR 0015), which the run withheld before the sweep.
     const forwards = await forwarded();
+    const share = coin.curveShare + paid / 2n;
+    const graduationFee = await graduationFeeIn(WSOL);
+    expect(graduationFee).toBeLessThan(share);
     expect(forwards).toEqual([
-      { creator: coin.creator.publicKey.toBase58(), mint: WSOL, amount: (coin.curveShare + paid / 2n).toString(), signature: expect.any(String), outcome: "paid" },
+      { creator: coin.creator.publicKey.toBase58(), mint: WSOL, amount: (share - graduationFee).toString(), signature: expect.any(String), outcome: "paid" },
+    ]);
+    expect((run.summary as { graduationFees: { mint: string; amount: string; settled: boolean }[] }).graduationFees).toEqual([
+      { mint: coin.mint, creator: coin.creator.publicKey.toBase58(), assetMint: WSOL, amount: graduationFee.toString(), lamports: env().graduationFeeLamports, settled: true },
     ]);
     expect((await lamportsOf(ops())) - sol).toBe(
       solIn - forwardedIn(forwards, WSOL) - (await networkFees([...sent, ...forwards].map((s) => s.signature))) - 2n * rent,
@@ -321,9 +328,12 @@ describe("after Graduation", () => {
     expect(entries.filter((e) => e.kind === "fee_key").map((e) => e.asset.mint).sort()).toEqual([coin.mint, USDC.toBase58()].sort());
     expect(await quoteCreatorFee(coin.pool, USDC)).toBe(0n);
     // Every USDC collected (the buyout's Platform Fee, the pool fee, the Fee Key's share) went on to the treasury in the
-    // same run, but for the Creator's share: half of the curve's Platform Fee and half of the pool fee, which the Creator got.
+    // same run, but for the Creator's share: half of the curve's Platform Fee and half of the pool fee, which the Creator
+    // got less the Graduation Fee (ADR 0015), the fee's worth in USDC at the registry's price, which the sweep took too.
     const usdcOf = (kinds: string[]) => sum(entries.filter((e) => e.asset.mint === USDC.toBase58() && kinds.includes(e.kind)).map((e) => BigInt(e.amount)));
-    const share = coin.curveShare + paid / 2n;
+    const graduationFee = await graduationFeeIn(USDC.toBase58());
+    const share = coin.curveShare + paid / 2n - graduationFee;
+    expect(graduationFee).toBeGreaterThan(0n);
     expect(usdcOf(["sweep"])).toBe(usdcOf(["platform_fee", "pool_fee", "fee_key"]) - share);
     expect((await tokensOf(treasury(), USDC)) - inTreasury).toBe(usdcOf(["sweep"]));
     expect((await forwarded()).find((f) => f.creator === coin.creator.publicKey.toBase58())).toMatchObject({ mint: USDC.toBase58(), amount: share.toString(), outcome: "paid" });
@@ -480,6 +490,7 @@ describe("the Ledger", () => {
         swept: total(t.asset.mint, "sweep").toString(),
         creatorForwarded: total(t.asset.mint, "creator_forward").toString(),
         creatorPending: expect.stringMatching(/^\d+$/),
+        graduationFee: total(t.asset.mint, "graduation_fee").toString(),
       });
     }
     // Everything here happened today, so today's totals are the all-time totals.

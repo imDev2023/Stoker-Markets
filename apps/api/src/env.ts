@@ -100,6 +100,12 @@ export type Bindings = {
    * Creator Forward pays it (ADR 0009); 0.01 SOL unless set.
    */
   CREATOR_FORWARD_MIN_LAMPORTS?: string;
+  /**
+   * The Graduation Fee (ADR 0015): what the platform charges when a coin graduates, in lamports, withheld from the
+   * Creator's share of what it collects on that coin, in the coin's Quote Asset at the Quote Registry's price; 0.015 SOL
+   * unless set, 0 for no fee.
+   */
+  GRADUATION_FEE_LAMPORTS?: string;
   /** How long before it applies a change to the Reward Round rules must be announced, in seconds (a day on mainnet). */
   REWARD_RULES_LEAD_SECONDS?: string;
   /** The Burn's share of revenue, in basis points; 6000 (60%) unless set. */
@@ -159,6 +165,8 @@ export type Config = {
   sweepFloatLamports: bigint;
   collectMinLamports: bigint;
   creatorForwardMinLamports: bigint;
+  /** The Graduation Fee in lamports (ADR 0015); 0n charges none. */
+  graduationFeeLamports: bigint;
   /** Copy Protection's window after a launch, in seconds. */
   copyProtectionSeconds: number;
   rewardRulesLeadSeconds: number;
@@ -216,6 +224,8 @@ function bps(raw: string | undefined, name: string, fallback: number) {
 const REWARD_RULES_LEAD_DEFAULT_SECONDS = 24 * 60 * 60;
 const BURN_MIN_SPEND_DEFAULT_LAMPORTS = 10_000_000n;
 const CREATOR_FORWARD_MIN_DEFAULT_LAMPORTS = 10_000_000n;
+/** 0.015 SOL: the owner's figure (2026-10-30, ADR 0015), a setting so it can move. */
+const GRADUATION_FEE_DEFAULT_LAMPORTS = 15_000_000n;
 /** Seven days: the owner's choice (2026-10-26), a setting so it can become 30. */
 export const COPY_PROTECTION_DEFAULT_SECONDS = 7 * 86_400;
 const FEE_CHANGE_LEAD_DEFAULT_SECONDS = 24 * 60 * 60;
@@ -329,6 +339,7 @@ export function config(env: Bindings): Config {
     creatorForwardMinLamports: env.CREATOR_FORWARD_MIN_LAMPORTS
       ? lamports(env.CREATOR_FORWARD_MIN_LAMPORTS, "CREATOR_FORWARD_MIN_LAMPORTS")
       : CREATOR_FORWARD_MIN_DEFAULT_LAMPORTS,
+    graduationFeeLamports: env.GRADUATION_FEE_LAMPORTS ? lamports(env.GRADUATION_FEE_LAMPORTS, "GRADUATION_FEE_LAMPORTS") : GRADUATION_FEE_DEFAULT_LAMPORTS,
     rewardRulesLeadSeconds: env.REWARD_RULES_LEAD_SECONDS ? seconds(env.REWARD_RULES_LEAD_SECONDS, "REWARD_RULES_LEAD_SECONDS") : REWARD_RULES_LEAD_DEFAULT_SECONDS,
     burnShareBps: bps(env.BURN_SHARE_BPS, "BURN_SHARE_BPS", 6_000),
     flywheelShareBps: bps(env.FLYWHEEL_SHARE_BPS, "FLYWHEEL_SHARE_BPS", 500),
