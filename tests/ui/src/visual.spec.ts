@@ -13,7 +13,8 @@ import { connectTestWallet, installTestWallet, openWalletMenu, TEST_WALLET_NAME 
 
 // The chart's time axis and candle spacing follow the clock, so its canvases are masked like any other time. Only what is
 // visible: content of a closed <details> still has a box, and masking it would paint over whatever is on screen there.
-const dynamic = (page: Page) => ["time", ".mono:not(input)", "canvas"].map((s) => page.locator(s).filter({ visible: true }));
+// The wallet's avatar draws its hues from the address, which every run draws afresh, so it is masked like the address.
+const dynamic = (page: Page) => ["time", ".mono:not(input)", "canvas", "[data-avatar]"].map((s) => page.locator(s).filter({ visible: true }));
 
 /**
  * A traded coin's amounts and prices follow from the fixed seed trades, so only what really varies is masked: times, the
@@ -25,6 +26,7 @@ const tradedDynamic = (page: Page) => [
   page.locator('dl[aria-label$="candle"] .mono'),
   page.locator("a.mono"),
   page.locator("dl").filter({ hasText: "Launch transaction" }).locator(".mono"),
+  page.locator("[data-avatar]").filter({ visible: true }),
 ];
 
 /** The suite's screenshot styles plus the dialog's own; a call's `stylePath` replaces the config's, so both are named. */
@@ -129,13 +131,23 @@ test("the header's search open, with a match", async ({ page }) => {
 });
 
 test("coin page", async ({ page }) => {
-  await page.goto(`/coin/${await mintOf("Tracer Bullet")}`);
+  await page.goto(`/coin/${await mintOf("First Light")}`);
   await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
   await snap(page, "coin.png");
 });
 
 test("coin page with the longest name and ticker", async ({ page }) => {
   await page.goto(`/coin/${await mintOf("Maximum Length Coin Name Here 32")}`);
+  // The page says "Copy protection until" inside the stack's 45-second window and "ended" after it, and the first look's
+  // shot can land either side of that line depending on the run's speed (the light desktop baseline flipped once, 2026-10-29),
+  // so the shot waits for the window to end; the label is rendered on the server, so it takes a reload to change.
+  await expect
+    .poll(async () => {
+      if (await page.getByText("Copy protection ended").isVisible()) return true;
+      await page.reload();
+      return false;
+    }, { timeout: 60_000, intervals: [2_000] })
+    .toBe(true);
   await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
   await snap(page, "coin-longest.png");
 });

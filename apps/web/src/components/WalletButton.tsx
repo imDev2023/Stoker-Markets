@@ -35,7 +35,7 @@ export function Avatar({ address, size = 24 }: { address: string; size?: number 
     else b = (b * 37 + c) % 360;
   }
   const style = { width: size, height: size, background: `linear-gradient(135deg, hsl(${a} 70% 56%), hsl(${(a + 40 + (b % 80)) % 360} 72% 38%))` };
-  return <span className={styles.avatar} style={style} aria-hidden="true" />;
+  return <span className={styles.avatar} style={style} data-avatar aria-hidden="true" />;
 }
 
 /**

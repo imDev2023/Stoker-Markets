@@ -23,6 +23,16 @@ export const SEEDED: LaunchFields[] = [
     website: "https://example.com",
   },
   { name: "Signal Fire", symbol: "$FIRE", description: "Short." },
+  // Fresh off the form with a website and both socials and no trade yet: the coin page's own shot (it was a flow's coin
+  // until the visuals moved ahead of the flows, 2026-10-30).
+  {
+    name: "First Light",
+    symbol: "FRST",
+    description: "A coin fresh off the form, with a website and both socials, before its first trade.",
+    website: "https://example.com/first",
+    x: "https://x.com/firstlight",
+    telegram: "https://t.me/firstlight",
+  },
 ];
 
 /** A coin Raydium moved into its pool, which has traded there since. */
