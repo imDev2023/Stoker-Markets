@@ -2,7 +2,7 @@ import { z } from "zod";
 import { LaunchMarket } from "./board";
 import { GraduationTarget, QuoteRef } from "./quotes";
 import { CurveProgress, Graduation, SolRouteSource } from "./trades";
-import { LaunchModeFields, LaunchModesSummary, RewardTax } from "./launchModes";
+import { CreatorEarningsDestination, LaunchModeFields, LaunchModesSummary, RewardTax } from "./launchModes";
 
 /** The public API contract, shared by the API (which validates with it) and every client, including our web app. */
 
@@ -114,6 +114,8 @@ export const LaunchSummary = z.object({
   graduation: Graduation.nullable(),
   /** A Reward Launch's Reward Tax; null for a standard coin. */
   rewardTax: RewardTax.nullable(),
+  /** Where the Creator's earnings go (ADR 0011): a coin launched without our API pays its Creator's wallet. */
+  earningsDestination: CreatorEarningsDestination,
   market: LaunchMarket,
   /** Copy Protection (#120, ADR 0012): until when nobody else may launch a coin here with this one's name, ticker or image. */
   protection: z.object({ until: z.iso.datetime() }),

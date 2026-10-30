@@ -36,6 +36,14 @@ export type RewardTaxBps = z.infer<typeof RewardTaxBps>;
 export const RewardPayoutAsset = z.enum(["coin", "quote"]);
 export type RewardPayoutAsset = z.infer<typeof RewardPayoutAsset>;
 
+/**
+ * Where a Creator's earnings go (ADR 0011, #113), chosen on the launch form and fixed for the coin's life: to the
+ * Creator's wallet as Creator Forwards; to the coin's holders, pro rata in the Quote Asset through Reward Rounds; or
+ * into a buyback of the coin in its own market, on the curve or in its pool, that burns what it buys.
+ */
+export const CreatorEarningsDestination = z.enum(["wallet", "holders", "burn"]);
+export type CreatorEarningsDestination = z.infer<typeof CreatorEarningsDestination>;
+
 /** A form field carrying a Reward Tax in basis points, or nothing for a standard Launch. */
 const rewardTaxField = z
   .union([z.enum(["100", "300", "500"]), z.literal("")])
@@ -51,6 +59,8 @@ export const LaunchModeFields = z.object({
   rewardTax: rewardTaxField,
   /** A Reward Launch's Payout Asset; `coin` unless set. Refused without `rewardTax`. */
   rewardPayout: z.union([RewardPayoutAsset, z.literal("")]).optional().transform((v) => v || undefined),
+  /** Where the Creator's earnings go; `wallet` unless set. Any coin may choose. */
+  earningsDestination: z.union([CreatorEarningsDestination, z.literal("")]).optional().transform((v) => v || undefined),
   /** Quote Asset the Creator spends on a first buy inside the launch transaction, raw units. */
   firstBuy: z.union([positiveRaw, z.literal("")]).optional().transform((v) => v || undefined),
   /** JSON array of `{ wallet, amount }`, paid from the first buy's coins once the coin has launched. */
@@ -87,6 +97,8 @@ export type RewardTax = z.infer<typeof RewardTax>;
 export const LaunchModesSummary = z.object({
   /** The Reward Tax the coin carries and what it is paid out in, or null for a standard coin. */
   rewardTax: z.object({ bps: z.number().int(), payout: RewardPayoutAsset }).nullable(),
+  /** Where the Creator's earnings go, for good. */
+  earningsDestination: CreatorEarningsDestination,
   /** The first buy, exact: it is the curve's first trade and lands in the launch transaction. Null without one. */
   firstBuy: TradeQuote.nullable(),
   /** The airdrop, paid from the first buy's coins in separate transactions once the coin has launched. */

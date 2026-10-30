@@ -1,0 +1,2 @@
+ALTER TABLE "launch_drafts" ADD COLUMN "earnings_destination" text DEFAULT 'wallet' NOT NULL;--> statement-breakpoint
+ALTER TABLE "launches" ADD COLUMN "earnings_destination" text DEFAULT 'wallet' NOT NULL;

@@ -41,6 +41,8 @@ export type LaunchForm = {
   rewardTax?: string;
   /** A Reward Launch's Payout Asset, "coin" or "quote"; the API takes "coin" when left out. */
   rewardPayout?: string;
+  /** Where the Creator's earnings go: "wallet", "holders" or "burn"; the API takes "wallet" when left out. */
+  earningsDestination?: string;
   /** Sent as the JSON text the multipart form carries; a string is sent as it is. */
   airdrop?: { wallet: string; amount: string }[] | string;
   /** Leaves the Creator off the operator's airdrop list, to see the API refuse; otherwise `prepare` allows a Creator who sends an airdrop. */
