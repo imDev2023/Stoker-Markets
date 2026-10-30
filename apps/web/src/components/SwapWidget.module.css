@@ -41,22 +41,10 @@
   color: #2fd3c0;
 }
 
-.foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
 .note {
   margin: 0;
   font-size: var(--text-caption);
   color: var(--ink-3);
-}
-
-.connect {
-  display: contents;
 }
 
 @media (max-width: 640px) {

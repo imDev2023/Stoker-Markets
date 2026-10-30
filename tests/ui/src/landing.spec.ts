@@ -31,12 +31,12 @@ test("the most traded coin's trade panel stands in the hero", async ({ page }) =
   await expectNoHorizontalOverflow(page);
 });
 
-test("the swap candidate frames Jupiter's plugin, which the suite serves empty", async ({ page }) => {
-  await page.goto("/?hero=swap");
+test("the swap is the hero, and the live rows stand in where Jupiter's plugin can't load, as the suite serves it", async ({ page }) => {
+  await page.goto("/");
   const h = hero(page);
-  await expect(h.getByRole("status")).toHaveText(/Jupiter's swap did not load here/);
-  await expect(h.getByRole("link", { name: "Open jup.ag" })).toHaveAttribute("href", "https://jup.ag/swap/SOL-USDC");
-  await expect(h.getByRole("button", { name: "Connect wallet" })).toBeVisible();
+  // The Plugin's script comes back empty here (tests/ui/src/fixtures.ts), so the owner's second choice stands: the rows.
+  await expect(h.getByRole("list", { name: "Most traded today" }).getByRole("link").first()).toBeVisible();
+  await expect(h.getByRole("status")).toHaveCount(0);
 });
 
 test("header H9: five words in the bar with the current one marked, held across the site, and a tab bar on a phone", async ({ page }) => {

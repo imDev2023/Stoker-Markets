@@ -1,4 +1,4 @@
-import type { BurnsPage, PlatformStats, QuoteAsset, QuoteIssuer, Revenue } from "@launchpad/contract";
+import type { BurnsPage, PlatformStats, QuoteAsset, Revenue } from "@launchpad/contract";
 import type { Figure } from "@/components/Stats";
 import { ISSUER_LABELS } from "./board";
 
@@ -38,13 +38,14 @@ export function deepestQuotes(launchable: QuoteAsset[], count = 8): QuoteAsset[]
  * live; the pair mark cycling through the assets a coin is priced in; the ring at size; the stoke (the ring heating
  * from coal in a slow loop, asked for by the owner on 2026-10-29); the stoke with the pair cycle under it; and the three
  * the owner asked for on 2026-10-30 with the right side made live: the pair picker (name, ticker and the asset, which
- * opens the launch form filled), the most traded coin's real trade panel, and Jupiter's swap. `rows` is the build's
- * default and shows the cycle until the first coin launches.
+ * opens the launch form filled), the most traded coin's real trade panel, and Jupiter's swap, which the owner picked
+ * on 2026-10-30 (`swap`, the default) with the rows as their second choice (`rows` stands in when the Plugin's script
+ * can't load, and shows the cycle until the first coin launches).
  */
 export const HERO_VARIANTS = ["rows", "cycle", "ring", "stoke", "stoke-cycle", "picker", "trade", "swap"] as const;
 export type HeroVariant = (typeof HERO_VARIANTS)[number];
 export const heroVariantFrom = (value: string | string[] | undefined): HeroVariant =>
-  (HERO_VARIANTS as readonly string[]).includes(typeof value === "string" ? value : "") ? (value as HeroVariant) : "rows";
+  (HERO_VARIANTS as readonly string[]).includes(typeof value === "string" ? value : "") ? (value as HeroVariant) : "swap";
 
 /**
  * The recommended few ahead of the hundreds (docs/design/layout.md): SOL, the deepest stablecoin and the deepest stock,
@@ -55,13 +56,14 @@ export function recommendedQuotes(quotes: QuoteAsset[]): QuoteAsset[] {
   return [first("sol"), first("stablecoin"), first("tokenized_stock")].filter((q): q is QuoteAsset => q !== undefined);
 }
 
-/** The tickers the proof row and the cycle lead with, one of each kind the lede names: the money, then the stocks. */
+/** The tickers the cycle leads with, one of each kind the lede names: the money, then the stocks. */
 const PROOF_TICKERS = ["SOL", "USDC", "NVDAx", "SPYx", "TSLAx"] as const;
 
 /**
- * The assets that prove the lede on the first screen (#133): SOL, USDC and three xStocks by ticker, then the deepest
- * meme, each only where this chain's registry has it; a young registry (devnet quotes two assets) fills the row with its
- * deepest markets instead, so the row is never short and never a promise the chain can't keep.
+ * The assets that prove the lede (#133; the proof row that showed them under the hero was removed by the owner on
+ * 2026-10-30, and the cycle still turns through them): SOL, USDC and three xStocks by ticker, then the deepest meme,
+ * each only where this chain's registry has it; a young registry (devnet quotes two assets) fills in with its deepest
+ * markets instead, so the list is never short and never a promise the chain can't keep.
  */
 export function proofQuotes(launchable: QuoteAsset[], count = 6): QuoteAsset[] {
   const bySymbol = new Map(launchable.map((q) => [q.symbol, q]));
@@ -74,18 +76,6 @@ export function proofQuotes(launchable: QuoteAsset[], count = 6): QuoteAsset[] {
 
 /** The assets the hero's pair cycles through: SOL, USDC, NVDAx and SPYx where the registry has them, else the deepest. */
 export const cycleQuotes = (launchable: QuoteAsset[]) => proofQuotes(launchable, 4).filter((q) => q.category !== "meme").slice(0, 4);
-
-export type IssuerCount = { issuer: QuoteIssuer; label: string; stocks: number };
-
-/** The stock issuers whose stocks a coin can be priced in on this chain, with how many each brings; none on a chain without stocks. */
-export function issuerCounts(launchable: QuoteAsset[]): IssuerCount[] {
-  const counts = new Map<QuoteIssuer, number>();
-  for (const q of launchable) if (q.category === "tokenized_stock" && q.issuer) counts.set(q.issuer, (counts.get(q.issuer) ?? 0) + 1);
-  return (Object.keys(ISSUER_LABELS) as QuoteIssuer[])
-    .filter((issuer) => counts.has(issuer))
-    .map((issuer) => ({ issuer, label: ISSUER_LABELS[issuer], stocks: counts.get(issuer)! }))
-    .sort((a, b) => b.stocks - a.stocks);
-}
 
 /** Raw amounts of several assets, added up in SOL at the registry's latest prices; an asset without a price is left out. */
 export function sumInSol(entries: { asset: { mint: string; decimals: number }; amount: string }[], quotes: QuoteAsset[]) {

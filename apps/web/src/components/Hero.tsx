@@ -9,7 +9,7 @@ import styles from "./Hero.module.css";
  * The landing's hero on the grid (#133, after the research's section 4): the slogan (owner, 2026-10-09) and one lede
  * naming the mechanism in six columns, the filled action and a text link, and in the other six the product itself,
  * one of the visuals the owner picks from (`variant`, src/lib/landing.ts). No glow, no dot grid: at most 70% of the viewport, so the
- * proof row under it is cut by the fold. The count is live from the Quote Registry, so the lede is a fact of this chain.
+ * next section is cut by the fold. The count is live from the Quote Registry, so the lede is a fact of this chain.
  */
 export function Hero({ quotes, launches, variant, platform }: { quotes: QuoteAsset[]; launches: LaunchSummary[]; variant: HeroVariant; platform: PlatformInfo }) {
   const count = quotes.length.toLocaleString("en-US");

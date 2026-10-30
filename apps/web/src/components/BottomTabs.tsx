@@ -77,7 +77,7 @@ export function BottomTabs() {
           <span>Stoke</span>
         </Link>
         {RIGHT.map(tab)}
-        <button type="button" className={styles.tab} onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-controls={id}>
+        <button type="button" className={styles.tab} onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-controls={id} data-wallet-connect>
           {publicKey ? (
             <Avatar address={publicKey.toBase58()} size={22} />
           ) : (

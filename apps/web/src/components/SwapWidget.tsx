@@ -1,8 +1,7 @@
 "use client";
 
 import { useWallet, type WalletContextState } from "@solana/wallet-adapter-react";
-import { useEffect, useRef, useState } from "react";
-import { WalletButton } from "./WalletButton";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import styles from "./SwapWidget.module.css";
 
 /**
@@ -14,7 +13,7 @@ const TARGET_ID = "jupiter-plugin";
 const SOL = "So11111111111111111111111111111111111111112";
 const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 /** The integrated form needs a fixed height, or its token search collapses it (the Plugin's FAQ). */
-const HEIGHT = 568;
+const HEIGHT = 520;
 /**
  * The referral account the owner creates on referral.jup.ag and sets at build time, and the fee it takes (50 to 255
  * basis points, of which Jupiter keeps 20%); without the account no fee is charged and the swap is Jupiter's plain one.
@@ -77,16 +76,26 @@ function loadPlugin(): Promise<JupiterPlugin> {
 
 type State = "loading" | "ready" | "failed";
 
+/** Opens the site's own wallet control: the first one in view, marked `data-wallet-connect` (the header's button, the phone tab bar's account tab). */
+function requestConnect() {
+  for (const el of document.querySelectorAll<HTMLElement>("[data-wallet-connect]")) {
+    if (el.offsetParent !== null) {
+      el.click();
+      return;
+    }
+  }
+}
+
 /**
  * The token swap in the hero (#133, candidate H, owner 2026-10-30): Jupiter Plugin in integrated mode, SOL to USDC as
  * the opening pair, the wallet passed through from our adapter so one connect serves the whole site, and the colours
  * from our tokens on a dark tile in both schemes. The widget swaps on Solana mainnet from the browser whatever cluster the API is on;
  * everything else on the site stays a client of our API. A referral fee applies once `NEXT_PUBLIC_JUPITER_REFERRAL` is set.
+ * When the Plugin's script can't load, `fallback` stands in its place (the owner's second choice, the live rows).
  */
-export function SwapWidget() {
+export function SwapWidget({ fallback = null }: { fallback?: ReactNode }) {
   const wallet = useWallet();
   const [state, setState] = useState<State>("loading");
-  const connect = useRef<HTMLDivElement>(null);
   const latest = useRef(wallet);
   latest.current = wallet;
 
@@ -105,8 +114,8 @@ export function SwapWidget() {
           integratedTargetId: TARGET_ID,
           enableWalletPassthrough: true,
           passthroughWalletContextState: latest.current,
-          // Our own connect: the Plugin asks, and the wallet button beside it opens.
-          onRequestConnectWallet: () => connect.current?.querySelector("button")?.click(),
+          // Our own connect: the Plugin asks, and the site's wallet control opens (the header's, or the account tab on a phone).
+          onRequestConnectWallet: () => requestConnect(),
           formProps: {
             initialInputMint: SOL,
             initialOutputMint: USDC,
@@ -132,6 +141,7 @@ export function SwapWidget() {
     if (state === "ready") window.Jupiter?.syncProps({ passthroughWalletContextState: wallet });
   }, [state, wallet]);
 
+  if (state === "failed" && fallback) return <>{fallback}</>;
   return (
     <div className={styles.swap}>
       <div className={styles.frame} data-state={state} style={{ minHeight: HEIGHT }}>
@@ -151,14 +161,9 @@ export function SwapWidget() {
           </p>
         )}
       </div>
-      <div className={styles.foot}>
-        <p className={styles.note}>Any Solana token for any other, through Jupiter, on mainnet.</p>
-        {!wallet.publicKey && (
-          <div ref={connect} className={styles.connect}>
-            <WalletButton variant="inline" />
-          </div>
-        )}
-      </div>
+      <p className={styles.note}>
+        Any Solana token for any other, through Jupiter, on mainnet.{REFERRAL ? " Stoker takes a small fee on each swap." : ""}
+      </p>
     </div>
   );
 }
