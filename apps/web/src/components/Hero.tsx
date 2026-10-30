@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { LaunchSummary, QuoteAsset } from "@launchpad/contract";
+import type { LaunchSummary, PlatformInfo, QuoteAsset } from "@launchpad/contract";
 import { cycleQuotes, type HeroVariant } from "@/lib/landing";
 import { LAUNCH_LINK } from "@/lib/site";
 import { HeroVisual } from "./HeroVisual";
@@ -8,10 +8,10 @@ import styles from "./Hero.module.css";
 /**
  * The landing's hero on the grid (#133, after the research's section 4): the slogan (owner, 2026-10-09) and one lede
  * naming the mechanism in six columns, the filled action and a text link, and in the other six the product itself,
- * one of three visuals the owner picks from (`variant`). No glow, no dot grid: at most 70% of the viewport, so the
+ * one of the visuals the owner picks from (`variant`, src/lib/landing.ts). No glow, no dot grid: at most 70% of the viewport, so the
  * proof row under it is cut by the fold. The count is live from the Quote Registry, so the lede is a fact of this chain.
  */
-export function Hero({ quotes, launches, variant }: { quotes: QuoteAsset[]; launches: LaunchSummary[]; variant: HeroVariant }) {
+export function Hero({ quotes, launches, variant, platform }: { quotes: QuoteAsset[]; launches: LaunchSummary[]; variant: HeroVariant; platform: PlatformInfo }) {
   const count = quotes.length.toLocaleString("en-US");
   return (
     <section className={`shell ${styles.hero}`} aria-labelledby="hero-title">
@@ -31,7 +31,7 @@ export function Hero({ quotes, launches, variant }: { quotes: QuoteAsset[]; laun
           </div>
         </div>
         <div className={`col-6 ${styles.visual}`}>
-          <HeroVisual variant={variant} launches={launches.slice(0, 5)} quotes={cycleQuotes(quotes)} />
+          <HeroVisual variant={variant} launches={launches.slice(0, 5)} quotes={quotes} cycle={cycleQuotes(quotes)} platform={platform} />
         </div>
       </div>
     </section>

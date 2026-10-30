@@ -36,13 +36,24 @@ export function deepestQuotes(launchable: QuoteAsset[], count = 8): QuoteAsset[]
 /**
  * The hero's visual candidates (#133; the owner picks by elimination on the real site, `?hero=`): the board's top rows,
  * live; the pair mark cycling through the assets a coin is priced in; the ring at size; the stoke (the ring heating
- * from coal in a slow loop, asked for by the owner on 2026-10-29); the stoke with the pair cycle under it. `rows` is
- * the build's default and shows the cycle until the first coin launches.
+ * from coal in a slow loop, asked for by the owner on 2026-10-29); the stoke with the pair cycle under it; and the three
+ * the owner asked for on 2026-10-30 with the right side made live: the pair picker (name, ticker and the asset, which
+ * opens the launch form filled), the most traded coin's real trade panel, and Jupiter's swap. `rows` is the build's
+ * default and shows the cycle until the first coin launches.
  */
-export const HERO_VARIANTS = ["rows", "cycle", "ring", "stoke", "stoke-cycle"] as const;
+export const HERO_VARIANTS = ["rows", "cycle", "ring", "stoke", "stoke-cycle", "picker", "trade", "swap"] as const;
 export type HeroVariant = (typeof HERO_VARIANTS)[number];
 export const heroVariantFrom = (value: string | string[] | undefined): HeroVariant =>
   (HERO_VARIANTS as readonly string[]).includes(typeof value === "string" ? value : "") ? (value as HeroVariant) : "rows";
+
+/**
+ * The recommended few ahead of the hundreds (docs/design/layout.md): SOL, the deepest stablecoin and the deepest stock,
+ * which the registry's order (deepest first) picks out. The launch form's chooser and the hero's pair picker lead with them.
+ */
+export function recommendedQuotes(quotes: QuoteAsset[]): QuoteAsset[] {
+  const first = (category: QuoteAsset["category"]) => quotes.find((q) => q.category === category && q.launchable);
+  return [first("sol"), first("stablecoin"), first("tokenized_stock")].filter((q): q is QuoteAsset => q !== undefined);
+}
 
 /** The tickers the proof row and the cycle lead with, one of each kind the lede names: the money, then the stocks. */
 const PROOF_TICKERS = ["SOL", "USDC", "NVDAx", "SPYx", "TSLAx"] as const;

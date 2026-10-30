@@ -262,6 +262,40 @@
   color: var(--ink-3);
 }
 
+/* H9's variant: the disc alone as the trigger, in place; the field grows leftward from it when opened. */
+.icon {
+  width: 40px;
+}
+
+.icon .trigger {
+  justify-content: center;
+  padding: 0;
+}
+
+/* The day's change and the curve's progress under the price (H9's rows). */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.track {
+  display: block;
+  width: 48px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--sunken);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--heat);
+}
+
 @media (max-width: 640px) {
   .root {
     width: 40px;

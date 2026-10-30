@@ -27,7 +27,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const empty = trending.launches.length === 0;
   return (
     <div className="landing">
-      <Hero quotes={launchable} launches={trending.launches} variant={heroVariantFrom(hero)} />
+      <Hero quotes={launchable} launches={trending.launches} variant={heroVariantFrom(hero)} platform={platform} />
       <Proof quotes={launchable} />
       <Stats figures={landingFigures({ quotes: quotes.quotes, stats, revenue, burns })} since={stats?.since ?? null} />
       <Ideas platform={platform} quotes={launchable} />

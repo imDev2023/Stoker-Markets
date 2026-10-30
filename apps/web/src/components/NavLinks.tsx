@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { API_LINK, LAUNCH_LINK, NAV_LINKS, type NavLink } from "@/lib/site";
 import styles from "./SiteHeader.module.css";
+import h9 from "./SiteHeaderH9.module.css";
 
 const under = (href: string, pathname: string) => pathname === href || pathname.startsWith(`${href}/`) || (href === "/coins" && pathname.startsWith("/coin/"));
 
@@ -54,5 +55,26 @@ export function LaunchLink({ className = "", wordClassName = "" }: { className?:
         Stoke<span className={wordClassName}> a coin</span>
       </span>
     </Link>
+  );
+}
+
+/**
+ * H9's five words (#133, owner 2026-10-30), ordered by a trader's frequency: Explore, Assets, Rewards, Stats, then
+ * Curated tagged "soon" until a Curated Launch exists (#118). Developers is the footer's; the names stay.
+ */
+export const H9_LINKS: readonly NavLink[] = [NAV_LINKS[0], NAV_LINKS[2], NAV_LINKS[3], NAV_LINKS[4], NAV_LINKS[1]];
+
+/** The words in the bar, the current one marked by the ink, the weight and a bar in the accent under it. */
+export function NavLinksH9() {
+  const pathname = usePathname();
+  return (
+    <nav className={h9.nav} aria-label="Main">
+      {H9_LINKS.map((l) => (
+        <Link key={l.href} href={l.href} className={h9.link} aria-current={isCurrent(l, pathname) ? "page" : undefined}>
+          {l.label}
+          {l.href === "/curated" && <span className={`tag ${h9.soon}`}>soon</span>}
+        </Link>
+      ))}
+    </nav>
   );
 }

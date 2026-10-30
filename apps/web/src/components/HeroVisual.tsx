@@ -2,18 +2,21 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { LaunchSummary, QuoteAsset } from "@launchpad/contract";
+import type { LaunchSummary, PlatformInfo, QuoteAsset } from "@launchpad/contract";
 import { listLaunches } from "@/lib/api";
 import type { HeroVariant } from "@/lib/landing";
 import { quoteKind } from "@/lib/landing";
 import { quoteTicker } from "@/lib/format";
 import { CoinImage } from "./CoinImage";
 import { Change } from "./Change";
+import { HeroPicker } from "./HeroPicker";
+import { HeroTrade } from "./HeroTrade";
 import { Ring } from "./Mark";
 import { PairMark } from "./PairMark";
 import { Price } from "./Price";
 import { QuoteLogo } from "./QuoteLogo";
 import { Stoke } from "./Stoke";
+import { SwapWidget } from "./SwapWidget";
 import styles from "./HeroVisual.module.css";
 
 const REFRESH_MS = 4_000;
@@ -134,10 +137,24 @@ function StokeAtSize({ quotes }: { quotes?: QuoteAsset[] }) {
 }
 
 /** The hero's visual, one of the candidates (src/lib/landing.ts). */
-export function HeroVisual({ variant, launches, quotes }: { variant: HeroVariant; launches: LaunchSummary[]; quotes: QuoteAsset[] }) {
+export function HeroVisual({
+  variant, launches, quotes, cycle, platform,
+}: {
+  variant: HeroVariant;
+  launches: LaunchSummary[];
+  /** Every asset a coin can be paired with on this chain, for the picker. */
+  quotes: QuoteAsset[];
+  /** The few the pair cycle turns through. */
+  cycle: QuoteAsset[];
+  platform: PlatformInfo;
+}) {
   if (variant === "ring") return <RingAtSize />;
   if (variant === "stoke") return <StokeAtSize />;
-  if (variant === "stoke-cycle") return <StokeAtSize quotes={quotes} />;
-  if (variant === "cycle") return <Cycle quotes={quotes} />;
-  return <Rows initial={launches} quotes={quotes} />;
+  if (variant === "stoke-cycle") return <StokeAtSize quotes={cycle} />;
+  if (variant === "cycle") return <Cycle quotes={cycle} />;
+  if (variant === "picker") return <HeroPicker quotes={quotes} />;
+  // The trade panel wants a coin; until the first launch the cycle stands here, as it does for the rows.
+  if (variant === "trade") return launches[0] ? <HeroTrade initial={launches[0]} platform={platform} /> : <Cycle quotes={cycle} />;
+  if (variant === "swap") return <SwapWidget />;
+  return <Rows initial={launches} quotes={cycle} />;
 }

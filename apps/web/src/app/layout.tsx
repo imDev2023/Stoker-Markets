@@ -9,8 +9,11 @@ import { ClusterNotice } from "@/components/ClusterNotice";
 import { Providers } from "@/components/Providers";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SiteHeaderH9 } from "@/components/SiteHeaderH9";
+import { HeaderOverride } from "@/components/HeaderOverride";
 import { ThemeOverride } from "@/components/ThemeOverride";
 import { getPlatform, listAnnouncements } from "@/lib/api";
+import { HEADER_COOKIE, headerVariantFrom } from "@/lib/header";
 import { SCHEME_COOKIE } from "@/lib/scheme";
 import { THEME_GROUNDS, themeFrom } from "@/lib/theme";
 
@@ -58,13 +61,16 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const upcoming = announcements?.announcements.find((a) => a.appliedSignature === null && new Date(a.effectiveAt).getTime() > Date.now() - 24 * 3600_000) ?? null;
   // Light or dark chosen with the header's toggle (SchemeToggle); without the cookie the page follows the system setting.
   const scheme = jar.get(SCHEME_COOKIE)?.value;
+  // The header candidate the owner is looking at (`?header=`, src/lib/header.ts); H4 until a pick.
+  const header = headerVariantFrom(jar.get(HEADER_COOKIE)?.value);
   return (
     // `?theme=` may change `data-theme` after hydration (ThemeOverride), which is intended, not a mismatch.
-    <html lang="en" data-theme={theme} data-scheme={scheme === "light" || scheme === "dark" ? scheme : undefined} className={`${bricolage.variable} ${instrumentSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html lang="en" data-theme={theme} data-scheme={scheme === "light" || scheme === "dark" ? scheme : undefined} data-header={header === "h4" ? undefined : header} className={`${bricolage.variable} ${instrumentSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <body>
         <ThemeOverride />
+        <HeaderOverride current={header} />
         <Providers rpcUrl={platform.rpcUrl}>
-          <SiteHeader cluster={platform.cluster} />
+          {header === "h9" ? <SiteHeaderH9 cluster={platform.cluster} /> : <SiteHeader cluster={platform.cluster} />}
           {platform.cluster === "devnet" && <ClusterNotice />}
           {upcoming && <FeeChangeBanner announcement={upcoming} platform={platform} />}
           <main>{children}</main>

@@ -305,6 +305,9 @@ export const test = base.extend<{
   expectedHttpErrors: async ({}, use) => use([]),
   browserErrors: [
     async ({ page, expectedHttpErrors }, use) => {
+      // The landing's swap candidate (`?hero=swap`, #133) loads Jupiter Plugin's script, a third party that would swap on
+      // mainnet from the browser: the suite serves it empty, so the frame shows its fallback and no shot carries a live swap.
+      await page.route(/^https:\/\/plugin\.jup\.ag\//, (route) => route.fulfill({ status: 200, contentType: "text/javascript", body: "" }));
       const errors: string[] = [];
       // `next dev` only: when `notFound()` interrupts a server component, React's development performance tracks
       // measure it with a start time that was never set (vercel/next.js#86060, open). Production builds have no tracks.

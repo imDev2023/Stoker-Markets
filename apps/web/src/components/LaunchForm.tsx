@@ -43,13 +43,22 @@ const DESCRIPTION_MAX = 1000;
  * (docs/design/layout.md: choosing the asset is the first and biggest move). `initialQuote` is the asset an asset's
  * page sent the Creator here for; the first launchable one otherwise.
  */
-export function LaunchForm({ platform, quotes, initialQuote = null }: { platform: PlatformInfo; quotes: QuoteAsset[]; initialQuote?: string | null }) {
+export function LaunchForm({
+  platform, quotes, initialQuote = null, initialName = "", initialSymbol = "",
+}: {
+  platform: PlatformInfo;
+  quotes: QuoteAsset[];
+  initialQuote?: string | null;
+  /** From the landing's pair picker (#133, candidate F), already within the form's limits. */
+  initialName?: string;
+  initialSymbol?: string;
+}) {
   const router = useRouter();
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
   const earns = creatorEarnings(platform);
-  const [name, setName] = useState("");
-  const [symbol, setSymbol] = useState("");
+  const [name, setName] = useState(initialName);
+  const [symbol, setSymbol] = useState(initialSymbol);
   const [description, setDescription] = useState("");
   const [website, setWebsite] = useState("");
   const [x, setX] = useState("");

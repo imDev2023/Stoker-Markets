@@ -6,6 +6,7 @@ import type { LaunchSummary } from "@launchpad/contract";
 import { listLaunches } from "@/lib/api";
 import { formatMarketValue, SEARCH_MAX } from "@/lib/board";
 import { quoteTicker } from "@/lib/format";
+import { Change } from "./Change";
 import { CoinImage } from "./CoinImage";
 import { Price } from "./Price";
 import { Skeleton } from "./Skeleton";
@@ -18,6 +19,13 @@ const DEBOUNCE_MS = 200;
 const REFRESH_MS = 4_000;
 /** Enough to pick from; the board has the rest. */
 const RESULTS = 6;
+
+/** How far a curve is toward its Graduation Target, as a whole percentage; a sold-out curve is done. */
+function progressOf(launch: LaunchSummary) {
+  if (launch.curve.status !== "live") return 100;
+  const target = BigInt(launch.graduationTarget);
+  return target === 0n ? 0 : Math.min(100, Math.round(Number((BigInt(launch.curve.raised) * 1000n) / target) / 10));
+}
 
 function SearchGlyph() {
   return (
@@ -36,8 +44,12 @@ function SearchGlyph() {
  * through the API's search (the board's, by name, ticker or contract address) open in a panel under the field, a layer
  * on surface-3 over a scrim that dims the page (#131: results never blend into the page's controls or rows). Arrows
  * move, Enter opens the coin, Escape closes and hands focus back; reduced motion gets the states without the springs.
+ *
+ * `variant="icon"` is H9's (#133, owner 2026-10-30): the trigger is the disc alone, in place at the bar's right, the
+ * goo kept as its opening; "/" opens it as well as ⌘K; and each result carries the day's change and the curve's
+ * progress beside the price. The pill is H4's and the build's default.
  */
-export function GooeySearch() {
+export function GooeySearch({ variant = "pill" }: { variant?: "pill" | "icon" }) {
   const router = useRouter();
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
@@ -59,15 +71,19 @@ export function GooeySearch() {
     setMac(/Mac|iPhone|iPad/.test(navigator.platform));
     const ua = navigator.userAgent;
     setGoo(!(/Safari/.test(ua) && !/Chrome|Chromium|Android/.test(ua)) && !/CriOS/.test(ua));
+    const typing = (t: EventTarget | null) => t instanceof HTMLElement && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName));
     const onKey = (e: globalThis.KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setOpen((o) => !o);
+      } else if (variant === "icon" && e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey && !typing(e.target)) {
+        e.preventDefault();
+        setOpen(true);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [variant]);
 
   // A fresh search each time; a press outside closes it.
   useEffect(() => {
@@ -145,7 +161,7 @@ export function GooeySearch() {
   const activeLaunch = results?.[active];
 
   return (
-    <div ref={root} className={`${styles.root} ${open ? styles.open : ""} ${goo ? "" : styles.plain}`} data-search-open={open || undefined}>
+    <div ref={root} className={`${styles.root} ${variant === "icon" ? styles.icon : ""} ${open ? styles.open : ""} ${goo ? "" : styles.plain}`} data-search-open={open || undefined}>
       <svg className={styles.defs} aria-hidden="true" focusable="false">
         <defs>
           <filter id={filterId}>
@@ -178,10 +194,24 @@ export function GooeySearch() {
               spellCheck={false}
             />
           ) : (
-            <button ref={trigger} type="button" className={styles.trigger} onClick={() => setOpen(true)} aria-label="Search" aria-haspopup="listbox" aria-expanded={false}>
+            <button
+              ref={trigger}
+              type="button"
+              className={styles.trigger}
+              onClick={() => setOpen(true)}
+              aria-label="Search"
+              aria-keyshortcuts={variant === "icon" ? "/ Meta+K" : "Meta+K"}
+              title={variant === "icon" ? "Search (/)" : undefined}
+              aria-haspopup="listbox"
+              aria-expanded={false}
+            >
               <span className={styles.glyph}><SearchGlyph /></span>
-              <span className={styles.word}>Search</span>
-              <kbd className={styles.kbd}>{mac ? "⌘K" : "Ctrl K"}</kbd>
+              {variant === "pill" && (
+                <>
+                  <span className={styles.word}>Search</span>
+                  <kbd className={styles.kbd}>{mac ? "⌘K" : "Ctrl K"}</kbd>
+                </>
+              )}
             </button>
           )}
         </div>
@@ -220,7 +250,16 @@ export function GooeySearch() {
                 </span>
                 <span className={styles.figures}>
                   <span className={styles.price}>{l.market.price === null ? "-" : <><Price value={l.market.price} /> {quoteTicker(l.quote)}</>}</span>
-                  <span className={styles.cap}>{l.market.marketCap ? `${formatMarketValue(l.market.marketCap, l.quote)} cap` : "No trades yet"}</span>
+                  {variant === "icon" ? (
+                    <span className={styles.row}>
+                      <Change value={l.market.change24h} />
+                      <span className={styles.track} title={`${progressOf(l)}% of the way to graduation`} aria-hidden>
+                        <span className={styles.fill} style={{ width: `${progressOf(l)}%` }} />
+                      </span>
+                    </span>
+                  ) : (
+                    <span className={styles.cap}>{l.market.marketCap ? `${formatMarketValue(l.market.marketCap, l.quote)} cap` : "No trades yet"}</span>
+                  )}
                 </span>
               </li>
             ))
