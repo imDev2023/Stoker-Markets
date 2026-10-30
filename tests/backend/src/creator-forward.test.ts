@@ -97,7 +97,7 @@ describe("the creator page", () => {
     const e = await earnings(creator.publicKey);
     expect(e.creator).toBe(creator.publicKey.toBase58());
     // Earned from the moment the trades are indexed; nothing is forwarded before the Fee Collector has run.
-    expect(e.assets).toEqual([{ quote: SOL_QUOTE, earned: earned.toString(), forwarded: "0", pending: earned.toString() }]);
+    expect(e.assets).toEqual([{ quote: SOL_QUOTE, earned: earned.toString(), withheld: "0", forwarded: "0", pending: earned.toString() }]);
     expect(e.launches.map((l) => [l.mint, l.curve, l.pool, l.status])).toEqual([
       [second, shares[1]!.toString(), "0", "live"],
       [first, (shares[0]! + shares[2]!).toString(), "0", "live"],
@@ -128,8 +128,8 @@ describe("the creator page", () => {
     const usdcQuote = expect.objectContaining({ mint: USDC.toBase58(), symbol: "USDC", decimals: 6 });
     const e = await earnings(creator.publicKey);
     expect(e.assets).toEqual([
-      { quote: SOL_QUOTE, earned: earnedSol.toString(), forwarded: "0", pending: earnedSol.toString() },
-      { quote: usdcQuote, earned: earnedUsdc.toString(), forwarded: "0", pending: earnedUsdc.toString() },
+      { quote: SOL_QUOTE, earned: earnedSol.toString(), withheld: "0", forwarded: "0", pending: earnedSol.toString() },
+      { quote: usdcQuote, earned: earnedUsdc.toString(), withheld: "0", forwarded: "0", pending: earnedUsdc.toString() },
     ]);
     expect(e.launches.map((l) => [l.symbol, l.quote.mint, l.curve])).toEqual([
       ["USDK", USDC.toBase58(), earnedUsdc.toString()],
