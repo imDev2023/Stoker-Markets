@@ -161,9 +161,8 @@ export function SwapWidget({ fallback = null }: { fallback?: ReactNode }) {
           </p>
         )}
       </div>
-      <p className={styles.note}>
-        Any Solana token for any other, through Jupiter, on mainnet.{REFERRAL ? " Stoker takes a small fee on each swap." : ""}
-      </p>
+      {/* The page around the widget says what it is; the widget itself only says when a fee is taken (the figure is the Fees page's). */}
+      {REFERRAL && <p className={styles.note}>Stoker takes a small fee on each swap.</p>}
     </div>
   );
 }

@@ -50,13 +50,15 @@ test("header H9: five words in the bar with the current one marked, held across 
   // Developers left the bar for the footer, which names the page "API".
   await expect(page.getByRole("link", { name: "Developers" })).toHaveCount(0);
   await expect(page.getByRole("contentinfo").getByRole("link", { name: "API" })).toHaveAttribute("href", "/api");
-  // The choice is a cookie, so it holds on the next page; "/" opens the search in place.
-  await page.goto("/rewards");
-  await expect(main.getByRole("link", { name: "Rewards" })).toHaveAttribute("aria-current", "page");
+  // "/" opens the search in place, from anywhere but a field (the heading takes the focus first, so no field holds it).
+  await page.getByRole("heading", { level: 1 }).click();
   await page.keyboard.press("/");
   await expect(page.getByRole("combobox", { name: "Search coins" })).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "Search" })).toBeFocused();
+  // The choice is a cookie, so it holds on the next page.
+  await page.goto("/rewards");
+  await expect(main.getByRole("link", { name: "Rewards" })).toHaveAttribute("aria-current", "page");
   // Under 768px the words give way to the bottom tab bar, with the launch in the middle and the account last.
   await page.setViewportSize({ width: 390, height: 844 });
   const tabs = page.getByRole("navigation", { name: "Sections" });
