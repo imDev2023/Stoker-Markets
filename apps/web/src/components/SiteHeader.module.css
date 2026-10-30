@@ -21,15 +21,15 @@
   padding: 0 var(--gutter);
 }
 
-/* The lockup: the ring at 28px and the word at 24px, close enough to read as one mark. */
+/* The lockup as one mark: the ring at 24px with the word at the same height, no gap to speak of. */
 .wordmark {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   font-family: var(--font-display);
   font-stretch: 100%;
   font-weight: 800;
-  font-size: var(--wordmark);
+  font-size: var(--text-h3);
   letter-spacing: -0.01em;
   text-decoration: none;
   white-space: nowrap;
@@ -38,8 +38,8 @@
 
 .mark {
   flex: none;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
 }
 
 .cluster {
@@ -67,6 +67,7 @@
 .link {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   height: 34px;
   padding: 0 14px;
   border-radius: var(--radius-pill);
@@ -119,29 +120,21 @@
   }
 }
 
+/* "soon" beside Curated until a Curated Launch exists: the tag primitive in sentence case, since it is a word, not a label. */
+.soon {
+  font-size: var(--text-label);
+  text-transform: none;
+}
+
+.link[aria-current="page"] .soon {
+  border-color: color-mix(in srgb, var(--on-plate) 30%, transparent);
+  color: var(--on-plate);
+}
+
 .actions {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-/* Explore beside the menu button, only while the pill is away. */
-.explore {
-  display: none;
-  align-items: center;
-  height: 40px;
-  padding: 0 10px;
-  border-radius: var(--radius-control);
-  color: var(--ink-2);
-  font-size: var(--text-ui);
-  font-weight: 500;
-  text-decoration: none;
-  transition: color var(--dur-fast) var(--ease-standard), background-color var(--dur-fast) var(--ease-standard);
-}
-
-.explore:hover {
-  color: var(--ink);
-  background: var(--hover);
 }
 
 .launch {
@@ -155,8 +148,19 @@
   box-shadow: var(--glow), inset 0 0 0 2px color-mix(in srgb, var(--on-button) 45%, transparent);
 }
 
-/* Two classes, so this wins over the menu button's own display rule whichever module loads last. */
-.actions .menu {
+/* The wallet as a quiet ghost: no border until hovered, the avatar alone once connected. */
+.wallet :global(.button-ghost) {
+  border-color: transparent;
+  color: var(--ink-2);
+}
+
+.wallet :global(.button-ghost:hover:not(:disabled)) {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+/* The bottom tab bar belongs to the phone; above 768px it is not rendered to the eye. */
+.tabs {
   display: none;
 }
 
@@ -167,32 +171,12 @@
   pointer-events: none;
 }
 
-/* Under 1300px (where the pill, the wordmark and the actions no longer share a row) the pill gives way to the menu button, with Explore kept beside it; the account stays in the header, since its menu is the way to disconnect and to a Creator's earnings. */
-@media (max-width: 1300px) {
-  .pill {
-    display: none;
-  }
-  .explore,
-  .actions .menu {
-    display: inline-flex;
-  }
-}
-
-@media (max-width: 640px) {
-  .bar {
-    gap: 8px;
-  }
-  .actions {
-    gap: 6px;
-  }
-  .cluster,
-  .explore {
-    display: none;
-  }
-  /* "Stoke" on a phone, the rest of the words kept as the button's name. */
+/* Under 1100px the pill keeps its six words and the rest gives way around it: "Stoke" alone on the button, the account's glyph or avatar alone (the words stay as each one's name), no cluster tag. */
+@media (max-width: 1100px) {
   .launch {
     padding: 0 12px 0 10px;
   }
+  /* Out of sight, kept as the button's name. */
   .launchRest {
     position: absolute;
     width: 1px;
@@ -202,11 +186,43 @@
     clip: rect(0 0 0 0);
     white-space: nowrap;
   }
-  /* On a phone the open search takes the bar's whole width, so what it would cover gives way. */
-  .bar:has([data-search-open]) .wordmark,
-  .bar:has([data-search-open]) .launch,
-  .bar:has([data-search-open]) .wallet,
-  .bar:has([data-search-open]) .menu {
+  .cluster {
+    display: none;
+  }
+}
+
+/* Under 900px the words sit closer and the lockup is the mark alone, down to the phone, which has the room for the word again. */
+@media (min-width: 768px) and (max-width: 900px) {
+  .link {
+    padding: 0 10px;
+  }
+  /* Out of sight, kept as the link's name. */
+  .wordmarkWord {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
+/* Under 768px the bar keeps the lockup and the search; the pill, the launch button and the account are the tab bar's. */
+@media (max-width: 767px) {
+  .pill,
+  .launch,
+  .wallet {
+    display: none;
+  }
+  .bar {
+    gap: 8px;
+  }
+  .tabs {
+    display: contents;
+  }
+  /* On a phone the open search takes the bar's whole width, so the lockup gives way. */
+  .bar:has([data-search-open]) .wordmark {
     opacity: 0;
     pointer-events: none;
   }

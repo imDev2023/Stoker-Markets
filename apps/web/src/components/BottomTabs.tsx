@@ -33,7 +33,7 @@ function Glyph({ name }: { name: string }) {
 }
 
 /**
- * The phone's navigation under H9 (#133, owner 2026-10-30): a bar fixed to the window's foot with the five targets a
+ * The phone's navigation (H9, #133, owner 2026-10-30; the header's own under 768px): a bar fixed to the window's foot with the five targets a
  * trader reaches for (Explore, Assets, Stoke, Rewards, Account), each a glyph with its word and the current one marked
  * in more than colour, in place of the full-height overlay (pump.fun and Torch do the same). The account tab opens a
  * sheet with the wallet, the two sections the tabs leave out, the socials and the light-or-dark toggle.

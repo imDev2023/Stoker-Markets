@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import type { LaunchSummary } from "@launchpad/contract";
 import { listLaunches } from "@/lib/api";
-import { formatMarketValue, SEARCH_MAX } from "@/lib/board";
+import { SEARCH_MAX } from "@/lib/board";
 import { quoteTicker } from "@/lib/format";
 import { Change } from "./Change";
 import { CoinImage } from "./CoinImage";
@@ -37,19 +37,16 @@ function SearchGlyph() {
 }
 
 /**
- * The header's search (owner, 2026-10-13, after Codrops' gooey search; kept 2026-10-28): a pill that reads "Search ⌘K";
- * pressed, or on ⌘K (Ctrl+K elsewhere), it stretches into a field and a disc with the glyph breaks off its right end,
- * joined to the bar as it goes by Lucas Bebber's goo (the group is blurred and its alpha pushed to hard edges, with the
+ * The header's search (owner, 2026-10-13, after Codrops' gooey search; kept 2026-10-28 and 2026-10-30): the disc with
+ * the glyph in place at the bar's right; pressed, or on "/" or ⌘K (Ctrl+K elsewhere), it stretches leftward into a field
+ * and the disc breaks off its right end, joined to the bar as it goes by Lucas Bebber's goo (the group is blurred and its alpha pushed to hard edges, with the
  * crisp drawing laid back over it; Safari draws the filter wrong, so there the disc simply slides). The coins found
  * through the API's search (the board's, by name, ticker or contract address) open in a panel under the field, a layer
- * on surface-3 over a scrim that dims the page (#131: results never blend into the page's controls or rows). Arrows
- * move, Enter opens the coin, Escape closes and hands focus back; reduced motion gets the states without the springs.
- *
- * `variant="icon"` is H9's (#133, owner 2026-10-30): the trigger is the disc alone, in place at the bar's right, the
- * goo kept as its opening; "/" opens it as well as ⌘K; and each result carries the day's change and the curve's
- * progress beside the price. The pill is H4's and the build's default.
+ * on surface-3 over a scrim that dims the page (#131: results never blend into the page's controls or rows), each with
+ * the day's change and the curve's progress beside the price (H9, owner 2026-10-30). Arrows move, Enter opens the coin,
+ * Escape closes and hands focus back; reduced motion gets the states without the springs.
  */
-export function GooeySearch({ variant = "pill" }: { variant?: "pill" | "icon" }) {
+export function GooeySearch() {
   const router = useRouter();
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
@@ -63,12 +60,10 @@ export function GooeySearch({ variant = "pill" }: { variant?: "pill" | "icon" })
   const [tick, setTick] = useState(0);
   // The query the shown results answer, so a refresh is told from a new search (which resets the choice).
   const answered = useRef("");
-  // Rendered as ⌘K first (the server has no idea of the keyboard), corrected once on the client; likewise the goo.
-  const [mac, setMac] = useState(true);
+  // Safari draws the goo filter wrong, so there the disc simply slides; decided once on the client.
   const [goo, setGoo] = useState(true);
 
   useEffect(() => {
-    setMac(/Mac|iPhone|iPad/.test(navigator.platform));
     const ua = navigator.userAgent;
     setGoo(!(/Safari/.test(ua) && !/Chrome|Chromium|Android/.test(ua)) && !/CriOS/.test(ua));
     const typing = (t: EventTarget | null) => t instanceof HTMLElement && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName));
@@ -76,14 +71,14 @@ export function GooeySearch({ variant = "pill" }: { variant?: "pill" | "icon" })
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setOpen((o) => !o);
-      } else if (variant === "icon" && e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey && !typing(e.target)) {
+      } else if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey && !typing(e.target)) {
         e.preventDefault();
         setOpen(true);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [variant]);
+  }, []);
 
   // A fresh search each time; a press outside closes it.
   useEffect(() => {
@@ -161,7 +156,7 @@ export function GooeySearch({ variant = "pill" }: { variant?: "pill" | "icon" })
   const activeLaunch = results?.[active];
 
   return (
-    <div ref={root} className={`${styles.root} ${variant === "icon" ? styles.icon : ""} ${open ? styles.open : ""} ${goo ? "" : styles.plain}`} data-search-open={open || undefined}>
+    <div ref={root} className={`${styles.root} ${open ? styles.open : ""} ${goo ? "" : styles.plain}`} data-search-open={open || undefined}>
       <svg className={styles.defs} aria-hidden="true" focusable="false">
         <defs>
           <filter id={filterId}>
@@ -200,18 +195,12 @@ export function GooeySearch({ variant = "pill" }: { variant?: "pill" | "icon" })
               className={styles.trigger}
               onClick={() => setOpen(true)}
               aria-label="Search"
-              aria-keyshortcuts={variant === "icon" ? "/ Meta+K" : "Meta+K"}
-              title={variant === "icon" ? "Search (/)" : undefined}
+              aria-keyshortcuts="/ Meta+K"
+              title="Search (/)"
               aria-haspopup="listbox"
               aria-expanded={false}
             >
               <span className={styles.glyph}><SearchGlyph /></span>
-              {variant === "pill" && (
-                <>
-                  <span className={styles.word}>Search</span>
-                  <kbd className={styles.kbd}>{mac ? "⌘K" : "Ctrl K"}</kbd>
-                </>
-              )}
             </button>
           )}
         </div>
@@ -250,16 +239,12 @@ export function GooeySearch({ variant = "pill" }: { variant?: "pill" | "icon" })
                 </span>
                 <span className={styles.figures}>
                   <span className={styles.price}>{l.market.price === null ? "-" : <><Price value={l.market.price} /> {quoteTicker(l.quote)}</>}</span>
-                  {variant === "icon" ? (
-                    <span className={styles.row}>
-                      <Change value={l.market.change24h} />
-                      <span className={styles.track} title={`${progressOf(l)}% of the way to graduation`} aria-hidden>
-                        <span className={styles.fill} style={{ width: `${progressOf(l)}%` }} />
-                      </span>
+                  <span className={styles.row}>
+                    <Change value={l.market.change24h} />
+                    <span className={styles.track} title={`${progressOf(l)}% of the way to graduation`} aria-hidden>
+                      <span className={styles.fill} style={{ width: `${progressOf(l)}%` }} />
                     </span>
-                  ) : (
-                    <span className={styles.cap}>{l.market.marketCap ? `${formatMarketValue(l.market.marketCap, l.quote)} cap` : "No trades yet"}</span>
-                  )}
+                  </span>
                 </span>
               </li>
             ))

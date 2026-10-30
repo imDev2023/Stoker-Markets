@@ -398,7 +398,7 @@
   --pair-card: 1.25rem;
   --pair-title: clamp(1.75rem, 1.5rem + 0.8vw, 2rem);
   --pair-max: 6rem;
-  /* The wordmark beside the 28px ring in the header and the footer. */
+  /* The wordmark beside the 28px ring in the footer (the header's lockup is one mark at the h3 size). */
   --wordmark: 1.5rem;
 
   /*
@@ -424,30 +424,24 @@
   --gutter: clamp(16px, 4vw, 40px);
   --max: 1180px;
   --max-terminal: 1320px;
-  /* The sticky header's height, which anything pinned under it (the asset rail, a coin page's side column) clears. */
-  --header-h: 64px;
+  /* The sticky header's height, which anything pinned under it (the asset rail, a coin page's side column) clears, and the bottom tab bar's, which the page's foot clears under 768px. */
+  --header-h: 60px;
+  --tabs-h: 56px;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --header-h: 52px;
+  }
+  body {
+    padding-bottom: calc(var(--tabs-h) + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 @media (max-width: 640px) {
   :root {
     --grid-cols: 4;
     --grid-gap: 16px;
-    --header-h: 52px;
-  }
-}
-
-/* Header candidate H9 (#133, `?header=h9`): a 60px bar, and under 768px a bottom tab bar the page's foot clears. */
-:root[data-header="h9"] {
-  --header-h: 60px;
-  --tabs-h: 56px;
-}
-
-@media (max-width: 767px) {
-  :root[data-header="h9"] {
-    --header-h: 52px;
-  }
-  :root[data-header="h9"] body {
-    padding-bottom: calc(var(--tabs-h) + env(safe-area-inset-bottom, 0px));
   }
 }
 

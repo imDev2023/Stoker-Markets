@@ -7,8 +7,8 @@
  */
 .root {
   position: relative;
-  /* Room for the glyph, the word and "Ctrl K"; on a Mac the shorter key sits flush right. */
-  width: 150px;
+  /* The disc alone; opening grows the field leftward from it. */
+  width: 40px;
   height: 40px;
 }
 
@@ -73,10 +73,10 @@
 .trigger {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
   width: 100%;
   height: 100%;
-  padding: 0 10px 0 11px;
+  padding: 0;
   border: 0;
   border-radius: var(--radius-pill);
   background: none;
@@ -93,26 +93,6 @@
 .glyph {
   display: inline-flex;
   flex: none;
-}
-
-.word {
-  flex: 1;
-  text-align: left;
-  font-size: var(--text-ui);
-  font-weight: 500;
-  color: var(--ink-2);
-}
-
-.kbd {
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  font-weight: 500;
-  line-height: 1;
-  padding: 4px 6px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-control);
-  background: var(--surface);
-  color: var(--ink-3);
 }
 
 .input {
@@ -257,22 +237,7 @@
   font-variant-numeric: tabular-nums slashed-zero;
 }
 
-.cap {
-  font-size: var(--text-label);
-  color: var(--ink-3);
-}
-
-/* H9's variant: the disc alone as the trigger, in place; the field grows leftward from it when opened. */
-.icon {
-  width: 40px;
-}
-
-.icon .trigger {
-  justify-content: center;
-  padding: 0;
-}
-
-/* The day's change and the curve's progress under the price (H9's rows). */
+/* The day's change and the curve's progress under the price (H9's rows, owner 2026-10-30). */
 .row {
   display: flex;
   align-items: center;
@@ -297,17 +262,6 @@
 }
 
 @media (max-width: 640px) {
-  .root {
-    width: 40px;
-  }
-  .trigger {
-    justify-content: center;
-    padding: 0;
-  }
-  .word,
-  .kbd {
-    display: none;
-  }
   /* Open, the bar takes the header's whole width between the gutters; fixed to the window, whose top the header holds. */
   .open .group {
     position: fixed;

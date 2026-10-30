@@ -32,3 +32,15 @@ dl[aria-label$="candle"] .mono {
   white-space: nowrap;
   overflow: hidden;
 }
+
+/* The phone's tab bar is fixed to the window's foot, which a full-page capture paints in the middle of the page over
+   whatever sits there (a coin page's "You pay" field, 2026-10-31), and an element shot of a tall panel under it. For a
+   shot it sits at the page's foot, in the room the body keeps for it, as a reader scrolled to the end sees it; a
+   viewport shot of a page taller than the window therefore shows no tab bar. */
+body {
+  position: relative;
+}
+
+nav[aria-label="Sections"] {
+  position: absolute !important;
+}

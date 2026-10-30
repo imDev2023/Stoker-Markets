@@ -1,5 +1,5 @@
 // The landing's hero candidates with the right side made live (#133, owner 2026-10-30): the pair picker, the most
-// traded coin's trade panel and Jupiter's swap, each behind `?hero=`; and the header candidate H9 behind `?header=`.
+// traded coin's trade panel and Jupiter's swap, each behind `?hero=`.
 import { expect, expectNoHorizontalOverflow, test } from "./fixtures";
 
 const hero = (page: import("@playwright/test").Page) => page.getByRole("region", { name: "No one picks your pair. You do." });
@@ -40,34 +40,4 @@ test("the Swap section frames Jupiter's plugin, which the suite serves empty, an
   await expect(page.getByRole("link", { name: "Open jup.ag" })).toHaveAttribute("href", "https://jup.ag/swap/SOL-USDC");
   await page.goto("/?hero=swap");
   await expect(hero(page).getByRole("list", { name: "Most traded today" }).getByRole("link").first()).toBeVisible();
-});
-
-test("header H9: five words in the bar with the current one marked, held across the site, and a tab bar on a phone", async ({ page }) => {
-  await page.goto("/coins?header=h9");
-  const main = page.getByRole("navigation", { name: "Main" });
-  await expect(main.getByRole("link")).toHaveText(["Explore", "Swap", "Assets", "Rewards", "Stats", /Curated/]);
-  await expect(main.getByRole("link", { name: "Explore" })).toHaveAttribute("aria-current", "page");
-  // Developers left the bar for the footer, which names the page "API".
-  await expect(page.getByRole("link", { name: "Developers" })).toHaveCount(0);
-  await expect(page.getByRole("contentinfo").getByRole("link", { name: "API" })).toHaveAttribute("href", "/api");
-  // "/" opens the search in place, from anywhere but a field (the board's search holds the focus on load, so it is let go first).
-  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
-  await page.keyboard.press("/");
-  await expect(page.getByRole("combobox", { name: "Search coins" })).toBeFocused();
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("button", { name: "Search" })).toBeFocused();
-  // The choice is a cookie, so it holds on the next page.
-  await page.goto("/rewards");
-  await expect(main.getByRole("link", { name: "Rewards" })).toHaveAttribute("aria-current", "page");
-  // Under 768px the words give way to the bottom tab bar, with the launch in the middle and the account last.
-  await page.setViewportSize({ width: 390, height: 844 });
-  const tabs = page.getByRole("navigation", { name: "Sections" });
-  await expect(tabs.getByRole("link")).toHaveText(["Explore", "Assets", "Stoke", "Rewards"]);
-  await expect(tabs.getByRole("link", { name: "Rewards" })).toHaveAttribute("aria-current", "page");
-  await expect(main).toBeHidden();
-  await tabs.getByRole("button", { name: "Account" }).click();
-  const sheet = page.getByRole("dialog", { name: "Account" });
-  await expect(sheet.getByRole("button", { name: "Connect wallet" })).toBeVisible();
-  await expect(sheet.getByRole("navigation", { name: "More" }).getByRole("link")).toHaveText(["Swap", "Stats", /Curated/]);
-  await expectNoHorizontalOverflow(page);
 });

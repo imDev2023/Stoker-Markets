@@ -9,7 +9,7 @@ import {
 } from "./fixtures";
 import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, REWARD_QUOTE } from "./seedData";
 import { chooseQuote } from "./launchPage";
-import { connectTestWallet, installTestWallet, openWalletMenu, TEST_WALLET_NAME } from "./wallet";
+import { accountArea, connectFromSite, connectTestWallet, installTestWallet, openWalletMenu, TEST_WALLET_NAME } from "./wallet";
 
 // The chart's time axis and candle spacing follow the clock, so its canvases are masked like any other time. Only what is
 // visible: content of a closed <details> still has a box, and masking it would paint over whatever is on screen there.
@@ -433,7 +433,7 @@ test("launch the network refused", async ({ page, wallet }) => {
 test("coin page with an airdrop to send, seen by its creator", async ({ page }) => {
   await installTestWallet(page, AIRDROP_CREATOR);
   await page.goto(`/coin/${await mintOf(AIRDROP_SENDING.name)}`);
-  await connectTestWallet(page, page.getByRole("banner").getByRole("button", { name: "Connect wallet" }));
+  await connectFromSite(page);
   await expect(page.getByRole("region", { name: "Airdrop" }).getByRole("button", { name: "Send airdrop" })).toBeVisible();
   await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
   await snap(page, "coin-airdrop.png");
@@ -462,7 +462,8 @@ test("header wallet menu when connected", async ({ page, wallet }) => {
   await page.goto("/launch");
   await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
   await page.goto("/");
-  const account = page.getByRole("banner").getByRole("button", { name: wallet.keypair.publicKey.toBase58().slice(0, 4), exact: false });
+  // The header's ghost is the avatar once connected; on a phone the tab bar's Account tab opens the sheet that holds it.
+  const account = (await accountArea(page)).getByRole("button", { name: wallet.keypair.publicKey.toBase58().slice(0, 4), exact: false });
   await account.click();
   await expect(page.getByRole("menuitem", { name: "Disconnect" })).toBeVisible();
   await expect(page).toHaveScreenshot("header-account-menu.png", { mask: dynamic(page) });
