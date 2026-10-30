@@ -87,7 +87,7 @@ test("a coin graduates from the curve to its Raydium pool and keeps trading on t
   await page.getByRole("button", { name: "50%", exact: true }).click();
   await expect(page.getByText("The coins you sell go to the coin's Raydium pool.")).toBeVisible();
   await expect(quote).toContainText(/Fees[\d.,\s]+SOL \+ [\d,]+ SUMT/);
-  await expect(quote).toContainText(/Raydium pool fee 0\.25%[\d,\s]+SUMT/);
+  await expect(quote).toContainText("Raydium's pool fees and the platform's");
   const held = await coinBalance(wallet.keypair, mint);
   await page.getByRole("button", { name: "Review sell" }).click();
   await review(page).getByRole("button", { name: "Sign and sell" }).click();

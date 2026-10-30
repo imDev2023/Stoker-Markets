@@ -130,17 +130,13 @@ test("the header's search open, with a match", async ({ page }) => {
   await expect(page).toHaveScreenshot("search.png", { mask: dynamic(page) });
 });
 
-test("coin page", async ({ page }) => {
-  await page.goto(`/coin/${await mintOf("First Light")}`);
-  await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
-  await snap(page, "coin.png");
-});
-
-test("coin page with the longest name and ticker", async ({ page }) => {
-  await page.goto(`/coin/${await mintOf("Maximum Length Coin Name Here 32")}`);
-  // The page says "Copy protection until" inside the stack's 45-second window and "ended" after it, and the first look's
-  // shot can land either side of that line depending on the run's speed (the light desktop baseline flipped once, 2026-10-29),
-  // so the shot waits for the window to end; the label is rendered on the server, so it takes a reload to change.
+/**
+ * A coin's page says "Copy protection until" inside the stack's 45-second window and "ended" after it, and the first
+ * look's shot can land either side of that line depending on the run's speed (the light desktop baseline of the longest
+ * coin flipped once on 2026-10-29, the first coin's on 2026-10-30), so a shot waits for the window to end; the label is
+ * rendered on the server, so it takes a reload to change.
+ */
+async function protectionEnded(page: Page) {
   await expect
     .poll(async () => {
       if (await page.getByText("Copy protection ended").isVisible()) return true;
@@ -148,6 +144,18 @@ test("coin page with the longest name and ticker", async ({ page }) => {
       return false;
     }, { timeout: 60_000, intervals: [2_000] })
     .toBe(true);
+}
+
+test("coin page", async ({ page }) => {
+  await page.goto(`/coin/${await mintOf("First Light")}`);
+  await protectionEnded(page);
+  await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
+  await snap(page, "coin.png");
+});
+
+test("coin page with the longest name and ticker", async ({ page }) => {
+  await page.goto(`/coin/${await mintOf("Maximum Length Coin Name Here 32")}`);
+  await protectionEnded(page);
   await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
   await snap(page, "coin-longest.png");
 });
