@@ -42,7 +42,8 @@ test("the landing ends with the full footer, every terminal page with one row, a
   await expect(page.getByRole("contentinfo").getByRole("heading")).toHaveCount(0);
   await expect(page.getByRole("contentinfo").getByRole("link", { name: "Terms" })).toHaveAttribute("href", "/terms");
   await expect(page.getByRole("contentinfo").getByText("Localnet · API online")).toBeVisible();
-  for (const [path, title] of [["/terms", "Terms of use"], ["/privacy", "Privacy"], ["/risk", "Risk disclosure"]] as const) {
+  await expect(page.getByRole("contentinfo").getByRole("link", { name: "Fees" })).toHaveAttribute("href", "/fees");
+  for (const [path, title] of [["/terms", "Terms of use"], ["/privacy", "Privacy"], ["/risk", "Risk disclosure"], ["/fees", "Fees"]] as const) {
     await page.goto(path);
     await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
     await expectNoHorizontalOverflow(page);
@@ -65,4 +66,32 @@ test("on a phone the launch button keeps its name and the menu has a visible clo
   await expect(menu.getByRole("link", { name: "Developers" })).toBeVisible();
   await menu.getByRole("button", { name: "Close menu" }).click();
   await expect(menu).toHaveCount(0);
+});
+
+// The Fees page (owner, 2026-10-30): the one place the site shows a fee figure, every one of them read from the API.
+test("the Fees page lists every fee from the platform facts, and the landing's footer leads to it", async ({ page, stack }) => {
+  const platform = (await (await fetch(`${stack.apiUrl}/v1/platform`)).json()) as {
+    platformFeeBps: number; poolCreatorFeeBps: number; referralShareBps: number; graduationFeeLamports: string; creatorForward: { curveBps: number };
+  };
+  await page.goto("/fees");
+  await expect(page.getByRole("heading", { level: 1, name: "Fees" })).toBeVisible();
+  const table = page.getByRole("region", { name: "Every fee" }).getByRole("table");
+  await expect(table.getByRole("columnheader")).toHaveText(["Fee", "Who pays", "When", "In", "Who receives it"]);
+  const rows = table.getByRole("rowgroup").last().getByRole("row");
+  await expect(rows).toHaveCount(12);
+  // The figures are the chain's, through the API: the Platform Fee, the pool creator fee, the referral share, the Graduation Fee.
+  await expect(rows.filter({ hasText: "Platform Fee on the curve" })).toContainText(`${platform.platformFeeBps / 100}% of every trade`);
+  await expect(rows.filter({ hasText: "Platform Fee on the curve" })).toContainText(`Half of it, ${platform.creatorForward.curveBps / 100}% of the trade`);
+  await expect(rows.filter({ hasText: "Pool creator fee" })).toContainText(`${platform.poolCreatorFeeBps / 100}% of every trade`);
+  await expect(rows.filter({ hasText: "Referral share" })).toContainText(`${platform.referralShareBps / 100}% of a referred trade`);
+  await expect(rows.filter({ hasText: "Graduation Fee" })).toContainText(`${Number(platform.graduationFeeLamports) / 1e9} SOL's worth, once`);
+  await expect(rows.filter({ hasText: "Creating a coin" })).toContainText("No platform fee");
+  await expect(rows.filter({ hasText: "Swapping any Solana token" })).toContainText("0.5% of every swap");
+  // Dated, and pointing at the announcements for changes.
+  await expect(page.getByText(/^Figures as of /).locator("time")).toHaveCount(1);
+  await expect(page.getByRole("link", { name: "Announcements" })).toHaveAttribute("href", "/announcements");
+  await expectNoHorizontalOverflow(page);
+  // The landing's footer lists it with the legal pages.
+  await page.goto("/");
+  await expect(page.getByRole("contentinfo").getByRole("link", { name: "Fees" })).toHaveAttribute("href", "/fees");
 });

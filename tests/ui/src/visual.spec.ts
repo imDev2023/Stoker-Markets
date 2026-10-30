@@ -474,13 +474,17 @@ test("creator earnings page of a wallet that never launched", async ({ page }) =
   await snap(page, "creator-empty.png");
 });
 
-test("revenue page", async ({ page, stack }) => {
+test("stats page", async ({ page, stack }) => {
   const revenue = Revenue.parse(await (await fetch(`${stack.apiUrl}/v1/revenue`)).json());
   const ledger = LedgerPage.parse(await (await fetch(`${stack.apiUrl}/v1/ledger?limit=25`)).json());
   await page.goto("/revenue");
-  await expect(page.getByRole("heading", { name: "Platform revenue" })).toBeVisible();
+  // The Platform Token has not launched on the seeded stack, so the page carries its name and the market's empty state.
+  await expect(page.getByRole("heading", { level: 1, name: "STOKER" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "STOKER market" })).toContainText("STOKER has not launched yet.");
+  await expect(page.getByRole("region", { name: "Key figures" }).getByRole("term")).toHaveCount(4);
+  await expect(page.getByRole("region", { name: "Run the numbers" }).getByRole("textbox")).toHaveCount(2);
   // The page shows what the API's Ledger says, asset by asset, and every entry links to its transaction.
-  const totals = page.getByRole("region", { name: "All time" }).getByRole("listitem");
+  const totals = page.getByRole("region", { name: "Revenue by asset" }).getByRole("listitem");
   await expect(totals).toHaveCount(revenue.totals.length);
   for (const [i, t] of revenue.totals.entries()) await expect(totals.nth(i)).toContainText(t.asset.symbol!);
   const entries = page.getByRole("region", { name: "Ledger" }).getByRole("listitem");
@@ -489,6 +493,15 @@ test("revenue page", async ({ page, stack }) => {
     await expect(entries.nth(i).getByRole("link").last()).toHaveAttribute("href", new RegExp(`/tx/${e.signature}`));
   await expect(page.locator("main img").first()).toHaveJSProperty("complete", true);
   // Addresses and times differ between runs, and the SOL swept so far wavers by a few lamports with the sweep's own costs
-  // (7.959784 one run, 7.959779 another); every other amount follows from the seed's fixed trades.
+  // (7.959784 one run, 7.959779 another); every other amount follows from the seed's fixed trades. The annualized figure
+  // divides by the days since the first collection, which is today on the seeded stack, so it holds too.
   await snap(page, "revenue.png", (p) => [p.locator("time"), p.locator("a.mono"), p.locator('dl[aria-labelledby="swept-title"] dd')]);
+});
+
+test("fees page", async ({ page }) => {
+  await page.goto("/fees");
+  await expect(page.getByRole("heading", { level: 1, name: "Fees" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Every fee" }).getByRole("row").nth(1)).toBeVisible();
+  // The dated line is the page's one clock.
+  await snap(page, "fees.png", (p) => [p.locator("time")]);
 });
