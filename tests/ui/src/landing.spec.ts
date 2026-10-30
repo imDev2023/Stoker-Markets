@@ -50,8 +50,8 @@ test("header H9: five words in the bar with the current one marked, held across 
   // Developers left the bar for the footer, which names the page "API".
   await expect(page.getByRole("link", { name: "Developers" })).toHaveCount(0);
   await expect(page.getByRole("contentinfo").getByRole("link", { name: "API" })).toHaveAttribute("href", "/api");
-  // "/" opens the search in place, from anywhere but a field (the heading takes the focus first, so no field holds it).
-  await page.getByRole("heading", { level: 1 }).click();
+  // "/" opens the search in place, from anywhere but a field (the board's search holds the focus on load, so it is let go first).
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press("/");
   await expect(page.getByRole("combobox", { name: "Search coins" })).toBeFocused();
   await page.keyboard.press("Escape");
