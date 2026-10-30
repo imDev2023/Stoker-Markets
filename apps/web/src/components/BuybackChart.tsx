@@ -59,6 +59,13 @@ export function BuybackChart({ points, kind, label }: { points: ChartPoint[]; ki
   const hit = active === null ? null : points[active]!;
   const hitX = active === null ? 0 : kind === "daily" ? barX(active) + barW / 2 : x(active);
 
+  if (points.length === 0) {
+    return (
+      <figure className={styles.figure} aria-label={label}>
+        <p className={styles.empty}>No burn yet.</p>
+      </figure>
+    );
+  }
   return (
     <figure className={styles.figure} aria-label={label}>
       <svg
@@ -107,7 +114,6 @@ export function BuybackChart({ points, kind, label }: { points: ChartPoint[]; ki
           <span className="mono">{solLabel(hit.sol)} SOL</span>
         </div>
       )}
-      {points.length === 0 && <p className={styles.empty}>No burn yet.</p>}
     </figure>
   );
 }

@@ -87,24 +87,27 @@ export function StatsDashboard({ platform, quotes, revenue, burns, ledger, token
           </div>
           <div className={`card card-raised ${styles.tile}`}>
             <dt>{symbol} bought back and burned</dt>
-            {burned ? (
+            {/* Never a zero as a headline (principles, section 10): before the first burn the tile says so in words. */}
+            {burned && burned.coin && burned.events.length > 0 ? (
               <>
-                <dd className={`t-figure-xl ${styles.value} heat-text`}>{burned.coin ? compact(Number(burned.amount) / 10 ** burned.coin.decimals) : "0"}</dd>
+                <dd className={`t-figure-xl ${styles.value} heat-text`}>{compact(Number(burned.amount) / 10 ** burned.coin.decimals)}</dd>
                 <dd className={styles.sub}>Destroyed for good, over {burned.events.length} {burned.events.length === 1 ? "burn" : "burns"}.</dd>
               </>
             ) : (
-              <dd className={styles.sub}>Not available right now.</dd>
+              <dd className={styles.sub}>{burned ? `No burn yet: the Burn starts once ${symbol} has launched and graduated.` : "Not available right now."}</dd>
             )}
           </div>
           <div className={`card card-raised ${styles.tile}`}>
             <dt>Spent on buybacks</dt>
-            {burned ? (
+            {burned && burned.events.length > 0 ? (
               <>
                 <dd className={`t-figure-xl ${styles.value}`}>{formatSol(Number(burned.lamports) / 1e9)}</dd>
                 <dd className={styles.sub}>{solPrice ? `${usd((Number(burned.lamports) / 1e9) * solPrice)} at today's SOL price; ` : ""}<span className="mono">{sol(burns!.budgets.burn.available)}</span> SOL waiting for the next run.</dd>
               </>
             ) : (
-              <dd className={styles.sub}>Not available right now.</dd>
+              <dd className={styles.sub}>
+                {burned ? <>Nothing spent yet; <span className="mono">{sol(burns!.budgets.burn.available)}</span> SOL is set aside for the first burn.</> : "Not available right now."}
+              </dd>
             )}
           </div>
           <div className={`card card-raised ${styles.tile}`}>
@@ -264,7 +267,7 @@ export function StatsDashboard({ platform, quotes, revenue, burns, ledger, token
         )}
       </section>
 
-      <div className={styles.layout}>
+      <div className={revenue && (revenue.days.length > 0 || (ledger && ledger.entries.length > 0)) ? styles.layout : styles.sideRow}>
         <div className={styles.main}>
           {revenue && revenue.days.length > 0 && (
             <section className={`card ${styles.card}`} aria-labelledby="days-title">

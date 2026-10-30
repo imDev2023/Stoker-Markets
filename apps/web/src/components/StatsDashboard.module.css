@@ -458,3 +458,19 @@
   font-size: var(--text-caption);
   color: var(--ink-2);
 }
+
+/* Before any collection there is no main column: the two rule cards share the row instead of leaving it blank. */
+.sideRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.sideRow .main:empty {
+  display: none;
+}
+
+.sideRow .side {
+  display: contents;
+}
