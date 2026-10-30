@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { PublicKey } from "@solana/web3.js";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { WSOL_MINT } from "@launchpad/chain";
 import type { CreatorEarnings, CreatorForwardList, GraduationFee, QuoteRef } from "@launchpad/contract";
 import { creatorForwards, curves, graduations, launches, launchMetadata, quoteAssets, type Db } from "@launchpad/db";
@@ -111,7 +111,8 @@ creatorEarningsRoutes.get("/creators/:address/forwards", async (c) => {
     .select()
     .from(creatorForwards)
     .where(and(eq(creatorForwards.creator, creator), inArray(creatorForwards.status, ["sending", "paid"])))
-    .orderBy(desc(sql`coalesce(${creatorForwards.paidAt}, ${creatorForwards.createdAt})`), desc(creatorForwards.signature))
+    // Two forwards of one run land within the same second; the asset then orders them, never the signature, which says nothing.
+    .orderBy(desc(sql`coalesce(${creatorForwards.paidAt}, ${creatorForwards.createdAt})`), asc(creatorForwards.assetMint), desc(creatorForwards.signature))
     .limit(limit);
   const quote = await quoteRefs(db, new Map(rows.map((r) => [r.assetMint, r.assetDecimals])));
   const res: CreatorForwardList = {
