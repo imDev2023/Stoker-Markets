@@ -93,9 +93,11 @@ export default async function AssetPage({ params }: Props) {
           <div>
             <dt>Referral share</dt>
             <dd>
-              {quote.referralShare.allowed
-                ? `${quote.referralShare.bps / 100}% of a referred trade, paid on-chain to the referrer`
-                : "None: this asset's Raydium config allows no share fee"}
+              {quote.referralShare.allowed ? (
+                <>Allowed: a referred curve trade pays its referrer a share on-chain, at the rate on the <Link href="/fees">Fees page</Link></>
+              ) : (
+                "None: this asset's Raydium config allows no share fee"
+              )}
             </dd>
           </div>
           <div>

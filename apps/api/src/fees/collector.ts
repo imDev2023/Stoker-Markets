@@ -11,6 +11,7 @@ import { JobFailure } from "../jobs";
 import { reservedLamports } from "../burn/engine";
 import { rewardPotLamports } from "../rewards/sales";
 import { creatorMoney, unforwarded } from "./creatorShares";
+import { withholdGraduationFees, type Withheld } from "./graduationFee";
 import { recordRevenue, revenueContext } from "./ledger";
 import { valuer } from "./value";
 
@@ -28,6 +29,8 @@ export type CollectorSummary = {
   sent: Sent[];
   /** Fees found but left to grow, being worth less than the collection minimum. */
   leftToGrow: number;
+  /** Graduation Fees withheld this run (ADR 0015) out of what the collections above brought in for Creators, before the sweep. */
+  graduationFees: Withheld[];
   sweep: "not configured" | "nothing to sweep" | "swept";
   /** What could not even be tried, such as a Fee Key whose collection would not simulate. */
   problems: string[];
@@ -47,7 +50,7 @@ export async function collectFees({ db, cfg, operations }: CollectorDeps): Promi
   const connection = new Connection(cfg.rpcUrl, "confirmed");
   const ops = operations.publicKey;
   const ctx = revenueContext(cfg, ops);
-  const summary: CollectorSummary = { settled: [], sent: [], leftToGrow: 0, sweep: "nothing to sweep", problems: [] };
+  const summary: CollectorSummary = { settled: [], sent: [], leftToGrow: 0, graduationFees: [], sweep: "nothing to sweep", problems: [] };
 
   // Anything an earlier run sent but could not see land is settled first, and nothing new is sent for it until it is.
   const { settled, busy } = await settlePending(db, connection, ctx);
@@ -107,6 +110,10 @@ export async function collectFees({ db, cfg, operations }: CollectorDeps): Promi
     }
     await send("fee_key", pool.address.toBase58(), feeKeyInstructions(ctx.programs, pool, key, ops));
   }
+
+  // With the collections on the Ledger, what each graduated coin's Creator is owed is known, and the coin's Graduation
+  // Fee (ADR 0015) comes out of it before the sweep, which then takes it along with the platform's own share.
+  summary.graduationFees = await withholdGraduationFees(db, connection, ops);
 
   if (!cfg.treasury) summary.sweep = "not configured";
   else if (await sweep(db, connection, cfg, cfg.treasury, operations, send)) summary.sweep = "swept";
@@ -175,8 +182,8 @@ async function poolsTradedSinceLastFeeKeyCollection(db: Db, pools: string[]) {
  * budgets) once it holds more than the threshold above that, and
  * of every other token, the revenue the Ledger shows it collected and has not swept yet. Anything else the wallet holds
  * in that token (a Reward Round's harvested tax, or a Quote Asset payout's pot, say) stays, and so does what Creators
- * are owed and have not been forwarded yet (ADR 0009), in SOL or any token, and the SOL that Reward Sales brought in
- * for holders (ADR 0006). Tokens go in batches that fit a transaction.
+ * are owed and have not been forwarded yet (ADR 0009, less the Graduation Fees withheld out of it, ADR 0015), in SOL or
+ * any token, and the SOL that Reward Sales brought in for holders (ADR 0006). Tokens go in batches that fit a transaction.
  */
 async function sweep(
   db: Db, connection: Connection, cfg: Config, treasury: PublicKey, operations: Keypair,

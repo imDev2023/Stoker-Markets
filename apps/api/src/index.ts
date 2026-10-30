@@ -4,7 +4,7 @@ import { HTTPException } from "hono/http-exception";
 import { Connection, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { desc, eq } from "drizzle-orm";
-import type { RawTransaction } from "@launchpad/chain";
+import { ROUTE_TOLERANCE_BPS, type RawTransaction } from "@launchpad/chain";
 import {
   LAUNCH_IMAGE_MAX_BYTES, LAUNCH_IMAGE_TYPES, PrepareLaunchFields, type JobName, type OperatorAlertList, type PlatformInfo,
 } from "@launchpad/contract";
@@ -85,10 +85,11 @@ app.get("/v1/platform", async (c) => {
     launchlabProgram: cfg.launchlab.toBase58(),
     platformConfig: cfg.platformConfig.toBase58(),
     graduationTargetLamports: cfg.graduationTargetLamports.toString(),
+    graduationFeeLamports: cfg.graduationFeeLamports.toString(),
     platformFeeBps: fees.platformFeeBps,
     poolCreatorFeeBps: fees.poolCreatorFeeBps,
     poolCreatorFeeShareBps: fees.poolCreatorFeeShareBps,
-    raydiumFee: { curveBps: fees.raydiumCurveFeeBps, poolBps: fees.raydiumPoolFeeBps },
+    raydiumFee: { curveBps: fees.raydiumCurveFeeBps, poolBps: fees.raydiumPoolFeeBps, poolLpShareBps: fees.raydiumPoolLpShareBps },
     creatorFeeBps: fees.creatorFeeBps,
     creatorForward: {
       // Half of what the platform collects on either venue (ADR 0009): of the Platform Fee on the curve, of the pool
@@ -100,6 +101,7 @@ app.get("/v1/platform", async (c) => {
     },
     referralShareBps: cfg.referralShareBps,
     solRoute: cfg.solRoute?.source ?? null,
+    solRouteToleranceBps: ROUTE_TOLERANCE_BPS,
   };
   return c.json(info);
 });

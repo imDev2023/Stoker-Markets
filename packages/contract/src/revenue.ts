@@ -26,8 +26,12 @@ const raw = z.string().regex(/^\d+$/, "must be a whole number of raw units");
  * - `reward_sale`: a Reward Sale (ADR 0006, #43): a Reward Launch's collected tax sold into its own market for its
  *   Quote Asset, two entries of one transaction: the coins sold out of the operations wallet, and the Quote Asset it
  *   received, which is the holders' pot, not revenue.
+ * - `graduation_fee`: the Graduation Fee (ADR 0015), withheld from the Creator's share of what the platform collected on
+ *   their coin, in the coin's Quote Asset, keyed by the graduation transaction; nothing moves, the platform keeps it. It
+ *   is platform revenue that was already counted when it arrived as a `platform_fee` or `pool_fee`, so it is never
+ *   added to a `total`.
  */
-export const LedgerKind = z.enum(["platform_fee", "pool_fee", "fee_key", "sweep", "creator_forward", "burn", "flywheel", "arweave_top_up", "metadata_upload", "reward_sale"]);
+export const LedgerKind = z.enum(["platform_fee", "pool_fee", "fee_key", "sweep", "creator_forward", "burn", "flywheel", "arweave_top_up", "metadata_upload", "reward_sale", "graduation_fee"]);
 export type LedgerKind = z.infer<typeof LedgerKind>;
 
 /**
@@ -46,23 +50,27 @@ export const LedgerEntry = z.object({
   amount: raw,
   /** Where it came from: a Platform Fee vault, a CPMM pool, or the operations wallet for a sweep. */
   source: base58,
-  /** Where it went: the operations wallet, the treasury for a sweep, or the Creator for a Creator Forward. */
+  /** Where it went: the operations wallet, the treasury for a sweep, or the Creator for a Creator Forward. A Graduation Fee names the Creator as its source and the operations wallet as its destination, though nothing moves. */
   destination: base58,
-  /** The graduated coin whose pool paid it; null for the Platform Fee (one vault collects every Launch's) and sweeps. */
+  /** The graduated coin whose pool paid it, or whose Graduation Fee it is; null for the Platform Fee (one vault collects every Launch's) and sweeps. */
   launch: z.object({ mint: base58, symbol: z.string(), name: z.string() }).nullable(),
   slot: z.number().int(),
   time: z.iso.datetime(),
 });
 export type LedgerEntry = z.infer<typeof LedgerEntry>;
 
-/** Newest first. `next` is the cursor for the page after this one (pass it as `before`); null on the last page. */
+/**
+ * Newest first: by slot, then by the order the platform recorded the entries within a slot (two transactions of one
+ * job can land in one slot, and a Graduation Fee is written in the slot of the collection it follows), then by
+ * transaction and index. `next` is the opaque cursor for the page after this one (pass it as `before`); null on the last page.
+ */
 export const LedgerPage = z.object({ entries: z.array(LedgerEntry), next: z.string().nullable() });
 export type LedgerPage = z.infer<typeof LedgerPage>;
 
 export const LedgerQuery = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
   /** A `next` cursor from a previous page. */
-  before: z.string().regex(/^\d+\.[1-9A-HJ-NP-Za-km-z]{64,88}\.\d+$/, "must be a cursor from a previous page").optional(),
+  before: z.string().regex(/^\d+\.\d+\.[1-9A-HJ-NP-Za-km-z]{64,88}\.\d+$/, "must be a cursor from a previous page").optional(),
   kind: LedgerKind.optional(),
 });
 export type LedgerQuery = z.infer<typeof LedgerQuery>;
@@ -85,6 +93,8 @@ export const RevenueTotal = RevenueStreams.extend({
   creatorForwarded: raw,
   /** Collected for Creators and not forwarded yet: still in the operations wallet, and not the platform's. */
   creatorPending: raw,
+  /** Graduation Fees withheld from the Creators' share so far (ADR 0015): part of `total` that stays the platform's. */
+  graduationFee: raw,
 });
 export type RevenueTotal = z.infer<typeof RevenueTotal>;
 
@@ -107,7 +117,7 @@ export const Revenue = z.object({
   sweepFloatLamports: raw,
   /** All-time totals per asset, SOL first, then by ticker. */
   totals: z.array(RevenueTotal),
-  /** Daily totals for the latest 30 days with revenue, newest first. */
+  /** Daily totals for the latest 90 days with revenue, newest first. */
   days: z.array(RevenueDay),
 });
 export type Revenue = z.infer<typeof Revenue>;

@@ -219,6 +219,22 @@ export const CurveProgress = z.object({
 export type CurveProgress = z.infer<typeof CurveProgress>;
 
 /** A graduated Launch's Raydium CPMM pool. */
+/**
+ * The Graduation Fee of one graduated coin (ADR 0015): a set worth in SOL, withheld from the Creator's share of what the
+ * platform collects on the coin, in the coin's Quote Asset at the Quote Registry's price at each withholding, until paid.
+ */
+export const GraduationFee = z.object({
+  /** The fee, in lamports, as set when the coin graduated. */
+  lamports: raw,
+  /** What has been withheld toward it so far, in raw units of the coin's Quote Asset. */
+  withheld: raw,
+  /** The worth of that in lamports; what is still owed is `lamports` less this. */
+  paidLamports: raw,
+  /** When the fee was withheld in full; null while any of it is still owed. */
+  settledAt: z.iso.datetime().nullable(),
+});
+export type GraduationFee = z.infer<typeof GraduationFee>;
+
 export const Graduation = z.object({
   pool: base58,
   /** Raydium's migration of the curve into the pool. */
@@ -226,5 +242,7 @@ export const Graduation = z.object({
   graduatedAt: z.iso.datetime(),
   /** Price of one whole coin in whole Quote Asset units after the latest pool trade; null before the first. */
   price: z.number().nullable(),
+  /** The Graduation Fee charged for it (ADR 0015); null for a coin graduated before the fee existed. */
+  fee: GraduationFee.nullable(),
 });
 export type Graduation = z.infer<typeof Graduation>;

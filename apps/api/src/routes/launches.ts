@@ -11,6 +11,7 @@ import {
 import { curves, graduations, launches, launchMarkets, launchMetadata, quoteAssets, trades, type Db } from "@launchpad/db";
 import { operationsKey, type AppEnv, type Config } from "../env";
 import { toQuoteRef } from "../quotes/assets";
+import { graduationFeeOf } from "./creatorEarnings";
 import { curveProgress } from "./trades";
 
 /** The read API for Launches: the board's sorted and filtered list, one Launch, the Quote Assets in use, and holders. */
@@ -132,6 +133,7 @@ function toSummary(cfg: Config, r: Row): LaunchSummary {
       signature: r.graduation.signature,
       graduatedAt: r.graduation.graduatedAt.toISOString(),
       price: r.graduation.price,
+      fee: graduationFeeOf(r.graduation),
     },
     rewardTax:
       l.rewardTaxBps === null

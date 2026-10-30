@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { QuoteRef } from "./quotes";
-import { CurveStatus } from "./trades";
+import { CurveStatus, GraduationFee } from "./trades";
 
 /**
  * Creator Earnings: what a Creator earns from the trades on their Launches, half of what the platform collects on
@@ -20,6 +20,8 @@ export const CreatorEarningsAsset = z.object({
    * fee the platform has collected from their graduated pools.
    */
   earned: raw,
+  /** Graduation Fees withheld out of it (ADR 0015), in this Quote Asset, kept by the platform. */
+  withheld: raw,
   /** What has been sent to the Creator's wallet, or is on its way. */
   forwarded: raw,
   /** The rest, paid once the platform has collected the fee it comes from and it is worth the minimum. */
@@ -39,6 +41,8 @@ export const CreatorLaunchEarnings = z.object({
   curve: raw,
   /** Half of the pool creator fee the platform has collected from its pool. */
   pool: raw,
+  /** Its Graduation Fee (ADR 0015), once it has graduated with one: null before Graduation, and for a coin graduated before the fee existed. */
+  graduationFee: GraduationFee.nullable(),
 });
 export type CreatorLaunchEarnings = z.infer<typeof CreatorLaunchEarnings>;
 

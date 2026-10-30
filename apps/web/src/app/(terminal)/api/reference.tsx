@@ -40,7 +40,7 @@ export const SECTIONS: readonly Section[] = [
         endpoint: "GET /platform",
         text: (
           <>
-            The cluster, an RPC for browsers, the program and PlatformConfig addresses, the Graduation Target in lamports, and every fee as the chain has it now: the Platform Fee and Creator Fee on the curve (<C>platformFeeBps</C>, <C>creatorFeeBps</C>, the latter 0 on this platform), the pool&apos;s creator fee (<C>poolCreatorFeeBps</C>) with the share of it Raydium keeps at collection (<C>poolCreatorFeeShareBps</C>), Raydium&apos;s own fee on each venue (<C>raydiumFee</C>), the referral share rate, and <C>creatorForward</C>: the Creator&apos;s share of what the platform collects on their coin&apos;s trades (<C>shareBps</C>), also as basis points of curve and pool volume, with its minimum.
+            The cluster, an RPC for browsers, the program and PlatformConfig addresses, the Graduation Target in lamports, and every fee as the chain has it now: the Platform Fee and Creator Fee on the curve (<C>platformFeeBps</C>, <C>creatorFeeBps</C>, the latter 0 on this platform), the pool&apos;s creator fee (<C>poolCreatorFeeBps</C>) with the share of it Raydium keeps at collection (<C>poolCreatorFeeShareBps</C>), Raydium&apos;s own fee on each venue (<C>raydiumFee</C>), the share of the pool trade fee its liquidity providers keep (<C>raydiumFee.poolLpShareBps</C>, which reaches the platform through the Fee Key), the referral share rate, <C>creatorForward</C>: the Creator&apos;s share of what the platform collects on their coin&apos;s trades (<C>shareBps</C>), also as basis points of curve and pool volume, with its minimum; the Graduation Fee in lamports (<C>graduationFeeLamports</C>, ADR 0015), and the route&apos;s slippage limit for buys paid with SOL (<C>solRouteToleranceBps</C>). The site&apos;s Fees page is drawn from this answer.
           </>
         ),
       },
@@ -61,7 +61,7 @@ export const SECTIONS: readonly Section[] = [
         ),
       },
       { endpoint: "GET /launches/quotes", text: <>The Quote Assets that have Launches, for filters; each with its <C>category</C> and, for a tokenized stock, its <C>issuer</C>.</> },
-      { endpoint: "GET /launches/:mint", text: <>One Launch: curve progress, Graduation, Reward Tax (with its <C>payout</C> asset, <C>coin</C> or <C>quote</C>), market, Copy Protection (<C>protection.until</C>, and <C>copyOf</C> when the coin took an earlier coin&apos;s name, ticker or image).</> },
+      { endpoint: "GET /launches/:mint", text: <>One Launch: curve progress, Graduation (with its <C>fee</C>, the Graduation Fee and how much of it has been withheld), Reward Tax (with its <C>payout</C> asset, <C>coin</C> or <C>quote</C>), market, Copy Protection (<C>protection.until</C>, and <C>copyOf</C> when the coin took an earlier coin&apos;s name, ticker or image).</> },
       {
         endpoint: ["GET /launches/:mint/trades", "GET /launches/:mint/candles?interval=", "GET /launches/:mint/holders"],
         text: <>Indexed trades (with any referral fee paid), price candles, and the top holders read from the chain.</>,
@@ -87,7 +87,7 @@ export const SECTIONS: readonly Section[] = [
         endpoint: ["GET /creators/:address/earnings", "GET /creators/:address/forwards"],
         text: (
           <>
-            Creator Earnings: per Quote Asset what the Creator&apos;s Launches earned (half of what the platform collected on their trades), what was forwarded to their wallet and what is still pending; per Launch what its curve and pool earned; and every forward with its transaction. Nothing to claim.
+            Creator Earnings: per Quote Asset what the Creator&apos;s Launches earned (half of what the platform collected on their trades), what Graduation Fees kept of it (<C>withheld</C>), what was forwarded to their wallet and what is still pending; per Launch what its curve and pool earned and its <C>graduationFee</C> once it has graduated (the fee in lamports, what has been withheld toward it in the Quote Asset and its worth, and when it was settled); and every forward with its transaction. Nothing to claim.
           </>
         ),
       },
@@ -96,7 +96,7 @@ export const SECTIONS: readonly Section[] = [
         endpoint: ["GET /revenue", "GET /ledger"],
         text: (
           <>
-            Platform revenue per asset and per day, with what of it was forwarded to Creators and what is still owed them, and the Ledger page by page (<C>kind</C>, <C>limit</C>, <C>before</C>). A <C>creator_forward</C> entry is a payment to a Creator, an <C>arweave_top_up</C> SOL sent to ArDrive Turbo for upload credits, a <C>metadata_upload</C> what one Launch&apos;s permanent metadata cost in those credits, in lamports, against its launch transaction, and a <C>reward_sale</C> a Reward Launch&apos;s tax sold for its holders: the coins out and the Quote Asset in, two entries of one transaction.
+            Platform revenue per asset and per day, with what of it was forwarded to Creators and what is still owed them, and the Ledger page by page (<C>kind</C>, <C>limit</C>, <C>before</C>). A <C>creator_forward</C> entry is a payment to a Creator, an <C>arweave_top_up</C> SOL sent to ArDrive Turbo for upload credits, a <C>metadata_upload</C> what one Launch&apos;s permanent metadata cost in those credits, in lamports, against its launch transaction, a <C>reward_sale</C> a Reward Launch&apos;s tax sold for its holders: the coins out and the Quote Asset in, two entries of one transaction, and a <C>graduation_fee</C> a Graduation Fee (ADR 0015) withheld from a Creator&apos;s share in the coin&apos;s Quote Asset, keyed by the graduation transaction from event index 1000 up; nothing moves, so it is never added to a total, and each asset&apos;s <C>graduationFee</C> on <C>GET /revenue</C> is the sum of them.
           </>
         ),
       },

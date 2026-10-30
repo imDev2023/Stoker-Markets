@@ -253,3 +253,21 @@ Every terminal page ends with one row: the lockup small, API and the legal pages
 ### What phase 1b adds
 
 `EmptyState` and the four-state convention for every list and panel, the formatting components (numbers with subscript zeros, relative time with the absolute on hover and a caution tag when stale, address truncation, the coin image's fallback everywhere `CoinImage` is not yet used), and the region gate (#131).
+
+## 11. The Fees page and the Stats page (2026-10-30, #157)
+
+The owner's ask, with pump.fun's fees page and coin page as information only, in our words.
+
+### The Fees page
+
+`/fees` is the one place on the site that shows a fee figure.
+It is a terminal page in the legal pages' shape: a title, a lead, a dated line (a `<time>` of the render, since every figure is read from `GET /v1/platform` and `GET /v1/burns` as the page opens) and one `card` holding a plain table, Fee, Who pays, When, In, Who receives it, a row per fee, the fee's column carrying its name at body size, its figure in mono in the accent and a caption-size note.
+Under 800px the table is one fee after another, each fact under its label.
+A second card says what the platform does with its share.
+Every other page says what a fee is for in words and links here with "Every fee, explained" (the coin page's facts, the trade panel's one Fees line, the launch form's Fees fact), or to "the Fees page" in running text (the risk and terms pages, the creator page, the asset page, the announcements' lead).
+The rule, owner 2026-10-30: never a percentage or a rate outside this page; a visitor's own amounts (the trade panel's Fees line, the first buy's share in the launch review) stay where the trade is.
+
+### The Stats page
+
+`/revenue`, the header's Stats, is the Platform Token's page in the shape of pump.fun's coin page, from our data: an eyebrow "Stats" over the coin's ticker as the title; a bento of four raised tiles (revenue annualized over the last 90 days, the coin bought back and burned in the heat, the SOL spent, the Burn's share); two charts side by side on the grid (the buybacks over time as a 2px line with a wash under it, the daily buybacks as 24px columns with rounded caps, hairline gridlines, a crosshair and a tooltip on hover, no legend since each is one series); the calculator, labelled illustrative; the table of every burn with its explorer link, which is the charts' table view; the coin's market as five small panels, or the empty state (the ring and one line) until the Platform Token launches; then the platform's books as before, the revenue by asset, the days and the Ledger, with the rules aside.
+A read that is down leaves its figure out ("Not available right now"), never a zero as a headline.

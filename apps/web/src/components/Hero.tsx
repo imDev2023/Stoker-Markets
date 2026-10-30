@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { PlatformInfo, QuoteAsset } from "@launchpad/contract";
-import { creatorEarnings } from "@/lib/fees";
 import { quoteTicker } from "@/lib/format";
 import { deepestQuotes, quoteKind } from "@/lib/landing";
 import { LAUNCH_LINK } from "@/lib/site";
@@ -11,12 +10,12 @@ import styles from "./Hero.module.css";
  * The landing's hero (owner, 2026-10-09; the look from docs/design/principles.md): the slogan at display size with its
  * emphasised phrase in the heat and the heat's glow behind it, the lede naming the assets and the creator's cut, the
  * two actions, and under them a strip of the deepest markets a coin can be priced in, with the count that makes the
- * claim a fact. Every figure is live: the count and the assets from the Quote Registry, the creator's cut from the chain.
+ * claim a fact. Every figure is live: the count and the assets from the Quote Registry. The creator's cut is said
+ * without a figure (owner, 2026-10-30): the Fees page is the one place a fee figure is shown.
  */
-export function Hero({ quotes, platform }: { quotes: QuoteAsset[]; platform: PlatformInfo }) {
+export function Hero({ quotes }: { quotes: QuoteAsset[]; platform: PlatformInfo }) {
   const launchable = quotes.filter((q) => q.launchable);
   const deepest = deepestQuotes(launchable);
-  const earns = creatorEarnings(platform);
   const count = launchable.length.toLocaleString("en-US");
   return (
     <section className={`shell ${styles.hero}`} aria-labelledby="hero-title">
@@ -25,8 +24,8 @@ export function Hero({ quotes, platform }: { quotes: QuoteAsset[]; platform: Pla
           No one picks your pair. <em className={`heat-text ${styles.heat}`}>You do.</em>
         </h1>
         <p className={`t-lede ${styles.lede}`}>
-          Price it in SOL, a stablecoin or a tokenized stock, any of the {count} assets Raydium quotes. Creators earn{" "}
-          {earns.headline}, sent to their wallet, every payment on the public ledger.
+          Price it in SOL, a stablecoin or a tokenized stock, any of the {count} assets Raydium quotes. Creators earn half of what
+          the platform collects on their coin, sent to their wallet, every payment on the public ledger.
         </p>
         <div className={styles.actions}>
           <Link href={LAUNCH_LINK.href} className="button button-primary button-lg">{LAUNCH_LINK.label}</Link>

@@ -23,8 +23,9 @@ export type BurnDeps = { db: Db; cfg: Config; operations: Keypair; routes: SolRo
 /** What the Burn and Flywheel have to spend, in lamports, from the Ledger. */
 export type Budgets = {
   /**
-   * Every Platform Fee, pool fee and Fee Key collection so far, less what of it is the Creators' (ADR 0009), valued in
-   * SOL at the Quote Registry's latest prices.
+   * Every Platform Fee, pool fee and Fee Key collection so far, less what of it is the Creators' (ADR 0009; the
+   * Graduation Fees withheld out of their share are the platform's, ADR 0015), valued in SOL at the Quote Registry's
+   * latest prices.
    */
   revenueLamports: bigint;
   burn: { shareBps: number; spent: bigint; available: bigint };

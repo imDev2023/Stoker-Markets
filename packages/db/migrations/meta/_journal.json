@@ -155,6 +155,13 @@
       "when": 1793048183198,
       "tag": "0021_copy_protection",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793387021587,
+      "tag": "0022_graduation_fee",
+      "breakpoints": true
     }
   ]
 }

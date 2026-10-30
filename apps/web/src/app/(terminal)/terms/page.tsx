@@ -25,7 +25,7 @@ export default function TermsPage() {
         <p>Coins are created by their creators, not by Stoker, and Stoker does not endorse, verify or vouch for any of them. Copy Protection, risk labels and the figures on a coin&apos;s page are drawn from the chain on a best-effort basis and can be wrong or late. Read the <Link href="/risk">risk disclosure</Link> before you launch or trade.</p>
 
         <h2 className="t-h3">Fees and payments</h2>
-        <p>Fees are set on-chain and shown on every page. Half of what the platform collects on a coin&apos;s trades is forwarded to its creator in the coin&apos;s Quote Asset, as the public Ledger records; there is nothing to claim and no promise of a minimum. The platform may change its fee with notice under <Link href="/announcements">Announcements</Link>.</p>
+        <p>Fees are set on-chain and listed, with their figures, on the <Link href="/fees">Fees page</Link>. Half of what the platform collects on a coin&apos;s trades is forwarded to its creator in the coin&apos;s Quote Asset, as the public Ledger records; there is nothing to claim and no promise of a minimum. The platform may change its fee with notice under <Link href="/announcements">Announcements</Link>.</p>
 
         <h2 className="t-h3">No advice, no warranty</h2>
         <p>Nothing on this site is financial, legal or tax advice. The site and the API are provided as they are, without warranty of any kind. Solana, Raydium&apos;s programs, wallets and the data providers the site reads from are outside Stoker&apos;s control. To the extent the law allows, Stoker is not liable for any loss arising from your use of the site, a coin, an asset or a program.</p>
