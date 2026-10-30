@@ -26,6 +26,10 @@ _Avoid_: Bonding target, market cap target, fund raising
 The existing token a Launch is priced and traded against, such as SOL, a community token or a tokenized stock.
 _Avoid_: Pair token, base, collateral
 
+**Swap** (the section):
+Jupiter's swap widget on `/swap` (owner, 2026-10-30), any Solana token for any other on mainnet through Jupiter, with a referral fee to the platform; Stoker coins trade on their own pages, never here.
+_Avoid_: trade section (parked, #123), exchange
+
 **Copy Protection**:
 The window after a Launch, seven days unless the operator sets another, during which nobody else may launch a coin here with its name, ticker or image; afterwards anyone may, and a coin that does carries a label naming the original.
 _Avoid_: Anti-vamp (the feature's working name), ticker registry, blacklist
