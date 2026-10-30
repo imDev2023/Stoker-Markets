@@ -1,6 +1,7 @@
 /**
- * Where the site points outside itself: the socials, the contact address and the repository. The header and the
- * footer read from here, so a link is changed in one place.
+ * Where the site points outside itself: the socials and the contact address. The header and the footer read from
+ * here, so a link is changed in one place. Nothing on the site links to the repository (owner, 2026-10-30: the footer's
+ * GitHub link was removed from the live site; the API reference was already a page of the site, 2026-10-25).
  *
  * PLACEHOLDERS (owner, 2026-10-07): the X and Telegram addresses are the handles the owner intends and may not exist
  * yet; replace them before the site opens.
@@ -8,7 +9,6 @@
 export const SITE_LINKS = {
   x: { label: "X", href: "https://x.com/stokermarkets" },
   telegram: { label: "Telegram", href: "https://t.me/stokermarkets" },
-  github: { label: "GitHub", href: "https://github.com/imDev2023/Stoker-Markets" },
   email: "info@stoker.markets",
 } as const;
 
@@ -58,7 +58,6 @@ export const FOOTER_GROUPS = [
       { href: "/burns", label: "Burns" },
       { href: "/announcements", label: "Announcements" },
       { href: API_LINK.href, label: "API" },
-      SITE_LINKS.github,
     ],
   },
   { title: "Legal", links: [...LEGAL_LINKS, { href: `mailto:${SITE_LINKS.email}`, label: "Contact" }] },
