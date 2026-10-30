@@ -251,6 +251,7 @@ Only the owner can create it, since the account's admin is a wallet that signs.
 
 1. Open https://referral.jup.ag/ in the browser that holds the treasury's Phantom wallet, connect it, and create a referral account named `Stoker`.
 2. Copy the referral account's address (not the wallet's), and keep it in `~/.config/stoker/mainnet/jupiter-referral` for the deploy command.
+   Done on 2026-10-30: the Ultra referral account is `8dH3nnGeyrjnkEkBW87E5QnvbCUR8Gmb2KC5ksomXQ7C` (a public address), with token accounts for SOL, USDC and USDT; a fee in any other mint is skipped until its token account is added on the dashboard.
 3. Build the web with it: `NEXT_PUBLIC_JUPITER_REFERRAL=<address> NEXT_PUBLIC_API_URL=https://api.stoker.markets pnpm exec opennextjs-cloudflare build` in `apps/web`, then deploy as usual (section 12); the devnet rehearsal takes the same variable, since the widget swaps on mainnet whatever cluster the API is on.
    The fee is `NEXT_PUBLIC_JUPITER_REFERRAL_FEE_BPS`, 50 basis points (0.5%) unless set; Jupiter accepts 50 to 255.
 4. Prove it: swap a small amount on the live Swap page, then see the fee land on the dashboard's referral account.
