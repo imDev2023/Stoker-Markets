@@ -10,7 +10,9 @@ test("the empty landing invites the first launch", async ({ page }) => {
   await expect(page.getByText("No coins yet. The first one could be yours.")).toBeVisible();
   await expectNoHorizontalOverflow(page);
   await expectHydrated(page);
-  await expect(page).toHaveScreenshot("home-empty.png", { fullPage: true });
+  // The full footer names the PlatformConfig, whose address derives from the chain's admin key: a worktree's own, so it
+  // is masked as the visual shots mask every address (a baseline written on one chain must pass on another).
+  await expect(page).toHaveScreenshot("home-empty.png", { fullPage: true, mask: [page.locator(".mono:not(input)").filter({ visible: true })] });
 });
 
 test("a cluster other than mainnet tells search engines not to index it", async ({ page }) => {
