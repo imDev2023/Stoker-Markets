@@ -131,7 +131,7 @@ test("the header's search open, with a match", async ({ page }) => {
 });
 
 test("coin page", async ({ page }) => {
-  await page.goto(`/coin/${await mintOf("Tracer Bullet")}`);
+  await page.goto(`/coin/${await mintOf("First Light")}`);
   await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
   await snap(page, "coin.png");
 });

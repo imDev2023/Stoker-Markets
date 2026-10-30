@@ -11,14 +11,18 @@ const LOOKS = [
 const chrome = devices["Desktop Chrome"];
 
 /**
- * One stack serves every project, so projects run in an order that keeps what each one sees deterministic:
- * the empty board first, then the behaviour flows (which launch and trade coins), then a fixed board is seeded, then the visuals.
+ * One stack serves every project, so projects run in an order that keeps what each one sees deterministic: the empty
+ * board first, then a fixed board is seeded and the visuals shot from it alone, then the behaviour flows, which launch
+ * and trade coins of their own. The visuals come before the flows (2026-10-30) so that a filtered run of the seed and a
+ * visual project (`--project seed --project visual-desktop-light --no-deps`, about three minutes) sees exactly the board
+ * the full run sees; when the flows ran first, eight shots a look carried their leftover coins.
  */
+const visuals = LOOKS.map((l) => `visual-${l.name}`);
 const projects: Project[] = [
   ...LOOKS.map((l) => ({ name: `empty-${l.name}`, testMatch: "empty.spec.ts", use: { ...chrome, ...l } })),
-  { name: "flows", testMatch: /(flows|trading|pairing|graduation|board|assets|launchModes|rewards|pay-with-sol|operator|labels|serverKey|pages|copies)\.spec\.ts/, dependencies: LOOKS.map((l) => `empty-${l.name}`), use: { ...chrome, ...LOOKS[0] } },
-  { name: "seed", testMatch: "seed.setup.ts", dependencies: ["flows"] },
+  { name: "seed", testMatch: "seed.setup.ts", dependencies: LOOKS.map((l) => `empty-${l.name}`) },
   ...LOOKS.map((l) => ({ name: `visual-${l.name}`, testMatch: "visual.spec.ts", dependencies: ["seed"], use: { ...chrome, ...l } })),
+  { name: "flows", testMatch: /(flows|trading|pairing|graduation|board|assets|launchModes|rewards|pay-with-sol|operator|labels|serverKey|pages|copies)\.spec\.ts/, dependencies: visuals, use: { ...chrome, ...LOOKS[0] } },
 ];
 
 export default defineConfig({
