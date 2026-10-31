@@ -102,6 +102,32 @@ export async function connectTestWallet(page: Page, button: Locator) {
   await (await openWalletMenu(page, button)).click();
 }
 
+/**
+ * Where the site's own account control lives: the header on a desktop; under 768px the header has no account, and
+ * the tab bar's Account tab opens a sheet that holds it (the sheet is returned open).
+ */
+export async function accountArea(page: Page): Promise<Locator> {
+  if ((page.viewportSize()?.width ?? 1440) >= 768) return page.getByRole("banner");
+  const sheet = page.getByRole("dialog", { name: "Account" });
+  // A tap before hydration does nothing, so the sheet is asked for until it opens.
+  await expect(async () => {
+    if (!(await sheet.isVisible())) await page.getByRole("navigation", { name: "Sections" }).getByRole("button", { name: "Account" }).click();
+    await expect(sheet).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 30_000 });
+  return sheet;
+}
+
+/** Connects the test wallet from the site's own control and leaves the page as it was (a phone's sheet closed again). */
+export async function connectFromSite(page: Page) {
+  const area = await accountArea(page);
+  await connectTestWallet(page, area.getByRole("button", { name: "Connect wallet" }));
+  const sheet = page.getByRole("dialog", { name: "Account" });
+  if (await sheet.isVisible()) {
+    await page.keyboard.press("Escape");
+    await expect(sheet).toHaveCount(0);
+  }
+}
+
 /** Installs the wallet into a page; call before the first navigation. */
 export async function installTestWallet(page: Page, keypair: Keypair): Promise<TestWallet> {
   let decline = false;

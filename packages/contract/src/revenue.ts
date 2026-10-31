@@ -61,8 +61,8 @@ export type LedgerPage = z.infer<typeof LedgerPage>;
 
 export const LedgerQuery = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
-  /** A `next` cursor from a previous page. */
-  before: z.string().regex(/^\d+\.[1-9A-HJ-NP-Za-km-z]{64,88}\.\d+$/, "must be a cursor from a previous page").optional(),
+  /** A `next` cursor from a previous page: the slot, the moment the Ledger recorded the entry, the signature and the position. */
+  before: z.string().regex(/^\d+\.\d+\.[1-9A-HJ-NP-Za-km-z]{64,88}\.\d+$/, "must be a cursor from a previous page").optional(),
   kind: LedgerKind.optional(),
 });
 export type LedgerQuery = z.infer<typeof LedgerQuery>;

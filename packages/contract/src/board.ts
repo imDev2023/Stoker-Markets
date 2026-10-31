@@ -59,9 +59,29 @@ export const LaunchMarket = z.object({
   marketCap: MarketValue.nullable(),
   /** Quote Asset traded over the last 24 hours, fees included. */
   volume24h: MarketValue.extend({ raw }),
+  /**
+   * How the price moved over the last 24 hours, as a fraction (0.12 is up 12%): the price now against the price after the
+   * last trade of 24 hours ago, or, for a coin younger than that, against the curve's starting price. Null until the first
+   * trade; 0 when nothing traded in the window.
+   */
+  change24h: z.number().nullable(),
   lastTradeAt: z.iso.datetime().nullable(),
 });
 export type LaunchMarket = z.infer<typeof LaunchMarket>;
+
+/** The platform's own figures, for a landing or a dashboard: what has launched here, and what traded in the last day. */
+export const PlatformStats = z.object({
+  /** When the first coin launched here; null until one has. */
+  since: z.iso.datetime().nullable(),
+  launches: z.number().int(),
+  graduated: z.number().int(),
+  /**
+   * Quote Assets traded over the last 24 hours across every coin, in SOL and USD at the Quote Registry's latest prices;
+   * an asset without a price is left out of the sum. Null when no coin has traded.
+   */
+  volume24h: z.object({ sol: z.number().nullable(), usd: z.number().nullable() }),
+});
+export type PlatformStats = z.infer<typeof PlatformStats>;
 
 /** A Quote Asset that at least one Launch is paired with, and how many are: what the board's Quote Asset filter offers. */
 export const LaunchQuote = QuoteRef.extend({ launches: z.number().int() });

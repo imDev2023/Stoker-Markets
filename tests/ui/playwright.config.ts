@@ -9,6 +9,8 @@ const LOOKS = [
 ] as const;
 
 const chrome = devices["Desktop Chrome"];
+/** The projects that take screenshots run with motion stilled: a baseline must not depend on where a cycle stands (the landing's pair cycle holds its first asset). */
+const still = { reducedMotion: "reduce" } as const;
 
 /**
  * One stack serves every project, so projects run in an order that keeps what each one sees deterministic: the empty
@@ -19,10 +21,10 @@ const chrome = devices["Desktop Chrome"];
  */
 const visuals = LOOKS.map((l) => `visual-${l.name}`);
 const projects: Project[] = [
-  ...LOOKS.map((l) => ({ name: `empty-${l.name}`, testMatch: "empty.spec.ts", use: { ...chrome, ...l } })),
+  ...LOOKS.map((l) => ({ name: `empty-${l.name}`, testMatch: "empty.spec.ts", use: { ...chrome, ...l, ...still } })),
   { name: "seed", testMatch: "seed.setup.ts", dependencies: LOOKS.map((l) => `empty-${l.name}`) },
-  ...LOOKS.map((l) => ({ name: `visual-${l.name}`, testMatch: "visual.spec.ts", dependencies: ["seed"], use: { ...chrome, ...l } })),
-  { name: "flows", testMatch: /(flows|trading|pairing|graduation|board|assets|launchModes|rewards|pay-with-sol|operator|labels|serverKey|pages|copies)\.spec\.ts/, dependencies: visuals, use: { ...chrome, ...LOOKS[0] } },
+  ...LOOKS.map((l) => ({ name: `visual-${l.name}`, testMatch: "visual.spec.ts", dependencies: ["seed"], use: { ...chrome, ...l, ...still } })),
+  { name: "flows", testMatch: /(flows|trading|pairing|graduation|board|assets|launchModes|rewards|pay-with-sol|operator|labels|serverKey|pages|copies|landing|trust|seo)\.spec\.ts/, dependencies: visuals, use: { ...chrome, ...LOOKS[0] } },
 ];
 
 export default defineConfig({

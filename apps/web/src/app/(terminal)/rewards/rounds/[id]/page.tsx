@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/meta";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLaunch, getPlatform, getRewardRound } from "@/lib/api";
 import { COIN_DECIMALS, explorerUrl, formatUnits, formatUtc, shortAddress } from "@/lib/format";
 import styles from "../../page.module.css";
+import { Address } from "@/components/Address";
 
 type Props = { params: Promise<{ id: string }> };
 
-export const metadata: Metadata = { title: "Reward Round" };
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  return pageMeta({ path: `/rewards/rounds/${id}`, title: "Reward Round", description: "One Reward Round: the Reward Launch it paid, its snapshot of holders, the pot and every payout." });
+}
 
 export default async function RewardRoundPage({ params }: Props) {
   const { id } = await params;
@@ -74,7 +79,7 @@ export default async function RewardRoundPage({ params }: Props) {
           {round.payouts.map((p) => (
             <li key={p.wallet} className={p.status === "paid" ? "" : styles.pending}>
               <span>
-                <Link href={`/rewards/${p.wallet}`} className="mono">{shortAddress(p.wallet)}</Link> held{" "}
+                <Address value={p.wallet} href={`/rewards/${p.wallet}`} /> held{" "}
                 <span className="mono">{coins(p.holding)}</span>
                 {p.status === "paid" && p.signature ? (
                   <>

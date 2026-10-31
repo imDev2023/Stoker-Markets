@@ -30,9 +30,23 @@ export function PairMark({ base, quote, size = "md" }: { base: string; quote: st
     };
     const fit = () => {
       // Measure at the CSS size: the room is read after the reset, so a box that wraps its content can't ratchet down.
+      // Nothing here transitions (the stylesheet turns transitions off for the pair and its parts), so the reset and
+      // the measurement in the same task see the CSS size; with a transition on the parts' inherited size, as the
+      // page's reduced-motion rule gives every element, the glyphs measured at the old size and the fit drifted
+      // (2026-10-31).
       el.style.fontSize = "";
+      // The room is what the pair may grow into, never what it happens to take: with its own cap lifted the pair at the
+      // CSS size pushes a box that wraps its content out to its own width, or to the container's edge where it is
+      // clamped, so the room never depends on a sibling's width at this moment.
+      el.style.maxWidth = "none";
       const boxStyle = getComputedStyle(box);
-      const room = box.clientWidth - parseFloat(boxStyle.paddingLeft) - parseFloat(boxStyle.paddingRight);
+      // The room at subpixel precision: `clientWidth` rounds to whole pixels, and in a box that wraps the pair itself
+      // the rounding fell above or below the pair's own width from run to run, so the pair was sometimes shrunk by a
+      // hair and sometimes not (five coin-page baselines flipped, 2026-10-31).
+      const room = box.getBoundingClientRect().width
+        - parseFloat(boxStyle.borderLeftWidth) - parseFloat(boxStyle.borderRightWidth)
+        - parseFloat(boxStyle.paddingLeft) - parseFloat(boxStyle.paddingRight);
+      el.style.maxWidth = "";
       const cssSize = parseFloat(getComputedStyle(el).fontSize);
       const gap = parseFloat(getComputedStyle(el).columnGap) || 0;
       const parts = [...el.children].filter((c) => c.getAttribute("aria-hidden") !== null);
@@ -40,7 +54,10 @@ export function PairMark({ base, quote, size = "md" }: { base: string; quote: st
       if (!natural || !room) return;
       // A hair under the exact fit, so subpixel rounding never triggers the ellipsis.
       const exact = (cssSize * (room - 1)) / natural;
-      const target = size === "fit" ? Math.min(FIT_MAX_PX, exact) : Math.min(cssSize, exact);
+      // A pair that already fits (within the rounding of a measurement) keeps its set size: a box that wraps the pair
+      // itself (the coin page's title row) reports the pair's own width as the room, and the hair under it would shrink
+      // the pair by a fraction that depends on the measurement's rounding.
+      const target = size === "fit" ? Math.min(FIT_MAX_PX, exact) : natural <= room + 0.5 ? cssSize : exact;
       el.style.fontSize = `${Math.max(cssSize * MIN_SCALE, target)}px`;
     };
     fit();

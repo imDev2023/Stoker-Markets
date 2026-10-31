@@ -132,7 +132,7 @@ export function WalletButton({ variant = "header" }: { variant?: "header" | "inl
 
   return (
     <div className={wrap} ref={menu}>
-      <button type="button" className={`button ${connectKind} ${styles.connect}`} onClick={() => setOpen((o) => !o)} aria-expanded={open} disabled={connecting}>
+      <button type="button" className={`button ${connectKind} ${styles.connect}`} onClick={() => setOpen((o) => !o)} aria-expanded={open} disabled={connecting} data-wallet-connect={variant === "header" || undefined}>
         {/* On a phone the header's button is the glyph alone; the words stay as its name. */}
         {variant === "header" && <span className={styles.connectGlyph}><Glyph /></span>}
         <span className={styles.connectWord}>{connecting ? "Connecting…" : "Connect wallet"}</span>

@@ -1,3 +1,14 @@
+/*
+  The pair and its parts never transition: the script fits the pair by resetting its size and measuring its glyphs in the
+  same task, and a transition on the size (under reduced motion the page gives every element a 0.01ms transition on
+  every property, the parts included, which inherit the size) would make that measurement read the old size and the fit
+  drift from refit to refit (the suite's coin title rows and hero pair, 2026-10-31).
+*/
+.pair,
+.pair > span {
+  transition-property: none;
+}
+
 .pair {
   display: inline-flex;
   align-items: baseline;

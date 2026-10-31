@@ -5,9 +5,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { LaunchQuote, LaunchSummary } from "@launchpad/contract";
 import { listLaunchQuotes, listLaunches, type BoardQuery } from "@/lib/api";
 import { boardSearch, DEFAULT_BOARD, inChip, SEARCH_MAX, SORT_LABELS, SORT_ORDER, type PairedChip } from "@/lib/board";
-import { AssetRail } from "./AssetRail";
+import { SEARCH_HASH } from "@/lib/search";
+import { AssetBar } from "./AssetBar";
 import { COLUMNS, CoinRow } from "./CoinRow";
-import { Ring } from "./Mark";
+import { EmptyState } from "./EmptyState";
 import styles from "./Board.module.css";
 
 const REFRESH_MS = 4_000;
@@ -19,7 +20,8 @@ const sameQuery = (a: BoardQuery, b: BoardQuery) =>
 
 /**
  * The token board: every coin as the pair it trades as, searched, sorted and filtered by what it is paired with, which
- * the asset rail beside it does (docs/design/layout.md: the pair is the unit). The query lives in the page's URL, so a
+ * the asset bar above the table does (owner, 2026-10-31, a sliding row after Pump.fun's; a rail beside the board from
+ * the layout pick of 2026-10-11 until then; docs/design/layout.md: the pair is the unit). The query lives in the page's URL, so a
  * sorted or filtered board can be shared and survives a reload. The controls are there before the first coin too, so
  * a visitor to a new platform sees what the board does. `renderedAt` is the server's clock at render, so "launched Xs
  * ago" hydrates to the same text the server sent.
@@ -35,6 +37,14 @@ export function Board({
   const [typed, setTyped] = useState(initialQuery.q);
   const latest = useRef(initialQuery);
   const debounce = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const field = useRef<HTMLInputElement>(null);
+
+  // Sent here by "/" or ⌘K from another page (SearchShortcut): the field takes focus and the hash goes.
+  useEffect(() => {
+    if (window.location.hash !== SEARCH_HASH) return;
+    field.current?.focus();
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+  }, []);
 
   const load = useCallback(async (q: BoardQuery) => {
     try {
@@ -89,18 +99,17 @@ export function Board({
   const nothingLaunched = launches.length === 0 && !shown.category && !shown.issuer && !shown.quote && !shown.q;
 
   const body = nothingLaunched ? (
-    <div className={`card card-raised ${styles.empty}`}>
-      <Ring size={80} className={styles.ring} />
-      <p>No coins yet. The first one could be yours.</p>
-      <Link href="/launch" className="button button-primary">Stoke a coin</Link>
-    </div>
+    <EmptyState title="Be the first to stoke a coin" action={<Link href="/launch" className="button button-primary">Stoke a coin</Link>}>
+      Nothing has launched yet. Pair a coin with any asset Raydium quotes and open the board.
+    </EmptyState>
   ) : launches.length === 0 ? (
-    <div className={`card ${styles.empty}`} aria-busy={loading}>
-      <p>{shown.q ? `No coins match "${shown.q}".` : "No coins match these filters."}</p>
-      <button type="button" className="button button-ghost" onClick={reset}>
-        Show all coins
-      </button>
-    </div>
+    <EmptyState
+      title="Nothing matches"
+      busy={loading}
+      action={<button type="button" className="button button-ghost" onClick={reset}>Show all coins</button>}
+    >
+      {shown.q ? `No coins match "${shown.q}".` : "No coins match these filters."}
+    </EmptyState>
   ) : (
     <div className={`card ${styles.table}`}>
       {/* The column names once, above the rows; each row names its own figures where the window is too narrow for columns. */}
@@ -121,8 +130,7 @@ export function Board({
 
   return (
     <section className={`shell grid ${styles.section}`} aria-labelledby="board-title">
-      <AssetRail className="col-3" quotes={quotes} launches={launches} query={query} onKind={chooseKind} onAsset={chooseAsset} />
-      <div className={`col-9 ${styles.main}`}>
+      <div className={`col-12 ${styles.main}`}>
         <div className={styles.head}>
           <h2 id="board-title" className={`t-h2 ${styles.title}`}>Coins</h2>
           <span className={styles.live}>Updates every few seconds</span>
@@ -134,6 +142,8 @@ export function Board({
               <path d="m13 13 4.5 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
             <input
+              ref={field}
+              data-site-search=""
               type="search"
               value={typed}
               maxLength={SEARCH_MAX}
@@ -155,6 +165,7 @@ export function Board({
             </div>
           </div>
         </div>
+        <AssetBar quotes={quotes} launches={launches} query={query} onKind={chooseKind} onAsset={chooseAsset} />
         {body}
       </div>
     </section>

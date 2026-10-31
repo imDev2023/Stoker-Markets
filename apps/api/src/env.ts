@@ -63,6 +63,8 @@ export type Bindings = {
   POOL_BACKFILL_SECONDS: string;
   /** Copy Protection (#120, ADR 0012): for this long after a launch nobody else may launch a coin here with its name, ticker or image; seven days unless set. */
   COPY_PROTECTION_SECONDS?: string;
+  /** Bundle Radar (#41, ADR 0013): a buy in the launch's slot or this many after it is a snipe; 5 unless set (about two seconds). */
+  SNIPE_WINDOW_SLOTS?: string;
   /** The Authorization header value Helius sends with every webhook delivery. */
   HELIUS_WEBHOOK_SECRET: string;
   /**
@@ -78,6 +80,11 @@ export type Bindings = {
   ALERT_WEBHOOK_URL?: string;
   /** Bearer token for the operator endpoints; they refuse every request without it. */
   OPERATOR_TOKEN?: string;
+  /**
+   * Local only: a request header the region gate reads the visitor's country from instead of Cloudflare's reading,
+   * so a test can visit from any country (the test stack sets `x-test-country`). Refused on mainnet.
+   */
+  COUNTRY_HEADER?: string;
   /**
    * Derives each launch's mint key from a nonce stored with its draft, so a retry signs for the same coin address and
    * can never create a second coin. A secret: anyone holding it could sign for the address of a coin not launched yet.
@@ -151,6 +158,8 @@ export type Config = {
   graduationAlertAfterSeconds: number;
   poolBackfillSeconds: number;
   alertWebhookUrl: string | null;
+  /** The request header the region gate trusts for the visitor's country, lowercased; null in production, where Cloudflare's reading is used. */
+  countryHeader: string | null;
   helius: HeliusConfig | null;
   mintKeySecret: string;
   lock: PublicKey;
@@ -161,6 +170,8 @@ export type Config = {
   creatorForwardMinLamports: bigint;
   /** Copy Protection's window after a launch, in seconds. */
   copyProtectionSeconds: number;
+  /** Bundle Radar's Snipe Window after a launch, in slots after the launch's own. */
+  snipeWindowSlots: number;
   rewardRulesLeadSeconds: number;
   burnShareBps: number;
   flywheelShareBps: number;
@@ -218,6 +229,8 @@ const BURN_MIN_SPEND_DEFAULT_LAMPORTS = 10_000_000n;
 const CREATOR_FORWARD_MIN_DEFAULT_LAMPORTS = 10_000_000n;
 /** Seven days: the owner's choice (2026-10-26), a setting so it can become 30. */
 export const COPY_PROTECTION_DEFAULT_SECONDS = 7 * 86_400;
+/** Five slots, about two seconds: a bot that watches the program for pool creations buys in the launch's slot or the next few. */
+export const SNIPE_WINDOW_DEFAULT_SLOTS = 5;
 const FEE_CHANGE_LEAD_DEFAULT_SECONDS = 24 * 60 * 60;
 /** Curve rule writes per Quote Registry refresh; a first run over mainnet's hundreds of Quote Assets completes over a few runs. */
 const QUOTE_RULE_WRITES_DEFAULT = 120;
@@ -268,6 +281,7 @@ function refuseLocalOnlySettingsOnMainnet(env: Bindings) {
   if (env.SOL_ROUTE_SOURCE === "raydium-cpmm") throw new Error('SOL_ROUTE_SOURCE "raydium-cpmm" names the local chain\'s pools, which do not exist on mainnet; use "jupiter" or "none"');
   if (!env.RPC_URL.startsWith("https://")) throw new Error(`RPC_URL must be https on mainnet (got ${env.RPC_URL})`);
   if (env.JUPITER_API_URL) throw new Error("JUPITER_API_URL names the local stand-in; on mainnet Jupiter's own host is chosen by the key, so leave it unset");
+  if (env.COUNTRY_HEADER) throw new Error("COUNTRY_HEADER lets a request name its own country, which is for tests; on mainnet the region gate reads Cloudflare's reading alone");
   if (env.FEE_CHANGE_LEAD_SECONDS && seconds(env.FEE_CHANGE_LEAD_SECONDS, "FEE_CHANGE_LEAD_SECONDS") < FEE_CHANGE_LEAD_MAINNET_MIN_SECONDS)
     throw new Error(`FEE_CHANGE_LEAD_SECONDS must be at least ${FEE_CHANGE_LEAD_MAINNET_MIN_SECONDS} on mainnet: a fee change hits every live curve at once`);
 }
@@ -318,7 +332,9 @@ export function config(env: Bindings): Config {
     graduationAlertAfterSeconds: seconds(env.GRADUATION_ALERT_AFTER_SECONDS, "GRADUATION_ALERT_AFTER_SECONDS"),
     poolBackfillSeconds: seconds(env.POOL_BACKFILL_SECONDS, "POOL_BACKFILL_SECONDS"),
     copyProtectionSeconds: env.COPY_PROTECTION_SECONDS ? seconds(env.COPY_PROTECTION_SECONDS, "COPY_PROTECTION_SECONDS") : COPY_PROTECTION_DEFAULT_SECONDS,
+    snipeWindowSlots: env.SNIPE_WINDOW_SLOTS ? slots(env.SNIPE_WINDOW_SLOTS, "SNIPE_WINDOW_SLOTS") : SNIPE_WINDOW_DEFAULT_SLOTS,
     alertWebhookUrl: env.ALERT_WEBHOOK_URL ? new URL(env.ALERT_WEBHOOK_URL).toString() : null,
+    countryHeader: env.COUNTRY_HEADER ? env.COUNTRY_HEADER.toLowerCase() : null,
     helius: heliusConfig(env),
     mintKeySecret: mintKeySecret(env.MINT_KEY_SECRET),
     lock: key("LOCK_PROGRAM"),
@@ -395,6 +411,12 @@ function perMinute(raw: string | undefined, name: string, fallback: number) {
   if (raw === undefined || raw === "") return fallback;
   const n = Number(raw);
   if (!Number.isInteger(n) || n <= 0) throw new Error(`${name} must be a whole number of requests above zero (got ${raw})`);
+  return n;
+}
+
+function slots(raw: string, name: string) {
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 0) throw new Error(`${name} must be a whole number of slots (got ${raw})`);
   return n;
 }
 

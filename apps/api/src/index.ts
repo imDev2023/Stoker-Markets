@@ -28,6 +28,8 @@ import { creatorEarningsRoutes } from "./routes/creatorEarnings";
 import { quotes } from "./routes/quotes";
 import { launchRoutes } from "./routes/launches";
 import { launchModeRoutes, operatorAirdropRoutes } from "./routes/launchModes";
+import { operatorRegionRoutes, regionRoutes } from "./routes/region";
+import { statsRoutes } from "./routes/stats";
 import { copyRoutes } from "./routes/copies";
 import { checkCopies, firstCopy } from "./copies/check";
 import { imageHash } from "./copies/imageHash";
@@ -41,6 +43,7 @@ import { announcementRoutes, operatorFeeRoutes, operatorViewRoutes, platformFees
 import { runBurns } from "./burn/engine";
 import { runRewardRounds } from "./rewards/engine";
 import { tradeRoutes } from "./routes/trades";
+import { trustRoutes } from "./routes/trust";
 
 const app = new Hono<AppEnv>();
 
@@ -220,12 +223,15 @@ app.route("/v1", launchModeRoutes);
 app.route("/v1", copyRoutes);
 app.route("/v1", quotes);
 app.route("/v1", tradeRoutes);
+app.route("/v1", trustRoutes);
 app.route("/v1", creatorEarningsRoutes);
 app.route("/v1", revenueRoutes);
 app.route("/v1", rewardRoutes);
 app.route("/v1", burnRoutes);
 app.route("/v1", announcementRoutes);
 app.route("/v1", keyRoutes);
+app.route("/v1", regionRoutes);
+app.route("/v1", statsRoutes);
 
 /** Every operator endpoint needs the operator token. */
 app.use("/v1/operator/*", async (c, next) => {
@@ -242,6 +248,7 @@ app.route("/v1/operator", operatorViewRoutes);
 app.route("/v1/operator", operatorFeeRoutes);
 app.route("/v1/operator", operatorAirdropRoutes);
 app.route("/v1/operator", operatorMintKeyRoutes);
+app.route("/v1/operator", operatorRegionRoutes);
 
 /**
  * Runs one scheduled job now, as its Cron Trigger would, and answers with the run: 500 with the failed run when it

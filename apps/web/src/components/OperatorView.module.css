@@ -200,3 +200,11 @@
     padding: 18px;
   }
 }
+
+/* The region gate's table: a feature and the countries it is withheld in, one row each, the buttons on the row. */
+.gateRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}

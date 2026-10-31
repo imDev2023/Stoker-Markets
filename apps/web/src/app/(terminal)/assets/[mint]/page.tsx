@@ -4,21 +4,34 @@ import { notFound } from "next/navigation";
 import { getPlatform, getQuoteAsset, listLaunches, listLaunchQuotes } from "@/lib/api";
 import { assetKind, CATEGORY_NOTES, formatUsd, graduationInWords, tokenProgramName } from "@/lib/assets";
 import { formatMarketValue } from "@/lib/board";
-import { explorerUrl, formatPrice, formatUtc, quoteTicker, shortAddress } from "@/lib/format";
+import { quoteTicker } from "@/lib/format";
+import { breadcrumbList, pageMeta } from "@/lib/meta";
+import { siteOrigin } from "@/lib/origin";
 import { CopyButton } from "@/components/CopyButton";
+import { JsonLd } from "@/components/JsonLd";
 import { QuoteLabelList } from "@/components/QuoteLabels";
 import { QuoteLogo } from "@/components/QuoteLogo";
 import styles from "./page.module.css";
+import { Address } from "@/components/Address";
+import { CoinImage } from "@/components/CoinImage";
+import { EmptyState } from "@/components/EmptyState";
+import { Price } from "@/components/Price";
+import { RelativeTime } from "@/components/RelativeTime";
 
 type Props = { params: Promise<{ mint: string }> };
 
 const COINS_SHOWN = 8;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const quote = await getQuoteAsset((await params).mint).catch(() => null);
-  return quote
-    ? { title: `${quoteTicker(quote)} as a Quote Asset`, description: `Launch a coin priced in ${quoteTicker(quote)}: its price, what a coin raises to graduate, and what is known about it.` }
-    : { title: "Asset not found" };
+  const { mint } = await params;
+  const quote = await getQuoteAsset(mint).catch(() => null);
+  if (!quote) return pageMeta({ path: `/assets/${mint}`, title: "Asset not found", index: false });
+  const ticker = quoteTicker(quote);
+  return pageMeta({
+    path: `/assets/${quote.mint}`,
+    title: `${ticker} as a Quote Asset`,
+    description: `Launch a coin priced in ${ticker}: its price, what a coin raises to graduate, and what is known about it.`,
+  });
 }
 
 /**
@@ -36,12 +49,14 @@ export default async function AssetPage({ params }: Props) {
     listLaunchQuotes(),
   ]);
   const ticker = quoteTicker(quote);
+  const origin = await siteOrigin();
   const coins = inUse.quotes.find((q) => q.mint === mint)?.launches ?? 0;
   const target = graduationInWords(quote);
   const addresses: (readonly [label: string, value: string])[] = [["Mint", quote.mint], ["Raydium GlobalConfig", quote.globalConfig]];
 
   return (
     <article className={`shell ${styles.page}`}>
+      <JsonLd data={breadcrumbList(origin, [["Home", "/"], ["Assets", "/assets"], [ticker, `/assets/${quote.mint}`]])} />
       <header className={styles.head}>
         <QuoteLogo quote={quote} size={64} />
         <div className={styles.titles}>
@@ -68,9 +83,10 @@ export default async function AssetPage({ params }: Props) {
             <dd>
               {quote.price ? (
                 <>
-                  <span className="mono">{quote.price.usd ? formatUsd(quote.price.usd) : `${formatPrice(Number(quote.price.sol))} SOL`}</span>
-                  {quote.price.usd && <span className={styles.aside}>{formatPrice(Number(quote.price.sol))} SOL</span>}
-                  <time className={styles.aside} dateTime={quote.price.at}>at {formatUtc(quote.price.at)}</time>
+                  <span className="mono">{quote.price.usd ? formatUsd(quote.price.usd) : <><Price value={Number(quote.price.sol)} /> SOL</>}</span>
+                  {quote.price.usd && <span className={styles.aside}><Price value={Number(quote.price.sol)} /> SOL</span>}
+                  {/* Priced when the registry last read the market; a reading older than an hour is marked, so nobody trusts it unawares. */}
+                  <span className={styles.aside} data-priced>priced <RelativeTime iso={quote.price.at} now={Date.now()} staleAfter={3600} /></span>
                 </>
               ) : (
                 "No reliable price"
@@ -112,9 +128,7 @@ export default async function AssetPage({ params }: Props) {
             <div key={label}>
               <dt>{label}</dt>
               <dd>
-                <a className="mono" href={explorerUrl("address", value, platform)} target="_blank" rel="noreferrer">
-                  {shortAddress(value)}
-                </a>
+                <Address value={value} platform={platform} />
                 <CopyButton value={value} label={`Copy ${label.toLowerCase()}`} />
               </dd>
             </div>
@@ -131,15 +145,19 @@ export default async function AssetPage({ params }: Props) {
         <section className={`card ${styles.wide} ${styles.card}`} aria-labelledby="paired-coins-title">
           <h2 id="paired-coins-title" className={`t-h3 ${styles.cardTitle}`}>Coins priced in {ticker}</h2>
           {paired.launches.length === 0 ? (
-            <p className={styles.cardNote}>
-              {quote.launchable ? `None yet. The first coin paired with ${ticker} could be yours.` : `None yet.`}
-            </p>
+            <EmptyState
+              bare
+              title={quote.launchable ? `Be the first to pair a coin with ${ticker}` : `Coins paired with ${ticker} appear here`}
+              action={quote.launchable ? <Link href={`/launch?quote=${quote.mint}`} className="button button-primary">Stoke a coin paired with {ticker}</Link> : undefined}
+            >
+              {quote.launchable ? `None yet. The first coin paired with ${ticker} could be yours.` : `None yet: ${ticker} cannot be launched against today.`}
+            </EmptyState>
           ) : (
             <ul className={styles.coins} aria-label={`Coins paired with ${ticker}`}>
               {paired.launches.map((l) => (
                 <li key={l.mint}>
                   <Link href={`/coin/${l.mint}`} className={styles.coin}>
-                    {l.image ? <img src={l.image} alt="" width={22} height={22} /> : <span className={styles.coinImage} />}
+                    <CoinImage src={l.image} symbol={l.symbol} size={22} />
                     <span className={styles.coinSymbol}>{l.symbol}</span>
                     <span className={styles.coinName}>{l.name}</span>
                     <span className={`mono ${styles.coinCap}`}>{l.market.marketCap ? formatMarketValue(l.market.marketCap, l.quote) : "-"}</span>

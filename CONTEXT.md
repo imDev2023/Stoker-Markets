@@ -26,9 +26,32 @@ _Avoid_: Bonding target, market cap target, fund raising
 The existing token a Launch is priced and traded against, such as SOL, a community token or a tokenized stock.
 _Avoid_: Pair token, base, collateral
 
+**Swap** (the section):
+Jupiter's swap widget on `/swap` (owner, 2026-10-30), any Solana token for any other on mainnet through Jupiter, with a referral fee to the platform; Stoker coins trade on their own pages, never here.
+_Avoid_: trade section (parked, #123), exchange
+
 **Copy Protection**:
 The window after a Launch, seven days unless the operator sets another, during which nobody else may launch a coin here with its name, ticker or image; afterwards anyone may, and a coin that does carries a label naming the original.
 _Avoid_: Anti-vamp (the feature's working name), ticker registry, blacklist
+
+**Trust figures**:
+What a buyer checks before buying, shown in the coin page's "Before you buy" card: what the Creator holds, their First Buy and their record here, Bundle Radar's snipers, and what the ten largest wallets hold.
+Every figure is computed from the indexed trades and the chain so anyone can recompute it (ADR 0013); a label informs rather than blocks.
+_Avoid_: Audit, safety score, rug check
+
+**Snipe Window**:
+A launch's own slot and the few after it (five, about two seconds, unless the operator sets another): a buy inside it was placed by a bot watching the program, not by someone who read the page.
+_Avoid_: Block 0, launch block
+
+**Sniper**:
+A wallet other than the Creator that bought in the Snipe Window.
+A bundle is several snipers that landed beside the launch or paid the same amount, which is how one bot's wallets buy.
+_Avoid_: Bot (the wallet, not the program), insider
+
+**Bundle Radar**:
+The part of the trust figures that lists the snipers, what they bought in the Snipe Window and what they hold by their trades since, and marks the bundle among them.
+Labels only: nothing is refused or taxed, since LaunchLab has one platform-wide fee and no sniper tax.
+_Avoid_: Anti-sniper (nothing is stopped), bundle checker
 
 **Quote Risk Label**:
 A fact about a Quote Asset that a Creator or trader should know before using it, such as an unverified issuer, an issuer's power to freeze or move tokens, a transfer fee, or no reliable price.
@@ -133,6 +156,10 @@ _Avoid_: Dump, conversion, swap (on its own)
 **Reward Round**:
 One published cycle of collecting Reward Tax and paying Holder Rewards, with its snapshot, rules version and payout transactions public.
 _Avoid_: Distribution, epoch, cycle
+
+**Region gate**:
+The table that removes a feature from the visitors of one country once someone has asked for its removal there (owner, 2026-10-29: nothing is withheld upfront, every feature works everywhere and the disclosure does its job): the API reads the visitor's country from Cloudflare and answers which features are withheld there; the web hides a withheld feature. The table starts empty (ADR 0014).
+_Avoid_: Geoblock, ban
 
 ### Platform Token
 

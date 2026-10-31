@@ -16,6 +16,8 @@ export * from "./rewards";
 export * from "./burns";
 export * from "./apiKeys";
 export * from "./operator";
+export * from "./region";
+export * from "./trust";
 
 const base58 = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "must be a base58 address");
 const optionalUrl = z.union([z.url({ protocol: /^https?$/ }).max(200), z.literal("")]).optional().transform((v) => v || undefined);
