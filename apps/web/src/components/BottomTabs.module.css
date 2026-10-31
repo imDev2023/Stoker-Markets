@@ -1,0 +1,144 @@
+/* Fixed to the window's foot, opaque on the canvas with a hairline above; shown under 768px by the header's own rule. */
+.bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  height: calc(var(--tabs-h) + env(safe-area-inset-bottom, 0px));
+  padding: 0 4px env(safe-area-inset-bottom, 0px);
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+}
+
+/* A tab: the glyph over its word, the current one in the accent with a bar over it, so it reads in more than colour. */
+.tab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  height: var(--tabs-h);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-3);
+  font: inherit;
+  font-size: var(--text-label);
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tab[aria-current="page"] {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.tab[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  width: 28px;
+  height: 2px;
+  transform: translateX(-50%);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+}
+
+.tab:focus-visible {
+  outline: none;
+  box-shadow: inset var(--ring);
+  border-radius: var(--radius-control);
+}
+
+/* The launch in the middle: the one filled target, a disc lifted above the bar's line. */
+.stoke {
+  color: var(--ink-2);
+}
+
+.plus {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-top: -14px;
+  border-radius: 50%;
+  background: var(--button);
+  color: var(--on-button);
+  box-shadow: var(--glow);
+}
+
+.stoke[aria-current="page"] .plus {
+  box-shadow: var(--glow), inset 0 0 0 2px color-mix(in srgb, var(--on-button) 45%, transparent);
+}
+
+/* The account sheet: over the page from the foot, the bar's own material. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  /* The card's radius all round, its lower corners carried below the window's edge so only the top ones show. */
+  margin-bottom: calc(-1 * var(--radius-card));
+  padding: 20px var(--gutter) calc(var(--tabs-h) + 16px + var(--radius-card) + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface-3);
+  color: var(--on-surface-3);
+  box-shadow: var(--shadow-overlay);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sheet {
+    animation: rise var(--dur-base) var(--ease-enter);
+  }
+  @keyframes rise {
+    from {
+      transform: translateY(16px);
+      opacity: 0;
+    }
+  }
+}
+
+.more {
+  display: flex;
+  flex-direction: column;
+}
+
+.more a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  font-size: var(--text-ui);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.more a[aria-current="page"] {
+  color: var(--accent);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}

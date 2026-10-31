@@ -7,8 +7,9 @@ const main = (page: import("@playwright/test").Page) => page.getByRole("navigati
 test("the API page is the whole reference, answered live, and the header and footer link to it", async ({ page }) => {
   await page.goto("/api");
   await expect(page.getByRole("heading", { level: 1, name: "The API" })).toBeVisible();
-  // The pill calls the page "Developers" (owner, 2026-10-25); the footer lists it as "API" among the developers' links.
-  await expect(main(page).getByRole("link", { name: "Developers" })).toHaveAttribute("aria-current", "page");
+  // Developers left the pill for the footer (owner, 2026-10-30), which lists the page as "API": nothing in the pill is current here.
+  await expect(main(page).getByRole("link", { name: "Developers" })).toHaveCount(0);
+  await expect(main(page).locator('[aria-current="page"]')).toHaveCount(0);
   // No link out to GitHub for the docs: the footer's Developers group points at the page itself.
   await expect(page.getByRole("contentinfo").getByRole("link", { name: "API" })).toHaveAttribute("href", "/api");
   await expect(page.locator('a[href*="docs/api.md"]')).toHaveCount(0);
@@ -51,18 +52,47 @@ test("the landing ends with the full footer, every terminal page with one row, a
   await expect(page.getByRole("banner").getByRole("link", { name: "Stoke a coin" })).toHaveAttribute("aria-current", "page");
 });
 
-test("on a phone the launch button keeps its name and the menu has a visible close", async ({ page }) => {
+// The header (owner, 2026-10-30, on #133: H9's structure with H4's pill kept): six words in the pill with the current one
+// marked, Developers in the footer, no search of its own (the board's is the site's, reached by "/" from any page since
+// 2026-10-31), and under 768px the bottom tab bar with the launch in the middle and the account sheet in place of a menu overlay.
+test("the header: six words in the pill with the current one marked, Developers in the footer, and no search of its own", async ({ page }) => {
+  await page.goto("/coins");
+  // Each word is set twice for the hover slide (the twin aria-hidden), so the links are matched by word, not whole text.
+  await expect(main(page).getByRole("link")).toHaveText([/^Explore/, /^Swap/, /^Assets/, /^Rewards/, /^Stats/, /^Curated/]);
+  await expect(main(page).getByRole("link", { name: "Explore" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("link", { name: "Developers" })).toHaveCount(0);
+  await expect(page.getByRole("contentinfo").getByRole("link", { name: "API" })).toHaveAttribute("href", "/api");
+  // "/" reaches the board's search from anywhere but a field; the header carries none.
+  await expect(page.getByRole("banner").getByRole("button", { name: "Search", exact: true })).toHaveCount(0);
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("/");
+  await expect(page.getByRole("searchbox", { name: "Search coins" })).toBeFocused();
+  // A coin's page is under Explore; Burns is under Stats.
+  await page.goto("/burns");
+  await expect(main(page).getByRole("link", { name: "Stats" })).toHaveAttribute("aria-current", "page");
+  await expectNoHorizontalOverflow(page);
+});
+
+test("on a phone the tab bar carries the launch with its name and the account sheet the sections it leaves out", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/coins");
-  await expect(page.getByRole("banner").getByRole("link", { name: "Stoke a coin" })).toBeVisible();
-  // A click before hydration does nothing, so the menu is asked for until it opens.
-  const menu = page.getByRole("dialog", { name: "Menu" });
+  const tabs = page.getByRole("navigation", { name: "Sections" });
+  await expect(tabs.getByRole("link")).toHaveText(["Explore", "Assets", "Stoke", "Rewards"]);
+  await expect(tabs.getByRole("link", { name: "Stoke a coin" })).toBeVisible();
+  await expect(tabs.getByRole("link", { name: "Explore" })).toHaveAttribute("aria-current", "page");
+  // The bar keeps the lockup alone; the pill and the launch button are the tab bar's.
+  await expect(main(page)).toBeHidden();
+  await expect(page.getByRole("banner").getByRole("link", { name: "Stoke a coin" })).toBeHidden();
+  // A click before hydration does nothing, so the sheet is asked for until it opens.
+  const sheet = page.getByRole("dialog", { name: "Account" });
   await expect(async () => {
-    if (!(await menu.isVisible())) await page.getByRole("button", { name: "Menu" }).click();
-    await expect(menu).toBeVisible({ timeout: 1_000 });
+    if (!(await sheet.isVisible())) await tabs.getByRole("button", { name: "Account" }).click();
+    await expect(sheet).toBeVisible({ timeout: 1_000 });
   }).toPass({ timeout: 30_000 });
-  await expect(menu.getByRole("link", { name: "Explore" })).toHaveAttribute("aria-current", "page");
-  await expect(menu.getByRole("link", { name: "Developers" })).toBeVisible();
-  await menu.getByRole("button", { name: "Close menu" }).click();
-  await expect(menu).toHaveCount(0);
+  await expect(sheet.getByRole("button", { name: "Connect wallet" })).toBeVisible();
+  await expect(sheet.getByRole("navigation", { name: "More" }).getByRole("link")).toHaveText(["Swap", "Stats", /Curated/]);
+  await expect(sheet.getByRole("link", { name: "Developers" })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
+  await expectNoHorizontalOverflow(page);
 });

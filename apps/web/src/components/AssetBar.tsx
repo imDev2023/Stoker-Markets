@@ -1,21 +1,24 @@
 "use client";
 
+import { Fragment } from "react";
 import type { LaunchQuote, LaunchSummary } from "@launchpad/contract";
 import type { BoardQuery } from "@/lib/api";
 import { inChip, PAIRED_CHIPS, type PairedChip } from "@/lib/board";
 import { quoteTicker } from "@/lib/format";
 import { QuoteLogo } from "./QuoteLogo";
-import styles from "./AssetRail.module.css";
+import styles from "./AssetBar.module.css";
 
 const compactUsd = (usd: number) => `$${usd.toLocaleString("en-US", { notation: "compact", maximumFractionDigits: 1 })}`;
 
 /**
- * The board's "Paired with" control (docs/design/layout.md, B1): a rail of the kinds of Quote Asset, and under each the
- * assets coins are paired with, each with how many coins and their 24h volume across the coins in view. A kind filters
- * the board as the chips did, an asset narrows it to that one pair; the kinds are there before the first coin, so an
- * empty board still shows what it can do. Narrow windows lay the rail down as a strip of chips.
+ * The board's "Paired with" control (owner, 2026-10-31, after Pump.fun's filter row; from 2026-10-11 to then it was a
+ * rail beside the board, B1 of docs/design/layout.md): one row of chips that slides sideways, the kinds of Quote Asset
+ * and after each kind the assets coins are paired with, each with how many coins and (an asset) their 24h volume
+ * across the coins in view. A kind filters the board, an asset narrows it to that one pair; the kinds are there before
+ * the first coin, so an empty board still shows what it can do. The row runs to the column's edges and fades at an end
+ * where there is more; the table has the whole column under it.
  */
-export function AssetRail({ className = "", quotes, launches, query, onKind, onAsset }: {
+export function AssetBar({ className = "", quotes, launches, query, onKind, onAsset }: {
   className?: string;
   quotes: LaunchQuote[];
   launches: LaunchSummary[];
@@ -31,9 +34,15 @@ export function AssetRail({ className = "", quotes, launches, query, onKind, onA
   const total = quotes.reduce((n, q) => n + q.launches, 0);
   const [all, ...kinds] = PAIRED_CHIPS;
   const kindChosen = (chip: PairedChip) => query.quote === null && query.category === chip.category && query.issuer === chip.issuer;
-  const coins = (n: number) => (n > 0 ? <span className={styles.count}>{n} {n === 1 ? "coin" : "coins"}</span> : null);
+  // The figure alone on the chip; its unit stays in the chip's name ("14 coins").
+  const coins = (n: number) =>
+    n > 0 ? (
+      <span className={styles.count}>
+        {n} <span className="visually-hidden">{n === 1 ? "coin" : "coins"}</span>
+      </span>
+    ) : null;
   return (
-    <div className={`${styles.rail} ${className}`} role="group" aria-label="Paired with">
+    <div className={`${styles.bar} ${className}`} role="group" aria-label="Paired with" data-scrolls>
       <button type="button" className={styles.all} aria-pressed={kindChosen(all!)} onClick={() => onKind(all!)}>
         All assets
         {coins(total)}
@@ -41,22 +50,20 @@ export function AssetRail({ className = "", quotes, launches, query, onKind, onA
       {kinds.map((chip) => {
         const inKind = assets.filter((a) => inChip(a.quote, chip));
         return (
-          <section key={chip.label} className={styles.group}>
+          <Fragment key={chip.label}>
             <button type="button" className={styles.kind} aria-pressed={kindChosen(chip)} onClick={() => onKind(chip)}>
               {chip.label}
               {coins(inKind.reduce((n, a) => n + a.quote.launches, 0))}
             </button>
             {inKind.map(({ quote, volumeUsd }) => (
               <button key={quote.mint} type="button" className={styles.asset} aria-pressed={query.quote === quote.mint} onClick={() => onAsset(quote.mint)}>
-                <QuoteLogo quote={quote} size={20} />
+                <QuoteLogo quote={quote} size={18} />
                 <span className={styles.ticker}>{quoteTicker(quote)}</span>
-                <span className={styles.figures}>
-                  {coins(quote.launches)}
-                  <span className={styles.volume}>{compactUsd(volumeUsd)}</span>
-                </span>
+                {coins(quote.launches)}
+                <span className={styles.volume}>{compactUsd(volumeUsd)}</span>
               </button>
             ))}
-          </section>
+          </Fragment>
         );
       })}
     </div>

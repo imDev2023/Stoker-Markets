@@ -1,0 +1,115 @@
+/*
+ * The bar: one row of chips above the table that slides sideways, the kinds with the assets in use after each. It runs
+ * to the column's edges (the shell's gutter, taken back as margin and given as padding, so the first chip sits on the
+ * content's edge) and a mask fades either end where more waits; no scrollbar, the chips are reached by the wheel, a
+ * swipe or the keyboard. The suite's overflow check reads `data-scrolls` on it. The bar is its own containing block:
+ * the chips' visually-hidden units ("coins") are absolutely positioned, and against the body they would sit at their
+ * chip's unscrolled x, outside the bar's clip, and widen the page (the phone board shots, 2026-10-31; the landing's
+ * trending row had the same, 2026-10-29).
+ */
+.bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 calc(-1 * var(--gutter)) 12px;
+  padding: 2px var(--gutter);
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-padding-inline: var(--gutter);
+  font-size: var(--text-caption);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--gutter), #000 calc(100% - var(--gutter)), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 var(--gutter), #000 calc(100% - var(--gutter)), transparent);
+}
+
+.bar::-webkit-scrollbar {
+  display: none;
+}
+
+.all,
+.kind,
+.asset {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--text-caption);
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px var(--line);
+  transition: background-color var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
+}
+
+.all {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* A kind reads as the heading of the assets after it (quiet, no outline) and acts as the filter it is. */
+.kind {
+  margin-left: 6px;
+  padding: 0 8px;
+  box-shadow: none;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+/* An asset's chip leads with its logo. */
+.asset {
+  padding-left: 8px;
+}
+
+.ticker {
+  font-weight: 600;
+}
+
+/* The figures: a count and a volume in mono, a step quieter than the name. */
+.count,
+.volume {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums slashed-zero;
+  color: var(--ink-3);
+}
+
+.volume {
+  color: var(--ink-2);
+}
+
+@media (hover: hover) {
+  .all:hover,
+  .kind:hover,
+  .asset:hover {
+    background: var(--surface-2);
+    color: var(--ink);
+  }
+}
+
+.all[aria-pressed="true"],
+.kind[aria-pressed="true"],
+.asset[aria-pressed="true"] {
+  background: var(--plate);
+  box-shadow: none;
+  color: var(--accent-strong);
+}
+
+.all[aria-pressed="true"] .count,
+.kind[aria-pressed="true"] .count,
+.asset[aria-pressed="true"] .count,
+.asset[aria-pressed="true"] .volume {
+  color: inherit;
+}
+
+.all:focus-visible,
+.kind:focus-visible,
+.asset:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}

@@ -4,12 +4,12 @@ import { fileURLToPath } from "node:url";
 import type { Page } from "@playwright/test";
 import { LedgerPage, Revenue } from "@launchpad/contract";
 import {
-  allowAirdrops, COIN_PNG, drain, expect, expectHydrated, expectNoHorizontalOverflow, expectNoTruncatedText, fixedKeypair, giveCoins, listLaunches, QUOTES, SEED_CREATOR,
-  SEED_HOLDER, test,
+  allowAirdrops, COIN_PNG, drain, expect, expectHydrated, expectNoHorizontalOverflow, expectNoTruncatedText, fixedKeypair, forgetDisclaimer, giveCoins, listLaunches,
+  QUOTES, SEED_CREATOR, SEED_HOLDER, test,
 } from "./fixtures";
 import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, REWARD_QUOTE } from "./seedData";
 import { chooseQuote } from "./launchPage";
-import { connectTestWallet, installTestWallet, openWalletMenu, TEST_WALLET_NAME } from "./wallet";
+import { accountArea, connectFromSite, connectTestWallet, installTestWallet, openWalletMenu, TEST_WALLET_NAME } from "./wallet";
 
 // The chart's time axis and candle spacing follow the clock, so its canvases are masked like any other time. Only what is
 // visible: content of a closed <details> still has a box, and masking it would paint over whatever is on screen there.
@@ -52,7 +52,13 @@ async function snap(page: Page, name: string, mask = dynamic) {
       window.scrollTo(0, y);
       await new Promise((r) => requestAnimationFrame(r));
     }
-    await Promise.all([...document.images].map((img) => img.decode().catch(() => undefined)));
+    // Only images within the page's width: one hidden sideways in a scrolling row never loads without a sideways scroll,
+    // and its decode would wait forever (the landing's trending row on a phone, 2026-10-29).
+    const within = (img: HTMLImageElement) => {
+      const r = img.getBoundingClientRect();
+      return r.right > 0 && r.left < window.innerWidth;
+    };
+    await Promise.all([...document.images].filter(within).map((img) => img.decode().catch(() => undefined)));
   });
   // Hydrated before the shot, so the caret Playwright hides is on a field React already holds; the truncation check
   // then polls past the font swaps, so the overflow check after it sees the finished layout.
@@ -75,9 +81,24 @@ async function mintOf(name: string) {
 test("home", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "No one picks your pair. You do." })).toBeVisible();
-  await expect(page.getByRole("list", { name: "Trending coins" }).getByRole("link").first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Most traded today" })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Most traded today" }).last().getByRole("link").first()).toBeVisible();
   await expect(page.locator("ul li img").first()).toHaveJSProperty("complete", true);
   await snap(page, "home.png");
+});
+
+test.describe("a first visit", () => {
+  test.use({ firstVisit: true });
+
+  test("welcome", async ({ page }) => {
+    await page.goto("/");
+    const welcome = page.getByRole("dialog", { name: "Welcome to Stoker" });
+    await expect(welcome).toBeVisible();
+    await expect(welcome.getByRole("button", { name: "Continue" })).toBeFocused();
+    await page.evaluate(() => document.fonts.ready);
+    // The dialog on its own, the page hidden under it (`dialog.css`), as the trade disclaimer is shot.
+    await expect(welcome).toHaveScreenshot("disclaimer-welcome.png", { stylePath: DIALOG_STYLES });
+  });
 });
 
 test("board", async ({ page }) => {
@@ -116,31 +137,13 @@ test("asset page of a tokenized stock, with the coins priced in it", async ({ pa
   await snap(page, "asset.png");
 });
 
-test("the header's search open, with a match", async ({ page }) => {
-  await page.goto("/rewards");
-  await page.getByRole("banner").getByRole("button", { name: "Search", exact: true }).click();
-  await page.getByRole("combobox", { name: "Search coins" }).fill("harbor");
-  const found = page.getByRole("listbox", { name: "Coins found" });
-  await expect(found.getByRole("option")).toHaveCount(1);
-  await expect(found.locator("img")).toHaveJSProperty("complete", true);
-  await page.evaluate(() => document.fonts.ready);
-  await expectNoTruncatedText(page);
-  await expectNoHorizontalOverflow(page);
-  // The result pills hang from the header over the page, so the viewport is the shot, its times masked as in any other.
-  await expect(page).toHaveScreenshot("search.png", { mask: dynamic(page) });
-});
-
-test("coin page", async ({ page }) => {
-  await page.goto(`/coin/${await mintOf("First Light")}`);
-  await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
-  await snap(page, "coin.png");
-});
-
-test("coin page with the longest name and ticker", async ({ page }) => {
-  await page.goto(`/coin/${await mintOf("Maximum Length Coin Name Here 32")}`);
-  // The page says "Copy protection until" inside the stack's 45-second window and "ended" after it, and the first look's
-  // shot can land either side of that line depending on the run's speed (the light desktop baseline flipped once, 2026-10-29),
-  // so the shot waits for the window to end; the label is rendered on the server, so it takes a reload to change.
+/**
+ * A coin's page says "Copy protection until" inside the stack's 45-second window and "ended" after it, and a shot of a
+ * young seeded coin can land either side of that line depending on the run's speed (the longest coin's light desktop
+ * baseline flipped on 2026-10-29, First Light's on 2026-10-30), so a shot waits for the window to end; the label is
+ * rendered on the server, so it takes a reload to change.
+ */
+async function copyWindowEnded(page: Page) {
   await expect
     .poll(async () => {
       if (await page.getByText("Copy protection ended").isVisible()) return true;
@@ -148,6 +151,18 @@ test("coin page with the longest name and ticker", async ({ page }) => {
       return false;
     }, { timeout: 60_000, intervals: [2_000] })
     .toBe(true);
+}
+
+test("coin page", async ({ page }) => {
+  await page.goto(`/coin/${await mintOf("First Light")}`);
+  await copyWindowEnded(page);
+  await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
+  await snap(page, "coin.png");
+});
+
+test("coin page with the longest name and ticker", async ({ page }) => {
+  await page.goto(`/coin/${await mintOf("Maximum Length Coin Name Here 32")}`);
+  await copyWindowEnded(page);
   await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
   await snap(page, "coin-longest.png");
 });
@@ -170,6 +185,8 @@ test("trade panel, buy and sell, quote and review", async ({ page, wallet }) => 
   await page.mouse.move(0, 0);
   await expect(panel).toHaveScreenshot("trade-buy-quote.png", { mask: tradedDynamic(page) });
 
+  // The welcome recorded the acceptance for every test; a browser without the record meets the trade disclaimer instead.
+  await forgetDisclaimer(page);
   await panel.getByRole("button", { name: "Review buy" }).click();
   const dialog = page.getByRole("dialog", { name: "Before you trade" });
   await expect(dialog).toBeVisible();
@@ -223,9 +240,6 @@ test("trade panel paying with SOL on a USDC-paired coin, quote and review", asyn
   await expect(panel).toHaveScreenshot("trade-sol-quote.png", { mask: tradedDynamic(page) });
 
   await panel.getByRole("button", { name: "Review buy" }).click();
-  const dialog = page.getByRole("dialog", { name: "Before you trade" });
-  await dialog.getByRole("checkbox").check();
-  await dialog.getByRole("button", { name: "Continue" }).click();
   await expect(panel.getByRole("region", { name: "Review your trade" })).toBeVisible();
   // The pointer rests on what it clicked and would draw its hover into the shot; park it first.
   await page.mouse.move(0, 0);
@@ -302,6 +316,8 @@ test("launch form, step by step", async ({ page, wallet }) => {
   await copyCheckSettled(page);
   await snap(page, "launch-filled.png");
 
+  // The welcome recorded the acceptance for every test; a browser without the record meets the launch disclaimer instead.
+  await forgetDisclaimer(page);
   await page.getByRole("button", { name: "Review launch" }).click();
   const dialog = page.getByRole("dialog", { name: "Before you launch" });
   await expect(dialog).toBeVisible();
@@ -332,9 +348,6 @@ test("launch review against a tokenized stock", async ({ page, wallet }) => {
   await snap(page, "launch-filled-stock.png");
 
   await page.getByRole("button", { name: "Review launch" }).click();
-  const dialog = page.getByRole("dialog", { name: "Before you launch" });
-  await dialog.getByRole("checkbox").check();
-  await dialog.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("region", { name: "Review your launch" })).toContainText("0.83333333 NVDAx");
   await snap(page, "launch-review-stock.png");
   expect(wallet.requests).toHaveLength(0);
@@ -363,9 +376,6 @@ test("launch form with a first buy and an airdrop", async ({ page, wallet }) => 
   await snap(page, "launch-options.png");
 
   await page.getByRole("button", { name: "Review launch" }).click();
-  const dialog = page.getByRole("dialog", { name: "Before you launch" });
-  await dialog.getByRole("checkbox").check();
-  await dialog.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("region", { name: "Review your launch" })).toBeVisible();
   await snap(page, "launch-review-options.png");
   expect(wallet.requests).toHaveLength(0);
@@ -385,9 +395,6 @@ test("launch form as a Reward Launch paid in the Quote Asset, and its review", a
   await snap(page, "launch-reward.png");
 
   await page.getByRole("button", { name: "Review launch" }).click();
-  const dialog = page.getByRole("dialog", { name: "Before you launch" });
-  await dialog.getByRole("checkbox").check();
-  await dialog.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("region", { name: "Review your launch" })).toContainText("It is sold for SOL in small slices and paid out in SOL.");
   await snap(page, "launch-review-reward.png");
   expect(wallet.requests).toHaveLength(0);
@@ -405,9 +412,6 @@ test("launch the network refused", async ({ page, wallet }) => {
   await allowAirdrops(wallet.keypair.publicKey);
   await launchFormWithOptions(page, OPTION_WALLETS.map((w) => `${w}, 250000`).join("\n"));
   await page.getByRole("button", { name: "Review launch" }).click();
-  const dialog = page.getByRole("dialog", { name: "Before you launch" });
-  await dialog.getByRole("checkbox").check();
-  await dialog.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("region", { name: "Review your launch" })).toBeVisible();
   await drain(wallet.keypair, 0.01);
   await page.getByRole("button", { name: "Sign and launch" }).click();
@@ -418,7 +422,7 @@ test("launch the network refused", async ({ page, wallet }) => {
 test("coin page with an airdrop to send, seen by its creator", async ({ page }) => {
   await installTestWallet(page, AIRDROP_CREATOR);
   await page.goto(`/coin/${await mintOf(AIRDROP_SENDING.name)}`);
-  await connectTestWallet(page, page.getByRole("banner").getByRole("button", { name: "Connect wallet" }));
+  await connectFromSite(page);
   await expect(page.getByRole("region", { name: "Airdrop" }).getByRole("button", { name: "Send airdrop" })).toBeVisible();
   await expect(page.locator("article header img")).toHaveJSProperty("complete", true);
   await snap(page, "coin-airdrop.png");
@@ -447,7 +451,8 @@ test("header wallet menu when connected", async ({ page, wallet }) => {
   await page.goto("/launch");
   await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
   await page.goto("/");
-  const account = page.getByRole("banner").getByRole("button", { name: wallet.keypair.publicKey.toBase58().slice(0, 4), exact: false });
+  // The header's ghost is the avatar once connected; on a phone the tab bar's Account tab opens the sheet that holds it.
+  const account = (await accountArea(page)).getByRole("button", { name: wallet.keypair.publicKey.toBase58().slice(0, 4), exact: false });
   await account.click();
   await expect(page.getByRole("menuitem", { name: "Disconnect" })).toBeVisible();
   await expect(page).toHaveScreenshot("header-account-menu.png", { mask: dynamic(page) });
@@ -489,6 +494,12 @@ test("revenue page", async ({ page, stack }) => {
     await expect(entries.nth(i).getByRole("link").last()).toHaveAttribute("href", new RegExp(`/tx/${e.signature}`));
   await expect(page.locator("main img").first()).toHaveJSProperty("complete", true);
   // Addresses and times differ between runs, and the SOL swept so far wavers by a few lamports with the sweep's own costs
-  // (7.959784 one run, 7.959779 another); every other amount follows from the seed's fixed trades.
-  await snap(page, "revenue.png", (p) => [p.locator("time"), p.locator("a.mono"), p.locator('dl[aria-labelledby="swept-title"] dd')]);
+  // (7.959784 one run, 7.959779 another), in the summary and in the Ledger's sweep entries alike (the entry's amount
+  // flipped a proving run on 2026-10-31); every other amount follows from the seed's fixed trades.
+  await snap(page, "revenue.png", (p) => [
+    p.locator("time"),
+    p.locator("a.mono"),
+    p.locator('dl[aria-labelledby="swept-title"] dd'),
+    p.getByRole("region", { name: "Ledger" }).getByRole("listitem").filter({ hasText: "Swept to treasury" }).locator("span.mono"),
+  ]);
 });

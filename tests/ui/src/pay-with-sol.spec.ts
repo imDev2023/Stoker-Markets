@@ -34,11 +34,6 @@ async function openConnectedPayingSol(page: Page, mint: string) {
 async function reviewBuy(page: Page) {
   const prepared = page.waitForResponse((r) => r.url().endsWith("/v1/trades/prepare"));
   await panel(page).getByRole("button", { name: "Review buy" }).click();
-  const disclaimer = page.getByRole("dialog", { name: "Before you trade" });
-  if (await disclaimer.isVisible().catch(() => false)) {
-    await disclaimer.getByRole("checkbox").check();
-    await disclaimer.getByRole("button", { name: "Continue" }).click();
-  }
   await expect(review(page)).toBeVisible();
   return PreparedTrade.parse(await (await prepared).json());
 }

@@ -26,6 +26,10 @@ _Avoid_: Bonding target, market cap target, fund raising
 The existing token a Launch is priced and traded against, such as SOL, a community token or a tokenized stock.
 _Avoid_: Pair token, base, collateral
 
+**Swap** (the section):
+Jupiter's swap widget on `/swap` (owner, 2026-10-30), any Solana token for any other on mainnet through Jupiter, with a referral fee to the platform; Stoker coins trade on their own pages, never here.
+_Avoid_: trade section (parked, #123), exchange
+
 **Copy Protection**:
 The window after a Launch, seven days unless the operator sets another, during which nobody else may launch a coin here with its name, ticker or image; afterwards anyone may, and a coin that does carries a label naming the original.
 _Avoid_: Anti-vamp (the feature's working name), ticker registry, blacklist
@@ -133,6 +137,10 @@ _Avoid_: Dump, conversion, swap (on its own)
 **Reward Round**:
 One published cycle of collecting Reward Tax and paying Holder Rewards, with its snapshot, rules version and payout transactions public.
 _Avoid_: Distribution, epoch, cycle
+
+**Region gate**:
+The table that removes a feature from the visitors of one country once someone has asked for its removal there (owner, 2026-10-29: nothing is withheld upfront, every feature works everywhere and the disclosure does its job): the API reads the visitor's country from Cloudflare and answers which features are withheld there; the web hides a withheld feature. The table starts empty (ADR 0014).
+_Avoid_: Geoblock, ban
 
 ### Platform Token
 

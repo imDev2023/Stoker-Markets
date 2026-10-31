@@ -1,0 +1,10 @@
+/* The canvas is taller than the ring by the embers' headroom, which the box takes back so the ring sits where the Ring would. */
+.box {
+  display: block;
+  margin-top: calc(-1 * var(--stoke-headroom));
+  line-height: 0;
+}
+
+.canvas {
+  display: block;
+}

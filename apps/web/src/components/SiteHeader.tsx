@@ -1,44 +1,50 @@
 import Link from "next/link";
-import { NAV_LINKS } from "@/lib/site";
-import { GooeySearch } from "./GooeySearch";
+import { BottomTabs } from "./BottomTabs";
 import { Mark } from "./Mark";
 import { LaunchLink, NavLinks } from "./NavLinks";
-import { PhoneMenu } from "./PhoneMenu";
+import { SearchShortcut } from "./SearchShortcut";
 import { WalletButton } from "./WalletButton";
 import styles from "./SiteHeader.module.css";
 
 /**
- * Every page's head (owner, 2026-10-13, H4 on "Stoker Header", kept on 2026-10-28): the sections in a detached pill at
- * the bar's middle, the mark far left and, far right, the gooey search, "Stoke a coin" (the one filled action) and the
- * account. Fixed within the verdict by #131: the bar is opaque and still at 64px (52px on a phone), its edges on the
- * page column; the wallet is a ghost that becomes an avatar once connected and holds the light-or-dark toggle, the
- * Creator's page and disconnect in its menu; the launch button is marked current on its own page; the search's results
- * open in a panel over a scrim, never over the page's controls. Under 1300px the pill gives way to a menu button with
- * Explore kept visible beside it (combo navigation); under 640px the launch button reads "Stoke" and the search and the
- * account keep their glyphs alone.
+ * Every page's head (owner, 2026-10-30, on #133: H9's structure with H4's pill kept). The sections in a detached pill
+ * at the bar's middle (H4, owner 2026-10-13: surface-3, the raised shadow, the current one on the plate), the lockup
+ * far left as one mark at 24px and, far right, "Stoke a coin" as the one filled action and the wallet as a quiet ghost
+ * that is the avatar once connected, with the light-or-dark toggle, the Creator's page and disconnect in its menu. The
+ * words are H9's six, ordered by a trader's frequency (Explore, Swap, Assets, Rewards, Stats, then Curated tagged
+ * "soon" until a Curated Launch exists); Developers is the footer's. No search here (owner, 2026-10-31): the board's is
+ * the site's one search, and "/" or ⌘K reach it from any page (SearchShortcut). The bar is opaque and still at 60px
+ * (52px on a phone) with no hairline, since the pill is its edge, and its edges are the page's own column (the landing's
+ * on the landing, the terminal's past it, so the lockup and the account sit on the content's grid). The pill keeps its
+ * six words down to 768px and the rest gives way around it: under 1100px the launch button and the account keep their
+ * glyphs alone and the cluster tag goes, under 900px the words sit closer and the lockup is the mark alone; under 768px
+ * the pill, the launch button and the account leave the bar for the bottom tab bar, whose account tab opens a sheet with
+ * the wallet, the sections the tabs leave out, the socials and the toggle.
  */
 export function SiteHeader({ cluster }: { cluster: string }) {
   return (
-    <header className={styles.header}>
-      <div className={styles.bar}>
-        <Link href="/" className={styles.wordmark}>
-          {/* The same mark the PlatformConfig names on-chain, /icon.png (runbook, section 2), drawn inline. */}
-          <Mark className={styles.mark} />
-          Stoker
-          {cluster !== "mainnet" && <span className={`tag tag-accent ${styles.cluster}`}>{cluster}</span>}
-        </Link>
-        <NavLinks />
-        <div className={styles.actions}>
-          {/* Visible beside the menu button once the pill has gone (NN/g: hidden navigation halves its use). */}
-          <Link href={NAV_LINKS[0].href} className={styles.explore}>{NAV_LINKS[0].label}</Link>
-          <GooeySearch />
-          <LaunchLink className={styles.launch} wordClassName={styles.launchRest} />
-          <div className={styles.wallet}>
-            <WalletButton />
+    <>
+      <header className={styles.header}>
+        <div className={styles.bar}>
+          <Link href="/" className={styles.wordmark}>
+            {/* The same mark the PlatformConfig names on-chain, /icon.png (runbook, section 2), drawn inline. */}
+            <Mark className={styles.mark} />
+            <span className={styles.wordmarkWord}>Stoker</span>
+            {cluster !== "mainnet" && <span className={`tag tag-accent ${styles.cluster}`}>{cluster}</span>}
+          </Link>
+          <NavLinks />
+          <div className={styles.actions}>
+            <LaunchLink className={styles.launch} wordClassName={styles.launchRest} />
+            <div className={styles.wallet}>
+              <WalletButton />
+            </div>
           </div>
-          <PhoneMenu className={styles.menu} />
         </div>
+      </header>
+      <div className={styles.tabs}>
+        <BottomTabs />
       </div>
-    </header>
+      <SearchShortcut />
+    </>
   );
 }

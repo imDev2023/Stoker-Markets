@@ -15,6 +15,16 @@ import { installTestWallet, type TestWallet } from "./wallet";
 
 export { expect };
 
+/**
+ * The browser's record that the visitor accepted the disclaimer (`DISCLAIMER_KEY` in apps/web/src/lib/legal.ts). The
+ * suite sets it before every page load, so no test or baseline meets the welcome (#156) unless it asks for a first
+ * visit (`firstVisit`) or forgets the record (`forgetDisclaimer`) to meet the launch or trade disclaimer that stands in.
+ */
+export const DISCLAIMER_KEY = "launchpad.disclaimer.v1";
+
+/** Clears the acceptance on the open page, as a visitor who cleared the site's data: the next launch or trade asks again. */
+export const forgetDisclaimer = (page: Page) => page.evaluate((key) => window.localStorage.removeItem(key), DISCLAIMER_KEY);
+
 /** The Quote Assets on the local chain; the stack prices SOL at 150 USD, USDC at 1, NVDAx at 180, JTO at 2.5 and TAXQ at 1, and not BULLWHALE. */
 export const QUOTES = { SOL: new PublicKey("So11111111111111111111111111111111111111112"), ...LOCAL_QUOTES };
 
@@ -237,10 +247,18 @@ export async function payAirdropViaApi(creator: Keypair, mint: string) {
 export async function expectNoHorizontalOverflow(page: Page) {
   const overflow = await page.evaluate(() => {
     const width = document.documentElement.clientWidth;
+    // Inside a box that scrolls sideways by design (`data-scrolls`, the landing's trending row on a phone) content past
+    // the edge is reached by scrolling it, not an overflow; the box itself must still fit, and the page never scrolls.
+    const scrolls = (el: Element) => {
+      const box = el.parentElement?.closest("[data-scrolls]");
+      if (!box) return false;
+      const r = box.getBoundingClientRect();
+      return getComputedStyle(box).overflowX !== "visible" && r.right <= width + 0.5 && r.left >= -0.5;
+    };
     const offenders = [...document.querySelectorAll("body *")]
       .filter((el) => {
         const r = el.getBoundingClientRect();
-        return r.width > 0 && (r.right > width + 0.5 || r.left < -0.5) && !el.closest(".visually-hidden, dialog:not([open])");
+        return r.width > 0 && (r.right > width + 0.5 || r.left < -0.5) && !el.closest(".visually-hidden, dialog:not([open])") && !scrolls(el);
       })
       .map((el) => `${el.tagName.toLowerCase()}.${[...el.classList].join(".")}`);
     return { scroll: document.documentElement.scrollWidth - width, offenders };
@@ -288,15 +306,25 @@ export const test = base.extend<{
   /** URLs a test expects to answer with an error status, which the browser logs to the console. */
   expectedHttpErrors: RegExp[];
   browserErrors: void;
+  /** A browser that has never visited: the welcome opens on the first page. Every other test has accepted it already. */
+  firstVisit: boolean;
 }>({
   // eslint-disable-next-line no-empty-pattern
   stack: async ({}, use) => use(stackEnv()),
   baseURL: async ({ stack }, use) => use(stack.webUrl ?? undefined),
+  firstVisit: [false, { option: true }],
+  context: async ({ context, firstVisit }, use) => {
+    if (!firstVisit) await context.addInitScript((key) => window.localStorage.setItem(key, "accepted"), DISCLAIMER_KEY);
+    await use(context);
+  },
   wallet: async ({ page }, use) => use(await installTestWallet(page, await fundedKeypair())),
   // eslint-disable-next-line no-empty-pattern
   expectedHttpErrors: async ({}, use) => use([]),
   browserErrors: [
     async ({ page, expectedHttpErrors }, use) => {
+      // The landing's swap candidate (`?hero=swap`, #133) loads Jupiter Plugin's script, a third party that would swap on
+      // mainnet from the browser: the suite serves it empty, so the frame shows its fallback and no shot carries a live swap.
+      await page.route(/^https:\/\/plugin\.jup\.ag\//, (route) => route.fulfill({ status: 200, contentType: "text/javascript", body: "" }));
       const errors: string[] = [];
       // `next dev` only: when `notFound()` interrupts a server component, React's development performance tracks
       // measure it with a start time that was never set (vercel/next.js#86060, open). Production builds have no tracks.

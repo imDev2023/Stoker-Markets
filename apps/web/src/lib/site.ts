@@ -18,17 +18,23 @@ export const LAUNCH_LINK = { href: "/launch", label: "Stoke a coin" } as const;
 export type NavLink = { href: string; label: string; also?: string };
 
 /**
- * The header's sections, in order (owner, 2026-10-25: the board's link reads "Explore"; "Curated" is the platform's
- * own approved launches, open to STOKER stakers, #118; Burns and Revenue sit under "Stats" (owner, 2026-10-25, renamed
- * from Ledger the same night; the Ledger stays the glossary's word for the public record), current on either page).
+ * The header's sections in the order a trader reaches for them (owner, 2026-10-30, H9's order: the board's link reads
+ * "Explore", owner 2026-10-25; "Swap" is Jupiter's swap as a section of its own, owner 2026-10-30, after it was built
+ * as a hero candidate; Burns and Revenue sit under "Stats", owner 2026-10-25, renamed from Ledger the same night, the
+ * Ledger staying the glossary's word for the public record, current on either page; "Curated" last, the platform's
+ * own approved launches open to STOKER stakers, #118, tagged "soon" in the header until one exists).
  */
 export const NAV_LINKS = [
   { href: "/coins", label: "Explore" },
-  { href: "/curated", label: "Curated" },
+  { href: "/swap", label: "Swap" },
   { href: "/assets", label: "Assets" },
   { href: "/rewards", label: "Rewards" },
   { href: "/revenue", label: "Stats", also: "/burns" },
+  { href: "/curated", label: "Curated" },
 ] as const satisfies readonly NavLink[];
+
+/** The sections by name, so a list that picks a few never counts on the order above. */
+export const [EXPLORE_LINK, SWAP_LINK, ASSETS_LINK, REWARDS_LINK, STATS_LINK, CURATED_LINK] = NAV_LINKS;
 
 /**
  * The API's reference is a page of the site (owner, 2026-10-25: everything on the page, no link out to the repository),
@@ -49,8 +55,8 @@ export const LEGAL_LINKS = [
  * (owner, 2026-10-08): nothing links to it but the account menu, once the connected wallet has launched a coin.
  */
 export const FOOTER_GROUPS = [
-  { title: "Trade", links: [NAV_LINKS[0], NAV_LINKS[2], NAV_LINKS[3]] },
-  { title: "Create", links: [LAUNCH_LINK, NAV_LINKS[1]] },
+  { title: "Trade", links: [EXPLORE_LINK, SWAP_LINK, ASSETS_LINK, REWARDS_LINK] },
+  { title: "Create", links: [LAUNCH_LINK, CURATED_LINK] },
   {
     title: "Platform",
     links: [

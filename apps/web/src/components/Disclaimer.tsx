@@ -1,19 +1,31 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { DISCLAIMER_KEY, EXCLUDED_REGIONS } from "@/lib/legal";
 import styles from "./Disclaimer.module.css";
-
-const KEY = "launchpad.disclaimer.v1";
 
 export function hasAcceptedDisclaimer() {
   try {
-    return window.localStorage.getItem(KEY) === "accepted";
+    return window.localStorage.getItem(DISCLAIMER_KEY) === "accepted";
   } catch {
     return false;
   }
 }
 
-/** Shown before a first launch or trade: the owner's decision is a disclaimer, not a technical block. */
+/** Records the acceptance for this browser; without storage it holds for this page view alone. */
+export function acceptDisclaimer() {
+  try {
+    window.localStorage.setItem(DISCLAIMER_KEY, "accepted");
+  } catch {
+    // storage unavailable: accepted for this session only
+  }
+}
+
+/**
+ * Shown before a first launch or trade when the browser holds no acceptance (the welcome on the first visit records
+ * one, so this stands in when storage was cleared or refused): the owner's decision is a disclaimer, not a technical
+ * block.
+ */
 export function Disclaimer({
   open, onAccept, onCancel, action = "launch",
 }: { open: boolean; onAccept: () => void; onCancel: () => void; action?: "launch" | "trade" }) {
@@ -28,11 +40,11 @@ export function Disclaimer({
   }, [open]);
 
   return (
-    <dialog ref={dialog} className={styles.dialog} onCancel={(e) => { e.preventDefault(); onCancel(); }} aria-labelledby="disclaimer-title">
+    <dialog ref={dialog} className={`dialog ${styles.dialog}`} onCancel={(e) => { e.preventDefault(); onCancel(); }} aria-labelledby="disclaimer-title">
       <h2 id="disclaimer-title" className={`t-h3 ${styles.title}`}>Before you {action}</h2>
       <p>
-        This launchpad is not for people in the United States, the United Kingdom, Canada, or any country under
-        sanctions, and it is not offered to anyone where launching or trading these coins is not allowed.
+        This launchpad is not for people in {EXCLUDED_REGIONS}, and it is not offered to anyone where launching or
+        trading these coins is not allowed.
       </p>
       <p>
         Coins launched here are created by their creators, not by us. Their prices can fall to zero. Nothing on this
@@ -53,11 +65,7 @@ export function Disclaimer({
           className="button button-primary"
           disabled={!agreed}
           onClick={() => {
-            try {
-              window.localStorage.setItem(KEY, "accepted");
-            } catch {
-              // storage unavailable: accepted for this session only
-            }
+            acceptDisclaimer();
             onAccept();
           }}
         >

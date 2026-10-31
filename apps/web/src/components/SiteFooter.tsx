@@ -5,8 +5,9 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { PlatformInfo } from "@launchpad/contract";
 import { API_URL } from "@/lib/api";
-import { explorerUrl, shortAddress } from "@/lib/format";
+import { EXCLUDED_REGIONS, RISK_SENTENCE } from "@/lib/legal";
 import { COMPACT_FOOTER_LINKS, FOOTER_GROUPS } from "@/lib/site";
+import { Address } from "./Address";
 import { Mark } from "./Mark";
 import { SocialLinks } from "./SocialLinks";
 import styles from "./SiteFooter.module.css";
@@ -116,18 +117,18 @@ export function SiteFooter({ platform }: { platform: PlatformInfo }) {
         <dl className={`col-12 ${styles.chain}`}>
           <div>
             <dt>PlatformConfig</dt>
-            <dd><a className="mono" href={explorerUrl("address", platform.platformConfig, platform)} target="_blank" rel="noreferrer">{shortAddress(platform.platformConfig)}</a></dd>
+            <dd><Address value={platform.platformConfig} platform={platform} /></dd>
           </div>
           <div>
             <dt>LaunchLab program</dt>
-            <dd><a className="mono" href={explorerUrl("address", platform.launchlabProgram, platform)} target="_blank" rel="noreferrer">{shortAddress(platform.launchlabProgram)}</a></dd>
+            <dd><Address value={platform.launchlabProgram} platform={platform} /></dd>
           </div>
         </dl>
         <div className={`col-12 ${styles.legal}`}>
           <p>
-            <strong>Coins launched here are speculative and can lose all their value.</strong> Stoker is an interface to Raydium&apos;s LaunchLab program on
-            Solana and never holds your funds. Fees are set on-chain and shown on every page. The site is not available to people in the United States,
-            the United Kingdom, Canada or sanctioned countries, and nothing on it is financial advice. <Link href="/risk">Read the risk disclosure</Link>.
+            <strong>{RISK_SENTENCE}</strong> Stoker is an interface to Raydium&apos;s LaunchLab program on Solana and never holds your funds. Fees
+            are set on-chain and shown on every page. The site is not available to people in {EXCLUDED_REGIONS}, and nothing on it is financial
+            advice. <Link href="/risk">Read the risk disclosure</Link>.
           </p>
         </div>
       </div>

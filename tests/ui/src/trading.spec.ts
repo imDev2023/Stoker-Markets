@@ -1,7 +1,7 @@
 // What a trader does on a coin page, end to end against the real chain, API and Indexer.
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
 import type { Page } from "@playwright/test";
-import { expect, fundedKeypair, launchViaApi, stackEnv, test, tradeViaApi } from "./fixtures";
+import { expect, forgetDisclaimer, fundedKeypair, launchViaApi, stackEnv, test, tradeViaApi } from "./fixtures";
 import { connectTestWallet } from "./wallet";
 
 const panel = (page: Page) => page.getByRole("region", { name: /^Trade( |$)/ });
@@ -26,10 +26,6 @@ async function enterAmount(page: Page, amount: string) {
 
 async function reviewTrade(page: Page) {
   await panel(page).getByRole("button", { name: /^Review (buy|sell)$/ }).click();
-  if (await disclaimer(page).isVisible().catch(() => false)) {
-    await disclaimer(page).getByRole("checkbox").check();
-    await disclaimer(page).getByRole("button", { name: "Continue" }).click();
-  }
   await expect(review(page)).toBeVisible();
 }
 
@@ -51,6 +47,8 @@ test("a trader buys, then sells half, and sees both in the history and the chart
   for (const fee of ["Raydium", "Platform fee"]) await expect(panel(page).getByText(fee)).toBeVisible();
   // The chain pays no Creator Fee on our platform (ADR 0009): no row for one.
   await expect(panel(page).getByText("Creator fee")).toHaveCount(0);
+  // The welcome recorded the acceptance for every test; a browser without the record meets the trade disclaimer here.
+  await forgetDisclaimer(page);
   await panel(page).getByRole("button", { name: "Review buy" }).click();
   await expect(disclaimer(page)).toBeVisible();
   await disclaimer(page).getByRole("checkbox").check();

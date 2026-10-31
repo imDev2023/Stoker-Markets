@@ -1,9 +1,12 @@
 import Link from "next/link";
 import type { LaunchSummary } from "@launchpad/contract";
 import { formatMarketValue } from "@/lib/board";
-import { formatPrice, quoteTicker, timeAgo } from "@/lib/format";
+import { quoteTicker } from "@/lib/format";
+import { CoinImage } from "./CoinImage";
 import { PairMark } from "./PairMark";
+import { Price } from "./Price";
 import { QuoteLogo } from "./QuoteLogo";
+import { RelativeTime } from "./RelativeTime";
 import styles from "./CoinRow.module.css";
 
 /** How far the curve is toward its Graduation Target, to a hundredth of a percent as CurveProgress has it; a sold-out curve is done. */
@@ -30,11 +33,7 @@ export function CoinRow({ launch, now }: { launch: LaunchSummary; now: number })
     <Link href={`/coin/${launch.mint}`} className={styles.row}>
       <span className={styles.coin}>
         <span className={styles.lockup}>
-          {launch.image ? (
-            <img className={styles.image} src={launch.image} alt="" width={28} height={28} loading="lazy" />
-          ) : (
-            <span className={styles.image} aria-hidden />
-          )}
+          <CoinImage src={launch.image} symbol={launch.symbol} size={28} className={styles.image} loading="lazy" />
           <span className={styles.quoteLogo}><QuoteLogo quote={launch.quote} size={16} /></span>
         </span>
         {/* The pair fits the box it is given (PairMark measures its parent), so it gets one of its own. */}
@@ -43,7 +42,7 @@ export function CoinRow({ launch, now }: { launch: LaunchSummary; now: number })
         </span>
         <span className={styles.name}>{launch.name}</span>
       </span>
-      <span className={`${styles.num} ${styles.price}`} data-label="Price">{launch.market.price === null ? "-" : formatPrice(launch.market.price)}</span>
+      <span className={`${styles.num} ${styles.price}`} data-label="Price">{launch.market.price === null ? "-" : <Price value={launch.market.price} />}</span>
       <span className={`${styles.num} ${styles.mcap}`} data-label="Market cap">{launch.market.marketCap ? formatMarketValue(launch.market.marketCap, launch.quote) : "-"}</span>
       <span className={styles.curve}>
         {status === "live" ? (
@@ -61,7 +60,7 @@ export function CoinRow({ launch, now }: { launch: LaunchSummary; now: number })
       </span>
       <span className={`${styles.num} ${styles.vol}`} data-label="24h volume">{formatMarketValue(launch.market.volume24h, launch.quote)}</span>
       <span className={styles.when} data-label="Launched">
-        <time dateTime={launch.createdAt}>{timeAgo(launch.createdAt, now)}</time>
+        <RelativeTime iso={launch.createdAt} now={now} />
       </span>
       <span className={styles.mode}>{launch.rewardTax ? `reward ${launch.rewardTax.bps / 100}%` : ""}</span>
     </Link>

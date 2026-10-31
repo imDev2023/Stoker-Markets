@@ -1,0 +1,47 @@
+/* The welcome: the ring, the title and three lines centred over the page, one button, the terms under it in the caption size. */
+.dialog {
+  width: min(460px, calc(100vw - 32px));
+  padding: 36px 32px 28px;
+  text-align: center;
+}
+
+.ring {
+  display: block;
+  margin: 0 auto 8px;
+}
+
+.title {
+  margin: 0 0 16px;
+}
+
+.line {
+  margin: 0 0 10px;
+  color: var(--ink-2);
+}
+
+.continue {
+  width: 100%;
+  margin-top: 18px;
+}
+
+.terms {
+  margin: 14px 0 0;
+  color: var(--ink-3);
+}
+
+.terms a {
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* On a phone the welcome is a sheet from the foot of the window: the card's radius all round, its lower corners carried
+   below the window's edge so only the top ones show (as the account sheet does), and room for the home indicator. */
+@media (max-width: 767px) {
+  .dialog {
+    width: 100%;
+    max-width: none;
+    margin: auto 0 calc(-1 * var(--radius-card));
+    padding: 28px var(--gutter) calc(24px + var(--radius-card) + env(safe-area-inset-bottom, 0px));
+  }
+}
