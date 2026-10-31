@@ -30,11 +30,10 @@ export function PairMark({ base, quote, size = "md" }: { base: string; quote: st
     };
     const fit = () => {
       // Measure at the CSS size: the room is read after the reset, so a box that wraps its content can't ratchet down.
-      // No transition while measuring: under reduced motion the page transitions every property for a hair of a second
-      // (`transition: all 0.01ms`), and a computed size read in the same task as the reset is the transition's start,
-      // the last fitted size, so each refit measured at the old size and ratcheted (the coin page's title pair came out
-      // at 27.6px or 28px by the number of refits, 2026-10-31; the suite's visual projects run with reduced motion).
-      el.style.setProperty("transition", "none", "important");
+      // Nothing here transitions (the stylesheet turns transitions off for the pair and its parts), so the reset and
+      // the measurement in the same task see the CSS size; with a transition on the parts' inherited size, as the
+      // page's reduced-motion rule gives every element, the glyphs measured at the old size and the fit drifted
+      // (2026-10-31).
       el.style.fontSize = "";
       // The room is what the pair may grow into, never what it happens to take: with its own cap lifted the pair at the
       // CSS size pushes a box that wraps its content out to its own width, or to the container's edge where it is
@@ -52,10 +51,7 @@ export function PairMark({ base, quote, size = "md" }: { base: string; quote: st
       const gap = parseFloat(getComputedStyle(el).columnGap) || 0;
       const parts = [...el.children].filter((c) => c.getAttribute("aria-hidden") !== null);
       const natural = parts.reduce((w, p) => w + textWidth(p), 0) + gap * (parts.length - 1);
-      if (!natural || !room) {
-        el.style.removeProperty("transition");
-        return;
-      }
+      if (!natural || !room) return;
       // A hair under the exact fit, so subpixel rounding never triggers the ellipsis.
       const exact = (cssSize * (room - 1)) / natural;
       // A pair that already fits (within the rounding of a measurement) keeps its set size: a box that wraps the pair
@@ -63,7 +59,6 @@ export function PairMark({ base, quote, size = "md" }: { base: string; quote: st
       // the pair by a fraction that depends on the measurement's rounding.
       const target = size === "fit" ? Math.min(FIT_MAX_PX, exact) : natural <= room + 0.5 ? cssSize : exact;
       el.style.fontSize = `${Math.max(cssSize * MIN_SCALE, target)}px`;
-      el.style.removeProperty("transition");
     };
     fit();
     // Refit when the room changes, and when the glyphs do: a web font can swap in after first paint without a load
