@@ -35,7 +35,8 @@ test("the empty board shows every control", async ({ page }) => {
   ]);
   await expectNoHorizontalOverflow(page);
   await expectHydrated(page);
-  await expect(page).toHaveScreenshot("board-empty.png", { fullPage: true });
+  // The status line says when the list last updated, a clock like any other.
+  await expect(page).toHaveScreenshot("board-empty.png", { fullPage: true, mask: [page.locator("time")] });
 });
 
 test("the assets page lists every Quote Asset before the first coin", async ({ page }) => {

@@ -1,0 +1,54 @@
+$ pnpm --filter @launchpad/tests-ui test --project empty-desktop-light --project seed --project visual-desktop-light --no-deps --update-snapshots=changed
+$ playwright test --project empty-desktop-light --project seed --project visual-desktop-light --no-deps --update-snapshots=changed
+
+Running 38 tests using 1 worker
+
+  ✓   1 [empty-desktop-light] › src/empty.spec.ts:4:1 › the empty landing invites the first launch (5.4s)
+  ✓   2 [empty-desktop-light] › src/empty.spec.ts:21:1 › a cluster other than mainnet tells search engines not to index it (1.9s)
+/Volumes/Farhan/Work Folder/Dev/AI/stonk-fun-solana/.claude/worktrees/rework-board/tests/ui/screenshots/darwin/empty-desktop-light/board-empty.png is re-generated, writing actual.
+  ✓   3 [empty-desktop-light] › src/empty.spec.ts:27:1 › the empty board shows every control (4.9s)
+/Volumes/Farhan/Work Folder/Dev/AI/stonk-fun-solana/.claude/worktrees/rework-board/tests/ui/screenshots/darwin/empty-desktop-light/assets-empty.png is re-generated, writing actual.
+  ✓   4 [empty-desktop-light] › src/empty.spec.ts:41:1 › the assets page lists every Quote Asset before the first coin (3.1s)
+  ✓   5 [empty-desktop-light] › src/empty.spec.ts:56:1 › the revenue page before anything is collected (2.1s)
+  ✓   6 [seed] › src/seed.setup.ts:49:1 › seed the board (29.3s)
+  ✓   7 [visual-desktop-light] › src/visual.spec.ts:81:1 › home (3.4s)
+/Volumes/Farhan/Work Folder/Dev/AI/stonk-fun-solana/.claude/worktrees/rework-board/tests/ui/screenshots/darwin/visual-desktop-light/board.png is re-generated, writing actual.
+  ✓   8 [visual-desktop-light] › src/visual.spec.ts:90:1 › board (5.7s)
+/Volumes/Farhan/Work Folder/Dev/AI/stonk-fun-solana/.claude/worktrees/rework-board/tests/ui/screenshots/darwin/visual-desktop-light/board-filtered.png is re-generated, writing actual.
+  ✓   9 [visual-desktop-light] › src/visual.spec.ts:97:1 › board sorted by market cap, stablecoin pairs only (3.1s)
+A snapshot doesn't exist at /Volumes/Farhan/Work Folder/Dev/AI/stonk-fun-solana/.claude/worktrees/rework-board/tests/ui/screenshots/darwin/visual-desktop-light/board-fixed.png, writing actual.
+  ✓  10 [visual-desktop-light] › src/visual.spec.ts:105:1 › board as one fixed viewport, the rows scrolling inside the table (2.4s)
+/Volumes/Farhan/Work Folder/Dev/AI/stonk-fun-solana/.claude/worktrees/rework-board/tests/ui/screenshots/darwin/visual-desktop-light/assets.png is re-generated, writing actual.
+  ✓  11 [visual-desktop-light] › src/visual.spec.ts:114:1 › assets page (3.0s)
+/Volumes/Farhan/Work Folder/Dev/AI/stonk-fun-solana/.claude/worktrees/rework-board/tests/ui/screenshots/darwin/visual-desktop-light/api.png is re-generated, writing actual.
+  ✓  12 [visual-desktop-light] › src/visual.spec.ts:119:1 › api page (10.3s)
+  ✓  13 [visual-desktop-light] › src/visual.spec.ts:125:1 › curated page (2.9s)
+/Volumes/Farhan/Work Folder/Dev/AI/stonk-fun-solana/.claude/worktrees/rework-board/tests/ui/screenshots/darwin/visual-desktop-light/asset.png is re-generated, writing actual.
+  ✓  14 [visual-desktop-light] › src/visual.spec.ts:130:1 › asset page of a tokenized stock, with the coins priced in it (5.0s)
+  ✓  15 [visual-desktop-light] › src/visual.spec.ts:151:1 › coin page (4.3s)
+  ✓  16 [visual-desktop-light] › src/visual.spec.ts:158:1 › coin page with the longest name and ticker (2.9s)
+  ✓  17 [visual-desktop-light] › src/visual.spec.ts:165:1 › coin page with trades (2.8s)
+  ✓  18 [visual-desktop-light] › src/visual.spec.ts:173:1 › trade panel, buy and sell, quote and review (5.0s)
+  ✓  19 [visual-desktop-light] › src/visual.spec.ts:208:1 › trade panel after the curve sold out, while Raydium moves the coin to its pool (2.5s)
+  ✓  20 [visual-desktop-light] › src/visual.spec.ts:214:1 › coin page paired with USDC, after a buy (2.6s)
+  ✓  21 [visual-desktop-light] › src/visual.spec.ts:222:1 › trade panel paying with SOL on a USDC-paired coin, quote and review (3.3s)
+  ✓  22 [visual-desktop-light] › src/visual.spec.ts:246:1 › trade panel paying with SOL where there is no SOL route (2.9s)
+  ✓  23 [visual-desktop-light] › src/visual.spec.ts:260:1 › coin page after graduation (2.6s)
+  ✓  24 [visual-desktop-light] › src/visual.spec.ts:268:1 › trade panel after graduation, with the pool's fees (4.7s)
+  ✓  25 [visual-desktop-light] › src/visual.spec.ts:290:1 › coin not found (2.0s)
+  ✓  26 [visual-desktop-light] › src/visual.spec.ts:297:1 › launch form, step by step (8.0s)
+  ✓  27 [visual-desktop-light] › src/visual.spec.ts:334:1 › launch review against a tokenized stock (4.7s)
+  ✓  28 [visual-desktop-light] › src/visual.spec.ts:367:1 › launch form with a first buy and an airdrop (5.1s)
+  ✓  29 [visual-desktop-light] › src/visual.spec.ts:384:1 › launch form as a Reward Launch paid in the Quote Asset, and its review (5.1s)
+  ✓  30 [visual-desktop-light] › src/visual.spec.ts:406:1 › launch form with a mistake in the airdrop list (4.0s)
+  ✓  31 [visual-desktop-light] › src/visual.spec.ts:414:1 › launch the network refused (4.6s)
+  ✓  32 [visual-desktop-light] › src/visual.spec.ts:428:1 › coin page with an airdrop to send, seen by its creator (3.4s)
+  ✓  33 [visual-desktop-light] › src/visual.spec.ts:437:1 › coin page with a paid airdrop (2.6s)
+  ✓  34 [visual-desktop-light] › src/visual.spec.ts:447:1 › coin page of a Reward Launch paid in SOL, after a sale and a round (2.8s)
+  ✓  35 [visual-desktop-light] › src/visual.spec.ts:456:1 › header wallet menu when connected (3.4s)
+  ✓  36 [visual-desktop-light] › src/visual.spec.ts:468:1 › creator earnings page, as its Creator (3.2s)
+  ✓  37 [visual-desktop-light] › src/visual.spec.ts:480:1 › creator earnings page of a wallet that never launched (2.0s)
+  ✓  38 [visual-desktop-light] › src/visual.spec.ts:488:1 › revenue page (2.4s)
+
+  38 passed (4.3m)
+exit 0

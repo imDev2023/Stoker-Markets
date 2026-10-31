@@ -102,6 +102,15 @@ test("board sorted by market cap, stablecoin pairs only", async ({ page }) => {
   await snap(page, "board-filtered.png");
 });
 
+test("board as one fixed viewport, the rows scrolling inside the table", async ({ page }) => {
+  // The candidate behind `?board=fixed` (#135, the owner's pick to come): the page is the window, so a full-page capture is a viewport.
+  await page.goto("/coins?board=fixed");
+  await expect(page.getByRole("heading", { name: "Coins", exact: true })).toBeVisible();
+  await expect(page.locator("ul li img").first()).toHaveJSProperty("complete", true);
+  await expect(page.locator("body")).toHaveCSS("overflow", "hidden");
+  await snap(page, "board-fixed.png");
+});
+
 test("assets page", async ({ page }) => {
   await page.goto("/assets");
   await snap(page, "assets.png");

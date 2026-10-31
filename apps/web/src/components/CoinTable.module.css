@@ -1,0 +1,54 @@
+/*
+  The table is one panel: the column names in a well at its top, a row a pair, a hairline between rows. The columns
+  are set here once (CoinRow reads `--cols`), from the content: the pair takes what is left, every figure a width its
+  widest value needs. The card clips its corners without becoming a scroll container (`clip`, not `hidden`), so the
+  header line can stick under the site header while the page scrolls.
+*/
+.table {
+  --cols: minmax(200px, 2.4fr) minmax(104px, 1.1fr) 64px 72px minmax(80px, 0.9fr) minmax(88px, 1fr) 124px 64px 64px;
+  overflow: clip;
+}
+
+.columns {
+  position: sticky;
+  top: var(--header-h);
+  z-index: 2;
+  display: grid;
+  grid-template-columns: var(--cols);
+  gap: 0 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--sunken);
+  font-size: var(--text-label);
+  font-weight: 500;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* A figure's name sits over the figures, right-aligned like them. */
+.numeric {
+  text-align: right;
+}
+
+.rows {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rows[aria-busy="true"] {
+  opacity: 0.55;
+  transition: opacity var(--dur-fast) var(--ease-standard) var(--dur-fast);
+}
+
+.rows > li:last-child > a {
+  border-bottom: 0;
+}
+
+/* Narrow windows: the column names go, each row labels its own figures (CoinRow.module.css). */
+@media (max-width: 760px) {
+  .columns {
+    display: none;
+  }
+}

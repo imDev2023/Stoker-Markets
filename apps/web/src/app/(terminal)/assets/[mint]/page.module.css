@@ -1,4 +1,4 @@
-/* One Quote Asset: its head, two panels of facts, the coins priced in it and what is known about it. */
+/* One Quote Asset: its head, one list of facts, the market behind it, the coins priced in it and what is known about it. */
 .page {
   display: flex;
   flex-direction: column;
@@ -60,35 +60,26 @@
   text-wrap: pretty;
 }
 
-.panels {
+/* One definition list on one card, the terms in a column of their own so every fact's label sits on one left edge. */
+.facts {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  align-items: start;
-  gap: 16px;
-}
-
-.wide {
-  grid-column: 1 / -1;
-  min-width: 0;
-}
-
-.facts,
-.addresses {
-  display: grid;
-  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 24px;
   align-content: start;
   margin: 0;
   padding: 24px;
 }
 
-.facts dt,
-.addresses dt {
+.facts > div {
+  min-width: 0;
+}
+
+.facts dt {
   font-size: var(--text-caption);
   color: var(--ink-3);
 }
 
-.facts dd,
-.addresses dd {
+.facts dd {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -98,10 +89,20 @@
   font-weight: 500;
 }
 
-.facts dd :global(.mono),
-.addresses dd :global(.mono) {
+.facts dd :global(.mono) {
   font-size: var(--text-ui);
   font-weight: 500;
+}
+
+.facts dd a:global(.mono) {
+  text-decoration: none;
+  border-bottom: 1px solid var(--line-strong);
+  transition: color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
+}
+
+.facts dd a:global(.mono):hover {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .aside {
@@ -110,19 +111,7 @@
   color: var(--ink-3);
 }
 
-.addresses a {
-  text-decoration: none;
-  border-bottom: 1px solid var(--line-strong);
-  transition: color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
-}
-
-.addresses a:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
 .factLink {
-  flex-basis: 100%;
   color: var(--accent);
   font-size: var(--text-ui);
   font-weight: 600;
@@ -153,70 +142,23 @@
   text-wrap: pretty;
 }
 
+/* The coins paired with the asset, as the board lists them: the heading over the same table. */
 .coins {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-/* One coin a row, the figures in mono, a hairline between rows. */
-.coin {
-  display: grid;
-  grid-template-columns: 22px auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  min-height: var(--row);
-  margin: 0 -8px;
-  padding: 0 8px;
-  border-top: 1px solid var(--line);
-  border-radius: var(--radius-control);
-  font-size: var(--text-caption);
-  text-decoration: none;
-  transition: background-color var(--dur-fast) var(--ease-standard);
-}
-
-.coins li:first-child .coin {
-  border-top: 0;
-}
-
-@media (hover: hover) {
-  .coin:hover {
-    background: var(--hover);
-  }
-}
-
-.coin img,
-.coinImage {
-  width: 22px;
-  height: 22px;
-  border-radius: var(--radius-control);
-  object-fit: cover;
-  background: var(--sunken);
-}
-
-.coinSymbol {
-  font-weight: 600;
-}
-
-.coinName {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   min-width: 0;
-  color: var(--ink-3);
-  overflow-wrap: anywhere;
 }
 
-.coinCap {
-  text-align: right;
-  color: var(--ink-2);
+.coinsHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .back {
   align-self: flex-start;
-}
-
-@media (max-width: 900px) {
-  .panels {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 @media (max-width: 640px) {
@@ -235,8 +177,10 @@
     white-space: normal;
     text-align: center;
   }
-  .facts,
-  .addresses,
+  .facts {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 18px;
+  }
   .card {
     padding: 18px;
   }

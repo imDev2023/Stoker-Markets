@@ -68,12 +68,12 @@ export const SECTIONS: readonly Section[] = [
           </>
         ),
       },
-      { endpoint: "GET /launches/quotes", text: <>The Quote Assets that have Launches, for filters; each with its <C>category</C> and, for a tokenized stock, its <C>issuer</C>.</> },
+      { endpoint: "GET /launches/quotes", text: <>The Quote Assets that have Launches, for filters; each with its <C>category</C>, for a tokenized stock its <C>issuer</C>, how many <C>launches</C> it has and their <C>volume24h</C>.</> },
       {
         endpoint: "GET /launches/:mint",
         text: (
           <>
-            One Launch: curve progress, Graduation, Reward Tax (with its <C>payout</C> asset, <C>coin</C> or <C>quote</C>), market (<C>price</C>, <C>marketCap</C>, <C>volume24h</C>, and <C>change24h</C>, the day&apos;s price change as a fraction, null until the first trade), Copy Protection (<C>protection.until</C>, and <C>copyOf</C> when the coin took an earlier coin&apos;s name, ticker or image).
+            One Launch: curve progress, Graduation, Reward Tax (with its <C>payout</C> asset, <C>coin</C> or <C>quote</C>), market (<C>price</C>, <C>marketCap</C>, <C>volume24h</C>, <C>change24h</C> and <C>change5m</C>, the price change over the day and over five minutes as fractions, null until the first trade, and <C>holders</C>, the wallets whose indexed buys exceed their sells, a floor on the chain&apos;s count), Copy Protection (<C>protection.until</C>, and <C>copyOf</C> when the coin took an earlier coin&apos;s name, ticker or image).
           </>
         ),
       },

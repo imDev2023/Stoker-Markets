@@ -65,6 +65,17 @@ export const LaunchMarket = z.object({
    * trade; 0 when nothing traded in the window.
    */
   change24h: z.number().nullable(),
+  /**
+   * The same over the last five minutes: the price now against the price after the last trade of five minutes ago, or,
+   * for a coin younger than that, against the curve's starting price. Null until the first trade; 0 when nothing
+   * traded in the window.
+   */
+  change5m: z.number().nullable(),
+  /**
+   * Wallets that hold the coin by the indexed trades: every trader whose buys exceed their sells. Coins that moved by
+   * transfer or airdrop are not seen, so this is a floor on the chain's count, never the count itself.
+   */
+  holders: z.number().int(),
   lastTradeAt: z.iso.datetime().nullable(),
 });
 export type LaunchMarket = z.infer<typeof LaunchMarket>;
@@ -84,7 +95,11 @@ export const PlatformStats = z.object({
 export type PlatformStats = z.infer<typeof PlatformStats>;
 
 /** A Quote Asset that at least one Launch is paired with, and how many are: what the board's Quote Asset filter offers. */
-export const LaunchQuote = QuoteRef.extend({ launches: z.number().int() });
+export const LaunchQuote = QuoteRef.extend({
+  launches: z.number().int(),
+  /** Quote Asset traded over the last 24 hours across every coin paired with it, fees included. */
+  volume24h: MarketValue,
+});
 export type LaunchQuote = z.infer<typeof LaunchQuote>;
 
 export const LaunchQuoteList = z.object({ quotes: z.array(LaunchQuote) });

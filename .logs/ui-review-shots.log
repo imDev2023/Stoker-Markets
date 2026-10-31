@@ -1,0 +1,10 @@
+$ pnpm --filter @launchpad/tests-ui test --project seed --project review --no-deps
+$ playwright test --project seed --project review --no-deps
+
+Running 2 tests using 1 worker
+
+  ✓  1 [seed] › src/seed.setup.ts:49:1 › seed the board (36.5s)
+  ✓  2 [review] › src/review.shots.ts:56:1 › review shots (57.7s)
+
+  2 passed (2.8m)
+exit 0

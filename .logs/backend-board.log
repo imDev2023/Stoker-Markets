@@ -1,0 +1,10 @@
+
+ RUN  v5.0.2 /Volumes/Farhan/Work Folder/Dev/AI/stonk-fun-solana/.claude/worktrees/rework-board/tests/backend
+
+
+ Test Files  1 passed (1)
+      Tests  21 passed (21)
+   Start at  05:43:20
+   Duration  106.24s (tests 88%, import 8%, transform 4%)
+
+exit 0

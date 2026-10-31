@@ -18,9 +18,11 @@ export const CATEGORY_NOTES: Record<QuoteCategory, string> = {
   community: "Every other asset Raydium quotes: launchpad coins and the long tail.",
 };
 
-export type AssetsQuery = { category: QuoteCategory | null; issuer: QuoteIssuer | null; q: string };
-export const DEFAULT_ASSETS: AssetsQuery = { category: null, issuer: null, q: "" };
+export type AssetsQuery = { category: QuoteCategory | null; issuer: QuoteIssuer | null; q: string; page: number };
+export const DEFAULT_ASSETS: AssetsQuery = { category: null, issuer: null, q: "", page: 1 };
 export const ASSETS_SEARCH_MAX = 64;
+/** Rows a page of the directory shows (#135): mainnet quotes some six hundred assets, which no one list should be. */
+export const ASSETS_PAGE = 50;
 
 /** The page's query from its URL, like the board's: anything unknown falls back to the default, so an old link still shows assets. */
 export function assetsQueryFrom(params: Record<string, string | string[] | undefined>): AssetsQuery {
@@ -30,10 +32,12 @@ export function assetsQueryFrom(params: Record<string, string | string[] | undef
   };
   const category = QuoteCategory.safeParse(one("category"));
   const issuer = QuoteIssuer.safeParse(one("issuer"));
+  const page = Number(one("page"));
   return {
     category: category.success && !issuer.success ? category.data : null,
     issuer: issuer.success ? issuer.data : null,
     q: (one("q") ?? "").trim().slice(0, ASSETS_SEARCH_MAX),
+    page: Number.isInteger(page) && page > 1 ? page : 1,
   };
 }
 
@@ -42,8 +46,34 @@ export function assetsSearch(q: AssetsQuery) {
   if (q.issuer) params.set("issuer", q.issuer);
   else if (q.category) params.set("category", q.category);
   if (q.q) params.set("q", q.q);
+  if (q.page > 1) params.set("page", String(q.page));
   const s = params.toString();
   return s ? `?${s}` : "";
+}
+
+/**
+ * One page of the directory (#135): the assets in their groups, cut to `ASSETS_PAGE` rows, so a group that straddles
+ * two pages shows its heading on both with its whole count. `total` is every row the query matched, for the pager.
+ */
+export function pageOfAssets<T extends Pick<QuoteAsset, "category">>(groups: AssetGroup<T>[], page: number) {
+  const total = groups.reduce((n, g) => n + g.assets.length, 0);
+  const pages = Math.max(1, Math.ceil(total / ASSETS_PAGE));
+  const current = Math.min(page, pages);
+  const start = (current - 1) * ASSETS_PAGE;
+  const end = start + ASSETS_PAGE;
+  let at = 0;
+  const shown = groups.flatMap((g) => {
+    const from = Math.max(start - at, 0);
+    const to = Math.min(end - at, g.assets.length);
+    at += g.assets.length;
+    return from < to ? [{ ...g, count: g.assets.length, assets: g.assets.slice(from, to) }] : [];
+  });
+  return { shown, total, pages, page: current, from: total === 0 ? 0 : start + 1, to: Math.min(end, total) };
+}
+
+/** A USD amount for a liquidity column: compact, three figures, so a column of six hundred reads at a glance. */
+export function formatCompactUsd(usd: number) {
+  return usd.toLocaleString("en-US", { style: "currency", currency: "USD", notation: "compact", maximumSignificantDigits: 3 });
 }
 
 /**

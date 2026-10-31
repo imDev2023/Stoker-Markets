@@ -43,6 +43,16 @@ async function queryLaunches(db: Db, filters: Filters, sort: LaunchListQuery["so
       .where(sql`${trades.blockTime} > now() - interval '24 hours'`)
       .groupBy(trades.mint),
   );
+  // Who holds the coin by the trades alone: a trader whose buys outweigh their sells. A floor on the chain's count
+  // (transfers and airdrops move coins without a trade), cheap enough for every row of the board.
+  const holding = db.$with("holding").as(
+    db
+      .select({ mint: trades.mint, trader: trades.trader })
+      .from(trades)
+      .groupBy(trades.mint, trades.trader)
+      .having(sql`sum(case when ${trades.side} = 'buy' then ${trades.baseAmount} else -${trades.baseAmount} end) > 0`),
+  );
+  const holders = db.$with("holders").as(db.select({ mint: holding.mint, n: sql<number>`count(*)::int`.as("n") }).from(holding).groupBy(holding.mint));
   // Graduated once Raydium has migrated it (the same rule as curveProgress); otherwise the curve's status, live until it
   // sells out. A Launch nobody has traded yet has no curve row.
   const status = sql<string>`case when ${graduations.mint} is not null then 'graduated' else coalesce(${curves.status}, 'live') end`;
@@ -56,11 +66,13 @@ async function queryLaunches(db: Db, filters: Filters, sort: LaunchListQuery["so
   const progress = sql`coalesce(${curves.realQuote}, 0) / nullif(${launches.graduationTarget}, 0)`;
   // The price 24 hours ago, for the day's change: after the last trade before the window, or, for a coin younger than
   // that, before its first trade (the curve's starting price). Null until the coin has traded at all.
-  const dayAgo = sql`now() - interval '24 hours'`;
-  const priceAgo = sql<number | null>`coalesce(
-    (select ${trades.priceAfter} from ${trades} where ${trades.mint} = ${launches.mint} and ${trades.blockTime} <= ${dayAgo} order by ${trades.slot} desc, ${trades.eventIndex} desc limit 1),
-    (select ${trades.priceBefore} from ${trades} where ${trades.mint} = ${launches.mint} and ${trades.blockTime} > ${dayAgo} order by ${trades.slot} asc, ${trades.eventIndex} asc limit 1)
+  const priceBefore = (window: SQL) => sql<number | null>`coalesce(
+    (select ${trades.priceAfter} from ${trades} where ${trades.mint} = ${launches.mint} and ${trades.blockTime} <= ${window} order by ${trades.slot} desc, ${trades.eventIndex} desc limit 1),
+    (select ${trades.priceBefore} from ${trades} where ${trades.mint} = ${launches.mint} and ${trades.blockTime} > ${window} order by ${trades.slot} asc, ${trades.eventIndex} asc limit 1)
   )`;
+  const priceAgo = priceBefore(sql`now() - interval '24 hours'`);
+  // The same five minutes back, for the board's short change.
+  const priceAgo5m = priceBefore(sql`now() - interval '5 minutes'`);
 
   const order: Record<LaunchListQuery["sort"], SQL[]> = {
     new: [],
@@ -79,7 +91,7 @@ async function queryLaunches(db: Db, filters: Filters, sort: LaunchListQuery["so
   );
 
   return db
-    .with(volume)
+    .with(volume, holding, holders)
     .select({
       launch: launches,
       metadata: launchMetadata,
@@ -96,6 +108,8 @@ async function queryLaunches(db: Db, filters: Filters, sort: LaunchListQuery["so
       volSol: inSol(volQuote),
       volUsd: inUsd(volQuote),
       priceAgo,
+      priceAgo5m,
+      holders: sql<number | null>`${holders.n}`,
     })
     .from(launches)
     .leftJoin(launchMetadata, eq(launchMetadata.id, launches.mint))
@@ -104,6 +118,7 @@ async function queryLaunches(db: Db, filters: Filters, sort: LaunchListQuery["so
     .leftJoin(graduations, eq(graduations.mint, launches.mint))
     .leftJoin(launchMarkets, eq(launchMarkets.mint, launches.mint))
     .leftJoin(volume, eq(volume.mint, launches.mint))
+    .leftJoin(holders, eq(holders.mint, launches.mint))
     // Amounts need the Quote Asset's decimals, so a Launch shows once the registry lists its Quote Asset. Every Launch the API
     // built already is; only one sent straight to a GlobalConfig newer than the last refresh waits for the next one.
     .innerJoin(quoteAssets, eq(quoteAssets.mint, launches.quoteMint))
@@ -157,6 +172,8 @@ function toSummary(cfg: Config, r: Row): LaunchSummary {
       marketCap: cap,
       volume24h: { raw: r.volRaw, quote: num(r.volQuote)!, sol: num(r.volSol), usd: num(r.volUsd) },
       change24h: change24h(r.market?.price ?? null, num(r.priceAgo)),
+      change5m: change24h(r.market?.price ?? null, num(r.priceAgo5m)),
+      holders: num(r.holders) ?? 0,
       lastTradeAt: r.market?.lastTradeAt?.toISOString() ?? null,
     },
     protection: { until: new Date(l.createdAt.getTime() + cfg.copyProtectionSeconds * 1000).toISOString() },
@@ -189,17 +206,39 @@ launchRoutes.get("/launches", async (c) => {
   return c.json(body);
 });
 
-/** The Quote Assets Launches are paired with, most used first: the choices a Quote Asset filter can offer. */
+/**
+ * The Quote Assets Launches are paired with, most used first: the choices a Quote Asset filter can offer, each with
+ * the day's volume across its coins, so the board's asset bar and the directory say what trades where.
+ */
 launchRoutes.get("/launches/quotes", async (c) => {
+  const db = c.get("db");
   const launchCount = count(launches.mint);
-  const rows = await c
-    .get("db")
-    .select({ quote: quoteAssets, launches: launchCount })
+  const volume = db.$with("quote_volume").as(
+    db
+      .select({ quoteMint: launches.quoteMint, raw: sql<string>`sum(${trades.quoteAmount})`.as("raw") })
+      .from(trades)
+      .innerJoin(launches, eq(launches.mint, trades.mint))
+      .where(sql`${trades.blockTime} > now() - interval '24 hours'`)
+      .groupBy(launches.quoteMint),
+  );
+  const volQuote = sql`(coalesce(${volume.raw}, 0)::double precision / power(10::double precision, ${quoteAssets.decimals}))`;
+  const rows = await db
+    .with(volume)
+    .select({
+      quote: quoteAssets,
+      launches: launchCount,
+      volQuote: sql<number>`${volQuote}`,
+      volSol: sql<number | null>`${volQuote} * ${quoteAssets.priceSol}::double precision`,
+      volUsd: sql<number | null>`${volQuote} * ${quoteAssets.priceUsd}::double precision`,
+    })
     .from(launches)
     .innerJoin(quoteAssets, eq(quoteAssets.mint, launches.quoteMint))
-    .groupBy(quoteAssets.mint)
+    .leftJoin(volume, eq(volume.quoteMint, launches.quoteMint))
+    .groupBy(quoteAssets.mint, volume.raw)
     .orderBy(desc(launchCount), sql`${quoteAssets.symbol} asc nulls last`, asc(quoteAssets.mint));
-  const body: LaunchQuoteList = { quotes: rows.map((r) => ({ ...toQuoteRef(r.quote), launches: r.launches })) };
+  const body: LaunchQuoteList = {
+    quotes: rows.map((r) => ({ ...toQuoteRef(r.quote), launches: r.launches, volume24h: { quote: num(r.volQuote)!, sol: num(r.volSol), usd: num(r.volUsd) } })),
+  };
   return c.json(body);
 });
 
