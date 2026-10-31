@@ -123,20 +123,6 @@ test("asset page of a tokenized stock, with the coins priced in it", async ({ pa
   await snap(page, "asset.png");
 });
 
-test("the header's search open, with a match", async ({ page }) => {
-  await page.goto("/rewards");
-  await page.getByRole("banner").getByRole("button", { name: "Search", exact: true }).click();
-  await page.getByRole("combobox", { name: "Search coins" }).fill("harbor");
-  const found = page.getByRole("listbox", { name: "Coins found" });
-  await expect(found.getByRole("option")).toHaveCount(1);
-  await expect(found.locator("img")).toHaveJSProperty("complete", true);
-  await page.evaluate(() => document.fonts.ready);
-  await expectNoTruncatedText(page);
-  await expectNoHorizontalOverflow(page);
-  // The result pills hang from the header over the page, so the viewport is the shot, its times masked as in any other.
-  await expect(page).toHaveScreenshot("search.png", { mask: dynamic(page) });
-});
-
 /**
  * A coin's page says "Copy protection until" inside the stack's 45-second window and "ended" after it, and a shot of a
  * young seeded coin can land either side of that line depending on the run's speed (the longest coin's light desktop

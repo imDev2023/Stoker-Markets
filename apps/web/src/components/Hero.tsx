@@ -3,6 +3,7 @@ import type { LaunchSummary, PlatformInfo, QuoteAsset } from "@launchpad/contrac
 import { cycleQuotes, type HeroVariant } from "@/lib/landing";
 import { LAUNCH_LINK } from "@/lib/site";
 import { HeroVisual } from "./HeroVisual";
+import { LandingSearch } from "./LandingSearch";
 import styles from "./Hero.module.css";
 
 /**
@@ -10,6 +11,8 @@ import styles from "./Hero.module.css";
  * naming the mechanism in six columns, the filled action and a text link, and in the other six the product itself,
  * one of the visuals the owner picks from (`variant`, src/lib/landing.ts). No glow, no dot grid: at most 70% of the viewport, so the
  * next section is cut by the fold. The count is live from the Quote Registry, so the lede is a fact of this chain.
+ * Under the actions the site's search field (owner, 2026-10-31, B on "Stoker Search" over none and Trending's head): the
+ * first screen offers the three ways in, stoke, explore, find.
  */
 export function Hero({ quotes, launches, variant, platform }: { quotes: QuoteAsset[]; launches: LaunchSummary[]; variant: HeroVariant; platform: PlatformInfo }) {
   const count = quotes.length.toLocaleString("en-US");
@@ -29,6 +32,7 @@ export function Hero({ quotes, launches, variant, platform }: { quotes: QuoteAss
               Explore coins <span aria-hidden className={styles.arrow}>→</span>
             </Link>
           </div>
+          <LandingSearch className={styles.search} />
         </div>
         <div className={`col-6 ${styles.visual}`}>
           <HeroVisual variant={variant} launches={launches.slice(0, 5)} quotes={quotes} cycle={cycleQuotes(quotes)} platform={platform} />

@@ -45,6 +45,11 @@
   gap: 6px;
 }
 
+/* The search field under the actions, the lede's width at most. */
+.search {
+  margin-top: 12px;
+}
+
 .arrow {
   transition: transform var(--dur-fast) var(--ease-standard);
 }

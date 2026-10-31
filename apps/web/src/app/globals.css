@@ -516,7 +516,15 @@ select {
   border: 0;
 }
 
-/* The page column: the content's width and its side gutters, the same on every page and on the header's bar. */
+/*
+  The page column: the content's width and its side gutters, the same on every page and on the header's bar. A page
+  past the home is the terminal, whose wider column the body takes (`:has`, which the header already relies on), so the
+  header and the footer outside the terminal's own box sit on the same column as its content (owner, 2026-10-31).
+*/
+body:has(.terminal) {
+  --max: var(--max-terminal);
+}
+
 .shell {
   width: 100%;
   max-width: var(--max);

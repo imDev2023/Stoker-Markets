@@ -27,7 +27,7 @@ test("a cluster other than mainnet tells search engines not to index it", async 
 test("the empty board shows every control", async ({ page }) => {
   await page.goto("/coins");
   await expect(page.getByText("Be the first to stoke a coin")).toBeVisible();
-  // The search, the sorts and every kind in the asset rail are there before the first coin, so a visitor sees what the board does.
+  // The search, the sorts and every kind in the asset bar are there before the first coin, so a visitor sees what the board does.
   await expect(page.getByRole("searchbox", { name: "Search coins" })).toBeVisible();
   await expect(page.getByRole("group", { name: "Sort coins" }).getByRole("button")).toHaveText(["Market cap", "Newest", "24h volume", "Near graduation"]);
   await expect(page.getByRole("group", { name: "Paired with" }).getByRole("button")).toHaveText([

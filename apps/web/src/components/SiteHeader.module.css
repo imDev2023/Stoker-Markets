@@ -9,14 +9,14 @@
   background: var(--bg);
 }
 
-/* The bar's edges are the page column's (the terminal's width on every page), so the mark and the account sit on the grid. */
+/* The bar's edges are the page's own column (`--max`: the landing's, or the terminal's past it, set on the body), so the mark and the account sit on the content's grid. */
 .bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   height: var(--header-h);
-  max-width: var(--max-terminal);
+  max-width: var(--max);
   margin: 0 auto;
   padding: 0 var(--gutter);
 }
@@ -48,7 +48,7 @@
 
 /*
  * The pill, raised on surface-3 with the shadow, centred in the room between the wordmark and the actions: in the flow,
- * never over them, so a narrower window can only bring it nearer (centred on the window it ran into the search).
+ * never over them, so a narrower window can only bring it nearer (centred on the window it ran into the actions).
  */
 .pill {
   display: flex;
@@ -164,13 +164,6 @@
   display: none;
 }
 
-/* The open search stretches over the pill's end, so the pill steps aside while it is open. */
-.bar:has([data-search-open]) .pill {
-  opacity: 0;
-  transform: scale(0.96);
-  pointer-events: none;
-}
-
 /* Under 1100px the pill keeps its six words and the rest gives way around it: "Stoke" alone on the button, the account's glyph or avatar alone (the words stay as each one's name), no cluster tag. */
 @media (max-width: 1100px) {
   .launch {
@@ -208,7 +201,7 @@
   }
 }
 
-/* Under 768px the bar keeps the lockup and the search; the pill, the launch button and the account are the tab bar's. */
+/* Under 768px the bar keeps the lockup alone; the pill, the launch button and the account are the tab bar's. */
 @media (max-width: 767px) {
   .pill,
   .launch,
@@ -220,10 +213,5 @@
   }
   .tabs {
     display: contents;
-  }
-  /* On a phone the open search takes the bar's whole width, so the lockup gives way. */
-  .bar:has([data-search-open]) .wordmark {
-    opacity: 0;
-    pointer-events: none;
   }
 }

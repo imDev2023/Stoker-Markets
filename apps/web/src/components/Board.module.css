@@ -1,4 +1,4 @@
-/* The board on the grid: the asset rail in three columns, fixed; the table in the other nine, one row a pair, the figures in mono. */
+/* The board on the grid: the whole column, the asset bar above the table, one row a pair, the figures in mono. */
 .section {
   align-items: start;
   padding-top: 24px;
@@ -146,14 +146,6 @@
 
 .ring {
   margin-bottom: 4px;
-}
-
-/* One column: the rail lies down as a strip above the board (AssetRail.module.css). */
-@media (max-width: 900px) {
-  .section {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
-  }
 }
 
 /* Narrow windows: the column names go, each row labels its own figures (CoinRow.module.css). */

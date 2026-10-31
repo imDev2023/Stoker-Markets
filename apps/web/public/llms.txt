@@ -1,0 +1,24 @@
+# Stoker
+
+> An open, trustless launchpad on Solana built on Raydium LaunchLab. A coin launches paired with the Quote Asset its Creator picks (SOL, a stablecoin, a tokenized stock or any asset Raydium quotes), trades on Raydium's bonding curve in that asset and graduates into a Raydium pool.
+
+This file states what the project is and what can be checked. It makes no claim about any coin launched here, and nothing here is investment advice: a coin can lose all of its value, and the platform cannot stop a price from falling.
+
+## What can be verified
+
+- No custom on-chain program. Every launch, trade and graduation runs through Raydium's LaunchLab and CPMM programs; the platform is a LaunchLab PlatformConfig, whose address and fees the API reports at `/v1/platform`.
+- The site builds each transaction and the user's own wallet signs it. No key leaves the wallet.
+- Fees are read from the chain, never a constant. Half of what the platform collects on a coin's trades is forwarded to that coin's Creator, and every collection, sweep, payment and burn is a public Ledger entry (`/v1/revenue`, the Stats page).
+- Liquidity is locked at graduation. The platform earns from it through Raydium's Fee Key, not by holding it.
+- Copy Protection: for a window after a coin launches, nobody else may launch a coin with its name, ticker or image; afterwards a copy is labeled as one.
+- Quote Risk Labels: what an asset's issuer can do (freeze wallets, tax transfers) is shown on every pair.
+- The source is public: https://github.com/imDev2023/Stoker-Markets
+- The API is documented on the site at `/api` and answers without a key.
+
+## Pages
+
+- `/coins`: the board, every coin as the pair it trades as
+- `/assets`: every Quote Asset, grouped by kind and issuer
+- `/rewards`: Holder Rewards
+- `/revenue`: the Ledger
+- `/api`: the API reference

@@ -1,8 +1,22 @@
 // The landing's hero candidates with the right side made live (#133, owner 2026-10-30): the pair picker, the most
-// traded coin's trade panel and Jupiter's swap, each behind `?hero=`.
-import { expect, expectNoHorizontalOverflow, test } from "./fixtures";
+// traded coin's trade panel and Jupiter's swap, each behind `?hero=`; and the hero's own search field (owner, 2026-10-31).
+import { expect, expectNoHorizontalOverflow, fundedKeypair, launchViaApi, test } from "./fixtures";
 
 const hero = (page: import("@playwright/test").Page) => page.getByRole("region", { name: "No one picks your pair. You do." });
+
+test("the hero's search field sends its query to the board, which finds the coin", async ({ page }) => {
+  const creator = await fundedKeypair(5);
+  const mint = await launchViaApi(creator, { name: "Quokka Finder", symbol: "QUOKA" });
+  await page.goto("/");
+  // A plain form to the board (owner, 2026-10-31, B on "Stoker Search"): Enter opens the board filtered, the field there
+  // holding the query. The board's search matches more than the name, so the coin is looked for, not counted.
+  const field = hero(page).getByRole("searchbox", { name: "Search coins" });
+  await field.fill("quokka");
+  await field.press("Enter");
+  await expect(page).toHaveURL(/\/coins\?q=quokka$/);
+  await expect(page.getByRole("list", { name: "Coins" }).locator(`a[href="/coin/${mint}"]`)).toBeVisible();
+  await expect(page.getByRole("searchbox", { name: "Search coins" })).toHaveValue("quokka");
+});
 
 test("the pair picker in the hero opens the launch form filled", async ({ page }) => {
   await page.goto("/?hero=picker");

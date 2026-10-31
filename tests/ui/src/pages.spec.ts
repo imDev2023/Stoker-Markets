@@ -53,21 +53,20 @@ test("the landing ends with the full footer, every terminal page with one row, a
 });
 
 // The header (owner, 2026-10-30, on #133: H9's structure with H4's pill kept): six words in the pill with the current one
-// marked, Developers in the footer, the search opening in place from its disc on "/", and under 768px the bottom tab bar
-// with the launch in the middle and the account sheet in place of a menu overlay.
-test("the header: six words in the pill with the current one marked, Developers in the footer, and the search from its disc", async ({ page }) => {
+// marked, Developers in the footer, no search of its own (the board's is the site's, reached by "/" from any page since
+// 2026-10-31), and under 768px the bottom tab bar with the launch in the middle and the account sheet in place of a menu overlay.
+test("the header: six words in the pill with the current one marked, Developers in the footer, and no search of its own", async ({ page }) => {
   await page.goto("/coins");
   // Each word is set twice for the hover slide (the twin aria-hidden), so the links are matched by word, not whole text.
   await expect(main(page).getByRole("link")).toHaveText([/^Explore/, /^Swap/, /^Assets/, /^Rewards/, /^Stats/, /^Curated/]);
   await expect(main(page).getByRole("link", { name: "Explore" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("link", { name: "Developers" })).toHaveCount(0);
   await expect(page.getByRole("contentinfo").getByRole("link", { name: "API" })).toHaveAttribute("href", "/api");
-  // "/" opens the search in place, from anywhere but a field (the board's search holds the focus on load, so it is let go first).
+  // "/" reaches the board's search from anywhere but a field; the header carries none.
+  await expect(page.getByRole("banner").getByRole("button", { name: "Search", exact: true })).toHaveCount(0);
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press("/");
-  await expect(page.getByRole("combobox", { name: "Search coins" })).toBeFocused();
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("button", { name: "Search" })).toBeFocused();
+  await expect(page.getByRole("searchbox", { name: "Search coins" })).toBeFocused();
   // A coin's page is under Explore; Burns is under Stats.
   await page.goto("/burns");
   await expect(main(page).getByRole("link", { name: "Stats" })).toHaveAttribute("aria-current", "page");
@@ -81,7 +80,7 @@ test("on a phone the tab bar carries the launch with its name and the account sh
   await expect(tabs.getByRole("link")).toHaveText(["Explore", "Assets", "Stoke", "Rewards"]);
   await expect(tabs.getByRole("link", { name: "Stoke a coin" })).toBeVisible();
   await expect(tabs.getByRole("link", { name: "Explore" })).toHaveAttribute("aria-current", "page");
-  // The bar keeps the lockup and the search alone; the pill and the launch button are the tab bar's.
+  // The bar keeps the lockup alone; the pill and the launch button are the tab bar's.
   await expect(main(page)).toBeHidden();
   await expect(page.getByRole("banner").getByRole("link", { name: "Stoke a coin" })).toBeHidden();
   // A click before hydration does nothing, so the sheet is asked for until it opens.
