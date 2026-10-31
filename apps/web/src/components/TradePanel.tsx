@@ -34,12 +34,14 @@ const SELL_PRESETS = [25, 50, 100] as const;
 const QUOTE_DEBOUNCE_MS = 250;
 
 export function TradePanel({
-  launch, platform, referrer = null, onTraded,
+  launch, platform, referrer = null, sideRequest = null, onTraded,
 }: {
   launch: LaunchSummary;
   platform: PlatformInfo;
   /** The wallet that sent the trader here, which earns the referral share fee on curve trades where the Quote Asset allows one. */
   referrer?: string | null;
+  /** A side asked for from outside the panel (the phone's Buy / Sell bar, #134); each press is a new `seq`, so the same side twice still lands. */
+  sideRequest?: { side: TradeSide; seq: number } | null;
   onTraded: () => void;
 }) {
   const { connection } = useConnection();
@@ -147,6 +149,15 @@ export function TradePanel({
     setDone(null);
     next();
   }
+
+  // The phone's bar chooses the side as a press on the panel's own control would.
+  useEffect(() => {
+    if (!sideRequest) return;
+    setError(null);
+    setDone(null);
+    setSide(sideRequest.side);
+    setAmountText("");
+  }, [sideRequest]);
 
   async function review() {
     if (!publicKey || amount === null) return;

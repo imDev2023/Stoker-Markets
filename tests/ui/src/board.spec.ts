@@ -202,7 +202,8 @@ test("the platform's icon is served where the PlatformConfig names it", async ({
   expect(icon.status()).toBe(200);
   expect(icon.headers()["content-type"]).toBe("image/png");
   await page.goto("/");
-  await expect(page.locator('link[rel="icon"]')).toHaveAttribute("href", "/icon.png");
+  // Among the icons the head names (#83: the favicon, the SVG and the PNG), the PNG is the one the PlatformConfig points at.
+  await expect(page.locator('link[rel="icon"][type="image/png"]')).toHaveAttribute("href", "/icon.png");
 });
 
 test("'/' and ⌘K from any page reach the board's search, the site's one search, which finds a coin", async ({ page }) => {
@@ -213,8 +214,12 @@ test("'/' and ⌘K from any page reach the board's search, the site's one search
   // The header has no search of its own (owner, 2026-10-31): ⌘K (Ctrl+K elsewhere) from another page opens the board
   // with its field focused and the hash it came by gone; the coin is found through the API's search.
   await expect(page.getByRole("banner").getByRole("button", { name: "Search", exact: true })).toHaveCount(0);
-  await page.keyboard.press("ControlOrMeta+k");
-  await expect(page).toHaveURL("/coins");
+  // The shortcut's listener arrives with hydration, which on a cold `next dev` load can land after the page shows: press
+  // until the board answers (one press on a hydrated page; a press before it is a keystroke nothing hears).
+  await expect.poll(async () => {
+    await page.keyboard.press("ControlOrMeta+k");
+    return new URL(page.url()).pathname;
+  }, { intervals: [500], timeout: 15_000 }).toBe("/coins");
   await expect(search(page)).toBeFocused();
   await search(page).fill("haystack");
   await expect(cards(page)).toHaveCount(1);

@@ -5,7 +5,8 @@ import styles from "./TrustCard.module.css";
 /*
  * The trust figures a buyer checks before buying (#41, ADR 0013): the Creator's holding and record, Bundle Radar's
  * snipers, and how much the largest wallets hold. Every figure is from the indexed trades or the chain, and a label
- * informs; none stops a trade.
+ * informs; none stops a trade. Since phase 3 of the rework (#134) the three figures stand in the coin page's title row
+ * as marks (`TrustMarks`), and the card opens from them.
  */
 
 type Tone = "ok" | "caution" | "down" | "none";
@@ -25,12 +26,46 @@ function topHoldersShare(holders: HolderList, n: number) {
   return holders.holders.filter((h) => h.kind !== "curve" && h.kind !== "pool").slice(0, n).reduce((sum, h) => sum + h.share, 0);
 }
 
-export function TrustCard({ trust, holders }: {
-  /** Null when the API couldn't answer at render; the card says so and the next refresh retries. */
-  trust: LaunchTrust | null;
-  /** Null when the chain couldn't be read at render. */
-  holders: HolderList | null;
-}) {
+type Figures = { trust: LaunchTrust | null; holders: HolderList | null };
+
+/** A share in a mark's few characters: a plain "0%" for nothing, the site's share format otherwise. */
+const short = (share: number) => (share === 0 ? "0%" : percent(share));
+
+/** The three marks, each with its tone and the few words that fit a title row. */
+export function trustMarks({ trust, holders }: Figures): { term: string; tone: Tone; short: string }[] {
+  const creator = holders === null
+    ? { tone: "none" as const, short: "Creator" }
+    : holders.creator.status === "holding"
+      ? { tone: "ok" as const, short: `Creator ${short(holders.creator.share)}` }
+      : holders.creator.status === "sold"
+        ? { tone: "down" as const, short: "Creator sold" }
+        : { tone: "none" as const, short: "Creator 0%" };
+  const snipers = trust === null
+    ? { tone: "none" as const, short: "Snipers" }
+    : trust.snipers.wallets.length === 0
+      ? { tone: "ok" as const, short: "No snipers" }
+      : { tone: "caution" as const, short: count(trust.snipers.wallets.length, "sniper") };
+  const top = holders === null
+    ? { tone: "none" as const, short: "Top 10" }
+    : { tone: topHoldersShare(holders, 10) > 0.5 ? ("caution" as const) : ("ok" as const), short: `Top 10 ${short(topHoldersShare(holders, 10))}` };
+  return [{ term: "Creator", ...creator }, { term: "Snipers", ...snipers }, { term: "Top 10 wallets", ...top }];
+}
+
+/** The marks as the title row shows them: a dot in the figure's tone and its few words. */
+export function TrustMarks({ trust, holders }: Figures) {
+  return (
+    <>
+      {trustMarks({ trust, holders }).map((m) => (
+        <span key={m.term} className={styles.mark}>
+          <span className={`${styles.dot} ${styles[m.tone]}`} aria-hidden />
+          {m.short}
+        </span>
+      ))}
+    </>
+  );
+}
+
+export function TrustCard({ trust, holders, className = "" }: Figures & { className?: string }) {
   const rows: { term: string; tone: Tone; text: string; detail?: string }[] = [];
 
   // The Creator: what they hold now (the chain), their First Buy at launch and their record here (the indexed trades and launches).
@@ -72,7 +107,7 @@ export function TrustCard({ trust, holders }: {
   }
 
   return (
-    <section className={`card ${styles.card}`} aria-labelledby="trust-title">
+    <section className={`card card-overlay ${styles.card} ${className}`} aria-labelledby="trust-title">
       <h2 id="trust-title" className={`t-h3 ${styles.title}`}>Before you buy</h2>
       <dl className={styles.rows}>
         {rows.map((r) => (

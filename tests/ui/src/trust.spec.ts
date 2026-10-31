@@ -8,8 +8,12 @@ test("the coin page says what the Creator holds and did, who sniped, what the to
   const creator = await fundedKeypair(5);
   const mint = await launchViaApi(creator, { name: "Trust Check", symbol: "TRST", firstBuy: String(0.02 * LAMPORTS_PER_SOL) });
   const card = page.getByRole("region", { name: "Before you buy" });
+  // The card opens from the title row's three marks (#134); the marks say the figures in a few words.
+  const marks = page.getByRole("button", { name: /^Before you buy:/ });
 
   await page.goto(`/coin/${mint}`);
+  await expect(marks).toHaveText(/Creator [\d.<]+%.*No snipers.*Top 10 [\d.<]+%/);
+  await marks.click();
   await expect(card.getByText(/^Holds [\d.<]+% of the supply\.$/)).toBeVisible();
   await expect(card.getByText(/^First Buy at launch: [\d.<]+%\. Their first coin here\.$/)).toBeVisible();
   await expect(card.getByText("None.", { exact: true })).toBeVisible();
@@ -22,6 +26,8 @@ test("the coin page says what the Creator holds and did, who sniped, what the to
   await tradeViaApi(a, mint, "buy", BigInt(0.05 * LAMPORTS_PER_SOL));
   await tradeViaApi(b, mint, "buy", BigInt(0.05 * LAMPORTS_PER_SOL));
   await page.reload();
+  await expect(marks).toContainText("2 snipers");
+  await marks.click();
   await expect(card.getByText(/^2 wallets bought [\d.<]+% in the launch's first 100,000 slots \(about 11 hours\) and hold [\d.<]+% now, by their trades here\.$/)).toBeVisible();
   await expect(card.getByText("2 paid the same amount, as one bundle's wallets do.")).toBeVisible();
 

@@ -1,3 +1,4 @@
+/* The trust card opens from the title row's marks: a card on the overlay surface under them. */
 .card {
   display: flex;
   flex-direction: column;
@@ -36,10 +37,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.75rem;
+  font-size: var(--text-label);
   font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
   color: var(--ink-3);
 }
 
@@ -48,15 +47,26 @@
   flex-direction: column;
   gap: 2px;
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--text-ui);
   font-weight: 500;
   overflow-wrap: anywhere;
 }
 
 .detail {
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   font-weight: 400;
   color: var(--ink-2);
+}
+
+/* A mark in the title row: the dot in the figure's tone, the words in the label step. */
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--ink-2);
+  white-space: nowrap;
 }
 
 .dot {
@@ -85,7 +95,7 @@
 
 .note {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: var(--text-label);
   color: var(--ink-3);
 }
 

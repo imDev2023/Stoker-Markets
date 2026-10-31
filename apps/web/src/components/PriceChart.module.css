@@ -1,69 +1,43 @@
-/* The chart is the coin page's dominant panel. */
+/* The chart is the coin page's dominant panel: at least 420px of plot on a desktop, the head one quiet line above it. */
 .card {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 20px;
+  padding: 16px 20px 12px;
   min-width: 0;
 }
 
 .head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px 16px;
+  gap: 8px 16px;
   flex-wrap: wrap;
 }
 
-.headline {
+.figures {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 16px;
   min-width: 0;
 }
 
 .title {
   margin: 0;
-  font-size: var(--text-caption);
+  font-size: var(--text-label);
   font-weight: 600;
   color: var(--ink-3);
 }
 
-/* The price as the page's key figure. */
-.price {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 4px 8px;
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: var(--text-figure-lg);
-  font-weight: 500;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums slashed-zero;
-}
-
-.price :global(.mono) {
-  font-size: inherit;
-}
-
-.unit {
-  font-size: var(--text-ui);
-  font-weight: 500;
-  letter-spacing: 0;
-  color: var(--ink-2);
-}
-
+/* The market cap and the day's volume, each once on the page, as quiet figures beside the chart's name. */
 .cap {
-  font-family: var(--font-body);
+  margin: 0;
   font-size: var(--text-caption);
-  font-weight: 400;
-  letter-spacing: 0;
   color: var(--ink-3);
 }
 
-.cap :global(.mono) {
+.cap :global(.price) {
   font-size: var(--text-caption);
   color: var(--ink-2);
 }
@@ -103,9 +77,15 @@
   font-size: var(--text-label);
 }
 
+.few {
+  margin: 0;
+  font-size: var(--text-label);
+  color: var(--ink-3);
+}
+
 .plot {
   position: relative;
-  height: 340px;
+  height: 420px;
 }
 
 .canvas {
@@ -116,19 +96,34 @@
 .empty {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   margin: 0;
+  padding: 0 16px;
+  text-align: center;
   color: var(--ink-3);
   font-size: var(--text-ui);
 }
 
+.empty :global(.price) {
+  color: var(--ink-2);
+}
+
+@media (max-width: 900px) {
+  .plot {
+    height: 320px;
+  }
+}
+
 @media (max-width: 560px) {
   .card {
-    padding: 16px;
+    padding: 14px 16px 12px;
   }
   .plot {
-    height: 240px;
+    height: 220px;
   }
   .intervals {
     width: 100%;

@@ -110,7 +110,7 @@
 }
 
 .value {
-  font-size: 0.75rem;
+  font-size: var(--text-label);
   color: var(--ink-3);
 }
 
