@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/meta";
 import { listLaunchQuotes, listLaunches } from "@/lib/api";
 import { boardQueryFrom } from "@/lib/board";
 import { Board } from "@/components/Board";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
+  path: "/coins",
   title: "Coins",
   description: "Every coin launched on Stoker, searched, sorted and filtered by what it is paired with.",
-};
+});
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 

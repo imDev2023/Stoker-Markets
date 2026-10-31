@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/meta";
 import Link from "next/link";
 import { getBurns, getPlatform } from "@/lib/api";
 import { explorerUrl, formatUnits, formatUtc, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import styles from "../rewards/page.module.css";
 import { EmptyState } from "@/components/EmptyState";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
+  path: "/burns",
   title: "Burn and Flywheel",
   description: "How platform revenue buys the Platform Token and the top coins and burns them, every buy and burn on the Ledger.",
-};
+});
 
 /** How much of a budget has been spent, for its bar: spent over spent plus what is still waiting. */
 function spentShare(spent: string, available: string) {

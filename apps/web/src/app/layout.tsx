@@ -11,6 +11,8 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { ThemeOverride } from "@/components/ThemeOverride";
 import { getPlatform, listAnnouncements } from "@/lib/api";
+import { SHARED_OPEN_GRAPH, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, TWITTER_CARD } from "@/lib/meta";
+import { siteOrigin } from "@/lib/origin";
 import { SCHEME_COOKIE } from "@/lib/scheme";
 import { THEME_GROUNDS, themeFrom } from "@/lib/theme";
 
@@ -26,12 +28,26 @@ const theme = themeFrom(process.env.NEXT_PUBLIC_THEME);
 export async function generateMetadata(): Promise<Metadata> {
   // Only mainnet is indexable: the devnet rehearsal and a local stack carry test coins that would otherwise be indexed
   // under the brand (runbook, section 12, item 10). The platform is read again below; Next memoises the fetch.
-  const { cluster } = await getPlatform();
+  const [{ cluster }, origin] = await Promise.all([getPlatform(), siteOrigin()]);
   return {
-    title: { default: "Stoker", template: "%s · Stoker" },
-    description: "No one picks your pair. You do. Launch a coin on Solana priced in SOL, a stablecoin, a tokenized stock or any asset Raydium quotes; creators earn from every trade.",
-    // The same file the PlatformConfig's `img` names on-chain (runbook, section 2), so it must stay at this address.
-    icons: { icon: "/icon.png" },
+    // Every relative address a page gives out (its canonical link, its card, its share image) resolves against the
+    // origin the request came in on, so each deployment names itself (#83).
+    metadataBase: new URL(origin),
+    title: { default: SITE_TITLE, template: `%s · ${SITE_NAME}` },
+    description: SITE_DESCRIPTION,
+    applicationName: SITE_NAME,
+    openGraph: SHARED_OPEN_GRAPH,
+    twitter: TWITTER_CARD,
+    icons: {
+      // The ico for the browsers that want one, the SVG for the rest, and `/icon.png`, the same file the PlatformConfig's
+      // `img` names on-chain (runbook, section 2), so it must stay at this address.
+      icon: [
+        { url: "/favicon.ico", sizes: "32x32" },
+        { url: "/icon.svg", type: "image/svg+xml" },
+        { url: "/icon.png", type: "image/png", sizes: "512x512" },
+      ],
+      apple: "/apple-touch-icon.png",
+    },
     ...(cluster === "mainnet" ? {} : { robots: { index: false, follow: false } }),
   };
 }

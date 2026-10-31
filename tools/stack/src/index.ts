@@ -2,9 +2,9 @@
 // the API Worker under `wrangler dev`, and optionally the web app under `next dev`.
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { appendFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { appendFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { createServer as createHttpServer } from "node:http";
-import { createServer } from "node:net";
+import { connect, createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -110,6 +110,18 @@ async function waitFor(what: string, check: () => Promise<boolean>, timeoutMs: n
  * A throwaway database: with `STACK_DATABASE_URL` (a Postgres server the caller may create databases on, for machines
  * without docker), a fresh database on that server; otherwise a Postgres container.
  */
+/** Whether something answers on a local port: how a build folder left by a run that was killed is told from a live run's. */
+function listening(port: number) {
+  return new Promise<boolean>((resolve) => {
+    const socket = connect({ port, host: "127.0.0.1" });
+    socket.once("connect", () => {
+      socket.destroy();
+      resolve(true);
+    });
+    socket.once("error", () => resolve(false));
+  });
+}
+
 async function startPostgres(): Promise<{ url: string; stop: () => Promise<void> }> {
   const server = process.env.STACK_DATABASE_URL;
   if (server) {
@@ -411,6 +423,13 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       });
       if (!issued.ok) throw new Error(`issuing the web server's API key failed: ${issued.status}\n${api.log()}`);
       webApiKey = ((await issued.json()) as { key: string }).key;
+      // A run that was killed never reached `stop`: remove the build folders such runs left behind (85 of them, 970 MB,
+      // had gathered by 2026-10-28), told from a live run's by whether anything answers on the port in the name.
+      const webDir = join(REPO, "apps", "web");
+      for (const dir of readdirSync(webDir).filter((d) => d.startsWith(".next-test-"))) {
+        const port = Number(dir.slice(".next-test-".length));
+        if (port && !(await listening(port))) rmSync(join(webDir, dir), { recursive: true, force: true });
+      }
       const web = run(
         `web-${webPort}`,
         "pnpm",

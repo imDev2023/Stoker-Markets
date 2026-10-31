@@ -7,7 +7,7 @@
  * yet; replace them before the site opens.
  */
 export const SITE_LINKS = {
-  x: { label: "X", href: "https://x.com/stokermarkets" },
+  x: { label: "X", href: "https://x.com/stokermarkets", handle: "@stokermarkets" },
   telegram: { label: "Telegram", href: "https://t.me/stokermarkets" },
   email: "info@stoker.markets",
 } as const;
@@ -68,6 +68,9 @@ export const FOOTER_GROUPS = [
   },
   { title: "Legal", links: [...LEGAL_LINKS, { href: `mailto:${SITE_LINKS.email}`, label: "Contact" }] },
 ] as const;
+
+/** The site's own pages, as the sitemap names them (#83): every internal link of the landing's footer, once each. */
+export const SITE_PAGES = FOOTER_GROUPS.flatMap((g) => g.links).filter((l, i, all) => l.href.startsWith("/") && all.findIndex((o) => o.href === l.href) === i);
 
 /** The one-row footer of every terminal page: the developers' page and the legal pages, so the page ends with its data. */
 export const COMPACT_FOOTER_LINKS = [{ href: API_LINK.href, label: "API" }, ...LEGAL_LINKS] as const satisfies readonly NavLink[];
