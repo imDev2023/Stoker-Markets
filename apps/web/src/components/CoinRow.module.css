@@ -65,9 +65,12 @@
 }
 
 .pairBox {
+  /* A flex box, not a line box: the mark's fitted size varies by a subpixel between runs for the widest tickers, and
+     on a line it rounded the row a pixel taller now and then (the phone board, 2026-10-31); as a flex item its height
+     is its own minimum height alone. */
+  display: flex;
   min-width: 0;
   max-width: 100%;
-  line-height: 1.15;
 }
 
 /* The name wraps when the column is narrower than it, so nothing is cut (the suite's truncation check). */
