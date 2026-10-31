@@ -1,29 +1,7 @@
-/* The disclaimer floats on surface-3 with the shadow, the one dialog on the site. */
+/* The disclaimer before a first launch or trade, on the site's dialog primitive (globals.css). */
 .dialog {
   width: min(520px, calc(100vw - 32px));
   padding: 28px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-card);
-  background: var(--surface-3);
-  color: var(--ink);
-  box-shadow: var(--highlight), var(--shadow-overlay);
-}
-
-.dialog::backdrop {
-  background: rgb(4 6 12 / 55%);
-  backdrop-filter: blur(4px);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .dialog[open] {
-    animation: rise 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  @keyframes rise {
-    from {
-      opacity: 0;
-      transform: translateY(8px) scale(0.985);
-    }
-  }
 }
 
 .dialog p {

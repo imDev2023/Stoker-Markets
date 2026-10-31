@@ -160,6 +160,16 @@ export function LaunchType({ options: o, coin, labelId }: { options: LaunchOptio
             Every transfer withholds a Reward Tax, sold for {quoteLabel ?? "the Quote Asset"} and paid to holders in it.
           </span>
         </label>
+        {/* #113's Holders destination (ADR 0011), shown before it is built (owner, 2026-10-30): the card says so and takes no choice. */}
+        <label className={styles.typeCard}>
+          <input type="radio" name="launch-type" disabled />
+          <span className={styles.typeName}>
+            Holder rewards <span className={`tag ${styles.typeTag}`}>Coming soon</span>
+          </span>{" "}
+          <span className={styles.typeHint}>
+            Your Creator Earnings go to the coin&apos;s holders instead of your wallet, paid in {quoteLabel ?? "the Quote Asset"}.
+          </span>
+        </label>
       </div>
       {reward && (
         <div className={styles.rates} role="group" aria-label="Reward Tax">

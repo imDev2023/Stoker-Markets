@@ -18,6 +18,48 @@ test("the empty landing invites the first launch", async ({ page }) => {
   await expect(page).toHaveScreenshot("home-empty.png", { fullPage: true, mask: [page.locator(".mono:not(input)").filter({ visible: true })] });
 });
 
+test.describe("a first visit", () => {
+  test.use({ firstVisit: true });
+
+  test("is welcomed once, and Continue is remembered", async ({ page }) => {
+    await page.goto("/");
+    const welcome = page.getByRole("dialog", { name: "Welcome to Stoker" });
+    await expect(welcome).toBeVisible();
+    // The pitch's open half, one risk sentence and the regions, in our words; the terms under the one button.
+    await expect(welcome).toContainText("Anyone can launch a coin here, paired with the asset they choose, and anyone can trade it from the first second.");
+    await expect(welcome).toContainText("Coins are their creators', not ours. A price can fall to zero, and nothing on this site is advice.");
+    await expect(welcome).toContainText("Not for people in the United States, the United Kingdom, Canada or sanctioned countries.");
+    await expect(welcome).toContainText("By continuing you accept the Terms, the Privacy notice and the Risk disclosure, and confirm you are over 18.");
+    for (const [name, href] of [["Terms", "/terms"], ["Privacy notice", "/privacy"], ["Risk disclosure", "/risk"]] as const) {
+      await expect(welcome.getByRole("link", { name })).toHaveAttribute("href", href);
+    }
+    // The page is behind a modal: nothing else takes a click until the visitor continues.
+    await expect(page.getByRole("heading", { name: "No one picks your pair. You do." })).toBeVisible();
+    await expect(welcome.getByRole("button", { name: "Continue" })).toBeFocused();
+    await expectNoHorizontalOverflow(page);
+
+    await welcome.getByRole("button", { name: "Continue" }).click();
+    await expect(welcome).toBeHidden();
+    expect(await page.evaluate(() => window.localStorage.getItem("launchpad.disclaimer.v1"))).toBe("accepted");
+
+    // Accepted once per browser: no second welcome on the next page, and none before a first trade either.
+    await page.goto("/coins");
+    await expect(page.getByRole("searchbox", { name: "Search coins" })).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+
+  test("Escape continues too: the welcome is a notice, never a gate", async ({ page }) => {
+    await page.goto("/rewards");
+    const welcome = page.getByRole("dialog", { name: "Welcome to Stoker" });
+    await expect(welcome).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(welcome).toBeHidden();
+    await page.reload();
+    await expect(page.getByRole("main")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+});
+
 test("a cluster other than mainnet tells search engines not to index it", async ({ page }) => {
   // The rehearsal's and the local stack's test coins must never be indexed under the brand (runbook, section 12, item 10).
   await page.goto("/");

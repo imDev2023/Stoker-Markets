@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { EXCLUDED_REGIONS, RISK_SENTENCE } from "@/lib/legal";
 import { SITE_LINKS } from "@/lib/site";
 import styles from "../document.module.css";
 
@@ -16,7 +17,7 @@ export default function RiskPage() {
       <h1 className={`t-h1 ${styles.title}`}>Risk disclosure</h1>
       <p className={styles.dated}>Last updated 29 October 2026.</p>
       <div className={styles.prose}>
-        <p><strong>Coins launched here are speculative and can lose all their value.</strong> Most new coins do. Nobody sets or supports a coin&apos;s price: it comes from what other people pay for it, and it can fall to nothing at any time.</p>
+        <p><strong>{RISK_SENTENCE}</strong> Most new coins do. Nobody sets or supports a coin&apos;s price: it comes from what other people pay for it, and it can fall to nothing at any time.</p>
 
         <h2 className="t-h3">How a coin trades</h2>
         <p>A coin starts on a bonding curve, where every buy raises the price and every sell lowers it. Once the curve has sold out, Raydium moves the coin into a liquidity pool, where it trades at whatever price buyers and sellers agree. A coin&apos;s pool liquidity is locked at Graduation; its price is not.</p>
@@ -34,7 +35,7 @@ export default function RiskPage() {
         <p>Stoker builds transactions for Raydium&apos;s programs on Solana and shows what the chain records; it never holds your funds or your keys. A signed transaction cannot be reversed. The programs, the Solana network, your wallet and the data providers the site reads from are outside Stoker&apos;s control and can fail, pause or change.</p>
 
         <h2 className="t-h3">Who may use the site</h2>
-        <p>The site is not offered to people in the United States, the United Kingdom, Canada or any country under sanctions, nor to anyone where launching or trading these coins is not allowed. Nothing on this site is financial, legal or tax advice. Questions go to <a href={`mailto:${SITE_LINKS.email}`}>{SITE_LINKS.email}</a>.</p>
+        <p>The site is not offered to people in {EXCLUDED_REGIONS}, nor to anyone where launching or trading these coins is not allowed. Nothing on this site is financial, legal or tax advice. Questions go to <a href={`mailto:${SITE_LINKS.email}`}>{SITE_LINKS.email}</a>.</p>
       </div>
     </div>
   );

@@ -31,12 +31,6 @@ async function choose(page: Page, ticker: string) {
   await expect(card(page, ticker)).toBeChecked();
 }
 
-async function acceptDisclaimer(page: Page, action: "launch" | "trade") {
-  const dialog = page.getByRole("dialog", { name: `Before you ${action}` });
-  await dialog.getByRole("checkbox").check();
-  await dialog.getByRole("button", { name: "Continue" }).click();
-}
-
 test("the Quote Asset chooser finds assets by kind, ticker, name or mint, and shows unpriced ones without letting them be chosen", async ({ page }) => {
   await page.goto("/launch");
   await expect(card(page, "SOL")).toBeChecked();
@@ -97,7 +91,6 @@ test("a Creator launches a coin paired with a tokenized stock at the exact Gradu
 
   const prepared = page.waitForResponse((r) => r.url().endsWith("/v1/launches/prepare"));
   await page.getByRole("button", { name: "Review launch" }).click();
-  await acceptDisclaimer(page, "launch");
   const target = PreparedLaunch.parse(await (await prepared).json()).graduationTarget;
   // 1 SOL at 150 USD is 150 USD of NVDAx at 180 USD: 0.83333333 at 8 decimals, shown to the last raw unit.
   expect(target.raw).toBe("83333333");
@@ -126,7 +119,6 @@ test("a Quote Asset that lost its price by launch time is refused with the reaso
   });
   const refused = page.waitForResponse((r) => r.url().endsWith("/v1/launches/prepare"));
   await page.getByRole("button", { name: "Review launch" }).click();
-  await acceptDisclaimer(page, "launch");
   expect((await refused).status()).toBe(422);
 
   await expect(page.getByRole("main").getByRole("alert")).toHaveText(
@@ -155,7 +147,6 @@ test("a trader buys and sells a USDC-paired coin in USDC", async ({ page, wallet
   // 1.25% of 15 USDC: 0.0375 to Raydium and 0.15 as the Platform Fee.
   await expect(panel.getByRole("definition").filter({ hasText: /^0\.1875 USDC$/ })).toBeVisible();
   await panel.getByRole("button", { name: "Review buy" }).click();
-  await acceptDisclaimer(page, "trade");
   const buyReview = panel.getByRole("region", { name: "Review your trade" });
   await expect(buyReview).toContainText(/^Your wallet pays 15 USDC and 0\.\d+ SOL in network fees and any account rent\./);
   expect(wallet.requests).toHaveLength(0);

@@ -15,6 +15,16 @@ import { installTestWallet, type TestWallet } from "./wallet";
 
 export { expect };
 
+/**
+ * The browser's record that the visitor accepted the disclaimer (`DISCLAIMER_KEY` in apps/web/src/lib/legal.ts). The
+ * suite sets it before every page load, so no test or baseline meets the welcome (#156) unless it asks for a first
+ * visit (`firstVisit`) or forgets the record (`forgetDisclaimer`) to meet the launch or trade disclaimer that stands in.
+ */
+export const DISCLAIMER_KEY = "launchpad.disclaimer.v1";
+
+/** Clears the acceptance on the open page, as a visitor who cleared the site's data: the next launch or trade asks again. */
+export const forgetDisclaimer = (page: Page) => page.evaluate((key) => window.localStorage.removeItem(key), DISCLAIMER_KEY);
+
 /** The Quote Assets on the local chain; the stack prices SOL at 150 USD, USDC at 1, NVDAx at 180, JTO at 2.5 and TAXQ at 1, and not BULLWHALE. */
 export const QUOTES = { SOL: new PublicKey("So11111111111111111111111111111111111111112"), ...LOCAL_QUOTES };
 
@@ -296,10 +306,17 @@ export const test = base.extend<{
   /** URLs a test expects to answer with an error status, which the browser logs to the console. */
   expectedHttpErrors: RegExp[];
   browserErrors: void;
+  /** A browser that has never visited: the welcome opens on the first page. Every other test has accepted it already. */
+  firstVisit: boolean;
 }>({
   // eslint-disable-next-line no-empty-pattern
   stack: async ({}, use) => use(stackEnv()),
   baseURL: async ({ stack }, use) => use(stack.webUrl ?? undefined),
+  firstVisit: [false, { option: true }],
+  context: async ({ context, firstVisit }, use) => {
+    if (!firstVisit) await context.addInitScript((key) => window.localStorage.setItem(key, "accepted"), DISCLAIMER_KEY);
+    await use(context);
+  },
   wallet: async ({ page }, use) => use(await installTestWallet(page, await fundedKeypair())),
   // eslint-disable-next-line no-empty-pattern
   expectedHttpErrors: async ({}, use) => use([]),

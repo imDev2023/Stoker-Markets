@@ -165,9 +165,6 @@ test("the coin page shows top holders that match the chain, and whether the Crea
   await panel.getByRole("button", { name: "0.1 SOL" }).click();
   await expect(panel.getByText("You get about")).toBeVisible();
   await panel.getByRole("button", { name: "Review buy" }).click();
-  const disclaimer = page.getByRole("dialog", { name: "Before you trade" });
-  await disclaimer.getByRole("checkbox").check();
-  await disclaimer.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("region", { name: "Review your trade" }).getByRole("button", { name: "Sign and buy" }).click();
   await expect(panel.getByRole("status")).toContainText(/^Bought /);
   const bought = await coinsHeld(wallet.keypair.publicKey, mint);

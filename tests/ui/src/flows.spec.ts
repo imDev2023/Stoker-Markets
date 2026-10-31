@@ -1,8 +1,7 @@
 // What a Creator does in the web app, end to end against the real chain and API.
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
-  COIN_PNG, drain, expect, fundedKeypair, launchViaApi, listLaunches, runFeeCollector, sol, solBalance, test, tradeViaApi,
-} from "./fixtures";
+  COIN_PNG, drain, expect, forgetDisclaimer, fundedKeypair, launchViaApi, listLaunches, runFeeCollector, sol, solBalance, test, tradeViaApi } from "./fixtures";
 import { acceptDisclaimer, COIN, connectWallet, disclaimer, fillForm, formAlert, review } from "./launchPage";
 import { connectTestWallet } from "./wallet";
 
@@ -11,7 +10,6 @@ test("a Creator launches a SOL-paired coin and finds it on the board and its coi
   await connectWallet(page);
   await fillForm(page);
   await page.getByRole("button", { name: "Review launch" }).click();
-  await acceptDisclaimer(page);
 
   // The simulated cost is shown before the wallet is ever asked to sign.
   await expect(review(page)).toBeVisible();
@@ -63,8 +61,9 @@ test("a Creator launches a SOL-paired coin and finds it on the board and its coi
   await page.waitForURL(`**/coin/${mint}`);
 });
 
-test("the disclaimer must be accepted before a first launch and is remembered after", async ({ page, wallet }) => {
+test("a browser without the welcome's record meets the disclaimer before a first launch, and is not asked again", async ({ page, wallet }) => {
   await page.goto("/launch");
+  await forgetDisclaimer(page);
   await connectWallet(page);
   await fillForm(page, { name: "Not Yet", symbol: "NOPE" });
 
@@ -101,7 +100,6 @@ test("declining in the wallet launches nothing and says so", async ({ page, wall
   await connectWallet(page);
   await fillForm(page, { name: "Declined", symbol: "NOPE" });
   await page.getByRole("button", { name: "Review launch" }).click();
-  await acceptDisclaimer(page);
 
   wallet.declineNext();
   await review(page).getByRole("button", { name: "Sign and launch" }).click();
@@ -120,7 +118,6 @@ test("a wallet without enough SOL is told so before signing", async ({ page, wal
   await connectWallet(page);
   await fillForm(page, { name: "Too Poor", symbol: "POOR" });
   await page.getByRole("button", { name: "Review launch" }).click();
-  await acceptDisclaimer(page);
   await expect(formAlert(page)).toHaveText("Your wallet doesn't have enough SOL to pay for the launch. Add SOL and try again.");
   await expect(review(page)).toBeHidden();
   expect(wallet.requests).toHaveLength(0);

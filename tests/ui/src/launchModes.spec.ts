@@ -4,7 +4,7 @@ import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import type { Page } from "@playwright/test";
 import { PreparedAirdrop, PreparedLaunch } from "@launchpad/contract";
 import { allowAirdrops, coinBalance, drain, expect, fund, fundQuote, launchViaApi, listLaunches, sol, test } from "./fixtures";
-import { acceptDisclaimer, chooseQuote, connectWallet, fillForm, fillOptions, formAlert, notConfirmed, review } from "./launchPage";
+import { chooseQuote, connectWallet, fillForm, fillOptions, formAlert, notConfirmed, review } from "./launchPage";
 import { connectTestWallet } from "./wallet";
 
 const airdropCard = (page: Page) => page.getByRole("region", { name: "Airdrop" });
@@ -53,7 +53,6 @@ test("a Creator launches with a first buy and an airdrop, then sends the airdrop
 
   const prepared = nextPrepared(page);
   await page.getByRole("button", { name: "Review launch" }).click();
-  await acceptDisclaimer(page);
   const launch = await prepared;
   await expect(review(page)).toContainText(/Launching PARTY paired with SOL, with your first buy of 0\.2 SOL for [\d,]+ PARTY/);
   await expect(review(page)).toContainText("Then send the airdrop from your coin's page: 3 wallets get 4,000,000.5 PARTY.");
@@ -110,7 +109,6 @@ test("a First Buy in USDC is quoted, reviewed and paid in USDC", async ({ page, 
 
   const prepared = nextPrepared(page);
   await page.getByRole("button", { name: "Review launch" }).click();
-  await acceptDisclaimer(page);
   const launch = await prepared;
   expect(launch.firstBuy).toMatchObject({ amountIn: "20000000" });
   await expect(review(page)).toContainText(/with your first buy of 20 USDC for [\d,]+ DFST .* It graduates at 150 USDC raised\./);
@@ -157,7 +155,6 @@ test("a launch the network refuses says why, and trying again launches that same
   await fillOptions(page, { firstBuy: "0.1" });
   const prepared = nextPrepared(page);
   await page.getByRole("button", { name: "Review launch" }).click();
-  await acceptDisclaimer(page);
   const first = await prepared;
   await expect(review(page)).toBeVisible();
 
@@ -198,7 +195,6 @@ test("when a launch can't be confirmed, trying again finds the coin instead of l
   await fillForm(page, { name: "Lost Reply", symbol: "LOST" });
   const prepared = nextPrepared(page);
   await page.getByRole("button", { name: "Review launch" }).click();
-  await acceptDisclaimer(page);
   const launch = await prepared;
   await review(page).getByRole("button", { name: "Sign and launch" }).click();
 

@@ -987,6 +987,36 @@ body:has(.terminal) {
 }
 
 /*
+  A modal dialog (the welcome on a first visit, the launch and trade disclaimers): the overlay elevation on surface-3
+  with a strong edge, over a dimmed and blurred page, rising in when motion is allowed. A module sets its width and
+  padding; the browser's own dialog styles (centred in the top layer) do the rest.
+*/
+.dialog {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-card);
+  background: var(--surface-3);
+  color: var(--ink);
+  box-shadow: var(--highlight), var(--shadow-overlay);
+}
+
+.dialog::backdrop {
+  background: rgb(4 6 12 / 55%);
+  backdrop-filter: blur(4px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dialog[open] {
+    animation: dialog-rise var(--dur-base) var(--ease-enter);
+  }
+  @keyframes dialog-rise {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.985);
+    }
+  }
+}
+
+/*
   The terminal (every page past the home): tight corners, a wider column, rows that fit sixty coins on a laptop screen.
   Panels at 24px, dense rows at 8 to 12px.
 */
