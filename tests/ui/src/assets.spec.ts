@@ -21,7 +21,11 @@ test("the assets page groups every Quote Asset by kind, and a chip or a search n
   await expect(stock).toContainText("$180.00");
   // The Graduation Target in the stock, at 150 USD a SOL and 180 USD a share.
   await expect(stock).toContainText(/[\d.,]+ NVDAx/);
-  await expect(stock).toContainText("Launchable");
+  // The rule ("5 launchable") is in the count line; only the exception is tagged (#135).
+  await expect(stock.getByText("Not launchable")).toHaveCount(0);
+  // Six assets fit one page of fifty, so there is no pager; the rule for getting listed closes the page.
+  await expect(page.getByRole("navigation", { name: "Pages of assets" })).toHaveCount(0);
+  await expect(assets.getByText("Not quoted yet?")).toBeVisible();
   // Nothing on the page warns: an issuer's powers are on the asset's own page.
   await expect(assets.getByText("Can freeze wallets")).toHaveCount(0);
   await expect(assets.getByText("Not on the verified list")).toHaveCount(0);
@@ -64,13 +68,22 @@ test("an asset's page has its facts, the coins priced in it, further information
   await expect(facts).toContainText(/A coin graduates at[\d.,]+ NVDAx/);
   await expect(facts).toContainText(`worth ${sol(BigInt(platform.graduationTargetLamports))} SOL when set`);
   await expect(facts).toContainText("Token-2022");
-  const addresses = page.getByLabel("NVDAx addresses");
-  await expect(addresses.getByRole("link", { name: /^Xsc9/ })).toHaveAttribute("href", /explorer\.solana\.com\/address\/Xsc9/);
-  await expect(addresses.getByRole("link", { name: "See them on the board" })).toHaveAttribute("href", `/coins?quote=${NVDAX}`);
+  // The addresses are facts of the same list (#135: one definition list), linked to the explorer.
+  await expect(facts.getByRole("link", { name: /^Xsc9/ })).toHaveAttribute("href", /explorer\.solana\.com\/address\/Xsc9/);
+  await expect(facts.getByRole("link", { name: "See them on the board" })).toHaveAttribute("href", `/coins?quote=${NVDAX}`);
 
-  // The coins already priced in it, newest market cap first, each a link to its page.
+  // The coins already priced in it, largest market cap first, as the board's own rows: each a link to its page with the board's figures.
   const coins = page.getByRole("list", { name: "Coins paired with NVDAx" });
-  await expect(coins.getByRole("link").filter({ hasText: "CHIPX" })).toContainText("Chip Pair");
+  const chip = coins.getByRole("link").filter({ hasText: "CHIPX" });
+  await expect(chip).toContainText("Chip Pair");
+  await expect(chip.locator("[data-label='Holders']")).toHaveText("0");
+
+  // The market behind it (#124): TradingView's chart of the stock NVDAx tracks, its web component given the stock's symbol.
+  // The suite serves TradingView's script empty, so the frame stays on its loading line (the widget draws its own attribution).
+  const market = page.getByRole("region", { name: "NVDA on NASDAQ" });
+  await expect(market.getByText("What NVDAx tracks, as TradingView charts it.", { exact: false })).toBeVisible();
+  await expect(market.locator("tv-advanced-chart")).toHaveAttribute("symbol", "NASDAQ:NVDA");
+  await expect(market.getByRole("status")).toHaveText("Loading TradingView's chart of NVDA");
 
   // What its issuer can do and what the token list says, in full and in one place.
   const further = page.getByRole("region", { name: "Further information" });
@@ -92,6 +105,9 @@ test("an asset that can't be launched against says why in place of the launch bu
   await expect(page.getByRole("link", { name: /^Stoke a coin paired with/ })).toHaveCount(0);
   await expect(page.getByText("No reliable price for BULLWHALE yet, so its Graduation Target can't be set.")).toBeVisible();
   await expect(page.getByLabel("BULLWHALE facts")).toContainText("No reliable price");
+  // A pump.fun coin has no market TradingView charts, so the page has no chart card.
+  await expect(page.locator("tv-advanced-chart")).toHaveCount(0);
+  await expect(page.getByText("as TradingView charts it", { exact: false })).toHaveCount(0);
 
   const res = await page.goto("/assets/11111111111111111111111111111111");
   expect(res?.status()).toBe(404);

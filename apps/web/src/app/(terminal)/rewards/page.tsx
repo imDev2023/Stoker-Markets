@@ -5,6 +5,7 @@ import { getRewardRules } from "@/lib/api";
 import { COIN_DECIMALS, formatUnits, formatUtc } from "@/lib/format";
 import { WalletLookup } from "@/components/WalletLookup";
 import styles from "./page.module.css";
+import { EmptyState } from "@/components/EmptyState";
 
 export const metadata: Metadata = {
   title: "Holder rewards",
@@ -50,7 +51,7 @@ export default async function RewardsPage() {
             </div>
           </dl>
         ) : (
-          <p className={styles.note}>No rules are in force yet.</p>
+          <EmptyState bare title="The rules are set before the first Reward Launch">No rules are in force yet. They are announced here ahead of the first round.</EmptyState>
         )}
         <p className={styles.note}>
           Each wallet&apos;s share is its holding over every eligible holding at the round&apos;s snapshot. The curve&apos;s and pool&apos;s own

@@ -1,4 +1,4 @@
-/* The board on the grid: the asset rail in three columns, fixed; the table in the other nine, one row a pair, the figures in mono. */
+/* The board on the grid: the whole column, the asset bar above the table, one row a pair, the figures in mono. */
 .section {
   align-items: start;
   padding-top: 24px;
@@ -21,22 +21,41 @@
   margin: 0;
 }
 
-.live {
+/* The status line: what the list is and when it last updated, a live dot before it; the dot turns caution when the feed has paused. */
+.status {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  margin: 0;
   font-size: var(--text-label);
   color: var(--ink-3);
+  white-space: nowrap;
 }
 
-.live::before {
+.status time {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.status::before {
   content: "";
+  flex: none;
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: var(--up);
   box-shadow: 0 0 0 2px var(--up-bg);
   animation: pulse 2.4s ease-in-out infinite;
+}
+
+.paused {
+  color: var(--caution);
+}
+
+.paused::before {
+  background: var(--caution);
+  box-shadow: 0 0 0 2px var(--caution-bg);
+  animation: none;
 }
 
 @keyframes pulse {
@@ -85,86 +104,74 @@
   font-size: var(--text-caption);
 }
 
-.rows[aria-busy="true"],
-.empty[aria-busy="true"] {
-  opacity: 0.55;
-  transition: opacity var(--dur-fast) var(--ease-standard) var(--dur-fast);
-}
-
-/* The table is one panel: the column names in a well at its top, a row a pair, a hairline between rows. */
-.table {
-  --cols: minmax(240px, 2.6fr) minmax(96px, 1.1fr) minmax(96px, 1.1fr) 140px minmax(96px, 1.1fr) 76px 96px;
+/*
+  The fixed layout (`?board=fixed`, a candidate): the page is one viewport. The body stops scrolling and loses the
+  footer, the main column fills the window under the header, and the table takes what is left with its rows
+  scrolling inside it, the column names staying at its top. The landing and every other page keep scrolling.
+*/
+:global(body:has([data-board="fixed"])) {
+  height: 100dvh;
   overflow: hidden;
 }
 
-.columns {
-  display: grid;
-  grid-template-columns: var(--cols);
-  gap: 0 14px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--line);
-  background: var(--sunken);
-  font-size: var(--text-label);
-  font-weight: 500;
-  color: var(--ink-3);
-  white-space: nowrap;
-}
-
-/* Price, market cap, 24h volume and the launch time sit right-aligned under their names. */
-.columns span:nth-child(2),
-.columns span:nth-child(3),
-.columns span:nth-child(5),
-.columns span:nth-child(6) {
-  text-align: right;
-}
-
-.rows {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.rows > li:last-child > a {
-  border-bottom: 0;
-}
-
-/* Nothing launched yet: the ring at size, one line, the action. Nothing matching: one line and the way back. */
-.empty {
+:global(body:has([data-board="fixed"]) main) {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: clamp(36px, 6vw, 64px) 24px;
-  text-align: center;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
-.empty p {
-  margin: 0;
-  font-size: var(--text-body);
-  color: var(--ink-2);
+:global(body:has([data-board="fixed"]) main > .terminal) {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
-.ring {
-  margin-bottom: 4px;
+:global(body:has([data-board="fixed"]) main ~ footer) {
+  display: none;
 }
 
-/* One column: the rail lies down as a strip above the board (AssetRail.module.css). */
-@media (max-width: 900px) {
-  .section {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
-  }
+.fixed {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-bottom: 16px;
 }
 
-/* Narrow windows: the column names go, each row labels its own figures (CoinRow.module.css). */
-@media (max-width: 760px) {
-  .columns {
-    display: none;
-  }
+.fixed .main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.fixed .table {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.fixed .table > div {
+  position: static;
+  flex: none;
+}
+
+.fixed .table > ul {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* One column of controls: the search takes the full width, the sorts sit two by two. */
 @media (max-width: 640px) {
+  .head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
   .toolbar {
     flex-direction: column;
     align-items: stretch;
@@ -183,8 +190,5 @@
   }
   .sortLabel {
     display: none;
-  }
-  .empty {
-    padding: 28px 16px;
   }
 }

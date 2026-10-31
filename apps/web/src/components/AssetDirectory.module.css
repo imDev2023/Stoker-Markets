@@ -24,9 +24,10 @@
   white-space: nowrap;
 }
 
+/* One line under the title; the rule for getting listed is at the foot, where whoever misses an asset ends up. */
 .lead {
   margin: 0 0 20px;
-  max-width: 64ch;
+  max-width: 72ch;
   font-size: var(--text-body);
   color: var(--ink-2);
   text-wrap: pretty;
@@ -75,17 +76,27 @@
   opacity: 0.8;
 }
 
-/* The column plan, shared by the header line and every row; the table is one panel on surface. */
+/*
+  The column plan, shared by the header line and every row; the table is one panel on surface, which clips its
+  corners without becoming a scroll container (`clip`), so the column names and each group's heading can stay put
+  under the site header as the list scrolls.
+*/
 .table {
-  --cols: minmax(220px, 2.2fr) minmax(130px, 1.1fr) minmax(90px, 0.9fr) minmax(150px, 1.3fr) 64px 110px;
-  overflow: hidden;
+  --cols: minmax(220px, 2.4fr) minmax(120px, 1fr) minmax(90px, 0.8fr) minmax(90px, 0.8fr) minmax(120px, 1fr) minmax(140px, 1.1fr);
+  --columns-h: 33px;
+  overflow: clip;
 }
 
 .columns {
+  position: sticky;
+  top: var(--header-h);
+  z-index: 3;
   display: grid;
   grid-template-columns: var(--cols);
   gap: 0 14px;
-  padding: 9px 16px;
+  height: var(--columns-h);
+  padding: 0 16px;
+  align-items: center;
   border-bottom: 1px solid var(--line);
   background: var(--sunken);
   font-size: var(--text-label);
@@ -94,9 +105,7 @@
   white-space: nowrap;
 }
 
-.columns span:nth-child(3),
-.columns span:nth-child(4),
-.columns span:nth-child(5) {
+.numeric {
   text-align: right;
 }
 
@@ -104,12 +113,18 @@
   border-top: 1px solid var(--line);
 }
 
+/* A group's heading stays under the column names while its rows pass, so a reader always knows which kind they are in. */
 .groupHead {
+  position: sticky;
+  top: calc(var(--header-h) + var(--columns-h));
+  z-index: 2;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 4px 14px;
-  padding: 18px 16px 10px;
+  padding: 12px 16px 8px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
 }
 
 .groupTitle {
@@ -142,18 +157,23 @@
   list-style: none;
 }
 
+/* 40px rows, as the board's: the asset in the sans, every figure right-aligned in tabular mono, a hairline between. */
 .row {
   display: grid;
   grid-template-columns: var(--cols);
   align-items: center;
   gap: 0 14px;
-  min-height: var(--row);
+  min-height: 40px;
   padding: 0 16px;
   border-top: 1px solid var(--line);
   font-size: var(--text-caption);
   text-decoration: none;
   white-space: nowrap;
   transition: background-color var(--dur-fast) var(--ease-standard);
+}
+
+.rows > li:first-child > .row {
+  border-top: 0;
 }
 
 .row:focus-visible {
@@ -174,6 +194,7 @@
   align-items: center;
   gap: 4px 10px;
   min-width: 0;
+  padding: 4px 0;
 }
 
 .ticker {
@@ -187,6 +208,11 @@
   white-space: normal;
 }
 
+/* The one tag in the table: the exception to the rule the count line states. */
+.closed {
+  color: var(--ink-2);
+}
+
 .kind {
   color: var(--ink-2);
   white-space: normal;
@@ -198,40 +224,37 @@
   font-variant-numeric: tabular-nums slashed-zero;
 }
 
-.status {
-  text-align: right;
-  font-family: var(--font-body);
-  font-size: var(--text-label);
-  font-weight: 600;
-}
-
-/* Whether a coin can be launched with it is a state, not a direction: the usual case quiet, the exception a step darker. */
-.open {
+.volume {
   color: var(--ink-3);
-  font-weight: 500;
 }
 
-.closed {
+/* The pager at the table's foot: the span on view and the way to the next. */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--sunken);
+}
+
+.pageCount {
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ink-2);
 }
 
-/* Nothing matches: the ring at size, one line and the way out. */
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: clamp(36px, 6vw, 56px) 24px;
-  text-align: center;
+.criteria {
+  margin: 20px 0 0;
+  max-width: 80ch;
+  font-size: var(--text-caption);
+  color: var(--ink-3);
+  text-wrap: pretty;
 }
 
-.ring {
-  margin-bottom: 4px;
-}
-
-.empty p {
-  margin: 0;
-  font-size: var(--text-body);
+.criteria strong {
   color: var(--ink-2);
 }
 
@@ -240,22 +263,25 @@
   .columns {
     display: none;
   }
+  .groupHead {
+    top: var(--header-h);
+  }
   .row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-areas:
       "asset asset"
-      "kind status"
-      "price coins"
-      "target target";
+      "kind kind"
+      "price liquidity"
+      "coins target";
     gap: 4px 12px;
     padding: 10px 14px;
     white-space: normal;
   }
-  .asset { grid-area: asset; }
+  .asset { grid-area: asset; padding: 0; }
   .kind { grid-area: kind; }
-  .status { grid-area: status; }
   .price { grid-area: price; text-align: left; }
-  .coins { grid-area: coins; }
+  .liquidity { grid-area: liquidity; text-align: left; }
+  .coins { grid-area: coins; text-align: left; }
   .target { grid-area: target; text-align: left; }
   .num::before {
     content: attr(data-label) " ";
@@ -273,8 +299,5 @@
   }
   .search {
     width: 100%;
-  }
-  .empty {
-    padding: 28px 18px;
   }
 }

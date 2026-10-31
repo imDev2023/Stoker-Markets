@@ -1,4 +1,4 @@
-// Checks every text role against every fill it can sit on, in every direction, mode and hue candidate, from the tokens
+// Checks every text role against every fill it can sit on, in every direction and mode, from the tokens
 // in globals.css: WCAG AA (4.5:1 for text, 3:1 for a glyph on a fill) and APCA (Lc 75 for body text, Lc 60 for the
 // smaller text people must read, Lc 15 for a hairline), the two rulers the research asks for (principles, section 7;
 // the dark theme needs the perceptual one). Also that the accent and the up colour sit at least 30 degrees of hue
@@ -10,8 +10,8 @@ import { readFileSync } from "node:fs";
 const css = readFileSync(new URL("../src/app/globals.css", import.meta.url), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
 
 /**
- * Every rule that sets custom properties, with where it applies: a direction (or every one), a mode, or the hue
- * candidate. Light blocks sit at the top level; dark ones under the media query (and again pinned by data-scheme).
+ * Every rule that sets custom properties, with where it applies: a direction (or every one) and a mode. Light blocks
+ * sit at the top level; dark ones under the media query (and again pinned by data-scheme).
  */
 function rules() {
   const out = [];
@@ -23,23 +23,20 @@ function rules() {
     if (!Object.keys(vars).length) continue;
     const dark = Boolean(m[1]) || /data-scheme="dark"/.test(selector);
     const theme = selector.match(/data-theme="(\w+)"/)?.[1] ?? null;
-    const hue = /data-hue="accent"/.test(selector);
-    out.push({ theme, dark, hue, vars });
+    out.push({ theme, dark, vars });
   }
   return out;
 }
 
 const THEMES = ["teal", "cobalt", "violet"];
 
-/** The resolved token set of one variant: the shared block, the direction's block, and the hue candidate's over them. */
-function variant(theme, dark, hue) {
+/** The resolved token set of one variant: the shared block and the direction's block over it. */
+function variant(theme, dark) {
   const vars = {};
   for (const r of rules()) {
     if (r.dark !== dark) continue;
-    if (r.hue) continue;
     if (r.theme === null || r.theme === theme) Object.assign(vars, r.vars);
   }
-  if (hue) for (const r of rules()) if (r.hue && r.dark === dark) Object.assign(vars, r.vars);
   // The on-pairs point at other roles; follow them.
   for (let pass = 0; pass < 4; pass++) {
     for (const [k, v] of Object.entries(vars)) {
@@ -125,12 +122,11 @@ const LINES = [["line", ["surface", "bg", "sunken"], 15]];
 let failed = 0;
 let warned = 0;
 const variants = [];
-for (const theme of THEMES) for (const dark of [false, true]) variants.push([theme, dark, false]);
-for (const dark of [false, true]) variants.push(["teal", dark, true]);
+for (const theme of THEMES) for (const dark of [false, true]) variants.push([theme, dark]);
 
-for (const [theme, dark, hue] of variants) {
-  const vars = variant(theme, dark, hue);
-  const key = `${theme} ${dark ? "dark" : "light"}${hue ? " (hue: accent)" : ""}`;
+for (const [theme, dark] of variants) {
+  const vars = variant(theme, dark);
+  const key = `${theme} ${dark ? "dark" : "light"}`;
   const lines = [];
   const colour = (name, ground) => {
     const c = rgba(vars[name] ?? "");

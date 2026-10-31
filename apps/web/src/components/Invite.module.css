@@ -1,0 +1,30 @@
+.invite {
+  padding-bottom: clamp(40px, 5vw, 64px);
+}
+
+/* The invitation on the canvas: the ring, a line, a sentence and the action, centred. */
+.band {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: clamp(16px, 3vw, 32px) 0 0;
+  text-align: center;
+}
+
+.ring {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.title {
+  margin: 0;
+  max-width: 24ch;
+}
+
+.text {
+  margin: 0 0 12px;
+  max-width: 46ch;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}

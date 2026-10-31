@@ -1,0 +1,20 @@
+.form {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+}
+
+.field {
+  height: 44px;
+  min-height: 0;
+  color: var(--ink-3);
+}
+
+.field input {
+  height: 100%;
+  font-size: var(--text-ui);
+}
+
+.field input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}

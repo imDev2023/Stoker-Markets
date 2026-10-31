@@ -3,30 +3,48 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { LaunchQuote, QuoteAsset } from "@launchpad/contract";
-import { assetKind, assetsSearch, ASSETS_SEARCH_MAX, DEFAULT_ASSETS, filterAssets, formatUsd, graduationInWords, groupAssets, type AssetsQuery } from "@/lib/assets";
-import { inChip, PAIRED_CHIPS, type PairedChip } from "@/lib/board";
+import {
+  assetKind, assetsSearch, ASSETS_SEARCH_MAX, DEFAULT_ASSETS, filterAssets, formatCompactUsd, formatUsd, graduationInWords, groupAssets, pageOfAssets,
+  type AssetsQuery,
+} from "@/lib/assets";
+import { CATEGORY_LABELS, inChip, PAIRED_CHIPS, type PairedChip } from "@/lib/board";
 import { quoteTicker } from "@/lib/format";
-import { Ring } from "./Mark";
+import { EmptyState } from "./EmptyState";
 import { QuoteLogo } from "./QuoteLogo";
 import styles from "./AssetDirectory.module.css";
 
-const COLUMNS = ["Asset", "Kind", "Price", "A coin graduates at", "Coins", ""] as const;
+const COLUMNS = [
+  { name: "Asset" },
+  { name: "Kind" },
+  { name: "Price", numeric: true },
+  { name: "Liquidity", numeric: true },
+  { name: "Coins · 24h volume", numeric: true },
+  { name: "A coin graduates at", numeric: true },
+] as const;
 
 /** The name, unless it only repeats the ticker (common for memecoins). */
 const distinctName = (q: QuoteAsset) => (q.name && q.name.toLowerCase() !== q.symbol?.toLowerCase() ? q.name : null);
 
 /**
- * Every Quote Asset the registry quotes, in the terminal look: the kinds as chips with their counts, a search, and one
- * row an asset, grouped by kind until a chip or a search narrows the list. The query lives in the page's URL, so a
- * group can be linked to. Nothing here is a warning: what an asset's issuer can do is on the asset's own page.
+ * Every Quote Asset the registry quotes, in the terminal look (#135): the kinds as chips with their counts, a search,
+ * and one row an asset, grouped by kind under headings that stay put as the list scrolls, fifty rows a page. Names
+ * are in the sans and only the figures in mono; a tag marks the exception (an asset that can't be launched against),
+ * never the rule. The query lives in the page's URL, so a group or a page can be linked to. Nothing here is a
+ * warning: what an asset's issuer can do is on the asset's own page.
  */
 export function AssetDirectory({ quotes, inUse, initialQuery }: { quotes: QuoteAsset[]; inUse: LaunchQuote[]; initialQuery: AssetsQuery }) {
   const [query, setQuery] = useState(initialQuery);
-  const coins = useMemo(() => new Map(inUse.map((q) => [q.mint, q.launches])), [inUse]);
+  const coins = useMemo(() => new Map(inUse.map((q) => [q.mint, q])), [inUse]);
   const counts = useMemo(() => new Map(PAIRED_CHIPS.map((c) => [c, quotes.filter((q) => inChip(q, c)).length])), [quotes]);
   const shown = useMemo(() => filterAssets(quotes, query), [quotes, query]);
   // Grouped only when the whole registry is on view; a chip or a search is one list, closest match first.
-  const groups = useMemo(() => (query.category || query.issuer || query.q ? null : groupAssets(shown)), [shown, query]);
+  const grouped = !!(query.category || query.issuer || query.q);
+  const paged = useMemo(() => {
+    const groups = grouped
+      ? [{ category: "community" as const, label: "Assets", note: "", assets: shown }]
+      : groupAssets(shown);
+    return pageOfAssets(groups, query.page);
+  }, [shown, grouped, query.page]);
   const launchable = quotes.filter((q) => q.launchable).length;
   const chosen = PAIRED_CHIPS.find((c) => c.category === query.category && c.issuer === query.issuer) ?? PAIRED_CHIPS[0]!;
 
@@ -35,13 +53,20 @@ export function AssetDirectory({ quotes, inUse, initialQuery }: { quotes: QuoteA
     window.history.replaceState(null, "", `${window.location.pathname}${assetsSearch(next)}`);
   }
 
-  const chip = (c: PairedChip) => change({ ...query, category: c.category, issuer: c.issuer });
+  // A new filter starts at the first page; a page turn scrolls back to the top of the list.
+  const chip = (c: PairedChip) => change({ ...query, category: c.category, issuer: c.issuer, page: 1 });
+  function turn(page: number) {
+    change({ ...query, page });
+    document.getElementById("assets-title")?.scrollIntoView({ block: "start" });
+  }
 
   const rows = (assets: QuoteAsset[], label: string) => (
     <ul className={styles.rows} aria-label={label}>
       {assets.map((q) => {
         const target = graduationInWords(q);
-        const n = coins.get(q.mint) ?? 0;
+        const used = coins.get(q.mint);
+        const n = used?.launches ?? 0;
+        const volume = used?.volume24h.usd ?? 0;
         return (
           <li key={q.mint}>
             <Link href={`/assets/${q.mint}`} className={styles.row}>
@@ -49,14 +74,16 @@ export function AssetDirectory({ quotes, inUse, initialQuery }: { quotes: QuoteA
                 <QuoteLogo quote={q} size={22} />
                 <span className={styles.ticker}>{quoteTicker(q)}</span>
                 {distinctName(q) && <span className={styles.name}>{distinctName(q)}</span>}
+                {!q.launchable && <span className={`tag ${styles.closed}`} title={q.reason ?? undefined}>Not launchable</span>}
               </span>
               <span className={styles.kind}>{assetKind(q)}</span>
               <span className={`${styles.num} ${styles.price}`} data-label="Price">{q.price?.usd ? formatUsd(q.price.usd) : "no price"}</span>
-              <span className={`${styles.num} ${styles.target}`} data-label="Graduates at">{target ? target.amount : "-"}</span>
-              <span className={`${styles.num} ${styles.coins}`} data-label="Coins">{n.toLocaleString("en-US")}</span>
-              <span className={`${styles.status} ${q.launchable ? styles.open : styles.closed}`} title={q.reason ?? undefined}>
-                {q.launchable ? "Launchable" : "Not launchable"}
+              <span className={`${styles.num} ${styles.liquidity}`} data-label="Liquidity">{q.liquidityUsd === null ? "-" : formatCompactUsd(q.liquidityUsd)}</span>
+              <span className={`${styles.num} ${styles.coins}`} data-label="Coins">
+                {n.toLocaleString("en-US")}
+                {volume > 0 && <span className={styles.volume}> · {formatCompactUsd(volume)}</span>}
               </span>
+              <span className={`${styles.num} ${styles.target}`} data-label="Graduates at">{target ? target.amount : "-"}</span>
             </Link>
           </li>
         );
@@ -72,10 +99,7 @@ export function AssetDirectory({ quotes, inUse, initialQuery }: { quotes: QuoteA
           {quotes.length.toLocaleString("en-US")} assets, {launchable.toLocaleString("en-US")} launchable
         </span>
       </div>
-      <p className={styles.lead}>
-        Every asset a coin can be priced in: each one Raydium quotes, read from the chain every five minutes and grouped by what it is. Pick one to
-        see what is known about it and the coins paired with it.
-      </p>
+      <p className={styles.lead}>Every asset a coin can be priced in, as Raydium quotes it, read from the chain every five minutes and grouped by what it is.</p>
       <div className={styles.toolbar}>
         <label className={`input ${styles.search}`}>
           <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
@@ -90,7 +114,7 @@ export function AssetDirectory({ quotes, inUse, initialQuery }: { quotes: QuoteA
             aria-label="Search assets"
             autoComplete="off"
             spellCheck={false}
-            onChange={(e) => change({ ...query, q: e.target.value.trim().slice(0, ASSETS_SEARCH_MAX) })}
+            onChange={(e) => change({ ...query, q: e.target.value.trim().slice(0, ASSETS_SEARCH_MAX), page: 1 })}
           />
         </label>
         <div className={styles.chips} role="group" aria-label="Kind">
@@ -103,33 +127,45 @@ export function AssetDirectory({ quotes, inUse, initialQuery }: { quotes: QuoteA
       </div>
 
       {shown.length === 0 ? (
-        <div className={`card card-raised ${styles.empty}`}>
-          <Ring size={72} className={styles.ring} />
-          <p>{query.q ? `No asset matches "${query.q}".` : `No ${chosen.label.toLowerCase()} asset is quoted yet.`}</p>
-          <button type="button" className="button button-ghost" onClick={() => change(DEFAULT_ASSETS)}>Show every asset</button>
-        </div>
+        <EmptyState title="Nothing matches" action={<button type="button" className="button button-ghost" onClick={() => change(DEFAULT_ASSETS)}>Show every asset</button>}>
+          {query.q ? `No asset matches "${query.q}".` : `No ${chosen.label.toLowerCase()} asset is quoted yet.`}
+        </EmptyState>
       ) : (
         <div className={`card ${styles.table}`}>
           <div className={styles.columns} aria-hidden>
-            {COLUMNS.map((c, i) => (
-              <span key={i}>{c}</span>
+            {COLUMNS.map((c) => (
+              <span key={c.name} className={"numeric" in c ? styles.numeric : undefined}>{c.name}</span>
             ))}
           </div>
-          {groups
-            ? groups.map((g) => (
+          {grouped
+            ? rows(paged.shown[0]?.assets ?? [], "Assets")
+            : paged.shown.map((g) => (
                 <section key={g.category} className={styles.group} aria-labelledby={`group-${g.category}`}>
                   <div className={styles.groupHead}>
                     <h2 id={`group-${g.category}`} className={styles.groupTitle}>
-                      {g.label} <span className={styles.groupCount}>{g.assets.length.toLocaleString("en-US")}</span>
+                      {g.label} <span className={styles.groupCount}>{g.count.toLocaleString("en-US")}</span>
                     </h2>
                     <p className={styles.groupNote}>{g.note}</p>
                   </div>
-                  {rows(g.assets, `${g.label} assets`)}
+                  {rows(g.assets, `${CATEGORY_LABELS[g.category]} assets`)}
                 </section>
-              ))
-            : rows(shown, "Assets")}
+              ))}
+          {paged.pages > 1 && (
+            <nav className={styles.pager} aria-label="Pages of assets">
+              <button type="button" className="button button-ghost button-sm" disabled={paged.page <= 1} onClick={() => turn(paged.page - 1)}>Previous</button>
+              <span className={styles.pageCount}>
+                {paged.from.toLocaleString("en-US")}–{paged.to.toLocaleString("en-US")} of {paged.total.toLocaleString("en-US")}
+              </span>
+              <button type="button" className="button button-ghost button-sm" disabled={paged.page >= paged.pages} onClick={() => turn(paged.page + 1)}>Next</button>
+            </nav>
+          )}
         </div>
       )}
+      {/* How an asset gets here, for whoever looks for one that isn't: the rule, and whose it is. */}
+      <p className={styles.criteria}>
+        <strong>Not quoted yet?</strong> A coin can be paired with an asset once Raydium has created a LaunchLab GlobalConfig for it and the registry reads a
+        reliable price for it. Only Raydium creates one, so the request goes to Raydium; every asset it quotes appears here at the next refresh.
+      </p>
     </section>
   );
 }

@@ -1,14 +1,14 @@
 /*
-  The columns are set once on the board's list (`--cols` in Board.module.css), so the header line and every row agree.
-  A row is two lines of one shape: the lockup spans both, the pair above the name (small multiples: the eye reads only the differences).
+  The columns are set once on the table (`--cols` in CoinTable.module.css), so the header line and every row agree.
+  A row is 40px (#135: fifteen to twenty coins on a laptop): the pair above the name in the first cell, every figure
+  right-aligned in tabular mono under its name, a hairline between rows and a hover tint; the row is the link.
 */
 .row {
-  --row: 52px;
   display: grid;
   grid-template-columns: var(--cols);
   align-items: center;
-  gap: 0 14px;
-  min-height: var(--row);
+  gap: 0 12px;
+  min-height: 40px;
   padding: 0 12px;
   border-bottom: 1px solid var(--line);
   font-size: var(--text-caption);
@@ -19,7 +19,7 @@
 
 @media (hover: hover) {
   .row:hover {
-    background: var(--surface-2);
+    background: var(--hover);
   }
 }
 
@@ -33,23 +33,23 @@
   grid-template-columns: auto minmax(0, 1fr);
   grid-template-rows: auto auto;
   align-items: center;
-  gap: 1px 10px;
+  gap: 0 8px;
   min-width: 0;
-  padding: 6px 0;
+  padding: 4px 0;
 }
 
 /* The lockup: the coin's image with the Quote Asset's logo over its corner, so both halves of the pair are drawn. */
 .lockup {
   position: relative;
   grid-row: 1 / 3;
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
 }
 
 .image {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-control);
+  width: 24px;
+  height: 24px;
+  border-radius: calc(var(--radius-control) - 2px);
   object-fit: cover;
   background: var(--sunken);
 }
@@ -65,6 +65,10 @@
 }
 
 .pairBox {
+  /* A flex box, not a line box: the mark's fitted size varies by a subpixel between runs for the widest tickers, and
+     on a line it rounded the row a pixel taller now and then (the phone board, 2026-10-31); as a flex item its height
+     is its own minimum height alone. */
+  display: flex;
   min-width: 0;
   max-width: 100%;
 }
@@ -74,22 +78,57 @@
   min-width: 0;
   font-family: var(--font-body);
   font-size: var(--text-label);
-  line-height: 1.3;
+  line-height: 1.2;
   color: var(--ink-3);
   white-space: normal;
   overflow-wrap: anywhere;
 }
 
+/* A Reward Launch's tax beside its name: the one mode a coin has, said where the eye already is. */
+.tax {
+  margin-left: 6px;
+  color: var(--caution);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 /* The figures, the time and the progress are the row's mono; the name beside the pair is a word. */
 .num,
-.pct,
-.when {
+.pct {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums slashed-zero;
 }
 
 .num {
   text-align: right;
+}
+
+.none {
+  color: var(--ink-3);
+}
+
+/* A change travels with its sign and an arrow; the colours say the direction a second time. */
+.delta {
+  display: inline-flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 3px;
+}
+
+.arrow {
+  flex: none;
+}
+
+.up {
+  color: var(--up);
+}
+
+.down {
+  color: var(--down);
+}
+
+.flat {
+  color: var(--ink-2);
 }
 
 .curve {
@@ -123,47 +162,57 @@
 
 .graduated {
   color: var(--up);
+  font-weight: 500;
 }
 
 .graduating {
   color: var(--caution);
+  font-weight: 500;
 }
 
 .when {
   color: var(--ink-3);
-  text-align: right;
 }
 
-.mode {
-  color: var(--caution);
-  font-size: var(--text-label);
+/* The figures past the changes are grid cells at a desktop (the wrapper has no box) and one line on a phone. */
+.facts {
+  display: contents;
 }
 
-/* Narrow windows: the pair on its own line, then the figures labelled by their column name, so nothing scrolls sideways. */
+/*
+  Narrow windows: the pair on the left with the price and the day's change on the right, then one line of the other
+  figures, each named, so nothing scrolls sideways. The five-minute change is a desktop figure.
+*/
 @media (max-width: 760px) {
-  /* The price column is the widest: a curve price has up to nine leading zeros and four digits (0.0000000005925), which
-     an even third of a phone's width can't hold. */
   .row {
-    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 0.9fr);
+    grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
-      "coin coin coin"
-      "price mcap curve"
-      "vol when mode";
-    gap: 4px 12px;
-    padding: 10px 12px;
+      "coin price"
+      "coin delta24h"
+      "facts facts";
+    gap: 2px 12px;
+    padding: 8px 12px;
     white-space: normal;
   }
   .coin { grid-area: coin; padding: 0; }
-  .price { grid-area: price; text-align: left; overflow-wrap: anywhere; }
-  .track { width: 48px; }
-  .mcap { grid-area: mcap; text-align: left; }
-  .vol { grid-area: vol; text-align: left; }
-  .curve { grid-area: curve; }
-  /* The launch time reads on its own ("9h ago"); its label would wrap it onto a second line. */
-  .when { grid-area: when; text-align: left; }
-  .mode { grid-area: mode; }
+  .price { grid-area: price; overflow-wrap: anywhere; }
+  .delta24h { grid-area: delta24h; }
+  .delta5m { display: none; }
+  .facts {
+    grid-area: facts;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 14px;
+    margin-top: 2px;
+    font-size: var(--text-label);
+  }
+  .facts .num {
+    text-align: left;
+  }
   .num::before {
     content: attr(data-label) " ";
     color: var(--ink-3);
   }
+  .track { width: 44px; }
 }

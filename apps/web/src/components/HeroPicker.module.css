@@ -1,0 +1,158 @@
+/* Candidate F: the pair picker as the hero's visual, a raised card with the pair mark drawing itself at the top. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 480px;
+  padding: 20px;
+}
+
+.preview {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 0 4px;
+}
+
+/* The pair fits the box it is given (PairMark measures its parent), so it gets one of its own. */
+.pairBox {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 132px;
+  gap: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.label {
+  color: var(--ink-2);
+}
+
+.ticker {
+  font-family: var(--font-mono);
+}
+
+.pairs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.pairs legend {
+  padding: 0;
+  margin-bottom: 6px;
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* An asset as a chip-sized card: the logo, the ticker and its kind; the chosen one on the plate like a current section. */
+.choice {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 12px 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-standard), background-color var(--dur-fast) var(--ease-standard);
+}
+
+.choice:hover {
+  border-color: var(--ink-3);
+}
+
+.choice input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.choice:has(input:focus-visible) {
+  box-shadow: var(--ring);
+}
+
+.chosen {
+  background: var(--plate);
+  border-color: var(--accent);
+  color: var(--on-plate);
+}
+
+.choiceTicker {
+  font-weight: 600;
+  font-size: var(--text-ui);
+}
+
+.choiceKind {
+  font-size: var(--text-caption);
+  color: var(--ink-3);
+}
+
+.chosen .choiceKind {
+  color: inherit;
+  opacity: 0.8;
+}
+
+.none {
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--ink-2);
+}
+
+.search {
+  color: var(--ink-3);
+}
+
+.search input {
+  color: var(--ink);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.hint {
+  font-size: var(--text-caption);
+  color: var(--ink-3);
+}
+
+@media (max-width: 640px) {
+  .card {
+    max-width: none;
+    padding: 16px;
+  }
+  .fields {
+    grid-template-columns: minmax(0, 1fr) 112px;
+  }
+  .actions > .button,
+  .actions > :first-child {
+    width: 100%;
+  }
+}

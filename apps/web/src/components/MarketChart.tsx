@@ -1,0 +1,104 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import type { QuoteMarket } from "@launchpad/contract";
+import { marketChartUrl } from "@/lib/assets";
+import styles from "./MarketChart.module.css";
+
+/**
+ * TradingView's Advanced Chart as its web component (widget docs, 2026-10-28): one module script defines
+ * `<tv-advanced-chart>`, which embeds TradingView's hosted chart, reads its colours from the `--tv-widget-*` tokens on its
+ * ancestors (`MarketChart.module.css`) and its light or dark look from the page's `color-scheme`. The script answers 403
+ * outside a browser, and the UI suite serves it empty (`tests/ui/src/fixtures.ts`), so there the frame keeps its loading line.
+ * The widget draws TradingView's attribution under the chart itself, so the page adds none.
+ */
+const WIDGET_SCRIPT = "https://widgets.tradingview-widget.com/w/en/tv-advanced-chart.js";
+const ELEMENT = "tv-advanced-chart";
+
+// React 19 types the custom element through its JSX namespace; the namespace is the one form this augmentation takes.
+declare module "react" {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace JSX {
+    interface IntrinsicElements {
+      "tv-advanced-chart": React.HTMLAttributes<HTMLElement> & {
+        symbol: string;
+        interval?: string;
+        timezone?: string;
+        "chart-type"?: string;
+        "show-date-ranges"?: string;
+        "hide-snapshot-button"?: string;
+      };
+    }
+  }
+}
+
+type State = "loading" | "ready" | "failed";
+
+let widget: Promise<void> | undefined;
+
+/**
+ * Loads TradingView's module once per page. The promise settles when the element is defined and rejects when the script
+ * can't load; it lives outside any mount, since React's development double-mount would otherwise hand the script's error
+ * to a closure that has already been cleaned up and the frame would say "loading" for ever.
+ */
+function loadWidget(): Promise<void> {
+  if (customElements.get(ELEMENT)) return Promise.resolve();
+  widget ??= new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.type = "module";
+    script.src = WIDGET_SCRIPT;
+    script.onerror = () => reject(new Error(`${WIDGET_SCRIPT} did not load`));
+    document.head.append(script);
+    void customElements.whenDefined(ELEMENT).then(() => resolve());
+  });
+  return widget;
+}
+
+/** TradingView's chart of the market behind a Quote Asset (#124), in a frame that says so while the chart loads, or when it can't. */
+export function MarketChart({ market }: { market: QuoteMarket }) {
+  const [state, setState] = useState<State>("loading");
+
+  useEffect(() => {
+    let gone = false;
+    loadWidget().then(
+      () => {
+        if (!gone) setState("ready");
+      },
+      () => {
+        if (!gone) setState("failed");
+      },
+    );
+    return () => {
+      gone = true;
+    };
+  }, []);
+
+  return (
+    <div className={styles.frame} data-state={state}>
+      <tv-advanced-chart
+        className={styles.chart}
+        symbol={market.symbol}
+        interval="1D"
+        timezone="Etc/UTC"
+        chart-type="candles"
+        show-date-ranges=""
+        hide-snapshot-button=""
+      />
+      {state !== "ready" && (
+        <p className={styles.status} role="status">
+          {/* One child, so the frame centres the sentence and its link as a whole. */}
+          <span>
+            {state === "loading" ? (
+              `Loading TradingView's chart of ${market.ticker}`
+            ) : (
+              <>
+                TradingView&apos;s chart did not load here.{" "}
+                <a href={marketChartUrl(market)} target="_blank" rel="noreferrer">Open {market.ticker} on TradingView</a> instead.
+              </>
+            )}
+          </span>
+        </p>
+      )}
+    </div>
+  );
+}

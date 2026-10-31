@@ -26,6 +26,10 @@ _Avoid_: Bonding target, market cap target, fund raising
 The existing token a Launch is priced and traded against, such as SOL, a community token or a tokenized stock.
 _Avoid_: Pair token, base, collateral
 
+**Swap** (the section):
+Jupiter's swap widget on `/swap` (owner, 2026-10-30), any Solana token for any other on mainnet through Jupiter, with a referral fee to the platform; Stoker coins trade on their own pages, never here.
+_Avoid_: trade section (parked, #123), exchange
+
 **Copy Protection**:
 The window after a Launch, seven days unless the operator sets another, during which nobody else may launch a coin here with its name, ticker or image; afterwards anyone may, and a coin that does carries a label naming the original.
 _Avoid_: Anti-vamp (the feature's working name), ticker registry, blacklist
@@ -39,6 +43,11 @@ _Avoid_: Warning, verification status, badge
 What kind of asset a Quote Asset is, one of ten (SOL, stablecoin, tokenized stock, real-world asset, wrapped, DeFi, leveraged, collectible, meme, community), read from its mint's address and authorities and from Jupiter's token tags, never from its name (ADR 0010).
 The board filters by it and the assets page groups by it; a tokenized stock also carries its issuer.
 _Avoid_: Type, sector, class
+
+**Market behind an asset**:
+The market TradingView charts for a Quote Asset: the stock or fund a tokenized stock tracks, the coin a wrapped coin wraps, or the coin's own market (#124).
+Known from the issuer's ticker or the mint address, never from a name, and absent for an asset with no public market (a private company's token, a collectible); the asset's page charts it.
+_Avoid_: Underlying (on its own), real price, reference price
 
 **First Buy**:
 The Creator's own buy of their coin, made inside the launch transaction right after the curve is created, so no other trade can come before it.
@@ -133,6 +142,10 @@ _Avoid_: Dump, conversion, swap (on its own)
 **Reward Round**:
 One published cycle of collecting Reward Tax and paying Holder Rewards, with its snapshot, rules version and payout transactions public.
 _Avoid_: Distribution, epoch, cycle
+
+**Region gate**:
+The table that removes a feature from the visitors of one country once someone has asked for its removal there (owner, 2026-10-29: nothing is withheld upfront, every feature works everywhere and the disclosure does its job): the API reads the visitor's country from Cloudflare and answers which features are withheld there; the web hides a withheld feature. The table starts empty (ADR 0014).
+_Avoid_: Geoblock, ban
 
 ### Platform Token
 

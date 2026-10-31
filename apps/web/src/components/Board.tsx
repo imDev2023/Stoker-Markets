@@ -4,56 +4,84 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LaunchQuote, LaunchSummary } from "@launchpad/contract";
 import { listLaunchQuotes, listLaunches, type BoardQuery } from "@/lib/api";
-import { boardSearch, DEFAULT_BOARD, inChip, SEARCH_MAX, SORT_LABELS, SORT_ORDER, type PairedChip } from "@/lib/board";
-import { AssetRail } from "./AssetRail";
-import { COLUMNS, CoinRow } from "./CoinRow";
-import { Ring } from "./Mark";
+import { boardSearch, DEFAULT_BOARD, inChip, SEARCH_MAX, SORT_FACTS, SORT_LABELS, SORT_ORDER, type BoardLayout, type PairedChip } from "@/lib/board";
+import { timeAgo } from "@/lib/format";
+import { SEARCH_HASH } from "@/lib/search";
+import { AssetBar } from "./AssetBar";
+import { CoinTable } from "./CoinTable";
+import { EmptyState } from "./EmptyState";
 import styles from "./Board.module.css";
 
 const REFRESH_MS = 4_000;
 /** How long after the last keystroke the search is sent. */
 const SEARCH_DEBOUNCE_MS = 250;
+/** How long the feed may go without an answer before the status line says it has paused. */
+const PAUSED_AFTER_MS = 15_000;
 
 const sameQuery = (a: BoardQuery, b: BoardQuery) =>
   a.sort === b.sort && a.category === b.category && a.issuer === b.issuer && a.quote === b.quote && a.q === b.q;
 
 /**
  * The token board: every coin as the pair it trades as, searched, sorted and filtered by what it is paired with, which
- * the asset rail beside it does (docs/design/layout.md: the pair is the unit). The query lives in the page's URL, so a
+ * the asset bar above the table does (owner, 2026-10-31, a sliding row after Pump.fun's; a rail beside the board from
+ * the layout pick of 2026-10-11 until then; docs/design/layout.md: the pair is the unit). The query lives in the page's URL, so a
  * sorted or filtered board can be shared and survives a reload. The controls are there before the first coin too, so
  * a visitor to a new platform sees what the board does. `renderedAt` is the server's clock at render, so "launched Xs
- * ago" hydrates to the same text the server sent.
+ * ago" hydrates to the same text the server sent. The status line names the list as the fact it is and says when it
+ * last updated, and says so when the feed has stopped answering (#135). `layout` is the page's shape: scrolling, or
+ * one fixed viewport with the rows scrolling inside the table (`?board=fixed`, a candidate until the owner picks).
  */
 export function Board({
-  initial, initialQuery, quotes: initialQuotes, renderedAt,
-}: { initial: LaunchSummary[]; initialQuery: BoardQuery; quotes: LaunchQuote[]; renderedAt: number }) {
+  initial, initialMore, initialQuery, quotes: initialQuotes, renderedAt, layout = "scroll",
+}: { initial: LaunchSummary[]; initialMore: boolean; initialQuery: BoardQuery; quotes: LaunchQuote[]; renderedAt: number; layout?: BoardLayout }) {
   const [launches, setLaunches] = useState(initial);
+  const [more, setMore] = useState(initialMore);
   const [query, setQuery] = useState(initialQuery);
   const [shown, setShown] = useState(initialQuery);
   const [quotes, setQuotes] = useState(initialQuotes);
   const [now, setNow] = useState(renderedAt);
+  // The clock behind the status line's "updated 4s ago" and the last answer that counted; separate from `now`, which
+  // the rows read, so a tick never re-renders the table.
+  const [tick, setTick] = useState(renderedAt);
+  const [updatedAt, setUpdatedAt] = useState(renderedAt);
   const [typed, setTyped] = useState(initialQuery.q);
   const latest = useRef(initialQuery);
   const debounce = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const field = useRef<HTMLInputElement>(null);
+
+  // Sent here by "/" or ⌘K from another page (SearchShortcut): the field takes focus and the hash goes.
+  useEffect(() => {
+    if (window.location.hash !== SEARCH_HASH) return;
+    field.current?.focus();
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+  }, []);
 
   const load = useCallback(async (q: BoardQuery) => {
     try {
-      const [{ launches: next }, { quotes: inUse }] = await Promise.all([listLaunches(q), listLaunchQuotes()]);
+      const [{ launches: next, nextOffset }, { quotes: inUse }] = await Promise.all([listLaunches(q), listLaunchQuotes()]);
       // A slow answer for a query the visitor has since changed is dropped.
       if (!sameQuery(q, latest.current)) return;
       setLaunches(next);
+      setMore(nextOffset !== null);
       setShown(q);
       setQuotes(inUse);
+      setUpdatedAt(Date.now());
     } catch {
-      // keep showing the last good list; the next tick retries
+      // keep showing the last good list; the next tick retries, and the status line says how old the list is
     }
     setNow(Date.now());
   }, []);
 
   useEffect(() => {
     setNow(Date.now());
+    setTick(Date.now());
+    setUpdatedAt(Date.now());
     const id = setInterval(() => void load(latest.current), REFRESH_MS);
-    return () => clearInterval(id);
+    const clock = setInterval(() => setTick(Date.now()), 1_000);
+    return () => {
+      clearInterval(id);
+      clearInterval(clock);
+    };
   }, [load]);
 
   function change(next: BoardQuery) {
@@ -87,45 +115,40 @@ export function Board({
   const loading = !sameQuery(query, shown);
   // A sort is not a filter: with nothing launched at all, the invitation shows whatever the sort in the URL.
   const nothingLaunched = launches.length === 0 && !shown.category && !shown.issuer && !shown.quote && !shown.q;
+  const paused = tick - updatedAt > PAUSED_AFTER_MS;
+  const count = launches.length;
+  // "60 coins by market cap", "The first 60 coins by 24h volume" when more wait past the page, "No coins yet" before any.
+  const fact = count === 0 ? "No coins yet" : `${more ? `The first ${count}` : count} ${count === 1 ? "coin" : "coins"} ${SORT_FACTS[shown.sort]}`;
 
   const body = nothingLaunched ? (
-    <div className={`card card-raised ${styles.empty}`}>
-      <Ring size={80} className={styles.ring} />
-      <p>No coins yet. The first one could be yours.</p>
-      <Link href="/launch" className="button button-primary">Stoke a coin</Link>
-    </div>
+    <EmptyState title="Be the first to stoke a coin" action={<Link href="/launch" className="button button-primary">Stoke a coin</Link>}>
+      Nothing has launched yet. Pair a coin with any asset Raydium quotes and open the board.
+    </EmptyState>
   ) : launches.length === 0 ? (
-    <div className={`card ${styles.empty}`} aria-busy={loading}>
-      <p>{shown.q ? `No coins match "${shown.q}".` : "No coins match these filters."}</p>
-      <button type="button" className="button button-ghost" onClick={reset}>
-        Show all coins
-      </button>
-    </div>
+    <EmptyState
+      title="Nothing matches"
+      busy={loading}
+      action={<button type="button" className="button button-ghost" onClick={reset}>Show all coins</button>}
+    >
+      {shown.q ? `No coins match "${shown.q}".` : "No coins match these filters."}
+    </EmptyState>
   ) : (
-    <div className={`card ${styles.table}`}>
-      {/* The column names once, above the rows; each row names its own figures where the window is too narrow for columns. */}
-      <div className={styles.columns} aria-hidden>
-        {COLUMNS.map((c) => (
-          <span key={c}>{c}</span>
-        ))}
-      </div>
-      <ul className={styles.rows} aria-busy={loading} aria-label="Coins">
-        {launches.map((l) => (
-          <li key={l.mint}>
-            <CoinRow launch={l} now={now} />
-          </li>
-        ))}
-      </ul>
-    </div>
+    <CoinTable launches={launches} now={now} busy={loading} className={styles.table} />
   );
 
   return (
-    <section className={`shell grid ${styles.section}`} aria-labelledby="board-title">
-      <AssetRail className="col-3" quotes={quotes} launches={launches} query={query} onKind={chooseKind} onAsset={chooseAsset} />
-      <div className={`col-9 ${styles.main}`}>
+    <section className={`shell grid ${styles.section} ${layout === "fixed" ? styles.fixed : ""}`} aria-labelledby="board-title" data-board={layout}>
+      <div className={`col-12 ${styles.main}`}>
         <div className={styles.head}>
           <h2 id="board-title" className={`t-h2 ${styles.title}`}>Coins</h2>
-          <span className={styles.live}>Updates every few seconds</span>
+          {/* The list named as the fact it is, and how fresh: the feed polls every few seconds, and says so when it stops. */}
+          <p className={`${styles.status} ${paused ? styles.paused : ""}`} role="status" data-updated>
+            {paused ? (
+              <>Feed paused, last update <time dateTime={new Date(updatedAt).toISOString()}>{timeAgo(new Date(updatedAt).toISOString(), tick)}</time>. Retrying.</>
+            ) : (
+              <>{fact}, updated <time dateTime={new Date(updatedAt).toISOString()}>{timeAgo(new Date(updatedAt).toISOString(), tick)}</time></>
+            )}
+          </p>
         </div>
         <div className={styles.toolbar}>
           <label className={`input ${styles.search}`}>
@@ -134,6 +157,8 @@ export function Board({
               <path d="m13 13 4.5 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
             <input
+              ref={field}
+              data-site-search=""
               type="search"
               value={typed}
               maxLength={SEARCH_MAX}
@@ -155,6 +180,7 @@ export function Board({
             </div>
           </div>
         </div>
+        <AssetBar quotes={quotes} query={query} onKind={chooseKind} onAsset={chooseAsset} />
         {body}
       </div>
     </section>

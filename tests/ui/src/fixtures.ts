@@ -237,10 +237,18 @@ export async function payAirdropViaApi(creator: Keypair, mint: string) {
 export async function expectNoHorizontalOverflow(page: Page) {
   const overflow = await page.evaluate(() => {
     const width = document.documentElement.clientWidth;
+    // Inside a box that scrolls sideways by design (`data-scrolls`, the landing's trending row on a phone) content past
+    // the edge is reached by scrolling it, not an overflow; the box itself must still fit, and the page never scrolls.
+    const scrolls = (el: Element) => {
+      const box = el.parentElement?.closest("[data-scrolls]");
+      if (!box) return false;
+      const r = box.getBoundingClientRect();
+      return getComputedStyle(box).overflowX !== "visible" && r.right <= width + 0.5 && r.left >= -0.5;
+    };
     const offenders = [...document.querySelectorAll("body *")]
       .filter((el) => {
         const r = el.getBoundingClientRect();
-        return r.width > 0 && (r.right > width + 0.5 || r.left < -0.5) && !el.closest(".visually-hidden, dialog:not([open])");
+        return r.width > 0 && (r.right > width + 0.5 || r.left < -0.5) && !el.closest(".visually-hidden, dialog:not([open])") && !scrolls(el);
       })
       .map((el) => `${el.tagName.toLowerCase()}.${[...el.classList].join(".")}`);
     return { scroll: document.documentElement.scrollWidth - width, offenders };
@@ -288,6 +296,8 @@ export const test = base.extend<{
   /** URLs a test expects to answer with an error status, which the browser logs to the console. */
   expectedHttpErrors: RegExp[];
   browserErrors: void;
+  /** TradingView's widget script, served empty: the asset page's market chart never loads live data into a baseline. */
+  thirdParty: void;
 }>({
   // eslint-disable-next-line no-empty-pattern
   stack: async ({}, use) => use(stackEnv()),
@@ -295,8 +305,21 @@ export const test = base.extend<{
   wallet: async ({ page }, use) => use(await installTestWallet(page, await fundedKeypair())),
   // eslint-disable-next-line no-empty-pattern
   expectedHttpErrors: async ({}, use) => use([]),
+  thirdParty: [
+    async ({ page }, use) => {
+      // The asset page embeds TradingView's chart of the market behind the asset (`MarketChart`), a third-party script
+      // with live data. Served an empty module, the web component is never defined, the frame keeps its loading line,
+      // and the console stays quiet (an aborted request would log a failed load).
+      await page.route(/^https:\/\/[a-z.]*tradingview(-widget)?\.com\//, (route) => route.fulfill({ status: 200, contentType: "text/javascript", body: "" }));
+      await use();
+    },
+    { auto: true },
+  ],
   browserErrors: [
     async ({ page, expectedHttpErrors }, use) => {
+      // The landing's swap candidate (`?hero=swap`, #133) loads Jupiter Plugin's script, a third party that would swap on
+      // mainnet from the browser: the suite serves it empty, so the frame shows its fallback and no shot carries a live swap.
+      await page.route(/^https:\/\/plugin\.jup\.ag\//, (route) => route.fulfill({ status: 200, contentType: "text/javascript", body: "" }));
       const errors: string[] = [];
       // `next dev` only: when `notFound()` interrupts a server component, React's development performance tracks
       // measure it with a start time that was never set (vercel/next.js#86060, open). Production builds have no tracks.

@@ -45,10 +45,18 @@ export const SECTIONS: readonly Section[] = [
         ),
       },
       {
+        endpoint: "GET /region",
+        text: (
+          <>
+            The region gate: the visitor&apos;s <C>country</C> as the edge read it (null when it could not) and the features <C>withheld</C> there, from a table the operator keeps per feature; empty until a feature is withheld somewhere. The answer is one visitor&apos;s own and never cached, so ask it from the browser, not a server.
+          </>
+        ),
+      },
+      {
         endpoint: ["GET /quotes", "GET /quotes/:mint"],
         text: (
           <>
-            The Quote Registry: every Quote Asset with its <C>category</C> and, for a tokenized stock, its <C>issuer</C> (from the mint&apos;s address and authorities and the token list&apos;s tags, never a name), its price, Graduation Target, whether it can be launched against, whether a referral share fee applies on it, its <C>liquidityUsd</C> from the token list (null when the list doesn&apos;t know the mint; SOL comes first, then what can be launched against, the deepest markets first), and its Quote Risk Labels (<C>labels</C>: <C>kind</C>, <C>severity</C>, <C>title</C>, <C>detail</C>, <C>source</C>; null until the Quote Registry refresh has checked the mint, an empty list when there is nothing to flag). Labels come from the mint&apos;s authorities and Token-2022 extensions and from the token list; they inform and never block.
+            The Quote Registry: every Quote Asset with its <C>category</C> and, for a tokenized stock, its <C>issuer</C> (from the mint&apos;s address and authorities and the token list&apos;s tags, never a name), its price, Graduation Target, whether it can be launched against, whether a referral share fee applies on it, its <C>liquidityUsd</C> from the token list (null when the list doesn&apos;t know the mint; SOL comes first, then what can be launched against, the deepest markets first), and its Quote Risk Labels (<C>labels</C>: <C>kind</C>, <C>severity</C>, <C>title</C>, <C>detail</C>, <C>source</C>; null until the Quote Registry refresh has checked the mint, an empty list when there is nothing to flag). Labels come from the mint&apos;s authorities and Token-2022 extensions and from the token list; they inform and never block. Its <C>market</C> is the market behind it as TradingView names it (<C>symbol</C>, <C>venue</C>, <C>ticker</C>: the stock or fund a tokenized stock tracks, from its issuer and ticker, or a coin&apos;s own market, from its mint; null when none is known), which the asset&apos;s page charts.
           </>
         ),
       },
@@ -60,8 +68,16 @@ export const SECTIONS: readonly Section[] = [
           </>
         ),
       },
-      { endpoint: "GET /launches/quotes", text: <>The Quote Assets that have Launches, for filters; each with its <C>category</C> and, for a tokenized stock, its <C>issuer</C>.</> },
-      { endpoint: "GET /launches/:mint", text: <>One Launch: curve progress, Graduation, Reward Tax (with its <C>payout</C> asset, <C>coin</C> or <C>quote</C>), market, Copy Protection (<C>protection.until</C>, and <C>copyOf</C> when the coin took an earlier coin&apos;s name, ticker or image).</> },
+      { endpoint: "GET /launches/quotes", text: <>The Quote Assets that have Launches, for filters; each with its <C>category</C>, for a tokenized stock its <C>issuer</C>, how many <C>launches</C> it has and their <C>volume24h</C>.</> },
+      {
+        endpoint: "GET /launches/:mint",
+        text: (
+          <>
+            One Launch: curve progress, Graduation, Reward Tax (with its <C>payout</C> asset, <C>coin</C> or <C>quote</C>), market (<C>price</C>, <C>marketCap</C>, <C>volume24h</C>, <C>change24h</C> and <C>change5m</C>, the price change over the day and over five minutes as fractions, null until the first trade, and <C>holders</C>, the wallets whose indexed buys exceed their sells, a floor on the chain&apos;s count), Copy Protection (<C>protection.until</C>, and <C>copyOf</C> when the coin took an earlier coin&apos;s name, ticker or image).
+          </>
+        ),
+      },
+      { endpoint: "GET /stats", text: <>The platform&apos;s figures: <C>since</C> (when the first coin launched), <C>launches</C>, <C>graduated</C>, and <C>volume24h</C> across every coin in SOL and USD at the Quote Registry&apos;s latest prices.</> },
       {
         endpoint: ["GET /launches/:mint/trades", "GET /launches/:mint/candles?interval=", "GET /launches/:mint/holders"],
         text: <>Indexed trades (with any referral fee paid), price candles, and the top holders read from the chain.</>,

@@ -13,6 +13,22 @@ time {
   overflow: hidden;
 }
 
+/* The asset page's "priced 2m ago" sits in a flex item sized by its content, so there a time's 100% is its own text's width
+   ("2m ago" against "12m ago" moved the box by 4px between runs); a fixed box keeps the mask the same size every run. */
+[data-priced] time {
+  width: 9ch;
+}
+
+/* The board's "updated 4s ago" sits in a sentence too; a fixed box keeps the mask the same width run to run. */
+[data-updated] time {
+  width: 7ch;
+}
+
+/* The landing's since date sits inside a sentence ("since Oct 29, 2026."), so its box is the date's width, not the line's. */
+[data-since] time {
+  width: 13ch;
+}
+
 /* The latest candle's prices depend on whether the seed trades straddled a minute, so they are masked; a fixed box keeps
    the mask the same size every run. */
 dl[aria-label$="candle"] .mono {
@@ -20,4 +36,16 @@ dl[aria-label$="candle"] .mono {
   width: 7ch;
   white-space: nowrap;
   overflow: hidden;
+}
+
+/* The phone's tab bar is fixed to the window's foot, which a full-page capture paints in the middle of the page over
+   whatever sits there (a coin page's "You pay" field, 2026-10-31), and an element shot of a tall panel under it. For a
+   shot it sits at the page's foot, in the room the body keeps for it, as a reader scrolled to the end sees it; a
+   viewport shot of a page taller than the window therefore shows no tab bar. */
+body {
+  position: relative;
+}
+
+nav[aria-label="Sections"] {
+  position: absolute !important;
 }

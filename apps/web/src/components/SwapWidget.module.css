@@ -1,0 +1,54 @@
+/* Candidate H: Jupiter's swap as the hero's visual, in a frame of our own material at the trade panel's width. */
+.swap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 440px;
+}
+
+.frame {
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  /* The tile is dark in both schemes, as the mark's is: the Plugin's own text is white in places. */
+  background: var(--tile);
+  color: #eaf3f5;
+  box-shadow: var(--highlight), var(--shadow-raised);
+  overflow: hidden;
+}
+
+.target {
+  width: 100%;
+}
+
+/* The one line while the Plugin loads, or when it can't, centred in the frame. */
+.status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 24px;
+  text-align: center;
+  font-size: var(--text-ui);
+  color: inherit;
+}
+
+.status a {
+  color: #2fd3c0;
+}
+
+.note {
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--ink-3);
+}
+
+@media (max-width: 640px) {
+  .swap {
+    max-width: none;
+  }
+}

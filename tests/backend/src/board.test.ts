@@ -3,7 +3,7 @@ import { Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction, sendAndConfirmTransa
 import { createAssociatedTokenAccountIdempotentInstruction, createTransferInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { cpmmPdas, curvePrice, launchlabPdas, loadCurve, loadPool, programsFor, WSOL_MINT } from "@launchpad/chain";
 import {
-  HolderList, LaunchList, LaunchQuoteList, LaunchSummary, PreparedTrade, TradeQuote, type LaunchListQuery, type TradeSide,
+  HolderList, LaunchList, LaunchQuoteList, LaunchSummary, PlatformStats, PreparedTrade, TradeQuote, type LaunchListQuery, type TradeSide,
 } from "@launchpad/contract";
 import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
 import { connection, deliverWebhook, env, fundedWallet, launch, listQuotes, signAndSend } from "./client";
@@ -117,6 +117,11 @@ describe("a new Launch's market", () => {
     expect(l.market.marketCap!.sol).toBeCloseTo(onChain * COIN_SUPPLY_WHOLE, 6);
     expect(l.market.marketCap!.usd).toBeCloseTo(onChain * COIN_SUPPLY_WHOLE * 150, 4);
     expect(l.market.volume24h).toEqual({ raw: "0", quote: 0, sol: 0, usd: 0 });
+    // Nothing has traded, so there is no change to speak of yet: not 0, which would say the price held.
+    expect(l.market.change24h).toBeNull();
+    expect(l.market.change5m).toBeNull();
+    // Nobody has bought, so by the trades nobody holds it.
+    expect(l.market.holders).toBe(0);
     expect(l.market.lastTradeAt).toBeNull();
   });
 
@@ -124,11 +129,19 @@ describe("a new Launch's market", () => {
     const creator = await fundedWallet();
     const trader = await fundedWallet();
     const mint = await launchCoin(creator, "FOLW");
+    const start = (await quote(mint, "buy", SOL(0.2))).priceBefore;
     const { signature: buy } = await trade(trader, mint, "buy", SOL(0.2));
     await trade(trader, mint, "sell", 1_000_000n * 1_000_000n);
     const l = await detail(mint);
     const onChain = await chainPrice(l.pool);
     expect(l.market.price).toBeCloseTo(onChain, 15);
+    // A coin younger than a day measures its change from the curve's starting price, the price before its first trade.
+    expect(l.market.change24h).toBeCloseTo(l.market.price! / start - 1, 9);
+    expect(l.market.change24h).toBeGreaterThan(0);
+    // Both trades fall inside five minutes, so the short change measures from the same starting price.
+    expect(l.market.change5m).toBeCloseTo(l.market.change24h!, 9);
+    // The one trader bought more than they sold, so they hold; a seller of everything would not count.
+    expect(l.market.holders).toBe(1);
     expect(l.market.marketCap!.sol).toBeCloseTo(onChain * COIN_SUPPLY_WHOLE, 6);
     expect(l.market.lastTradeAt).not.toBeNull();
     const volume = l.market.volume24h;
@@ -138,6 +151,27 @@ describe("a new Launch's market", () => {
 
     await deliverWebhook([buy]);
     expect((await detail(mint)).market).toEqual(l.market);
+  });
+});
+
+describe("the platform's figures", () => {
+  const stats = async () => PlatformStats.parse(await (await fetch(`${env().apiUrl}/v1/stats`)).json());
+
+  it("count every launch here since the first, the graduations, and the day's volume across every coin in SOL and USD", async () => {
+    const before = await stats();
+    const creator = await fundedWallet();
+    const mint = await launchCoin(creator, "STAT");
+    await trade(await fundedWallet(), mint, "buy", SOL(0.25));
+    const after = await stats();
+    const coin = await detail(mint);
+    // Other files launch and trade on the same stack, so each figure may have grown by more than this coin alone.
+    expect(after.launches).toBeGreaterThanOrEqual(before.launches + 1);
+    expect(after.graduated).toBeGreaterThanOrEqual(before.graduated);
+    expect(after.since).not.toBeNull();
+    expect(new Date(after.since!).getTime()).toBeLessThanOrEqual(new Date(coin.createdAt).getTime());
+    if (before.since) expect(after.since).toBe(before.since);
+    expect(after.volume24h.sol! - (before.volume24h.sol ?? 0)).toBeGreaterThanOrEqual(coin.market.volume24h.sol! - 1e-9);
+    expect(after.volume24h.usd! - (before.volume24h.usd ?? 0)).toBeGreaterThanOrEqual(coin.market.volume24h.usd! - 1e-6);
   });
 });
 
@@ -283,7 +317,13 @@ describe("sorting and filtering the board", () => {
     expect(counts).toEqual([...counts].sort((a, b) => b - a));
     const usdc = quotes.find((q) => q.mint === LOCAL_QUOTES.USDC.toBase58())!;
     expect(usdc).toMatchObject({ symbol: "USDC", decimals: 6, category: "stablecoin" });
-    expect(usdc.launches).toBe((await board({ quote: usdc.mint, limit: 100 })).launches.length);
+    const paired = (await board({ quote: usdc.mint, limit: 100 })).launches;
+    expect(usdc.launches).toBe(paired.length);
+    // The day's volume across the coins paired with it, in the asset and at the registry's prices (USDC at 1 USD, SOL at 150).
+    const quoteVolume = paired.reduce((sum, l) => sum + l.market.volume24h.quote, 0);
+    expect(usdc.volume24h.quote).toBeCloseTo(quoteVolume, 6);
+    expect(usdc.volume24h.usd).toBeCloseTo(quoteVolume, 6);
+    expect(usdc.volume24h.sol).toBeCloseTo(quoteVolume / 150, 9);
     // Quote Assets nobody has launched against are not offered.
     expect(quotes.map((q) => q.mint)).not.toContain(LOCAL_QUOTES.BULLWHALE.toBase58());
   });

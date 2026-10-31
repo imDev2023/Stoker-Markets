@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getBurns, getPlatform } from "@/lib/api";
 import { explorerUrl, formatUnits, formatUtc, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import styles from "../rewards/page.module.css";
+import { EmptyState } from "@/components/EmptyState";
 
 export const metadata: Metadata = {
   title: "Burn and Flywheel",
@@ -69,7 +70,7 @@ export default async function BurnsPage() {
       <section className={`card ${styles.card}`} aria-labelledby="picks-title">
         <h2 id="picks-title" className={`t-h3 ${styles.cardTitle}`}>The Flywheel&apos;s next picks</h2>
         {burns.nextFlywheel.length === 0 ? (
-          <p className={styles.note}>No graduated coin yet.</p>
+          <EmptyState bare title="The Flywheel picks from graduated coins">No coin has graduated yet. The first to graduate is the first pick.</EmptyState>
         ) : (
           <ul className={styles.list}>
             {burns.nextFlywheel.map((p, i) => (
@@ -86,7 +87,7 @@ export default async function BurnsPage() {
       <section className={`card ${styles.card}`} aria-labelledby="events-title">
         <h2 id="events-title" className={`t-h3 ${styles.cardTitle}`}>Every buy and burn</h2>
         {burns.events.length === 0 ? (
-          <p className={styles.note}>Nothing burned yet: the first burn runs once revenue has collected.</p>
+          <EmptyState bare title="The first burn runs once revenue has collected">Nothing burned yet. Every buy and burn is listed here with its transaction.</EmptyState>
         ) : (
           <ul className={styles.list}>
             {burns.events.map((e) => (
