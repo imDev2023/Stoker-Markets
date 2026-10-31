@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAirdrop, getCandles, getCoinRewards, getHolders, getLaunch, getPlatform, getQuoteAsset, getTrust, listTrades } from "@/lib/api";
-import { explorerUrl, formatUtc, isSol, quoteTicker, shortAddress } from "@/lib/format";
+import { explorerUrl, formatUtc, isSol, quoteTicker } from "@/lib/format";
 import { AirdropCard } from "@/components/AirdropCard";
 import { CoinMarket } from "@/components/CoinMarket";
 import { CopyButton } from "@/components/CopyButton";
