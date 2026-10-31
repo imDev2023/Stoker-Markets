@@ -491,6 +491,12 @@ test("revenue page", async ({ page, stack }) => {
     await expect(entries.nth(i).getByRole("link").last()).toHaveAttribute("href", new RegExp(`/tx/${e.signature}`));
   await expect(page.locator("main img").first()).toHaveJSProperty("complete", true);
   // Addresses and times differ between runs, and the SOL swept so far wavers by a few lamports with the sweep's own costs
-  // (7.959784 one run, 7.959779 another); every other amount follows from the seed's fixed trades.
-  await snap(page, "revenue.png", (p) => [p.locator("time"), p.locator("a.mono"), p.locator('dl[aria-labelledby="swept-title"] dd')]);
+  // (7.959784 one run, 7.959779 another), in the summary and in the Ledger's sweep entries alike (the entry's amount
+  // flipped a proving run on 2026-10-31); every other amount follows from the seed's fixed trades.
+  await snap(page, "revenue.png", (p) => [
+    p.locator("time"),
+    p.locator("a.mono"),
+    p.locator('dl[aria-labelledby="swept-title"] dd'),
+    p.getByRole("region", { name: "Ledger" }).getByRole("listitem").filter({ hasText: "Swept to treasury" }).locator("span.mono"),
+  ]);
 });
