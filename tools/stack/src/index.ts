@@ -74,6 +74,11 @@ export type StackOptions = {
   graduationTargetSol?: number;
   /** Short, so a test can see a stuck Launch alerted without waiting minutes; production uses 300. */
   graduationAlertAfterSeconds?: number;
+  /**
+   * Bundle Radar's Snipe Window in slots after a launch's own; production uses 5 (about two seconds). The backend suite
+   * keeps it short enough to see a buy fall outside it; the UI suite makes it long enough to hold every seeded trade.
+   */
+  snipeWindowSlots?: number;
   web?: boolean;
 };
 
@@ -375,6 +380,7 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       COPY_PROTECTION_SECONDS: "45",
       // A test visits from any country by naming it in this header; Cloudflare's reading is what production uses.
       COUNTRY_HEADER: "x-test-country",
+      SNIPE_WINDOW_SLOTS: String(opts.snipeWindowSlots ?? 40),
       // Three top Launches, so a test can see one picked and one left out.
       FLYWHEEL_TOP_N: "3",
       // Tiny, so the Flywheel buys on the little revenue a test run makes.

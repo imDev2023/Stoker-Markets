@@ -74,7 +74,7 @@
   background: transparent;
 }
 
-/* One column: the columns dissolve so their cards can be reordered: progress and trading first, then the chart and the activity, the pair's other half last. */
+/* One column: the columns dissolve so their cards can be reordered: progress, trading and the trust figures first, then the chart and the activity, the pair's other half last. */
 @media (max-width: 900px) {
   .market {
     display: flex;
@@ -87,7 +87,8 @@
   }
   .progress { order: 1; }
   .trade { order: 2; }
-  .chart { order: 3; }
-  .tabs { order: 4; }
-  .aside { order: 5; }
+  .trust { order: 3; }
+  .chart { order: 4; }
+  .tabs { order: 5; }
+  .aside { order: 6; }
 }

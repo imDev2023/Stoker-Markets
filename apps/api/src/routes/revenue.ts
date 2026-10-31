@@ -14,6 +14,9 @@ import { toJobRun } from "../jobs";
 export const revenueRoutes = new Hono<AppEnv>();
 
 const WSOL = WSOL_MINT.toBase58();
+
+/** When the Ledger recorded an entry, as whole microseconds since the epoch: the cursor carries it, so it must round-trip exactly. */
+const RECORDED_MICROS = sql<string>`(extract(epoch from ${ledgerEntries.recordedAt}) * 1000000)::bigint`;
 const REVENUE_DAYS = 30;
 
 type StreamSums = { platform_fee?: bigint; pool_fee?: bigint; fee_key?: bigint };
@@ -86,19 +89,21 @@ revenueRoutes.get("/ledger", async (c) => {
   if (!q.success) return c.json({ error: "invalid ledger query", details: q.error.issues }, 400);
   const { limit, before, kind } = q.data;
   const db = c.get("db");
-  const [slot, signature, index] = before?.split(".") ?? [];
+  const [slot, recorded, signature, index] = before?.split(".") ?? [];
+  // Newest first: by slot, and within a slot by when the Ledger recorded the entry. Signatures are random, so on their
+  // own they would order the entries of one slot differently on every chain the same trades are made on.
   const rows = await db
-    .select({ e: ledgerEntries, symbol: launches.symbol, name: launches.name })
+    .select({ e: ledgerEntries, recorded: RECORDED_MICROS, symbol: launches.symbol, name: launches.name })
     .from(ledgerEntries)
     .leftJoin(launches, eq(launches.mint, ledgerEntries.launchMint))
     .where(sql`true
       ${kind ? sql`and ${ledgerEntries.kind} = ${kind}` : sql``}
-      ${before ? sql`and (${ledgerEntries.slot}, ${ledgerEntries.signature}, ${ledgerEntries.eventIndex}) < (${Number(slot)}, ${signature}, ${Number(index)})` : sql``}`)
-    .orderBy(desc(ledgerEntries.slot), desc(ledgerEntries.signature), desc(ledgerEntries.eventIndex))
+      ${before ? sql`and (${ledgerEntries.slot}, ${RECORDED_MICROS}, ${ledgerEntries.signature}, ${ledgerEntries.eventIndex}) < (${Number(slot)}, ${BigInt(recorded!)}, ${signature}, ${Number(index)})` : sql``}`)
+    .orderBy(desc(ledgerEntries.slot), desc(RECORDED_MICROS), desc(ledgerEntries.signature), desc(ledgerEntries.eventIndex))
     .limit(limit + 1);
   const page = rows.slice(0, limit);
   const asset = await revenueAssets(db, c.get("cfg").publicApiUrl, new Map(page.map((r) => [r.e.assetMint, r.e.assetDecimals])));
-  const last = page.at(-1)?.e;
+  const last = page.at(-1);
   const res: LedgerPage = {
     entries: page.map(({ e, symbol, name }) => ({
       signature: e.signature,
@@ -112,7 +117,7 @@ revenueRoutes.get("/ledger", async (c) => {
       slot: e.slot,
       time: e.blockTime.toISOString(),
     })),
-    next: rows.length > limit && last ? `${last.slot}.${last.signature}.${last.eventIndex}` : null,
+    next: rows.length > limit && last ? `${last.e.slot}.${last.recorded}.${last.e.signature}.${last.e.eventIndex}` : null,
   };
   return c.json(res);
 });
