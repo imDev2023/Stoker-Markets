@@ -72,6 +72,13 @@ test("an asset's page has its facts, the coins priced in it, further information
   const coins = page.getByRole("list", { name: "Coins paired with NVDAx" });
   await expect(coins.getByRole("link").filter({ hasText: "CHIPX" })).toContainText("Chip Pair");
 
+  // The market behind it (#124): TradingView's chart of the stock NVDAx tracks, its web component given the stock's symbol.
+  // The suite serves TradingView's script empty, so the frame stays on its loading line (the widget draws its own attribution).
+  const market = page.getByRole("region", { name: "NVDA on NASDAQ" });
+  await expect(market.getByText("What NVDAx tracks, as TradingView charts it.", { exact: false })).toBeVisible();
+  await expect(market.locator("tv-advanced-chart")).toHaveAttribute("symbol", "NASDAQ:NVDA");
+  await expect(market.getByRole("status")).toHaveText("Loading TradingView's chart of NVDA");
+
   // What its issuer can do and what the token list says, in full and in one place.
   const further = page.getByRole("region", { name: "Further information" });
   const labels = further.getByRole("list", { name: "NVDAx risk labels" }).getByRole("listitem");
@@ -92,6 +99,9 @@ test("an asset that can't be launched against says why in place of the launch bu
   await expect(page.getByRole("link", { name: /^Stoke a coin paired with/ })).toHaveCount(0);
   await expect(page.getByText("No reliable price for BULLWHALE yet, so its Graduation Target can't be set.")).toBeVisible();
   await expect(page.getByLabel("BULLWHALE facts")).toContainText("No reliable price");
+  // A pump.fun coin has no market TradingView charts, so the page has no chart card.
+  await expect(page.locator("tv-advanced-chart")).toHaveCount(0);
+  await expect(page.getByText("as TradingView charts it", { exact: false })).toHaveCount(0);
 
   const res = await page.goto("/assets/11111111111111111111111111111111");
   expect(res?.status()).toBe(404);
