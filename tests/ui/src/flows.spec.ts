@@ -63,10 +63,12 @@ test("a Creator launches a SOL-paired coin and finds it on the board and its coi
 
 test("a browser without the welcome's record meets the disclaimer before a first launch, and is not asked again", async ({ page, wallet }) => {
   await page.goto("/launch");
-  await forgetDisclaimer(page);
   await connectWallet(page);
   await fillForm(page, { name: "Not Yet", symbol: "NOPE" });
 
+  // Forgotten only now: the welcome reads the record when it hydrates, which can land after the load, and a record
+  // cleared before that opens the welcome over the page instead (which is what a visitor who cleared it would meet).
+  await forgetDisclaimer(page);
   await page.getByRole("button", { name: "Review launch" }).click();
   await expect(disclaimer(page)).toBeVisible();
   await disclaimer(page).getByRole("button", { name: "Cancel" }).click();
