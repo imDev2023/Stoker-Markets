@@ -6,8 +6,9 @@ import { useCallback, useEffect, useState } from "react";
 import type { AirdropStatus, PlatformInfo } from "@launchpad/contract";
 import { getAirdrop, prepareAirdrop, reportTransaction } from "@/lib/api";
 import { landedError } from "@/lib/transactions";
-import { COIN_DECIMALS, explorerUrl, formatUnits, shortAddress } from "@/lib/format";
+import { COIN_DECIMALS, explorerUrl, formatUnits } from "@/lib/format";
 import styles from "./AirdropCard.module.css";
+import { Address } from "./Address";
 
 type Step = { kind: "idle" } | { kind: "preparing" } | { kind: "signing"; count: number } | { kind: "sending"; count: number };
 
@@ -169,9 +170,7 @@ export function AirdropCard({ initial, symbol, platform }: { initial: AirdropSta
             {status.recipients.map((r) => (
               <tr key={r.wallet}>
                 <td>
-                  <a className="mono" href={explorerUrl("address", r.wallet, platform)} target="_blank" rel="noreferrer">
-                    {shortAddress(r.wallet)}
-                  </a>
+                  <Address value={r.wallet} platform={platform} />
                 </td>
                 <td className={`mono ${styles.num}`}>{formatUnits(r.amount, COIN_DECIMALS, COIN_DECIMALS)}</td>
                 <td className={styles.num}>

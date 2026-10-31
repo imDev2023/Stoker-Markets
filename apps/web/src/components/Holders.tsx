@@ -1,5 +1,6 @@
 import type { HolderList, HolderKind } from "@launchpad/contract";
-import { explorerUrl, shortAddress } from "@/lib/format";
+import { Address } from "./Address";
+import { ErrorState } from "./EmptyState";
 import styles from "./Holders.module.css";
 
 /** How many holders the card lists; the API returns up to 20. */
@@ -27,9 +28,11 @@ function creatorLine(h: HolderList) {
  * The coin's largest holders, read from the chain, and whether its Creator still holds. The curve (and after Graduation,
  * the Raydium pool) is named rather than linked: it holds the coins nobody has bought yet.
  */
-export function Holders({ holders, platform, headingHidden = false }: {
+export function Holders({ holders, platform, onRetry, headingHidden = false }: {
   holders: HolderList | null;
   platform: { cluster: string; rpcUrl: string };
+  /** Asks the chain again now, for the error state's button; the card retries on its own meanwhile. */
+  onRetry?: () => void;
   /** When a tab names the panel: the heading stays as the region's name, unseen. */
   headingHidden?: boolean;
 }) {
@@ -37,7 +40,9 @@ export function Holders({ holders, platform, headingHidden = false }: {
     <section className={`card ${styles.card}`} aria-labelledby="holders-title">
       <h2 id="holders-title" className={headingHidden ? "visually-hidden" : `t-h3 ${styles.title}`}>Top holders</h2>
       {holders === null ? (
-        <p className={styles.note}>Couldn&rsquo;t read the holders from the chain. Retrying.</p>
+        <ErrorState bare title="The holders could not be read" onRetry={onRetry}>
+          The chain did not answer. The list asks again on its own every half minute.
+        </ErrorState>
       ) : (
         <>
           <p className={`${styles.creator} ${holders.creator.status === "sold" ? styles.sold : ""}`}>{creatorLine(holders)}</p>
@@ -49,9 +54,7 @@ export function Holders({ holders, platform, headingHidden = false }: {
                   {LABELS[h.kind] ? (
                     <span className={styles.program}>{LABELS[h.kind]}</span>
                   ) : (
-                    <a className="mono" href={explorerUrl("address", h.owner, platform)} target="_blank" rel="noreferrer">
-                      {shortAddress(h.owner)}
-                    </a>
+                    <Address value={h.owner} platform={platform} />
                   )}
                   {BADGES[h.kind] && <span className={styles.badge}>{BADGES[h.kind]}</span>}
                 </span>

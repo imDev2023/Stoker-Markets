@@ -1,56 +1,43 @@
 import Link from "next/link";
-import type { PlatformInfo, QuoteAsset } from "@launchpad/contract";
-import { creatorEarnings } from "@/lib/fees";
-import { quoteTicker } from "@/lib/format";
-import { deepestQuotes, quoteKind } from "@/lib/landing";
+import type { LaunchSummary, PlatformInfo, QuoteAsset } from "@launchpad/contract";
+import { cycleQuotes, type HeroVariant } from "@/lib/landing";
 import { LAUNCH_LINK } from "@/lib/site";
-import { QuoteLogo } from "./QuoteLogo";
+import { HeroVisual } from "./HeroVisual";
+import { LandingSearch } from "./LandingSearch";
 import styles from "./Hero.module.css";
 
 /**
- * The landing's hero (owner, 2026-10-09; the look from docs/design/principles.md): the slogan at display size with its
- * emphasised phrase in the heat and the heat's glow behind it, the lede naming the assets and the creator's cut, the
- * two actions, and under them a strip of the deepest markets a coin can be priced in, with the count that makes the
- * claim a fact. Every figure is live: the count and the assets from the Quote Registry, the creator's cut from the chain.
+ * The landing's hero on the grid (#133, after the research's section 4): the slogan (owner, 2026-10-09) and one lede
+ * naming the mechanism in six columns, the filled action and a text link, and in the other six the product itself,
+ * one of the visuals the owner picks from (`variant`, src/lib/landing.ts). No glow, no dot grid: at most 70% of the viewport, so the
+ * next section is cut by the fold. The count is live from the Quote Registry, so the lede is a fact of this chain.
+ * Under the actions the site's search field (owner, 2026-10-31, B on "Stoker Search" over none and Trending's head): the
+ * first screen offers the three ways in, stoke, explore, find.
  */
-export function Hero({ quotes, platform }: { quotes: QuoteAsset[]; platform: PlatformInfo }) {
-  const launchable = quotes.filter((q) => q.launchable);
-  const deepest = deepestQuotes(launchable);
-  const earns = creatorEarnings(platform);
-  const count = launchable.length.toLocaleString("en-US");
+export function Hero({ quotes, launches, variant, platform }: { quotes: QuoteAsset[]; launches: LaunchSummary[]; variant: HeroVariant; platform: PlatformInfo }) {
+  const count = quotes.length.toLocaleString("en-US");
   return (
     <section className={`shell ${styles.hero}`} aria-labelledby="hero-title">
-      <div className={styles.copy}>
-        <h1 id="hero-title" className={`t-display ${styles.title}`}>
-          No one picks your pair. <em className={`heat-text ${styles.heat}`}>You do.</em>
-        </h1>
-        <p className={`t-lede ${styles.lede}`}>
-          Price it in SOL, a stablecoin or a tokenized stock, any of the {count} assets Raydium quotes. Creators earn{" "}
-          {earns.headline}, sent to their wallet, every payment on the public ledger.
-        </p>
-        <div className={styles.actions}>
-          <Link href={LAUNCH_LINK.href} className="button button-primary button-lg">{LAUNCH_LINK.label}</Link>
-          <Link href="/revenue" className="button button-ghost button-lg">See the ledger</Link>
+      <div className={`grid ${styles.grid}`}>
+        <div className={`col-6 ${styles.copy}`}>
+          <h1 id="hero-title" className={`t-display ${styles.title}`}>
+            No one picks your pair. <em className={`heat-text ${styles.heat}`}>You do.</em>
+          </h1>
+          <p className={`t-lede ${styles.lede}`}>
+            Launch a coin on Solana priced in SOL, a stablecoin, a tokenized stock or any of the {count} assets Raydium quotes.
+          </p>
+          <div className={styles.actions}>
+            <Link href={LAUNCH_LINK.href} className="button button-primary button-lg">{LAUNCH_LINK.label}</Link>
+            <Link href="/coins" className={`button button-text button-lg ${styles.explore}`}>
+              Explore coins <span aria-hidden className={styles.arrow}>→</span>
+            </Link>
+          </div>
+          <LandingSearch className={styles.search} />
+        </div>
+        <div className={`col-6 ${styles.visual}`}>
+          <HeroVisual variant={variant} launches={launches.slice(0, 5)} quotes={quotes} cycle={cycleQuotes(quotes)} platform={platform} />
         </div>
       </div>
-      <aside className={`card card-raised ${styles.strip}`} aria-labelledby="paired-title">
-        <div className={styles.stripCopy}>
-          <h2 id="paired-title" className={`t-h3 ${styles.stripTitle}`}>Priced in any of {count} assets</h2>
-          <p className={styles.stripNote}>
-            Every asset Raydium quotes, the deepest markets first: a coin trades in the asset its Creator chose, and nothing else.
-          </p>
-          <Link href="/assets" className={styles.all}>All {count} assets, grouped</Link>
-        </div>
-        <ul className={styles.assets} aria-label="The deepest markets">
-          {deepest.map((q) => (
-            <li key={q.mint} className={styles.asset}>
-              <QuoteLogo quote={q} size={34} />
-              <span className={styles.ticker}>{quoteTicker(q)}</span>
-              <span className={styles.kind}>{quoteKind(q)}</span>
-            </li>
-          ))}
-        </ul>
-      </aside>
     </section>
   );
 }

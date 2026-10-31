@@ -463,7 +463,7 @@ export function TradePanel({
               <div>
                 <dt>Price after</dt>
                 <dd>
-                  <Price value={shown.priceAfter} /> {quoteSymbol}{" "}
+                  <Price className="mono" value={shown.priceAfter} /> {quoteSymbol}{" "}
                   <span className={styles.move}>({moved >= 0 ? "+" : ""}{moved.toFixed(moved !== 0 && Math.abs(moved) < 0.1 ? 2 : 1)}%)</span>
                 </dd>
               </div>

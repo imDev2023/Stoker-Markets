@@ -1,0 +1,6 @@
+/* The widget at the trade panel's width, left on the grid like the page's text; the frame is its own card. */
+.widget {
+  display: flex;
+  justify-content: flex-start;
+  max-width: 440px;
+}

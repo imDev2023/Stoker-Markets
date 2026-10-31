@@ -4,6 +4,7 @@ import { useId, useMemo, useState } from "react";
 import type { QuoteAsset } from "@launchpad/contract";
 import { searchQuotes } from "@/lib/assets";
 import { CATEGORY_LABELS, inChip, ISSUER_LABELS, PAIRED_CHIPS, type PairedChip } from "@/lib/board";
+import { recommendedQuotes } from "@/lib/landing";
 import { formatAmount, quoteTicker } from "@/lib/format";
 import { QuoteLogo } from "./QuoteLogo";
 import styles from "./QuoteChooser.module.css";
@@ -73,12 +74,8 @@ export function QuoteChooser({ quotes, value, query, onChange }: { quotes: Quote
   const matches = useMemo(() => searchQuotes(quotes.filter((q) => inChip(q, chip)), query), [quotes, chip, query]);
   const searching = query.trim() !== "";
   const shown = all || searching ? matches : matches.slice(0, SHOWN);
-  // The recommended few ahead of the hundreds: SOL, the deepest stablecoin and the deepest stock, which the chooser's
-  // order (deepest first) picks out.
-  const picks = useMemo(() => {
-    const first = (category: QuoteAsset["category"]) => quotes.find((q) => q.category === category && q.launchable);
-    return [first("sol"), first("stablecoin"), first("tokenized_stock")].filter((q): q is QuoteAsset => q !== undefined);
-  }, [quotes]);
+  // The recommended few ahead of the hundreds: SOL, the deepest stablecoin and the deepest stock (the hero's pair picker leads with the same three).
+  const picks = useMemo(() => recommendedQuotes(quotes), [quotes]);
 
   // A recommended card mirrors its card in the grid, so it is a radio group of its own: two radios of one group can't both show chosen.
   const card = (q: QuoteAsset, big = false) => (

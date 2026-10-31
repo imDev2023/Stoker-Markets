@@ -1,27 +1,59 @@
 .stats {
-  padding-bottom: clamp(48px, 6vw, 80px);
+  padding-bottom: clamp(56px, 7vw, 96px);
 }
 
-.list {
+/*
+  One row on a desktop, whatever the count: as many equal columns as there are figures with something behind them, a
+  hairline between each, and never a wrap. Each figure is its own container, so its value scales down to the room a
+  crowded row leaves it and is never broken across lines (six figures broke "0.06" and "SOL" in two, 2026-10-29).
+*/
+.row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 0;
   margin: 0;
 }
 
-/* The value above its label, as a figure is read; the dl keeps the pair together for a screen reader. */
 .stat {
   display: flex;
   flex-direction: column-reverse;
   justify-content: flex-end;
-  gap: 10px;
-  padding: 24px;
+  gap: 8px;
   min-width: 0;
+  padding: 4px 12px;
+  container-type: inline-size;
 }
 
+.stat:first-child {
+  padding-left: 0;
+}
+
+.stat:last-child {
+  padding-right: 0;
+}
+
+.stat + .stat {
+  border-left: 1px solid var(--line);
+}
+
+/* The value above its label, as a figure is read; the dl keeps the pair together for a screen reader. */
 .value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   margin: 0;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+}
+
+.figure {
+  font-size: min(var(--text-figure-xl), 20cqi);
+}
+
+.unit {
+  font-size: var(--text-ui);
+  font-weight: 600;
+  color: var(--ink-2);
+  white-space: nowrap;
 }
 
 .label {
@@ -30,12 +62,26 @@
   color: var(--ink-2);
 }
 
+.since {
+  margin: 20px 0 0;
+  color: var(--ink-3);
+}
+
+/* Two a row on a phone: the hairline marks the second of each pair only. */
 @media (max-width: 860px) {
-  .list {
+  .row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+    row-gap: 20px;
   }
   .stat {
-    padding: 20px;
+    padding: 0 12px;
+  }
+  .stat:nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .stat:nth-child(even) {
+    padding-right: 0;
+    border-left: 1px solid var(--line);
   }
 }

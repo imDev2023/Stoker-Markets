@@ -7,10 +7,12 @@ import type { CreatorEarnings, CreatorEarningsAsset, CreatorForward, CurveStatus
 import { getCreatorEarnings, listCreatorForwards } from "@/lib/api";
 import { creatorEarnings } from "@/lib/fees";
 import { explorerUrl, formatUnits, formatUtc, quoteTicker, SOL_DECIMALS } from "@/lib/format";
-import { Ring } from "./Mark";
 import { QuoteLogo } from "./QuoteLogo";
 import { WalletButton } from "./WalletButton";
 import styles from "./CreatorDashboard.module.css";
+import { CoinImage } from "./CoinImage";
+import { EmptyState } from "./EmptyState";
+import { Skeleton } from "./Skeleton";
 
 const REFRESH_MS = 10_000;
 
@@ -68,13 +70,14 @@ export function CreatorDashboard({ platform }: { platform: PlatformInfo }) {
           <WalletButton variant="inline" />
         </div>
       ) : !own ? (
-        <p className={styles.muted} aria-busy="true">Opening your earnings…</p>
-      ) : own.earnings.launches.length === 0 ? (
-        <div className={`card card-raised ${styles.emptyCard} ${styles.lone}`}>
-          <Ring size={72} className={styles.ring} />
-          <p>You haven&apos;t launched a coin here yet.</p>
-          <Link href="/launch" className="button button-primary">Stoke a coin</Link>
+        <div className={styles.lone} aria-busy="true">
+          <span className="visually-hidden">Opening your earnings…</span>
+          <Skeleton lines={3} height={72} />
         </div>
+      ) : own.earnings.launches.length === 0 ? (
+        <EmptyState title="Your first coin earns from its first trade" className={styles.lone} action={<Link href="/launch" className="button button-primary">Stoke a coin</Link>}>
+          You haven&apos;t launched a coin here yet. Half of what the platform collects on a coin you launch is forwarded to this wallet.
+        </EmptyState>
       ) : (
         <Earnings earnings={own.earnings} forwards={own.forwards} platform={platform} />
       )}
@@ -93,10 +96,7 @@ function Earnings({ earnings, forwards, platform }: { earnings: CreatorEarnings;
         <section className={styles.section} aria-labelledby="earned-title">
           <h2 id="earned-title" className="visually-hidden">Earned</h2>
           {assets.length === 0 ? (
-            <div className={`card card-raised ${styles.emptyCard}`}>
-              <Ring size={72} className={styles.ring} />
-              <p>Nothing earned yet. A coin starts earning with its first trade.</p>
-            </div>
+            <EmptyState title="Earnings start with the first trade">Nothing earned yet. A coin starts earning with its first trade.</EmptyState>
           ) : (
             assets.map((a) => <AssetCard key={a.quote.mint} asset={a} />)
           )}
@@ -110,7 +110,7 @@ function Earnings({ earnings, forwards, platform }: { earnings: CreatorEarnings;
               return (
                 <li key={l.mint}>
                   <Link href={`/coin/${l.mint}`} className={styles.coin}>
-                    {l.image ? <img src={l.image} alt="" width={44} height={44} /> : <span className={styles.noImage} />}
+                    <CoinImage src={l.image} symbol={l.symbol} size={44} />
                     <span className={styles.coinNames}>
                       <span className={styles.coinSymbol}>{l.symbol}</span>
                       <span className={styles.coinName}>{l.name}</span>
@@ -150,7 +150,7 @@ function Earnings({ earnings, forwards, platform }: { earnings: CreatorEarnings;
         <section className={`card ${styles.card}`} aria-labelledby="forwards-title">
           <h2 id="forwards-title" className={`t-h3 ${styles.cardTitle}`}>Sent by the platform</h2>
           {forwards.length === 0 ? (
-            <p className={styles.muted}>Nothing sent yet.</p>
+            <EmptyState bare title="Every payment lands here">Nothing sent yet. Each forward is listed with its transaction once it is paid.</EmptyState>
           ) : (
             <ol className={styles.payments}>
               {forwards.map((f) => (

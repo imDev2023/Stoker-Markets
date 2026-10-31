@@ -306,8 +306,8 @@
 /*
   Shared: the heat, the direction colours and the caution, the same in every direction.
   The up colour sits a yellow-green (hue 140) so it reads apart from Teal's accent (hue 173): until #131 the two were
-  fourteen degrees apart and a positive change looked like a link. The owner sees the other fix, the accent moved to
-  cyan with up as it was, under `?hue=accent` (the block at the foot of this section) before the hue is settled.
+  fourteen degrees apart and a positive change looked like a link. The other fix, the accent moved toward cyan with
+  up as it was, was shown on the real site as `?hue=accent` and not picked (owner, 2026-10-29).
 */
 :root {
   --brand: #c7410c;
@@ -345,55 +345,6 @@
   --down-bg: #3a1a22;
   --caution: #fbbf24;
   --caution-bg: #3a2d12;
-}
-
-/* The other candidate for the hue fix (owner's question on #131): Teal's accent moved thirty degrees toward cyan, up as it was. */
-:root[data-hue="accent"] {
-  --accent: #06758a;
-  --accent-strong: #055f6e;
-  --accent-rgb: 6 117 138;
-  --plate: #d9f1f6;
-  --button: #06758a;
-  --shadow-raised: 0 1px 2px rgb(10 20 24 / 6%), 0 8px 24px -12px rgb(6 117 138 / 18%);
-  --shadow-overlay: 0 1px 2px rgb(10 20 24 / 6%), 0 12px 32px -12px rgb(6 117 138 / 18%);
-  --glow: 0 0 0 1px rgb(6 117 138 / 25%), 0 8px 24px -8px rgb(6 117 138 / 35%);
-  --ring: 0 0 0 3px rgb(6 117 138 / 35%);
-  --up: #0b7a52;
-  --up-bg: #dff5ea;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root[data-hue="accent"]:not([data-scheme="light"]) {
-    --accent: #44c9e2;
-    --accent-strong: #74dcef;
-    --accent-rgb: 68 201 226;
-    --on-accent: #04131a;
-    --plate: #0d2f38;
-    --button: #44c9e2;
-    --on-button: #04131a;
-    --shadow-raised: 0 8px 24px -12px rgb(0 0 0 / 50%);
-    --shadow-overlay: 0 4px 16px rgb(0 0 0 / 50%);
-    --glow: 0 0 0 1px rgb(68 201 226 / 35%), 0 0 24px rgb(68 201 226 / 25%);
-    --ring: 0 0 0 3px rgb(68 201 226 / 55%);
-    --up: #34d399;
-    --up-bg: #0f2b22;
-  }
-}
-
-:root[data-hue="accent"][data-scheme="dark"] {
-  --accent: #44c9e2;
-  --accent-strong: #74dcef;
-  --accent-rgb: 68 201 226;
-  --on-accent: #04131a;
-  --plate: #0d2f38;
-  --button: #44c9e2;
-  --on-button: #04131a;
-  --shadow-raised: 0 8px 24px -12px rgb(0 0 0 / 50%);
-  --shadow-overlay: 0 4px 16px rgb(0 0 0 / 50%);
-  --glow: 0 0 0 1px rgb(68 201 226 / 35%), 0 0 24px rgb(68 201 226 / 25%);
-  --ring: 0 0 0 3px rgb(68 201 226 / 55%);
-  --up: #34d399;
-  --up-bg: #0f2b22;
 }
 
 :root {
@@ -447,7 +398,7 @@
   --pair-card: 1.25rem;
   --pair-title: clamp(1.75rem, 1.5rem + 0.8vw, 2rem);
   --pair-max: 6rem;
-  /* The wordmark beside the 28px ring in the header and the footer. */
+  /* The wordmark beside the 28px ring in the footer (the header's lockup is one mark at the h3 size). */
   --wordmark: 1.5rem;
 
   /*
@@ -473,15 +424,24 @@
   --gutter: clamp(16px, 4vw, 40px);
   --max: 1180px;
   --max-terminal: 1320px;
-  /* The sticky header's height, which anything pinned under it (the asset rail, a coin page's side column) clears. */
-  --header-h: 64px;
+  /* The sticky header's height, which anything pinned under it (the asset rail, a coin page's side column) clears, and the bottom tab bar's, which the page's foot clears under 768px. */
+  --header-h: 60px;
+  --tabs-h: 56px;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --header-h: 52px;
+  }
+  body {
+    padding-bottom: calc(var(--tabs-h) + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 @media (max-width: 640px) {
   :root {
     --grid-cols: 4;
     --grid-gap: 16px;
-    --header-h: 52px;
   }
 }
 
@@ -556,7 +516,15 @@ select {
   border: 0;
 }
 
-/* The page column: the content's width and its side gutters, the same on every page and on the header's bar. */
+/*
+  The page column: the content's width and its side gutters, the same on every page and on the header's bar. A page
+  past the home is the terminal, whose wider column the body takes (`:has`, which the header already relies on), so the
+  header and the footer outside the terminal's own box sit on the same column as its content (owner, 2026-10-31).
+*/
+body:has(.terminal) {
+  --max: var(--max-terminal);
+}
+
 .shell {
   width: 100%;
   max-width: var(--max);
@@ -673,11 +641,14 @@ select {
 .t-figure-lg,
 .t-figure,
 .t-figure-row,
-.mono {
+.mono,
+.price {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums slashed-zero;
   letter-spacing: 0;
 }
+
+/* A price (Price.tsx) is set in the mono at the size of whatever holds it: a stats strip's figure, a row's cell, a card's line. */
 
 .t-figure-xl {
   font-size: var(--text-figure-xl);
@@ -1026,12 +997,9 @@ select {
   --row: 36px;
 }
 
-/* The landing's canvas: a faint dot grid, the only decoration beside the heat's glow behind the headline. */
+/* The landing's canvas: plain (#133, after the research: no dot grid and no glow; the product and the ring are its visuals). */
 .landing {
   overflow: clip;
-  background-image: radial-gradient(color-mix(in srgb, var(--ink) 6%, transparent) 1px, transparent 1px);
-  background-size: 24px 24px;
-  background-position: 12px 12px;
 }
 
 @media (prefers-reduced-motion: reduce) {

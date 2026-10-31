@@ -1,0 +1,49 @@
+/* The one empty state (#131): centred, the ring at one size, a positive title, one sentence, one action. */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: clamp(32px, 5vw, 56px) 24px;
+  text-align: center;
+}
+
+/* Inside a panel that is a card already: no second edge and less air. */
+.bare {
+  padding: clamp(20px, 3vw, 32px) 16px;
+}
+
+.state[aria-busy="true"] {
+  opacity: 0.55;
+  transition: opacity var(--dur-fast) var(--ease-standard) var(--dur-fast);
+}
+
+.ring {
+  margin-bottom: 6px;
+}
+
+.title {
+  margin: 0;
+  max-width: 28ch;
+  text-wrap: balance;
+}
+
+.text {
+  margin: 0;
+  max-width: 46ch;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* An error has no ring: the words carry it, and a caution colour on the title says what kind of state this is. */
+.error .title {
+  color: var(--caution, var(--ink));
+}
