@@ -121,7 +121,7 @@ test("a coin's link unfurls with its own picture, name and pair, and its page sa
   await page.goto(`/coin/${plain}`);
   await expect(meta(page, "description")).toHaveAttribute(
     "content",
-    "Plain Card (PLAIN) trades on Stoker paired with SOL; its creator earns ~0.5% of every trade, every payment on the public ledger.",
+    "Plain Card (PLAIN) trades on Stoker paired with SOL; its creator earns half of what the platform collects on its trades, every payment on the public ledger.",
   );
 
   // An asset's page: its own card is the site's, and it sits under Assets.
