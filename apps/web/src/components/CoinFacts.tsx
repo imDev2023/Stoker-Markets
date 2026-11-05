@@ -3,10 +3,10 @@
 import Link from "next/link";
 import type { LaunchSummary, LaunchTrust, PlatformInfo } from "@launchpad/contract";
 import { explorerUrl, formatDuration, formatShare, formatUnits, formatUtc, quoteTicker, SOL_DECIMALS } from "@/lib/format";
-import { LINK_INFO, LINK_KINDS, type LinkKind } from "@/lib/links";
+import { LINK_KINDS, type LinkKind } from "@/lib/links";
 import { Address } from "./Address";
 import { CopyButton } from "./CopyButton";
-import { LinkIcon } from "./LinkIcon";
+import { LinkIcon, LinkName } from "./LinkIcon";
 import styles from "./CoinFacts.module.css";
 
 /**
@@ -153,7 +153,7 @@ export function CoinFacts({ launch, platform, trust, renderedAt }: {
               {links.map(([kind, href]) => (
                 <a key={kind} href={href} className={`chip ${styles.social}`} target="_blank" rel="noreferrer nofollow">
                   <LinkIcon kind={kind} size={14} />
-                  {LINK_INFO[kind].label}
+                  <LinkName kind={kind} />
                 </a>
               ))}
             </dd>

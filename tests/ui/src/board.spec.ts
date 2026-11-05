@@ -240,6 +240,16 @@ test("'/' and ⌘K from any page reach the board's search, the site's one search
   await expect(page.getByText('No coins match "no such coin anywhere".')).toBeVisible();
 });
 
+test.describe("a browser with no choice yet", () => {
+  // Dark by default (owner, 2026-11-05), whatever the system prefers: the layout writes the scheme onto <html> itself.
+  test.use({ scheme: "none", colorScheme: "light" });
+  test("sees the site dark, whatever its system prefers", async ({ page }) => {
+    await page.goto("/coins");
+    await expect(page.locator("html")).toHaveAttribute("data-scheme", "dark");
+    await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");
+  });
+});
+
 test("the header's toggle switches light and dark and the choice holds", async ({ page }) => {
   await page.goto("/coins");
   const html = page.locator("html");
@@ -253,7 +263,7 @@ test("the header's toggle switches light and dark and the choice holds", async (
     }).toPass({ timeout: 30_000 });
     await row.click();
   };
-  // The flows run in light; the toggle offers dark, applies it at once and keeps it across a reload (a cookie the layout reads).
+  // The flows carry the light cookie (the fixture's `scheme`); the toggle offers dark, applies it at once and keeps it across a reload (the cookie the layout reads).
   const before = await ground();
   await flip("Switch to dark mode");
   await expect(html).toHaveAttribute("data-scheme", "dark");

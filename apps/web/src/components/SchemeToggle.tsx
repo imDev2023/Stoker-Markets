@@ -22,25 +22,18 @@ function Moon() {
 }
 
 /**
- * Light or dark (owner, 2026-10-13): the page follows the visitor's system setting until this button is pressed, after
- * which the choice holds, as a cookie the layout reads so a page never paints the other mode first. The button shows
+ * Light or dark (owner, 2026-10-13; dark by default since 2026-11-05, owner): the page is dark until this button is
+ * pressed, after which the choice holds, as a cookie the layout reads onto <html> so a page never paints the other mode
+ * first (src/lib/scheme.ts). The button shows
  * what pressing it brings: the moon in light mode, the sun in dark. `icon` is the square for the phone menu's foot;
  * `menu` is a row of the account menu (#131: a preference used once is not a top-level control), named the same.
  */
 export function SchemeToggle({ className = "", variant = "icon" }: { className?: string; variant?: "icon" | "menu" }) {
-  // Unknown until mounted: the server does not know the system setting, only an explicit choice.
+  // Unknown until mounted: the layout wrote the scheme onto <html>, which a client component reads in the browser alone.
   const [dark, setDark] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const system = matchMedia("(prefers-color-scheme: dark)");
-    const read = () => {
-      const explicit = document.documentElement.dataset.scheme;
-      setDark(explicit ? explicit === "dark" : system.matches);
-    };
-    read();
-    // Until a choice is made the page follows the system setting, which can change while the page is open.
-    system.addEventListener("change", read);
-    return () => system.removeEventListener("change", read);
+    setDark(document.documentElement.dataset.scheme !== "light");
   }, []);
 
   function flip() {

@@ -14,9 +14,9 @@
                 board's table and the coin page's panels sit on
 
   C Teal is the owner's pick (2026-10-10, confirmed 2026-10-28); A Cobalt and B Violet ride along as alternates
-  (`data-theme`, src/lib/theme.ts). Light and dark follow the visitor, and the header's toggle pins one (`data-scheme`),
-  so every dark block is written twice: under the media query guarded against an explicit light, and pinned by an
-  explicit dark. Keep the two copies the same.
+  (`data-theme`, src/lib/theme.ts). Dark by default (owner, 2026-11-05), light once the account menu's toggle chose it:
+  the root layout always writes `data-scheme` onto <html> (src/lib/scheme.ts), so a dark block is pinned by
+  `[data-scheme="dark"]` alone and no media query is read.
 
   Surfaces, a ladder by tone before any border:
     sunken     a well: an input, a ticker bar, the footer       bg         the page
@@ -58,37 +58,6 @@
   --glow: 0 0 0 1px rgb(36 87 245 / 25%), 0 8px 24px -8px rgb(36 87 245 / 35%);
   --ring: 0 0 0 3px rgb(36 87 245 / 35%);
   color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root[data-theme="cobalt"]:not([data-scheme="light"]) {
-    --bg: #070a12;
-    --surface: #0e1320;
-    --surface-2: #141b2c;
-    --surface-3: #1b2338;
-    --raised: #141b2c;
-    --sunken: #04060c;
-    --line: rgb(255 255 255 / 8%);
-    --line-strong: rgb(255 255 255 / 16%);
-    --highlight: inset 0 1px 0 rgb(255 255 255 / 4%);
-    --ink: #eef2ff;
-    --ink-2: #cad2e6;
-    --ink-3: #aab4ca;
-    --accent: #5b84ff;
-    --accent-strong: #8aa6ff;
-    --accent-rgb: 91 132 255;
-    --on-accent: #ffffff;
-    --plate: #152650;
-    --button: #3560ff;
-    --on-button: #ffffff;
-    --lift: white;
-    --shadow-sunken: inset 0 1px 2px rgb(0 0 0 / 40%);
-    --shadow-raised: 0 8px 24px -12px rgb(0 0 0 / 50%);
-    --shadow-overlay: 0 4px 16px rgb(0 0 0 / 50%);
-    --glow: 0 0 0 1px rgb(91 132 255 / 35%), 0 0 24px rgb(91 132 255 / 25%);
-    --ring: 0 0 0 3px rgb(91 132 255 / 55%);
-    color-scheme: dark;
-  }
 }
 
 :root[data-theme="cobalt"][data-scheme="dark"] {
@@ -149,37 +118,6 @@
   --glow: 0 0 0 1px rgb(91 69 230 / 25%), 0 8px 24px -8px rgb(91 69 230 / 35%);
   --ring: 0 0 0 3px rgb(91 69 230 / 35%);
   color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root[data-theme="violet"]:not([data-scheme="light"]) {
-    --bg: #09081a;
-    --surface: #110f26;
-    --surface-2: #181534;
-    --surface-3: #201c42;
-    --raised: #181534;
-    --sunken: #05040f;
-    --line: rgb(255 255 255 / 8%);
-    --line-strong: rgb(255 255 255 / 16%);
-    --highlight: inset 0 1px 0 rgb(255 255 255 / 4%);
-    --ink: #f0eefc;
-    --ink-2: #ccc8e4;
-    --ink-3: #aca7c9;
-    --accent: #8b7cff;
-    --accent-strong: #aa9fff;
-    --accent-rgb: 139 124 255;
-    --on-accent: #0b0a1f;
-    --plate: #241f55;
-    --button: #8b7cff;
-    --on-button: #0b0a1f;
-    --lift: white;
-    --shadow-sunken: inset 0 1px 2px rgb(0 0 0 / 40%);
-    --shadow-raised: 0 8px 24px -12px rgb(0 0 0 / 50%);
-    --shadow-overlay: 0 4px 16px rgb(0 0 0 / 50%);
-    --glow: 0 0 0 1px rgb(139 124 255 / 35%), 0 0 24px rgb(139 124 255 / 25%);
-    --ring: 0 0 0 3px rgb(139 124 255 / 55%);
-    color-scheme: dark;
-  }
 }
 
 :root[data-theme="violet"][data-scheme="dark"] {
@@ -243,37 +181,6 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-scheme="light"]), :root[data-theme="teal"]:not([data-scheme="light"]) {
-    --bg: #05090e;
-    --surface: #0b1219;
-    --surface-2: #111a24;
-    --surface-3: #17222e;
-    --raised: #111a24;
-    --sunken: #03060a;
-    --line: rgb(255 255 255 / 8%);
-    --line-strong: rgb(255 255 255 / 16%);
-    --highlight: inset 0 1px 0 rgb(255 255 255 / 4%);
-    --ink: #eaf3f5;
-    --ink-2: #d1dadf;
-    --ink-3: #b5c2c9;
-    --accent: #2fd3c0;
-    --accent-strong: #6fe8d8;
-    --accent-rgb: 47 211 192;
-    --on-accent: #04120f;
-    --plate: #0f3330;
-    --button: #2fd3c0;
-    --on-button: #04120f;
-    --lift: white;
-    --shadow-sunken: inset 0 1px 2px rgb(0 0 0 / 40%);
-    --shadow-raised: 0 8px 24px -12px rgb(0 0 0 / 50%);
-    --shadow-overlay: 0 4px 16px rgb(0 0 0 / 50%);
-    --glow: 0 0 0 1px rgb(47 211 192 / 35%), 0 0 24px rgb(47 211 192 / 25%);
-    --ring: 0 0 0 3px rgb(47 211 192 / 55%);
-    color-scheme: dark;
-  }
-}
-
 :root[data-scheme="dark"], :root[data-theme="teal"][data-scheme="dark"] {
   --bg: #05090e;
   --surface: #0b1219;
@@ -319,20 +226,6 @@
   --down-bg: #fde6e8;
   --caution: #9a5d05;
   --caution-bg: #fef5df;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-scheme="light"]) {
-    --brand: #ff9a5c;
-    --heat-low: #ffb020;
-    --heat-high: #ff5a1f;
-    --up: #45df78;
-    --up-bg: #10301d;
-    --down: #ff99a3;
-    --down-bg: #3a1a22;
-    --caution: #fbbf24;
-    --caution-bg: #3a2d12;
-  }
 }
 
 :root[data-scheme="dark"] {

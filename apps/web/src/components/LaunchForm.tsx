@@ -18,7 +18,7 @@ import { Address } from "./Address";
 import { useCopyCheck, windowWords, type CopyStatus } from "./CopyCheck";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
 import { LaunchOptions, LaunchType, supplyShare, useLaunchOptions } from "./LaunchOptions";
-import { LinkIcon } from "./LinkIcon";
+import { LinkIcon, LinkName } from "./LinkIcon";
 import { Ring } from "./Mark";
 import { PairMark } from "./PairMark";
 import { QuoteChooser } from "./QuoteChooser";
@@ -608,7 +608,7 @@ function Summary({
                     {LINK_KINDS.filter((k) => links[k].trim() !== "").map((k) => (
                       <span key={k} className={styles.linkChip}>
                         <LinkIcon kind={k} size={14} />
-                        {LINK_INFO[k].label}
+                        <LinkName kind={k} />
                       </span>
                     ))}
                   </span>

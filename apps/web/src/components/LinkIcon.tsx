@@ -1,9 +1,9 @@
-import type { LinkKind } from "@/lib/links";
+import { LINK_INFO, type LinkKind } from "@/lib/links";
 
 /**
  * One mark per link kind, drawn at one size and one stroke so they sit level beside a field, in a chip or in the
  * summary: the X and Telegram marks the site's socials already use, a globe for a website, and Discord, TikTok,
- * Instagram and YouTube in the same weight. Decorative: the word beside it carries the name.
+ * Instagram and YouTube in the same weight. Decorative: the word beside it (`LinkName`) carries the name.
  */
 export function LinkIcon({ kind, size = 16, className }: { kind: LinkKind; size?: number; className?: string }) {
   const common = { width: size, height: size, viewBox: "0 0 24 24", className, "aria-hidden": true as const, focusable: false };
@@ -54,4 +54,10 @@ export function LinkIcon({ kind, size = 16, className }: { kind: LinkKind; size?
         </svg>
       );
   }
+}
+
+/** A link kind's name in a chip: the word, or, where the mark is the word (X), text for assistive technology alone. */
+export function LinkName({ kind }: { kind: LinkKind }) {
+  const info = LINK_INFO[kind];
+  return info.markAlone ? <span className="visually-hidden">{info.label}</span> : <>{info.label}</>;
 }

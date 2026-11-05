@@ -81,3 +81,57 @@ pump.fun (claim from the StonkFun Telegram group: confirmed on-chain):
 Conclusion: on Meteora DBC the claim holds, because asset pairing is only 0.6% of pools and the largest asset-pairing platform (EmberCurve) has about 3,100 pools.
 The claim no longer holds for pump.fun: since the 2026-09-09 upgrade it has launched roughly 64,000 asset-paired coins in 17 days, about half of StonkFun's all-time non-SOL total, and xStocks and other stock tokens are among its top quotes.
 What still sets StonkFun apart is openness and focus: pump.fun admits only the 181 quotes on its admin list and asset pairs are 0.3% of its launches, while StonkFun takes any mint (503 so far) and 91% of its pools are non-SOL.
+
+## Peak (launchonpeak.fun), checked 2026-11-04
+
+Sources: the site's pages and its documented keyless read API (`/api/coins`, `/api/coin/:mint`, `/api/health`), DexScreener's token API, Telegram's public preview, and the chain, read with our own LaunchLab and CPMM decoders (`packages/chain`).
+The pages themselves are not kept here, because this repository is public.
+
+Peak is a Raydium LaunchLab platform for Solana memecoins, live since 2026-10-27, built on Vercel and Supabase, with its own coin $PEAK (`APLPiTjBWzwfZ5U1TBeqLF9XJ7dV7XKGe7j4BZhkDray`).
+Its pitch is fairness: no copycat tickers, no buys in the creation block, and a DEX Screener profile paid from each coin's fees.
+
+Numbers at about 06:00 UTC that day:
+- 105 coins from 78 launcher wallets, 10 graduated, 67 still trading after 24 hours by its own count; its busiest days were 2026-11-01 (25 launches) and 2026-11-02 (32).
+- 588 SOL of fees collected since launch (its stats page), 104 SOL of it in the last 24 hours (its feed); the five biggest coins earned 52% of it.
+- Its public pages account for 39.4 SOL of buybacks and $5.5K of DEX Screener funds; nothing public says where the rest of the 588 SOL went.
+- $PEAK: $639K market cap, $77K liquidity, $666K of 24-hour volume (DexScreener).
+- Its Telegram channel had 84 subscribers, and DefiLlama does not list it.
+
+On-chain it runs three PlatformConfigs, all with the fee wallet `8Uvc5sffYGqcfqYQXmM3U1gFtNKzRLCV9g38AZ2Joub8`, a 0% Creator Fee, no curve rules (`restrict_curve_param` 0) and every graduated pool's LP burned (`burn_scale` 100%, so no Fee Key).
+
+| PlatformConfig | Name | Curve Platform Fee | CPMM config after Graduation | Used for (the 100 coins in its feed) |
+|---|---|---:|---|---|
+| `BDTgTEvMyGXjJSDHnCdVG4zRgBufvREVrfAksYgTNjHW` | Peak | 1.00% | `CRRS5i...`: 0.25% trade fee, 1% creator fee (the config ours names) | SOL coins until 2026-11-03, and the RAY, HYPE, CARDS and xStock pairs |
+| `FcaxvE2A5UipS6Bbtd1McsPjFvzEhrqE75Sq7AXWPbDY` | Peak PEAK | 1.50% | `FMmwToGq...`: 0.005% trade fee, 1.495% creator fee | PEAK pairs since 2026-11-02, and all four SOL coins launched after 01:35 UTC on 2026-11-04 |
+| `7adqEP7wCfsvKaoKFnrHb5Mk9mK5NHDvR1vbyz5ouCAE` | Peak Deep | 2.00% | `627Jx6eN...`: 0.25% trade fee, 1.25% creator fee | the deep curve (a 200 SOL target), since 2026-11-02 |
+
+- The site never states a rate; it calls the fee small. Two PlatformConfigs' `web` field still reads `http://localhost:3000` and the first one's `launch-raydium.vercel.app`.
+- Raydium created a GlobalConfig for $PEAK (`FZtxGmLsVyE3Hx2KK5Qaok5QJH6NabEoUHeQCst7g97n`, first used 2026-11-02 18:18 UTC) six days after $PEAK's pool opened; mainnet had 647 constant-product GlobalConfigs that day.
+- Pairs: 74 of the 100 coins are paired with SOL, 11 with PEAK (the launch form's default), 4 with RAY, 3 with HYPE, 7 with xStocks and 1 with CARDS; the form offers 23 hand-picked pairs, the two pre-IPO tokens OPENAI and ANTHROPIC among them.
+- $YETI's creation transaction is signed by a Peak deployer and the mint alone (one `initialize_v2`, no buy), and in all 100 pools the LaunchLab creator is a Peak wallet, never the launcher.
+- Each coin's metadata JSON and image sit in Peak's Supabase storage bucket, named by metadata that can no longer change.
+
+What it offers:
+- A blind launch: the launcher pays about 0.23 SOL (0.2 SOL of it a launch fee) to Peak, whose deployer creates the pool 3 to 15 seconds later with a mint derived from a server secret, and the payment comes back if creation fails.
+- A bundle check about 90 seconds in: every wallet that bought in the first 20 slots is traced to the wallet that funded it, and links to the launcher or between buyers are flagged on the coin page with the supply they still hold.
+- The ticker, the name (ignoring case, spaces and symbols) and the launch tweet are locked for 3 days; lookalike tickers and identical images are flagged, never refused.
+- A DEX Screener fund per coin: with a banner, part of the coin's fees fills about $299, the profile is ordered at Graduation, and the page shows Funding, Funded, Paid and Live from DEX Screener's order status.
+- Fees buy $PEAK in chunks of up to 2 SOL at most once an hour and burn it in the same transaction; 9.09% of each buy is airdropped to holders of any Peak coin, weighted by the value held, at random snapshots about four times a day, with Peak paying the rent; holders of new coins also get airdrops in the coin's pair token.
+- Each coin's own share of its fees adds to its liquidity after Graduation (the default, LP burned) or buys back and burns the coin, chosen at launch.
+- Creator rewards since 2026-11-04: a share of the coin's fees, claimable every 6 hours once the coin is 3 days old, larger as the coin's highest market cap grows, and forfeited by a rug in the first 3 days; the rate is not stated, and the FAQ still says a creator gets no fee share.
+- A clean Graduation (no linked early buyers, no top holder funded by the launcher, the launcher at 10% of supply or less) refunds the 0.2 SOL launch fee and gives the wallet a permanent Graduated dev badge.
+- A deep curve for a 0.3 SOL launch fee, starting at about 122 SOL of market cap and graduating at 200 SOL.
+- The Oath: a free signed pledge to hold a coin, counted 1.5 times for holder rewards, with a bonus if the coin graduates; breaking it bars that wallet from launching on Peak.
+- The Summit: one coin featured each day, drawn at random with odds tilted by market cap, volume and youth; flagged coins are never drawn.
+- Callers: anyone can open a caller page; a call needs 1% of supply held for 24 hours and is graded in public after 3 days, a call that doubles earns SOL from a pool every trade fills, new wallets brought in earn the caller a share of Peak's fees for 90 days, and strikes suspend a caller.
+- A community takeover: holders of 0.5% of supply sign a request for a new logo, banner, links and description, which Peak reviews and sends on to DEX Screener.
+- Also: charity coins through donate.gg, a builder tag, a numbered launch registry with Founding 100 badges, wallet-signed comments, public creator profiles, a watchlist, a portfolio, downloadable share cards, trade sounds, a live trade ticker, an ideas form, a proof-of-work human check, and a launch verification script on its developers page.
+
+Against Stoker:
+- The same 1.00% and 0% split on its first PlatformConfig and the same CPMM config, but its newest SOL coins pay 1.5% plus Raydium's 0.25% on the curve and 1.5% after Graduation, where ours pay 1% plus Raydium's 0.25% and then 1.25%.
+- After Graduation it burns the LP and collects about 0.95% (the creator fee less Raydium's 5%), where we keep the Fee Key and collect about 1.16%.
+- Its creator share is new, claimed, locked for 3 days and unstated; ours is about 0.5% of every trade from the first one, forwarded without a claim, every payment on the Ledger.
+- Its blind launch takes the creation out of the launcher's hands, so the trust moves from the dev to Peak, which knows each mint seconds before anyone else; our launch is signed in the Creator's wallet (ADR 0003) and may carry a First Buy, which is the very thing its pitch is against.
+- Its bundle check traces funders, the part ADR 0013 deferred; our "Before you buy" card marks snipers by slot and amount only.
+- Its copy lock is 3 days and flags images, where our Copy Protection is 7 days and refuses the image and near copies too.
+- Its pairs are 23 hand-picked, ours any Raydium GlobalConfig; even so, 74% of its coins chose SOL.

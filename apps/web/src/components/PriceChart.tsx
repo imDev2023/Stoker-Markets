@@ -87,9 +87,7 @@ export function PriceChart({
       s.applyOptions({ upColor: t.up, downColor: t.down, wickUpColor: t.up, wickDownColor: t.down });
     };
     paint();
-    const scheme = window.matchMedia("(prefers-color-scheme: dark)");
-    scheme.addEventListener("change", paint);
-    // The header's toggle (SchemeToggle) and `?theme=` (ThemeOverride) change the tokens through <html>'s attributes.
+    // The account menu's toggle (SchemeToggle) and `?theme=` (ThemeOverride) change the tokens through <html>'s attributes.
     const attrs = new MutationObserver(paint);
     attrs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-scheme", "data-theme"] });
     c.subscribeCrosshairMove((p) => setHovered(p.time === undefined ? null : (byTime.current.get(p.time as number) ?? null)));
@@ -102,7 +100,6 @@ export function PriceChart({
     chart.current = c;
     series.current = s;
     return () => {
-      scheme.removeEventListener("change", paint);
       attrs.disconnect();
       sized.disconnect();
       c.remove();

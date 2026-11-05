@@ -22,6 +22,13 @@ export { expect };
  */
 export const DISCLAIMER_KEY = "launchpad.disclaimer.v1";
 
+/**
+ * The cookie that holds a visitor's light-or-dark choice (`SCHEME_COOKIE` in apps/web/src/lib/scheme.ts). The site is
+ * dark without it (owner, 2026-11-05), so the suite sets it from each project's `colorScheme` and the light projects
+ * stay light; a test of the default itself asks for a browser with no choice (`scheme: "none"`).
+ */
+export const SCHEME_COOKIE = "scheme";
+
 /** Clears the acceptance on the open page, as a visitor who cleared the site's data: the next launch or trade asks again. */
 export const forgetDisclaimer = (page: Page) => page.evaluate((key) => window.localStorage.removeItem(key), DISCLAIMER_KEY);
 
@@ -312,6 +319,8 @@ export const test = base.extend<{
   browserErrors: void;
   /** A browser that has never visited: the welcome opens on the first page. Every other test has accepted it already. */
   firstVisit: boolean;
+  /** The light-or-dark choice the browser carries as the site's cookie: the project's `colorScheme` by default, or none. */
+  scheme: "light" | "dark" | "none" | "project";
   /** TradingView's widget script, served empty: the asset page's market chart never loads live data into a baseline. */
   thirdParty: void;
 }>({
@@ -319,8 +328,11 @@ export const test = base.extend<{
   stack: async ({}, use) => use(stackEnv()),
   baseURL: async ({ stack }, use) => use(stack.webUrl ?? undefined),
   firstVisit: [false, { option: true }],
-  context: async ({ context, firstVisit }, use) => {
+  scheme: ["project", { option: true }],
+  context: async ({ context, firstVisit, scheme, colorScheme, baseURL }, use) => {
     if (!firstVisit) await context.addInitScript((key) => window.localStorage.setItem(key, "accepted"), DISCLAIMER_KEY);
+    const choice = scheme === "project" ? (colorScheme === "dark" ? "dark" : "light") : scheme;
+    if (choice !== "none" && baseURL) await context.addCookies([{ name: SCHEME_COOKIE, value: choice, url: baseURL }]);
     await use(context);
   },
   wallet: async ({ page }, use) => use(await installTestWallet(page, await fundedKeypair())),

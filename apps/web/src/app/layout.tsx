@@ -14,7 +14,7 @@ import { Welcome } from "@/components/Welcome";
 import { getPlatform, listAnnouncements } from "@/lib/api";
 import { SHARED_OPEN_GRAPH, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, TWITTER_CARD } from "@/lib/meta";
 import { siteOrigin } from "@/lib/origin";
-import { SCHEME_COOKIE } from "@/lib/scheme";
+import { SCHEME_COOKIE, schemeOf } from "@/lib/scheme";
 import { THEME_GROUNDS, themeFrom } from "@/lib/theme";
 
 // The families (owner, 2026-10-11, on "Stoker Type"): the display face carries the voice through its optical-size and
@@ -53,18 +53,10 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-/** The browser's own chrome follows the page: the toggle's choice when there is one, the system setting otherwise. */
+/** The browser's own chrome follows the page: dark, or light once the toggle chose it. */
 export async function generateViewport(): Promise<Viewport> {
-  const scheme = (await cookies()).get(SCHEME_COOKIE)?.value;
-  const grounds = THEME_GROUNDS[theme];
-  return {
-    themeColor: scheme === "light" || scheme === "dark"
-      ? grounds[scheme]
-      : [
-          { media: "(prefers-color-scheme: light)", color: grounds.light },
-          { media: "(prefers-color-scheme: dark)", color: grounds.dark },
-        ],
-  };
+  const scheme = schemeOf((await cookies()).get(SCHEME_COOKIE)?.value);
+  return { themeColor: THEME_GROUNDS[theme][scheme] };
 }
 
 export const dynamic = "force-dynamic";
@@ -73,11 +65,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   // A fee change everyone should see coming; the banner is left out rather than the page failing if the API is down.
   const [platform, announcements, jar] = await Promise.all([getPlatform(), listAnnouncements().catch(() => null), cookies()]);
   const upcoming = announcements?.announcements.find((a) => a.appliedSignature === null && new Date(a.effectiveAt).getTime() > Date.now() - 24 * 3600_000) ?? null;
-  // Light or dark chosen with the header's toggle (SchemeToggle); without the cookie the page follows the system setting.
-  const scheme = jar.get(SCHEME_COOKIE)?.value;
+  // Dark unless the account menu's toggle (SchemeToggle) chose light, which its cookie holds (src/lib/scheme.ts).
+  const scheme = schemeOf(jar.get(SCHEME_COOKIE)?.value);
   return (
     // `?theme=` may change `data-theme` after hydration (ThemeOverride), which is intended, not a mismatch.
-    <html lang="en" data-theme={theme} data-scheme={scheme === "light" || scheme === "dark" ? scheme : undefined} className={`${bricolage.variable} ${instrumentSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html lang="en" data-theme={theme} data-scheme={scheme} className={`${bricolage.variable} ${instrumentSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <body>
         <ThemeOverride />
         <Providers rpcUrl={platform.rpcUrl}>
