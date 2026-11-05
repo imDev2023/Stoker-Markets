@@ -16,7 +16,7 @@ const terms = (page: Page) => page.getByRole("definition").filter({ hasText: "ra
 const review = (page: Page) => page.getByRole("region", { name: "Review your launch" });
 
 async function connectWallet(page: Page) {
-  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
+  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Sign in" }));
 }
 
 async function fillCoin(page: Page, name: string, symbol: string) {
@@ -140,7 +140,7 @@ test("a trader buys and sells a USDC-paired coin in USDC", async ({ page, wallet
   await page.goto(`/coin/${mint}`);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/DLRP paired with USDC/);
   await expect(page.getByText("0 of 150 USDC raised")).toBeVisible();
-  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
+  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Sign in" }));
 
   // Buying spends the wallet's USDC; the presets are worth about 0.1, 0.5 and 1 SOL.
   const panel = page.getByRole("region", { name: "Trade DLRP" });

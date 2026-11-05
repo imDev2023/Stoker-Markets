@@ -1,0 +1,151 @@
+/* The sign-in sheet on the site's dialog primitive: 400px at 1440, a sheet from the foot of a phone (the welcome's shape). */
+.dialog {
+  width: min(400px, calc(100vw - 32px));
+  padding: 20px 24px 22px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.title {
+  margin: 0;
+}
+
+.close {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  margin-right: -8px;
+}
+
+.error {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  background: var(--down-bg);
+  color: var(--on-down-bg);
+  font-size: var(--text-caption);
+}
+
+/* Every sign-in is one full-width ghost row with its mark at the head: the socials, the email's field, the wallets. */
+.socials,
+.wallets {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.option {
+  width: 100%;
+  height: 44px;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 0 14px;
+  border-color: var(--line);
+}
+
+.mark {
+  flex: none;
+  color: var(--ink-2);
+}
+
+.walletIcon {
+  flex: none;
+  border-radius: var(--radius-control);
+}
+
+.email {
+  margin-top: 8px;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+.field {
+  flex: 1 1 auto;
+  min-height: 44px;
+}
+
+.field .mark {
+  color: var(--ink-3);
+}
+
+.field:focus-within .mark {
+  color: var(--ink-2);
+}
+
+.hint {
+  margin: 6px 0 0;
+  color: var(--ink-3);
+  font-size: var(--text-caption);
+}
+
+/* The divider between the sign-ins and the wallets: a hairline with the words on it. */
+.or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  color: var(--ink-3);
+  font-size: var(--text-caption);
+}
+
+.or::before,
+.or::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--line);
+}
+
+.empty {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-control);
+  color: var(--ink-2);
+  font-size: var(--text-ui);
+}
+
+.empty a {
+  color: var(--accent);
+}
+
+.note {
+  margin: 16px 0 0;
+  color: var(--ink-3);
+  font-size: var(--text-caption);
+  line-height: 1.45;
+}
+
+.note a {
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* The header's sheet keeps the light-or-dark toggle under a hairline, as the menu it replaces did. */
+.foot {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 767px) {
+  .dialog {
+    width: 100%;
+    max-width: none;
+    margin: auto 0 calc(-1 * var(--radius-card));
+    padding: 20px var(--gutter) calc(20px + var(--radius-card) + env(safe-area-inset-bottom, 0px));
+  }
+}

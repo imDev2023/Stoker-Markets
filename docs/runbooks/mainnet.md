@@ -176,7 +176,7 @@ Every coin's on-chain metadata URI is `ARWEAVE_GATEWAY_URL/<id>` (`https://arwea
 
 ## 9. The web Worker
 
-`NEXT_PUBLIC_API_URL=https://api.<domain>` at build time (`pnpm exec opennextjs-cloudflare build` in `apps/web`), then `pnpm exec opennextjs-cloudflare deploy --env production` (`env.production` in `apps/web/wrangler.jsonc`, with `<domain>` as its custom domain). Confirm the `/launch` page shows the 571 Quote Assets and `/operator` opens with the token. The public site needs no secret.
+`NEXT_PUBLIC_API_URL=https://api.<domain>` and `NEXT_PUBLIC_WEB3AUTH_CLIENT_ID=<the client id of section 14>` at build time (`pnpm exec opennextjs-cloudflare build` in `apps/web`), then `pnpm exec opennextjs-cloudflare deploy --env production` (`env.production` in `apps/web/wrangler.jsonc`, with `<domain>` as its custom domain). Confirm the `/launch` page shows the 571 Quote Assets and `/operator` opens with the token. The public site needs no secret.
 
 The web Worker renders pages on the server, and all of those requests reach the API from the Worker's own address, which the per-IP limit would count as one caller. Issue it an API key with a high limit (`POST /v1/operator/api-keys` with `name` and `rateLimitPerMinute`; 6000, the most a key can have, is 100 requests a second) and set it as the web Worker's secret `API_KEY` (`wrangler secret put API_KEY` in `apps/web`); it is only ever sent from the server. Requests made in a visitor's browser carry no key and count against the visitor's own IP.
 
@@ -260,3 +260,23 @@ Only the owner can create it, since the account's admin is a wallet that signs.
    The dashboard is where the fees are claimed (they sit in token accounts the Referral Program owns until claimed, one per asset); claiming is a wallet action, so it is the owner's too, and what is claimed goes to the treasury like any revenue (ADR 0004).
 
 Until the account exists the widget takes no fee and its line under the frame says nothing about one; the Fees page states the rate. The landing's hero stays the live rows (the swap was its hero for an hour on 2026-10-30, `?hero=swap` still shows it).
+
+## 14. Sign in through Web3Auth (owner)
+
+"Sign in" (ADR 0016) offers Google, Apple, GitHub, X and email beside the wallets through Web3Auth (MetaMask Embedded Wallets), whose project lives under the owner's account; without its client id in the build the sheet offers the wallets alone.
+Only the owner can create the project, since the dashboard is theirs.
+Web3Auth's Base plan is free to 1,000 monthly active wallets and 5 cents per extra wallet after that, with no monthly fee (owner, 2026-11-05: the site must stay free to run; Privy's $299-a-month cliff at 500 users is why it was swapped out).
+
+1. Open https://developer.metamask.io (the Embedded Wallets dashboard, formerly dashboard.web3auth.io), sign up with the business email, and create a project named `Stoker` for the **Web** platform on the **Sapphire Mainnet** network (the devnet network is for throwaway testing only; a project's wallets differ between the two networks).
+   The **Client ID** is public and goes into the build; no secret is needed.
+2. Chains: add **Solana** (mainnet for production; a rehearsal project may add devnet).
+   The site passes its own RPC and the cluster the API is on, so the dashboard's chain is a formality.
+3. Auth connections: the default **Google**, **Apple**, **GitHub**, **Twitter** (the sheet calls it X) and **Email passwordless** connections need no setup on the Base plan (they run on Web3Auth's own OAuth apps; custom OAuth apps in Stoker's name are a paid-plan feature).
+4. Allowlist (Settings, Allowlist): `http://localhost:3100`, `http://localhost:3101`, `https://devnet.stoker.markets` and `https://stoker.markets`, each with its protocol, or the SDK refuses to initialise from any other origin.
+5. Give the client id to the builds: `NEXT_PUBLIC_WEB3AUTH_CLIENT_ID=<client id>` beside `NEXT_PUBLIC_API_URL` on the devnet build (section 11) and the production build (section 9), and in `apps/web/.env.local` for the dev site on this Mac.
+   `NEXT_PUBLIC_WEB3AUTH_NETWORK=sapphire_devnet` names the devnet network for a throwaway project; unset, the site uses Sapphire Mainnet.
+   The client id is a public identifier, not a secret, and may be committed in a deploy script.
+6. Prove it on the dev site or the rehearsal: Sign in with Google (Web3Auth's popup, then back); the header shows the account; its menu names the sign-in and shows the Stoker wallet's address at 0 SOL; send devnet SOL to that address; launch a coin; the signing panel reads "Signing with your Stoker wallet…" and the coin lands; Export key shows the secret key in the site's own dialog; Sign out brings "Sign in" back and a reload stays signed out.
+   The dashboard then counts the wallet among the month's active ones.
+
+Until the project exists the sheet shows the wallets alone; the UI suite never calls Web3Auth (its stand-in signs with the test key), so the real sign-in is proven only this way.

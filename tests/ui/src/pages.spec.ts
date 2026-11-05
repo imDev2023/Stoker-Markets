@@ -90,7 +90,7 @@ test("on a phone the tab bar carries the launch with its name and the account sh
     if (!(await sheet.isVisible())) await tabs.getByRole("button", { name: "Account" }).click();
     await expect(sheet).toBeVisible({ timeout: 1_000 });
   }).toPass({ timeout: 30_000 });
-  await expect(sheet.getByRole("button", { name: "Connect wallet" })).toBeVisible();
+  await expect(sheet.getByRole("button", { name: "Sign in" })).toBeVisible();
   await expect(sheet.getByRole("navigation", { name: "More" }).getByRole("link")).toHaveText(["Swap", "Stats", /Curated/]);
   await expect(sheet.getByRole("link", { name: "Developers" })).toHaveCount(0);
   await page.keyboard.press("Escape");

@@ -231,7 +231,7 @@ test("declining the airdrop sends nothing, and the Creator can send it once the 
   // Only the Creator can send it.
   await expect(card.getByRole("button")).toHaveCount(0);
 
-  await connectTestWallet(page, page.getByRole("banner").getByRole("button", { name: "Connect wallet" }));
+  await connectTestWallet(page, page.getByRole("banner").getByRole("button", { name: "Sign in" }));
   wallet.declineNext();
   await card.getByRole("button", { name: "Send airdrop" }).click();
   await expect(card.getByRole("alert")).toHaveText(

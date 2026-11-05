@@ -1,0 +1,41 @@
+/* The secret key's dialog on the dialog primitive: the warning, the key in a well, Copy and Done. */
+.dialog {
+  width: min(480px, calc(100vw - 32px));
+  padding: 24px;
+}
+
+.title {
+  margin: 0 0 10px;
+}
+
+.text {
+  margin: 0 0 14px;
+  color: var(--ink-2);
+  font-size: var(--text-ui);
+}
+
+.key {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--sunken);
+  color: var(--on-sunken);
+}
+
+.secret {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}

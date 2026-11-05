@@ -826,8 +826,21 @@
   color: var(--on-tile);
 }
 
+/*
+ * While the wallet is asked the ring turns (owner, 2026-11-02: "make this ring dynamic like a loading effect"): the
+ * whole drawing rotates, so the ember end of its ramp travels round and the mark stays whole, no gap cut into it. It
+ * settles to the live dot once the transaction is sent, and stands still under reduced motion.
+ */
 .signingRing {
   margin-bottom: 4px;
+  transform-origin: center;
+  animation: turn 1.6s linear infinite;
+}
+
+@keyframes turn {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .signingTitle {
@@ -904,6 +917,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .mark[data-status="pending"],
+  .signingRing,
   .statusDot {
     animation: none;
   }

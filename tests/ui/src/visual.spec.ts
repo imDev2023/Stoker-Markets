@@ -9,7 +9,7 @@ import {
 } from "./fixtures";
 import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, REWARD_QUOTE } from "./seedData";
 import { chooseQuote, signButton, toStep } from "./launchPage";
-import { accountArea, connectFromSite, connectTestWallet, installTestWallet, openWalletMenu, TEST_WALLET_NAME } from "./wallet";
+import { accountArea, connectFromSite, connectTestWallet, installTestWallet, openSignIn, signInWith, STOKER_WALLET_NAME, TEST_WALLET_NAME } from "./wallet";
 
 // The chart's time axis and candle spacing follow the clock, so its canvases are masked like any other time. Only what is
 // visible: content of a closed <details> still has a box, and masking it would paint over whatever is on screen there.
@@ -185,7 +185,7 @@ test("coin page with trades", async ({ page }) => {
 test("trade panel, buy and sell, quote and review", async ({ page, wallet }) => {
   await page.goto(`/coin/${await mintOf("Harbor Lights")}`);
   const panel = page.getByRole("region", { name: /^Trade( |$)/ });
-  await connectTestWallet(page, panel.getByRole("button", { name: "Connect wallet" }));
+  await connectTestWallet(page, panel.getByRole("button", { name: "Sign in" }));
   await panel.getByRole("button", { name: "0.5 SOL" }).click();
   await expect(panel.getByText("You get about")).toBeVisible();
   // The pointer rests on what it clicked and would draw its hover into the shot; park it first.
@@ -237,7 +237,7 @@ test("trade panel paying with SOL on a USDC-paired coin, quote and review", asyn
   await page.goto(`/coin/${await mintOf("Dollar Paired")}`);
   await unstickHeader(page);
   const panel = page.getByRole("region", { name: /^Trade( |$)/ });
-  await connectTestWallet(page, panel.getByRole("button", { name: "Connect wallet" }));
+  await connectTestWallet(page, panel.getByRole("button", { name: "Sign in" }));
   // The test wallet holds no USDC, so the panel pays with SOL.
   await expect(panel.getByRole("group", { name: "Pay with" }).getByRole("button", { name: "SOL" })).toHaveAttribute("aria-pressed", "true");
   await panel.getByRole("button", { name: "0.5 SOL" }).click();
@@ -259,7 +259,7 @@ test("trade panel paying with SOL where there is no SOL route", async ({ page, w
   await page.goto(`/coin/${await mintOf("Chipmaker Pair")}`);
   await unstickHeader(page);
   const panel = page.getByRole("region", { name: /^Trade( |$)/ });
-  await connectTestWallet(page, panel.getByRole("button", { name: "Connect wallet" }));
+  await connectTestWallet(page, panel.getByRole("button", { name: "Sign in" }));
   await panel.getByRole("button", { name: "0.1 SOL" }).click();
   // The pointer rests on the preset it clicked, which draws its hover; park it so the shot is the same every run.
   await page.mouse.move(0, 0);
@@ -282,7 +282,7 @@ test("trade panel after graduation, with the pool's fees", async ({ page, wallet
   await giveCoins(SEED_HOLDER, wallet.keypair.publicKey, mint, 1_000_000n * 1_000_000n);
   await page.goto(`/coin/${mint}`);
   const panel = page.getByRole("region", { name: /^Trade( |$)/ });
-  await connectTestWallet(page, panel.getByRole("button", { name: "Connect wallet" }));
+  await connectTestWallet(page, panel.getByRole("button", { name: "Sign in" }));
   await panel.getByRole("button", { name: "0.5 SOL" }).click();
   // The pointer rests on the preset it clicked, which draws its hover; park it so the shot is the same every run.
   await page.mouse.move(0, 0);
@@ -312,7 +312,7 @@ test("coin not found", async ({ page }) => {
  */
 async function connectOnForm(page: Page) {
   await toStep(page, "review");
-  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
+  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Sign in" }));
   await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
   await toStep(page, "coin");
 }
@@ -337,9 +337,9 @@ test("launch form, step by step", async ({ page, wallet }) => {
   await snap(page, "launch-disconnected.png");
 
   await toStep(page, "review");
-  await openWalletMenu(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
-  await snap(page, "launch-wallet-menu.png");
-  await page.getByRole("menuitem", { name: TEST_WALLET_NAME }).click();
+  await openSignIn(page, page.getByRole("main").getByRole("button", { name: "Sign in" }));
+  await snap(page, "launch-sign-in.png");
+  await page.getByRole("dialog", { name: "Sign in" }).getByRole("button", { name: TEST_WALLET_NAME }).click();
   await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
 
   await fillCoin(page, "Tracer Bullet", "TRCR");
@@ -487,8 +487,22 @@ test("header wallet menu when connected", async ({ page, wallet }) => {
   // The header's ghost is the avatar once connected; on a phone the tab bar's Account tab opens the sheet that holds it.
   const account = (await accountArea(page)).getByRole("button", { name: wallet.keypair.publicKey.toBase58().slice(0, 4), exact: false });
   await account.click();
-  await expect(page.getByRole("menuitem", { name: "Disconnect" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Sign out" })).toBeVisible();
   await expect(page).toHaveScreenshot("header-account-menu.png", { mask: dynamic(page) });
+});
+
+test("header account menu for a Stoker wallet", async ({ page, wallet }) => {
+  await page.goto("/launch");
+  await toStep(page, "review");
+  await signInWith(page, page.getByRole("main").getByRole("button", { name: "Sign in" }), "google");
+  await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
+  await page.goto("/");
+  // The menu names the sign-in and shows the Stoker wallet's address and balance, with where to send SOL.
+  const account = (await accountArea(page)).getByRole("button", { name: wallet.keypair.publicKey.toBase58().slice(0, 4), exact: false });
+  await account.click();
+  const menu = page.getByRole("menu", { name: `Connected with ${STOKER_WALLET_NAME}` });
+  await expect(menu.getByText(/\d\.\d{4} SOL/)).toBeVisible();
+  await expect(page).toHaveScreenshot("header-account-menu-stoker.png", { mask: dynamic(page) });
 });
 
 // The creator page is the connected wallet's own: no public view of anyone's earnings.
@@ -498,7 +512,7 @@ test("creator earnings page, as its Creator", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Your creator earnings" })).toBeVisible();
   await snap(page, "creator-connect.png");
 
-  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
+  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Sign in" }));
   await expect(page.getByRole("region", { name: "SOL" })).toBeVisible();
   await expect(page.locator("main img").first()).toHaveJSProperty("complete", true);
   await snap(page, "creator.png", tradedDynamic);
@@ -507,7 +521,7 @@ test("creator earnings page, as its Creator", async ({ page }) => {
 test("creator earnings page of a wallet that never launched", async ({ page }) => {
   await installTestWallet(page, fixedKeypair("never launched"));
   await page.goto("/creator");
-  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
+  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Sign in" }));
   await expect(page.getByText("You haven't launched a coin here yet.")).toBeVisible();
   await snap(page, "creator-empty.png");
 });

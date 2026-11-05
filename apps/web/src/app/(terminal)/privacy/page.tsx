@@ -15,8 +15,8 @@ export default function PrivacyPage() {
       <h1 className={`t-h1 ${styles.title}`}>Privacy</h1>
       <p className={styles.dated}>Last updated 29 October 2026.</p>
       <div className={styles.prose}>
-        <h2 className="t-h3">No account, no tracking</h2>
-        <p>Stoker has no accounts. The site sets one cookie, which holds your light-or-dark choice, and keeps your acknowledgement of the disclaimer in your browser&apos;s own storage. There are no analytics scripts and no advertising trackers.</p>
+        <h2 className="t-h3">Accounts and tracking</h2>
+        <p>Stoker needs no account: a wallet connects and signs. If you sign in with Google, Apple, GitHub, X or email instead, Web3Auth (part of MetaMask), our sign-in provider, receives that sign-in, makes a Solana wallet for you (your Stoker wallet) and keeps the sign-in and the wallet&apos;s key shares under its own privacy policy; Stoker sees the wallet&apos;s address and the name, handle or email the sign-in gave, and shows them only to you. The site sets one cookie, which holds your light-or-dark choice, and keeps your acknowledgement of the disclaimer in your browser&apos;s own storage. There are no analytics scripts and no advertising trackers.</p>
 
         <h2 className="t-h3">What the servers see</h2>
         <p>Like any website, the site and the API record each request (its address, browser and the page or endpoint asked for) in Cloudflare&apos;s logs, kept briefly to run the service and to stop abuse. The API may read the country a request comes from, as Cloudflare reports it, to decide which features are offered where.</p>
@@ -25,7 +25,7 @@ export default function PrivacyPage() {
         <p>Launches, trades, wallet addresses and payments are read from the Solana blockchain, which is public and permanent; the site shows them but cannot change or delete them. A coin&apos;s image and metadata are stored on Arweave at launch, where they are public and permanent too.</p>
 
         <h2 className="t-h3">Who else is involved</h2>
-        <p>The site runs on Cloudflare; chain data comes from Helius and public Solana RPC nodes; prices and routes come from Jupiter; permanent storage goes through ArDrive Turbo to Arweave; your wallet is provided by its own maker. Each of these sees what it needs to serve the request and has its own privacy terms.</p>
+        <p>The site runs on Cloudflare; chain data comes from Helius and public Solana RPC nodes; prices and routes come from Jupiter; permanent storage goes through ArDrive Turbo to Arweave; your wallet is provided by its own maker, and a Stoker wallet is made and held with Web3Auth. Each of these sees what it needs to serve the request and has its own privacy terms.</p>
 
         <h2 className="t-h3">Contact</h2>
         <p>Questions about this notice go to <a href={`mailto:${SITE_LINKS.email}`}>{SITE_LINKS.email}</a>.</p>

@@ -64,7 +64,7 @@ export function CreatorDashboard({ platform }: { platform: PlatformInfo }) {
       </header>
       {!creator ? (
         <div className={`card ${styles.connect}`}>
-          <p>Connect the wallet you launched with to see what your coins have earned you.</p>
+          <p>Sign in with the wallet you launched with to see what your coins have earned you.</p>
           <WalletButton variant="inline" />
         </div>
       ) : !own ? (

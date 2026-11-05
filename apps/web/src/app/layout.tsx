@@ -80,7 +80,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     <html lang="en" data-theme={theme} data-scheme={scheme === "light" || scheme === "dark" ? scheme : undefined} className={`${bricolage.variable} ${instrumentSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <body>
         <ThemeOverride />
-        <Providers rpcUrl={platform.rpcUrl}>
+        <Providers rpcUrl={platform.rpcUrl} cluster={platform.cluster}>
           <SiteHeader cluster={platform.cluster} />
           {platform.cluster === "devnet" && <ClusterNotice />}
           {upcoming && <FeeChangeBanner announcement={upcoming} platform={platform} />}

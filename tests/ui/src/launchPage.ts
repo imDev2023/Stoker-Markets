@@ -15,7 +15,7 @@ export const COIN = {
 const MORE_LINK_LABELS = { discord: "Discord", tiktok: "TikTok", instagram: "Instagram", youtube: "YouTube" } as const;
 
 export async function connectWallet(page: Page) {
-  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
+  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Sign in" }));
   await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
 }
 

@@ -20,6 +20,7 @@ import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
 import { LaunchOptions, LaunchType, supplyShare, useLaunchOptions } from "./LaunchOptions";
 import { LinkIcon } from "./LinkIcon";
 import { Ring } from "./Mark";
+import { EMBEDDED_WALLET_NAME } from "@/lib/signIn";
 import { PairMark } from "./PairMark";
 import { QuoteChooser } from "./QuoteChooser";
 import { QuoteLogo } from "./QuoteLogo";
@@ -686,8 +687,14 @@ function Summary({
                 {step.kind === "signing" ? (
                   <div className={styles.signing} role="status">
                     <Ring size={28} className={styles.signingRing} />
-                    <p className={styles.signingTitle}>{walletName ? `Confirm in ${walletName}` : "Confirm in your wallet"}</p>
-                    <p className={styles.signingText}>You sign in your wallet. Stoker never holds your funds.</p>
+                    <p className={styles.signingTitle}>
+                      {walletName === EMBEDDED_WALLET_NAME ? "Signing with your Stoker wallet…" : walletName ? `Confirm in ${walletName}` : "Confirm in your wallet"}
+                    </p>
+                    <p className={styles.signingText}>
+                      {walletName === EMBEDDED_WALLET_NAME
+                        ? "Your Stoker wallet signs what you reviewed. Stoker never holds your funds or your key."
+                        : "You sign in your wallet. Stoker never holds your funds."}
+                    </p>
                     <dl className={styles.signingAmounts}>
                       <div>
                         <dt>Your wallet pays</dt>
@@ -726,7 +733,7 @@ function Summary({
               </button>
             ) : (
               <div className={styles.connect}>
-                <p>Connect a wallet to launch. It pays the network fees and becomes the coin&apos;s creator.</p>
+                <p>Sign in to launch. Your wallet pays the network fees and becomes the coin&apos;s creator.</p>
                 <WalletButton variant="inline" />
               </div>
             )}

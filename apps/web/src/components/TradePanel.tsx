@@ -563,7 +563,7 @@ export function TradePanel({
           </button>
         ) : (
           <div className={styles.connect}>
-            <p>Connect a wallet to trade.</p>
+            <p>Sign in to trade.</p>
             <WalletButton variant="inline" />
           </div>
         )}

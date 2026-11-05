@@ -41,7 +41,7 @@ test("the most traded coin's trade panel stands in the hero", async ({ page }) =
   const h = hero(page);
   await expect(h.getByRole("group", { name: "Buy or sell" })).toBeVisible();
   // No wallet in this test: the panel asks for one, as it does on the coin's page.
-  await expect(h.getByText("Connect a wallet to trade.")).toBeVisible();
+  await expect(h.getByText("Sign in to trade.")).toBeVisible();
   await expect(h.getByRole("link", { name: "Its page" })).toHaveAttribute("href", /^\/coin\//);
   await expectNoHorizontalOverflow(page);
 });

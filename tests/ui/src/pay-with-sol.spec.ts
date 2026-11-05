@@ -21,7 +21,7 @@ async function jtoCoin(symbol: string) {
 
 async function openConnected(page: Page, mint: string) {
   await page.goto(`/coin/${mint}`);
-  await connectTestWallet(page, panel(page).getByRole("button", { name: "Connect wallet" }));
+  await connectTestWallet(page, panel(page).getByRole("button", { name: "Sign in" }));
   await expect(panel(page).getByRole("button", { name: "Review buy" })).toBeVisible();
 }
 

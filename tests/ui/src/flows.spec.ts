@@ -134,9 +134,9 @@ test("a Creator's earnings are their own page, offered once they have launched, 
 
   // A wallet that has launched nothing is offered no earnings page.
   await page.goto("/");
-  await connectTestWallet(page, page.getByRole("banner").getByRole("button", { name: "Connect wallet" }));
+  await connectTestWallet(page, page.getByRole("banner").getByRole("button", { name: "Sign in" }));
   await account.click();
-  await expect(page.getByRole("menuitem", { name: "Disconnect" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Sign out" })).toBeVisible();
   await expect(page.getByRole("menuitem", { name: "Your earnings" })).toHaveCount(0);
 
   const mint = await launchViaApi(wallet.keypair, { name: "Fee Earner", symbol: "EARN" });

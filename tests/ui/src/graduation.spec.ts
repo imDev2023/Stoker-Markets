@@ -17,7 +17,7 @@ const progress = (page: Page) => page.getByRole("region", { name: "Graduation" }
 const review = (page: Page) => page.getByRole("region", { name: "Review your trade" });
 
 async function connectWallet(page: Page) {
-  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
+  await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Sign in" }));
   await expect(page.getByRole("button", { name: "Review buy" })).toBeVisible();
 }
 

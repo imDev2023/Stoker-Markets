@@ -167,7 +167,7 @@ test("the coin page shows top holders that match the chain, and whether the Crea
   await expect(holders.getByRole("listitem").filter({ hasText: "Creator" })).toContainText(percentOf(creatorHeld));
 
   // The trader buys through the page; the card picks up the new holder right after.
-  await connectTestWallet(page, page.getByRole("region", { name: /^Trade( |$)/ }).getByRole("button", { name: "Connect wallet" }));
+  await connectTestWallet(page, page.getByRole("region", { name: /^Trade( |$)/ }).getByRole("button", { name: "Sign in" }));
   const panel = page.getByRole("region", { name: /^Trade( |$)/ });
   await panel.getByRole("button", { name: "0.1 SOL" }).click();
   await expect(panel.getByText("You get about")).toBeVisible();
@@ -248,7 +248,7 @@ test("the header's toggle switches light and dark and the choice holds", async (
   const flip = async (name: string) => {
     const row = page.getByRole("menuitem", { name });
     await expect(async () => {
-      if (!(await row.isVisible())) await page.getByRole("banner").getByRole("button", { name: "Connect wallet" }).click();
+      if (!(await row.isVisible())) await page.getByRole("banner").getByRole("button", { name: "Sign in" }).click();
       await expect(row).toBeVisible({ timeout: 1_000 });
     }).toPass({ timeout: 30_000 });
     await row.click();

@@ -93,6 +93,9 @@
   flex-direction: column;
   gap: 16px;
   width: 100%;
+  /* Taller than the window (a Stoker wallet's menu open), the sheet scrolls within it. */
+  max-height: 100dvh;
+  overflow-y: auto;
   /* The card's radius all round, its lower corners carried below the window's edge so only the top ones show. */
   margin-bottom: calc(-1 * var(--radius-card));
   padding: 20px var(--gutter) calc(var(--tabs-h) + 16px + var(--radius-card) + env(safe-area-inset-bottom, 0px));

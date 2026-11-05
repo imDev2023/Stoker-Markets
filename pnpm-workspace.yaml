@@ -4,9 +4,13 @@ packages:
   - tools/*
   - tests/*
 allowBuilds:
+  '@reown/appkit': false
   bigint-buffer: true
   bufferutil: true
   esbuild: true
+  keccak: false
+  protobufjs: false
+  tiny-secp256k1: false
   utf-8-validate: true
   workerd: true
 peerDependencyRules:

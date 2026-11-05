@@ -17,7 +17,7 @@ export default function TermsPage() {
       <p className={styles.dated}>Last updated 29 October 2026.</p>
       <div className={styles.prose}>
         <h2 className="t-h3">What Stoker is</h2>
-        <p>Stoker (stoker.markets) is a website and an API that build Solana transactions for Raydium&apos;s LaunchLab and CPMM programs and show what the Solana blockchain records. Stoker holds no funds and none of your keys. Every transaction is signed in your own wallet, which shows you what it does before you sign.</p>
+        <p>Stoker (stoker.markets) is a website and an API that build Solana transactions for Raydium&apos;s LaunchLab and CPMM programs and show what the Solana blockchain records. Stoker holds no funds and none of your keys. Every transaction is signed in your own wallet, which shows you what it does before you sign, or by the Stoker wallet made for your social or email sign-in after the site&apos;s own review of what it does. A Stoker wallet is provided by Web3Auth (part of MetaMask) under its terms, its key split into shares held by Web3Auth&apos;s network and released by your sign-in, and you can export the key at any time.</p>
 
         <h2 className="t-h3">Who may use it</h2>
         <p>The site is not offered to people in {EXCLUDED_REGIONS}, nor to anyone where launching or trading these coins is not allowed. By using the site you confirm that you are none of these and that you are of legal age where you are.</p>
