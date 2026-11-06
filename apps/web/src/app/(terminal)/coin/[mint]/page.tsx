@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAirdrop, getCandles, getCoinRewards, getHolders, getLaunch, getPlatform, getQuoteAsset, getTrust, listTrades } from "@/lib/api";
+import { getAirdrop, getCoinRewards, getHolders, getLaunch, getPlatform, getQuoteAsset, getTrust, listTrades } from "@/lib/api";
 import { explorerUrl, isSol, quoteTicker } from "@/lib/format";
 import { breadcrumbList, clip, pageMeta } from "@/lib/meta";
 import { siteOrigin } from "@/lib/origin";
@@ -42,8 +42,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function CoinPage({ params, searchParams }: Props) {
   const { mint } = await params;
   const referrer = referrerFrom(await searchParams);
-  const [launch, platform, trades, candles, holders, trust, airdrop] = await Promise.all([
-    getLaunch(mint), getPlatform(), listTrades(mint), getCandles(mint, "1m"),
+  const [launch, platform, trades, holders, trust, airdrop] = await Promise.all([
+    getLaunch(mint), getPlatform(), listTrades(mint),
     // A 404 (no such coin) or an unreadable chain leaves the cards to retry, rather than failing the page.
     getHolders(mint).catch(() => null),
     getTrust(mint).catch(() => null),
@@ -76,7 +76,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
           a server-rendered tree handed through the client boundary as a prop warns about missing keys when the client
           re-renders with it (2026-10-31: the pair card first, then the Airdrop card the moment a wallet connected). */}
       <CoinMarket
-        initial={launch} platform={platform} quoteAsset={quoteAsset} links={links} initialTrades={trades.trades} initialCandles={candles} initialHolders={holders}
+        initial={launch} platform={platform} quoteAsset={quoteAsset} links={links} initialTrades={trades.trades} initialHolders={holders}
         initialTrust={trust} renderedAt={Date.now()} referrer={referrer} airdrop={airdropDone ? null : airdrop}
       />
 

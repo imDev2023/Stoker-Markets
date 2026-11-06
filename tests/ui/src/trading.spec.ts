@@ -1,7 +1,7 @@
 // What a trader does on a coin page, end to end against the real chain, API and Indexer.
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
 import type { Page } from "@playwright/test";
-import { expect, forgetDisclaimer, fundedKeypair, launchViaApi, stackEnv, test, tradeViaApi } from "./fixtures";
+import { expect, forgetDisclaimer, fundedKeypair, launchViaApi, listLaunches, stackEnv, test, tradeViaApi } from "./fixtures";
 import { connectTestWallet } from "./wallet";
 
 const panel = (page: Page) => page.getByRole("region", { name: /^Trade( |$)/ });
@@ -35,10 +35,20 @@ async function coinsHeld(owner: PublicKey, mint: string) {
   return accounts.value.reduce((sum, a) => sum + BigInt(a.account.data.parsed.info.tokenAmount.amount as string), 0n);
 }
 
+/** The coin page's chart (#126): our head above TradingView's library, which draws in a frame of its own. */
+const chart = (page: Page) => page.getByRole("region", { name: /^(Price|Market cap)$/ });
+const chartFrame = (page: Page) => chart(page).frameLocator("[data-chart] iframe");
+/** The price the title row shows, in the compact notation the chart's legend and scale use too. */
+const shownPrice = async (page: Page) => (await page.locator("article header .price > [aria-hidden]").first().textContent())!;
+
 test("a trader buys, then sells half, and sees both in the history and the chart", async ({ page, wallet }) => {
   const mint = await freshCoin("BUYS");
   await openConnected(page, mint);
   await expect(page.getByText("No trades yet. Be the first to buy.", { exact: true })).toBeVisible();
+  // Before the first trade the chart is its note alone: the library waits for something to draw.
+  await expect(chart(page).locator("[data-chart]")).toHaveAttribute("data-chart", "empty");
+  await expect(chart(page).getByText("The chart starts with the first trade.")).toBeVisible();
+  await expect(chart(page).locator("iframe")).toHaveCount(0);
 
   // Buy: a preset fills the amount, the quote shows what the fees come to in one line (no rate anywhere but the Fees
   // page, owner 2026-10-30) with the link there, and the disclaimer comes before the first review.
@@ -81,6 +91,11 @@ test("a trader buys, then sells half, and sees both in the history and the chart
   await expect(page.getByText("No trades yet. Be the first to buy.", { exact: true })).toBeHidden();
   // The chart's market cap, with the figure (the stats strip has a "Market cap" label of its own).
   await expect(page.getByText(/^Market cap [\d.,]+ SOL$/)).toBeVisible();
+  // The first trade starts the chart: TradingView's library, served from our own origin, draws the coin from our candles,
+  // its legend naming the series and closing at the price the page shows.
+  await expect(chart(page).locator("[data-chart]")).toHaveAttribute("data-chart", "ready", { timeout: 60_000 });
+  await expect(chartFrame(page).getByText("BUYS / SOL", { exact: true })).toBeVisible();
+  await expect(chartFrame(page).locator("body")).toContainText(await shownPrice(page));
 
   // Sell half: the percentage presets come from the balance the wallet holds.
   await panel(page).getByRole("group", { name: "Buy or sell" }).getByRole("button", { name: "Sell" }).click();
@@ -94,12 +109,57 @@ test("a trader buys, then sells half, and sees both in the history and the chart
   expect(await coinsHeld(wallet.keypair.publicKey, mint)).toBe(held - held / 2n);
   await expect(history.getByRole("row")).toHaveCount(3);
   await expect(history.getByRole("row").nth(1)).toContainText("Sell");
+  // The live candle follows the sell without a reload: the legend closes at the new price.
+  await expect(chartFrame(page).locator("body")).toContainText(await shownPrice(page));
 
   // Another candle interval redraws the chart from the same trades.
-  const intervals = page.getByRole("group", { name: "Candle interval" });
+  const intervals = chart(page).getByRole("group", { name: "Candle interval" });
   await intervals.getByRole("button", { name: "5m", exact: true }).click();
   await expect(intervals.getByRole("button", { name: "5m", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(chartFrame(page).getByText("BUYS / SOL", { exact: true })).toBeVisible();
   await expect(page.getByText("The chart starts with the first trade.")).toBeHidden();
+
+  // The market cap instead of the price, then in USD at SOL's latest price: the series and the head's figures follow.
+  await chart(page).getByRole("group", { name: "Chart shows" }).getByRole("button", { name: "Market cap" }).click();
+  await expect(chart(page).getByRole("heading", { name: "Market cap" })).toBeVisible();
+  await expect(chartFrame(page).getByText("BUYS market cap in SOL", { exact: true })).toBeVisible();
+  await chart(page).getByRole("group", { name: "Currency" }).getByRole("button", { name: "USD" }).click();
+  await expect(chartFrame(page).getByText("BUYS market cap in USD", { exact: true })).toBeVisible();
+  await expect(chart(page).getByText(/^Market cap [\d.,]+ USD$/)).toBeVisible();
+  await expect(chart(page).getByText(/^24h volume [\d.,]+ USD$/)).toBeVisible();
+});
+
+test("the chart follows the header's light or dark toggle", async ({ page }) => {
+  const harbor = (await listLaunches()).find((l) => l.name === "Harbor Lights")!;
+  await page.goto(`/coin/${harbor.mint}`);
+  await expect(chart(page).locator("[data-chart]")).toHaveAttribute("data-chart", "ready", { timeout: 60_000 });
+  // The library draws in a frame of its own: the page's tokens reach it as its own custom properties, read again on a flip.
+  const toolbar = () => chartFrame(page).locator("body").evaluate((el) => getComputedStyle(el).getPropertyValue("--tv-color-platform-background").trim());
+  // The card's surface, written the way the canvas writes a colour (`#rrggbb`), as the chart's tokens are.
+  const card = () =>
+    page.evaluate(() => {
+      const probe = document.createElement("canvas").getContext("2d")!;
+      probe.fillStyle = getComputedStyle(document.querySelector("[data-chart]")!.closest("section")!).backgroundColor;
+      return String(probe.fillStyle);
+    });
+  const flip = async (name: string) => {
+    const row = page.getByRole("menuitem", { name });
+    await expect(async () => {
+      if (!(await row.isVisible())) await page.getByRole("banner").getByRole("button", { name: "Connect wallet" }).click();
+      await expect(row).toBeVisible({ timeout: 1_000 });
+    }).toPass({ timeout: 30_000 });
+    await row.click();
+  };
+  // The flows carry the light cookie: the chart's toolbar sits on the card's own light surface.
+  const light = await toolbar();
+  await expect.poll(card).toBe(light);
+  await flip("Switch to dark mode");
+  await expect(page.locator("html")).toHaveAttribute("data-scheme", "dark");
+  await expect.poll(toolbar).not.toBe(light);
+  // The card's surface transitions to the dark one; the chart's matches it once it has.
+  await expect.poll(async () => (await toolbar()) === (await card())).toBe(true);
+  await flip("Switch to light mode");
+  await expect.poll(toolbar).toBe(light);
 });
 
 test("a buy that takes the rest of the curve costs only what is left and closes trading", async ({ page, wallet }) => {

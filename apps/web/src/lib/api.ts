@@ -151,8 +151,13 @@ export async function listTrades(mint: string) {
   return read(await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/trades?limit=50`, { cache: "no-store" }), TradeList);
 }
 
-export async function getCandles(mint: string, interval: CandleInterval) {
-  return read(await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/candles?interval=${interval}`, { cache: "no-store" }), CandleList);
+/** A coin's candles of one interval: the latest `limit`, or with `before` (Unix seconds) the latest that start before it. */
+export async function getCandles(mint: string, interval: CandleInterval, page: { before?: number; limit?: number; signal?: AbortSignal } = {}) {
+  const query = new URLSearchParams({ interval });
+  if (page.before !== undefined) query.set("before", String(page.before));
+  if (page.limit !== undefined) query.set("limit", String(page.limit));
+  const url = `${API_URL}/v1/launches/${encodeURIComponent(mint)}/candles?${query}`;
+  return read(await apiFetch(url, { cache: "no-store", signal: page.signal }), CandleList);
 }
 
 /** A Creator's earnings per Quote Asset and per Launch (ADR 0009); null if the address isn't a valid wallet address. */

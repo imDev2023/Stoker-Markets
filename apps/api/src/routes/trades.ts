@@ -9,7 +9,7 @@ import {
   type PreparedTrade as ChainPreparedTrade, type RoutedMarket,
 } from "@launchpad/chain";
 import {
-  CandleInterval, PrepareTradeRequest, TradeQuoteQuery, type CandleList, type CurveProgress, type PreparedTrade, type Referral, type TradeList,
+  CandleInterval, CandleQuery, PrepareTradeRequest, TradeQuoteQuery, type CandleList, type CurveProgress, type PreparedTrade, type Referral, type TradeList,
   type TradeQuote, type TradeSide,
 } from "@launchpad/contract";
 import { curves, launches, quoteAssets, trades, type Db } from "@launchpad/db";
@@ -69,14 +69,21 @@ tradeRoutes.get("/launches/:mint/trades", async (c) => {
 const BUCKET: Record<CandleInterval, string> = {
   "1m": "1 minute", "5m": "5 minutes", "15m": "15 minutes", "1h": "1 hour", "4h": "4 hours", "1d": "1 day",
 };
-const MAX_CANDLES = 500;
 
-/** Price candles built from indexed trades. Each opens at the price before its first trade, so candles join up. */
+/**
+ * Price candles built from indexed trades. Each opens at the price before its first trade, so candles join up. The latest
+ * `limit`, or with `before` the latest that start before it, which is how a chart pages back through history (#126).
+ */
 tradeRoutes.get("/launches/:mint/candles", async (c) => {
   const interval = CandleInterval.safeParse(c.req.query("interval") ?? "5m");
   if (!interval.success) return c.json({ error: "interval must be one of 1m, 5m, 15m, 1h, 4h, 1d" }, 400);
+  const query = CandleQuery.safeParse(c.req.query());
+  if (!query.success) return c.json({ error: "invalid candles request", details: query.error.issues }, 400);
+  const { before, limit } = query.data;
   // The bucket width comes from the fixed map above, never from the request, so it is safe to inline.
   const bucket = sql.raw(`date_bin(interval '${BUCKET[interval.data]}', block_time, timestamptz '1970-01-01 00:00:00+00')`);
+  // `before` is compared with where a candle starts, so a candle is answered whole or not at all.
+  const earlier = before === undefined ? sql`` : sql`and ${bucket} < to_timestamp(${before}::double precision)`;
   const rows = await c.get("db").execute<{ time: string; open: number; close: number; max: number; min: number; volume: string }>(sql`
     select extract(epoch from ${bucket})::bigint as time,
       (array_agg(price_before order by slot, signature, event_index))[1] as open,
@@ -85,10 +92,10 @@ tradeRoutes.get("/launches/:mint/candles", async (c) => {
       min(price_after) as min,
       sum(quote_amount)::text as volume
     from ${trades}
-    where mint = ${c.req.param("mint")}
+    where mint = ${c.req.param("mint")} ${earlier}
     group by ${bucket}
     order by ${bucket} desc
-    limit ${MAX_CANDLES}`);
+    limit ${limit}`);
   const res: CandleList = {
     interval: interval.data,
     candles: [...rows].reverse().map((r) => ({

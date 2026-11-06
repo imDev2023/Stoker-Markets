@@ -36,3 +36,7 @@ next-env.d.ts
 # Agent worktrees
 .claude/worktrees/
 .logs/
+
+# TradingView Advanced Charts (#126, ADR 0017): fetched at build time, licensed to our site only, never committed
+apps/web/public/charting_library/
+apps/web/public/.charting_library-*/

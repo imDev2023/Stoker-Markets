@@ -429,6 +429,13 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       });
       if (!issued.ok) throw new Error(`issuing the web server's API key failed: ${issued.status}\n${api.log()}`);
       webApiKey = ((await issued.json()) as { key: string }).key;
+      // The coin pages' chart is TradingView's library (#126, ADR 0017), fetched into the web's public folder and never
+      // committed: a stack with the web has it, or says at once why not (a token that can read the private repository).
+      try {
+        execFileSync(process.execPath, [join(REPO, "apps", "web", "scripts", "charting-library.mjs")], { stdio: ["ignore", "inherit", "pipe"] });
+      } catch (e) {
+        throw new Error(`the web needs TradingView's charting library: ${String((e as { stderr?: Buffer }).stderr ?? e).trim()}`, { cause: e });
+      }
       // A run that was killed never reached `stop`: remove the build folders such runs left behind (85 of them, 970 MB,
       // had gathered by 2026-10-28), told from a live run's by whether anything answers on the port in the name.
       const webDir = join(REPO, "apps", "web");

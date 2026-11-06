@@ -11,6 +11,8 @@ export default tseslint.config(
       "**/.wrangler/",
       "**/dist/",
       "**/next-env.d.ts",
+      // TradingView's Advanced Charts, fetched at build time and never committed (ADR 0017).
+      "apps/web/public/charting_library/",
       "**/test-results/",
       "**/playwright-report/",
       "research/",

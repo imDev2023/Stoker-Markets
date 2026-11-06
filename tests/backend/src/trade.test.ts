@@ -186,6 +186,25 @@ describe("curve progress, trade history and candles", () => {
         volume: (BigInt(buy.quote.amountIn) + BigInt(sell.quote.amountOut)).toString(),
       },
     ]);
+
+    // A chart pages back with `before` (#126): a candle is answered whole when it starts before it, and not at all from
+    // its own start on, so a page never repeats the one after it.
+    const candlesOf = async (query: string) => {
+      const res = await fetch(`${env().apiUrl}/v1/launches/${mint}/candles?${query}`);
+      expect(res.status).toBe(200);
+      return CandleList.parse(await res.json()).candles;
+    };
+    const day = candles[0]!.time;
+    expect(await candlesOf(`interval=1d&before=${day + 1}`)).toEqual(candles);
+    expect(await candlesOf(`interval=1d&before=${day}`)).toEqual([]);
+    // Both trades landed within the last minutes, so the latest minute is the sell's, and `limit` keeps only it.
+    const minutes = await candlesOf("interval=1m");
+    expect(minutes.at(-1)!.close).toBe(sell.quote.priceAfter);
+    expect(await candlesOf("interval=1m&limit=1")).toEqual(minutes.slice(-1));
+    expect(await candlesOf(`interval=1m&before=${minutes.at(-1)!.time}`)).toEqual(minutes.slice(0, -1));
+    for (const bad of ["interval=1m&limit=0", "interval=1m&limit=501", "interval=1m&before=soon"]) {
+      expect((await fetch(`${env().apiUrl}/v1/launches/${mint}/candles?${bad}`)).status).toBe(400);
+    }
   });
 
   it("stay the same however often and in whatever order trades are delivered", async () => {

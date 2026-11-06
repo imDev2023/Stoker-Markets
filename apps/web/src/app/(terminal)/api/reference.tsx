@@ -80,7 +80,7 @@ export const SECTIONS: readonly Section[] = [
       { endpoint: "GET /stats", text: <>The platform&apos;s figures: <C>since</C> (when the first coin launched), <C>launches</C>, <C>graduated</C>, and <C>volume24h</C> across every coin in SOL and USD at the Quote Registry&apos;s latest prices.</> },
       {
         endpoint: ["GET /launches/:mint/trades", "GET /launches/:mint/candles?interval=", "GET /launches/:mint/holders"],
-        text: <>Indexed trades (with any referral fee paid), price candles, and the top holders read from the chain.</>,
+        text: <>Indexed trades (with any referral fee paid), price candles, and the top holders read from the chain. Candles come newest last, up to <C>limit</C> (500 at most) of one <C>interval</C> (<C>1m</C>, <C>5m</C>, <C>15m</C>, <C>1h</C>, <C>4h</C> or <C>1d</C>); with <C>before</C> (Unix seconds) only those that start before it, to page back through a coin&apos;s history.</>,
       },
       {
         endpoint: ["GET /launches/:mint/trust"],

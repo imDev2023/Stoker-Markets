@@ -203,6 +203,21 @@ export const Candle = z.object({
 });
 export type Candle = z.infer<typeof Candle>;
 
+/** The most candles one request answers, and how many it answers by default. */
+export const CANDLES_MAX = 500;
+
+/**
+ * Which candles to answer: the latest `limit` of one interval, or, with `before`, the latest `limit` of those that start
+ * before it, so a chart pages back through history one request at a time.
+ */
+export const CandleQuery = z.object({
+  interval: CandleInterval.default("5m"),
+  /** Unix seconds, exclusive: only candles that start before it. A candle that started earlier is answered whole. */
+  before: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().min(1).max(CANDLES_MAX).default(CANDLES_MAX),
+});
+export type CandleQuery = z.input<typeof CandleQuery>;
+
 export const CandleList = z.object({ interval: CandleInterval, candles: z.array(Candle) });
 export type CandleList = z.infer<typeof CandleList>;
 

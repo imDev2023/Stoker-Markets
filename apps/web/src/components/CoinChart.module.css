@@ -1,4 +1,7 @@
-/* The chart is the coin page's dominant panel: at least 420px of plot on a desktop, the head one quiet line above it. */
+/*
+  The chart is the coin page's dominant panel: the head one quiet line above it (the figures, then what the chart shows
+  and its interval), then the library's chart with its own toolbars, at least 420px of plot on a desktop.
+*/
 .card {
   display: flex;
   flex-direction: column;
@@ -42,43 +45,33 @@
   color: var(--ink-2);
 }
 
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.choice > button,
 .intervals > button {
   min-width: 40px;
   padding: 0 10px;
   font-size: var(--text-label);
 }
 
-.ohlc {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 16px;
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  font-variant-numeric: tabular-nums slashed-zero;
-}
-
-.ohlc > div {
-  display: flex;
-  gap: 5px;
-}
-
-.ohlc dt {
+.choice > button:disabled {
   color: var(--ink-3);
-  font-weight: 500;
+  cursor: not-allowed;
 }
 
-.ohlc dd {
-  margin: 0;
-  color: var(--ink-2);
-}
-
-.ohlc :global(.mono) {
-  font-size: var(--text-label);
-}
-
+/* The library's toolbars take about 80px of the box: the plot keeps the 420px the old chart had. */
 .plot {
   position: relative;
+  height: 500px;
+  margin: 0 -8px;
+}
+
+/* Before the first trade the plot holds its note alone, at the old chart's height; the library's chart takes the rest. */
+.plot[data-chart="empty"] {
   height: 420px;
 }
 
@@ -87,7 +80,8 @@
   inset: 0;
 }
 
-.empty {
+/* Before the first trade, or when the library can't load: one quiet note over the chart's empty pane. */
+.note {
   position: absolute;
   inset: 0;
   display: flex;
@@ -100,14 +94,18 @@
   text-align: center;
   color: var(--ink-3);
   font-size: var(--text-ui);
+  pointer-events: none;
 }
 
-.empty :global(.price) {
+.note :global(.price) {
   color: var(--ink-2);
 }
 
 @media (max-width: 900px) {
   .plot {
+    height: 420px;
+  }
+  .plot[data-chart="empty"] {
     height: 320px;
   }
 }
@@ -117,8 +115,13 @@
     padding: 14px 16px 12px;
   }
   .plot {
+    height: 380px;
+    margin: 0 -10px;
+  }
+  .plot[data-chart="empty"] {
     height: 220px;
   }
+  .controls,
   .intervals {
     width: 100%;
   }
@@ -126,11 +129,5 @@
     flex: 1;
     min-width: 0;
     padding: 0;
-  }
-  /* Four prices don't fit one phone line; two rows of two keep them in step instead of wrapping one off. */
-  .ohlc {
-    display: grid;
-    grid-template-columns: repeat(2, max-content);
-    column-gap: 24px;
   }
 }

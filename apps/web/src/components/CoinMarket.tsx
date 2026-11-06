@@ -1,18 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AirdropStatus, CandleInterval, CandleList, HolderList, LaunchSummary, LaunchTrust, PlatformInfo, QuoteAsset, Trade, TradeSide } from "@launchpad/contract";
-import { getCandles, getHolders, getLaunch, getTrust, listTrades } from "@/lib/api";
+import type { AirdropStatus, HolderList, LaunchSummary, LaunchTrust, PlatformInfo, QuoteAsset, Trade, TradeSide } from "@launchpad/contract";
+import { getHolders, getLaunch, getTrust, listTrades } from "@/lib/api";
 import { quoteTicker } from "@/lib/format";
 import { AirdropCard } from "./AirdropCard";
 import { Change } from "./Change";
+import { CoinChart, idle } from "./CoinChart";
 import { CoinFacts } from "./CoinFacts";
 import { CurveProgress } from "./CurveProgress";
 import { Holders } from "./Holders";
 import { PairLockup, QuoteCard } from "./PairCards";
 import { PairMark } from "./PairMark";
 import { Price } from "./Price";
-import { PriceChart } from "./PriceChart";
 import { TradeHistory } from "./TradeHistory";
 import { TradePanel } from "./TradePanel";
 import { TrustCard, TrustMarks } from "./TrustCard";
@@ -59,7 +59,7 @@ const HOLDERS_REFRESH_MS = 12_000;
  * Raydium pool. On a phone the columns stack and a Buy / Sell bar at the foot brings the trade panel up.
  */
 export function CoinMarket({
-  initial, platform, quoteAsset, links, initialTrades, initialCandles, initialHolders, initialTrust, renderedAt, referrer = null, airdrop = null,
+  initial, platform, quoteAsset, links, initialTrades, initialHolders, initialTrust, renderedAt, referrer = null, airdrop = null,
 }: {
   initial: LaunchSummary;
   platform: PlatformInfo;
@@ -72,7 +72,6 @@ export function CoinMarket({
   /** From the page's `?ref=` link: the wallet that earns the referral share fee on the visitor's curve trades. */
   referrer?: string | null;
   initialTrades: Trade[];
-  initialCandles: CandleList;
   /** Null when the chain couldn't be read at render; the card retries. */
   initialHolders: HolderList | null;
   /** Null when the API couldn't answer at render; the card retries. */
@@ -82,15 +81,13 @@ export function CoinMarket({
 }) {
   const [launch, setLaunch] = useState(initial);
   const [trades, setTrades] = useState(initialTrades);
-  const [candleInterval, setCandleInterval] = useState(initialCandles.interval);
-  const shownInterval = useRef(initialCandles.interval);
-  const [candles, setCandles] = useState(initialCandles);
   const [holders, setHolders] = useState(initialHolders);
   const [trust, setTrust] = useState(initialTrust);
   const [now, setNow] = useState(renderedAt);
   const [tab, setTab] = useState<"trades" | "holders">("trades");
   const [trustOpen, setTrustOpen] = useState(false);
   const [sideRequest, setSideRequest] = useState<{ side: TradeSide; seq: number } | null>(null);
+  const chartPoll = useRef<() => Promise<void>>(idle);
   const trustBox = useRef<HTMLDivElement>(null);
   const tradeBox = useRef<HTMLDivElement>(null);
   const quote = quoteTicker(launch.quote);
@@ -98,22 +95,17 @@ export function CoinMarket({
   // The latest trade's price on the curve or, after Graduation, in the pool; before any trade, the curve's starting price.
   const price = launch.market.price;
 
-  // Candles for an interval the trader has since switched away from are dropped.
-  const loadCandles = useCallback(async (i: CandleInterval) => {
-    const c = await getCandles(launch.mint, i);
-    if (c.interval === shownInterval.current) setCandles(c);
-  }, [launch.mint]);
-
   const refresh = useCallback(async () => {
     try {
-      const [l, t] = await Promise.all([getLaunch(launch.mint), listTrades(launch.mint), loadCandles(shownInterval.current)]);
+      // The chart's live candles are read beside the rest (`lib/datafeed.ts`), as they always were.
+      const [l, t] = await Promise.all([getLaunch(launch.mint), listTrades(launch.mint), chartPoll.current()]);
       if (l) setLaunch(l);
       setTrades(t.trades);
     } catch {
       // keep showing the last good data; the next tick retries
     }
     setNow(Date.now());
-  }, [launch.mint, loadCandles]);
+  }, [launch.mint]);
 
   const refreshHolders = useCallback(async () => {
     const [h, t] = await Promise.allSettled([getHolders(launch.mint), getTrust(launch.mint)]);
@@ -146,12 +138,6 @@ export function CoinMarket({
       document.removeEventListener("pointerdown", onPress);
     };
   }, [trustOpen]);
-
-  function changeInterval(next: CandleInterval) {
-    shownInterval.current = next;
-    setCandleInterval(next);
-    loadCandles(next).catch(() => undefined);
-  }
 
   /** The phone's bar: the panel takes the side and scrolls into view under the header. */
   function goTrade(side: TradeSide) {
@@ -194,7 +180,7 @@ export function CoinMarket({
       <div className={`grid ${styles.market}`}>
         <div className={`col-8 ${styles.main}`}>
           <div className={styles.chart}>
-            <PriceChart data={candles} interval={candleInterval} onIntervalChange={changeInterval} price={price} quote={quote} volume24h={launch.market.volume24h.quote} />
+            <CoinChart launch={launch} quote={quote} poll={chartPoll} hasTrades={trades.length > 0} />
           </div>
           <div className={styles.progress}>
             <CurveProgress launch={launch} platform={platform} />

@@ -11,19 +11,24 @@ import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, REWARD_QUOTE } from "./
 import { chooseQuote, signButton, toStep } from "./launchPage";
 import { accountArea, connectFromSite, connectTestWallet, installTestWallet, openWalletMenu, TEST_WALLET_NAME } from "./wallet";
 
-// The chart's time axis and candle spacing follow the clock, so its canvases are masked like any other time. Only what is
-// visible: content of a closed <details> still has a box, and masking it would paint over whatever is on screen there.
-// The wallet's avatar draws its hues from the address, which every run draws afresh, so it is masked like the address.
-const dynamic = (page: Page) => ["time", ".mono:not(input)", "canvas", "[data-avatar]"].map((s) => page.locator(s).filter({ visible: true }));
+// The chart's time axis and candle spacing follow the clock, so TradingView's chart (#126) is masked like any other time,
+// as a whole: it draws in a frame of its own, whose canvases a mask on the page cannot reach. Before a coin's first trade
+// the plot holds only its note, which is shown. Only what is visible: content of a closed <details> still has a box, and
+// masking it would paint over whatever is on screen there. The wallet's avatar draws its hues from the address, which
+// every run draws afresh, so it is masked like the address. A coin row's five-minute change reads the seed's trades while
+// the shot lands within five minutes of them and 0.0% after, which a slow run reaches (the board, 2026-11-06), so it is a
+// clock like any time.
+const CHART = '[data-chart]:not([data-chart="empty"])';
+const FIVE_MINUTES = '[data-label="5m"]';
+const dynamic = (page: Page) => ["time", ".mono:not(input)", "canvas", CHART, FIVE_MINUTES, "[data-avatar]"].map((s) => page.locator(s).filter({ visible: true }));
 
 /**
  * A traded coin's amounts and prices follow from the fixed seed trades, so only what really varies is masked: times, the
- * chart, the latest candle (trades can straddle a minute), trader links and the coin's addresses.
+ * chart, trader links and the coin's addresses.
  */
 const tradedDynamic = (page: Page) => [
   page.locator("time"),
-  page.locator("canvas"),
-  page.locator('dl[aria-label$="candle"] .mono'),
+  page.locator(CHART),
   page.locator("a.mono"),
   page.locator("dl").filter({ hasText: "Launch transaction" }).locator(".mono"),
   page.locator("[data-avatar]").filter({ visible: true }),
@@ -42,6 +47,14 @@ const DIALOG_STYLES = ["screenshot.css", "dialog.css"].map((name) => fileURLToPa
  */
 const unstickHeader = (page: Page) =>
   page.addStyleTag({ content: "body > header { position: static !important; } html { scroll-padding-top: 0 !important; }" });
+
+/**
+ * Every coin chart on the page has loaded TradingView's library and drawn, or said it could not: the plot is masked
+ * either way, but a chart still loading keeps the network busy and can log after the shot.
+ */
+async function chartsSettled(page: Page) {
+  await expect(page.locator('[data-chart="loading"]')).toHaveCount(0, { timeout: 60_000 });
+}
 
 async function snap(page: Page, name: string, mask = dynamic) {
   // Check the settled page: hydrated, images in and web fonts swapped.
@@ -68,6 +81,7 @@ async function snap(page: Page, name: string, mask = dynamic) {
   // Hydrated before the shot, so the caret Playwright hides is on a field React already holds; the truncation check
   // then polls past the font swaps, so the overflow check after it sees the finished layout.
   await expectHydrated(page);
+  await chartsSettled(page);
   await expectNoTruncatedText(page);
   await expectNoHorizontalOverflow(page);
   // A full-page capture of a scrolled page stitches the sticky header into the middle, and one taken while a scroll is
