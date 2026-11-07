@@ -1,16 +1,64 @@
-/* The pair chooser on the launch form (phase 5): the recommended three and the fourth cell, and the full picker as a dialog. */
+/* The pair chooser on the launch form (#172, after new-stoker's): the recommended three as rows, the field for any other asset, and the full picker as a dialog. */
 .chooser {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
   min-width: 0;
 }
 
-/* The recommended three and the fourth cell in one row of four. */
-.featured {
+.rows {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.rowTicker {
+  font-weight: 600;
+}
+
+/* Any other asset: a field that reads like a select (its chevron, "Choose" or the asset chosen) and opens the picker. */
+.other {
+  display: grid;
   gap: 8px;
+  min-width: 0;
+}
+
+.otherLabel {
+  font-size: var(--text-ui);
+  font-weight: 500;
+}
+
+.select {
+  min-height: 48px;
+  font-size: var(--text-body);
+  text-align: left;
+  cursor: pointer;
+}
+
+.select:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
+
+.selectText {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectText b {
+  font-weight: 600;
+}
+
+.selectName {
+  color: var(--ink-2);
+}
+
+.chevron {
+  flex: none;
+  color: var(--ink-2);
 }
 
 /* The kinds as one rail of chips (the primitive) that wraps: with every kind mainnet quotes in, two lines on a laptop. */
@@ -136,31 +184,27 @@
 }
 
 @media (hover: hover) {
-  .card:not(.closed):not(:has(input:checked)):not(.chosenOther):hover {
+  .card:not(.closed):not(:has(input:checked)):hover {
     border-color: var(--line-strong);
     background: var(--hover);
   }
 }
 
 /* Chosen: edged in the accent on the plate. */
-.card:has(input:checked),
-.chosenOther {
+.card:has(input:checked) {
   border-color: var(--accent);
   background: var(--plate);
 }
 
 /* The chosen card wears a mark in its corner: a disc in the accent with a tick drawn from two borders. */
 .card:has(input:checked)::before,
-.card:has(input:checked)::after,
-.chosenOther::before,
-.chosenOther::after {
+.card:has(input:checked)::after {
   content: "";
   position: absolute;
   pointer-events: none;
 }
 
-.card:has(input:checked)::before,
-.chosenOther::before {
+.card:has(input:checked)::before {
   top: 7px;
   right: 7px;
   width: 16px;
@@ -169,8 +213,7 @@
   background: var(--accent);
 }
 
-.card:has(input:checked)::after,
-.chosenOther::after {
+.card:has(input:checked)::after {
   top: 10px;
   right: 13px;
   width: 3.5px;
@@ -240,9 +283,7 @@
 }
 
 .card:has(input:checked) .target,
-.card:has(input:checked) .name,
-.chosenOther .target,
-.chosenOther .name {
+.card:has(input:checked) .name {
   color: var(--ink);
 }
 
@@ -256,55 +297,6 @@
   margin: 0;
   font-size: var(--text-ui);
   color: var(--ink-3);
-}
-
-.big {
-  min-height: 78px;
-}
-
-.big .ticker {
-  font-size: var(--text-body);
-}
-
-/* The fourth cell before a choice: a dashed well with a plus, the drop zone's grammar. */
-.another:not(.chosenOther) {
-  border-style: dashed;
-  border-color: var(--line-strong);
-  background: transparent;
-}
-
-@media (hover: hover) {
-  .another:not(.chosenOther):hover {
-    border-color: var(--accent);
-    background: var(--hover);
-  }
-}
-
-/* A plus drawn from two bars, at the logo's size. */
-.plus {
-  position: relative;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--sunken);
-  color: var(--ink-3);
-}
-
-.plus::before,
-.plus::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 16px;
-  height: 2px;
-  border-radius: var(--radius-pill);
-  background: currentColor;
-  transform: translate(-50%, -50%);
-}
-
-.plus::after {
-  transform: translate(-50%, -50%) rotate(90deg);
 }
 
 /* The picker: the dialog primitive at the form's width, the grid taking the height that is left. */
@@ -338,9 +330,6 @@
 }
 
 @media (max-width: 900px) {
-  .featured {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -358,9 +347,6 @@
 }
 
 @media (max-width: 520px) {
-  .featured {
-    grid-template-columns: minmax(0, 1fr);
-  }
   .grid {
     grid-template-columns: minmax(0, 1fr);
   }

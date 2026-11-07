@@ -42,9 +42,10 @@ export function Avatar({ address, size = 24 }: { address: string; size?: number 
  * The account control. In the header it is the ghost beside the one filled action (`header`): "Connect wallet", or
  * the wallet's avatar and short address once connected, each opening a menu that also holds the light-or-dark toggle
  * (the toggle left the bar in #131; a preference used once lives in the account menu). `inline` sits inside page
- * content as the action itself; `menu` fills the phone menu's foot as a ghost under the launch button.
+ * content as the action itself; `block` is that action at the full width and the large size (the launch summary's);
+ * `menu` fills the phone menu's foot as a ghost under the launch button.
  */
-export function WalletButton({ variant = "header" }: { variant?: "header" | "inline" | "menu" }) {
+export function WalletButton({ variant = "header" }: { variant?: "header" | "inline" | "block" | "menu" }) {
   const { wallets, wallet, publicKey, connecting, select, connect, disconnect } = useWallet();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
@@ -90,9 +91,9 @@ export function WalletButton({ variant = "header" }: { variant?: "header" | "inl
     }
   }, [pending, wallet, publicKey, connect]);
 
-  const wrap = `${styles.wrap} ${variant === "header" ? styles.header : variant === "inline" ? styles.inline : styles.inMenu}`;
+  const wrap = `${styles.wrap} ${variant === "header" ? styles.header : variant === "inline" ? styles.inline : variant === "block" ? styles.block : styles.inMenu}`;
   // Inline the connection is the page's action; in the header and the phone menu it is a ghost beside the filled one.
-  const connectKind = variant === "inline" ? "button-primary" : "button-ghost";
+  const connectKind = variant === "inline" ? "button-primary" : variant === "block" ? "button-primary button-lg" : "button-ghost";
   // The toggle rides in the header's menus only: the phone menu shows it in its own foot.
   const toggle = variant === "header" && (
     <div className={styles.foot}>

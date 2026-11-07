@@ -2,24 +2,28 @@
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
   COIN_PNG, drain, expect, forgetDisclaimer, fundedKeypair, launchViaApi, listLaunches, runFeeCollector, sol, solBalance, test, tradeViaApi } from "./fixtures";
-import { COIN, acceptDisclaimer, connectWallet, disclaimer, fillForm, formAlert, review, signButton } from "./launchPage";
+import { COIN, acceptDisclaimer, connectWallet, disclaimer, fillForm, formAlert, signButton, signing, signingCost } from "./launchPage";
 import { connectTestWallet } from "./wallet";
 
 test("a Creator launches a SOL-paired coin and finds it on the board and its coin page", async ({ page, wallet, stack }) => {
   await page.goto("/launch");
   await connectWallet(page);
   await fillForm(page);
-  await page.getByRole("button", { name: "Review launch" }).click();
+  // The preview shows the coin as the site's coin card will, from what the form holds.
+  await expect(page.getByRole("region", { name: "Preview" })).toContainText("TRCR paired with SOL");
+  await expect(page.getByRole("region", { name: "Preview" })).toContainText(COIN.name);
 
-  // The simulated cost is shown before the wallet is ever asked to sign.
-  await expect(review(page)).toBeVisible();
-  await expect(review(page)).toContainText("Launching TRCR paired with SOL");
-  const cost = Number((await review(page).locator("strong.mono").textContent())?.replace(" SOL", ""));
+  // One action: the launch is prepared and simulated, and while the wallet asks, the signing panel says what it pays.
+  const held = wallet.holdNext();
+  await expect(signButton(page)).toHaveText("Stoke TRCR");
+  await signButton(page).click();
+  await expect(signing(page)).toBeVisible();
+  const cost = await signingCost(page);
   expect(cost).toBeGreaterThan(0);
   expect(cost).toBeLessThan(0.1);
-  expect(wallet.requests).toHaveLength(0);
+  expect(wallet.requests).toHaveLength(1);
 
-  await signButton(page).click();
+  held.release();
   await page.waitForURL(/\/coin\/[1-9A-HJ-NP-Za-km-z]{32,44}$/);
   expect(wallet.requests).toHaveLength(1);
   expect(wallet.requests[0]!.message.staticAccountKeys[0]!.equals(wallet.keypair.publicKey)).toBe(true);
@@ -72,31 +76,36 @@ test("a browser without the welcome's record meets the disclaimer before a first
   // Forgotten only now: the welcome reads the record when it hydrates, which can land after the load, and a record
   // cleared before that opens the welcome over the page instead (which is what a visitor who cleared it would meet).
   await forgetDisclaimer(page);
-  await page.getByRole("button", { name: "Review launch" }).click();
+  await signButton(page).click();
   await expect(disclaimer(page)).toBeVisible();
   await disclaimer(page).getByRole("button", { name: "Cancel" }).click();
   await expect(disclaimer(page)).toBeHidden();
-  await expect(review(page)).toBeHidden();
+  await expect(signButton(page)).toHaveText("Stoke NOPE");
 
   // Escape is a cancel too, and nothing is prepared until the Creator accepts.
-  await page.getByRole("button", { name: "Review launch" }).click();
+  await signButton(page).click();
   await expect(disclaimer(page)).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(disclaimer(page)).toBeHidden();
-  await expect(review(page)).toBeHidden();
-
-  await page.getByRole("button", { name: "Review launch" }).click();
-  await acceptDisclaimer(page);
-  await expect(review(page)).toBeVisible();
-
-  // Accepted once, the next launch goes straight to the review; the wallet reconnects by itself.
-  await page.reload();
-  await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
-  await fillForm(page, { name: "Not Yet", symbol: "NOPE" });
-  await page.getByRole("button", { name: "Review launch" }).click();
-  await expect(review(page)).toBeVisible();
-  await expect(disclaimer(page)).toBeHidden();
+  await expect(signButton(page)).toHaveText("Stoke NOPE");
   expect(wallet.requests).toHaveLength(0);
+
+  // Accepted, the launch goes on to the wallet, here declined so nothing launches.
+  wallet.declineNext();
+  await signButton(page).click();
+  await acceptDisclaimer(page);
+  await expect(formAlert(page)).toHaveText("You declined the transaction in your wallet. Nothing was launched.");
+  expect(wallet.requests).toHaveLength(1);
+
+  // Accepted once, the next launch goes straight to the wallet; the wallet reconnects by itself.
+  await page.reload();
+  await expect(signButton(page)).toBeVisible();
+  await fillForm(page, { name: "Not Yet", symbol: "NOPE" });
+  wallet.declineNext();
+  await signButton(page).click();
+  await expect(formAlert(page)).toHaveText("You declined the transaction in your wallet. Nothing was launched.");
+  await expect(disclaimer(page)).toBeHidden();
+  expect(wallet.requests).toHaveLength(2);
 });
 
 test("declining in the wallet launches nothing and says so", async ({ page, wallet }) => {
@@ -104,13 +113,12 @@ test("declining in the wallet launches nothing and says so", async ({ page, wall
   await page.goto("/launch");
   await connectWallet(page);
   await fillForm(page, { name: "Declined", symbol: "NOPE" });
-  await page.getByRole("button", { name: "Review launch" }).click();
 
   wallet.declineNext();
   await signButton(page).click();
   await expect(formAlert(page)).toHaveText("You declined the transaction in your wallet. Nothing was launched.");
-  await expect(review(page)).toBeHidden();
-  await expect(page.getByRole("button", { name: "Review launch" })).toBeEnabled();
+  await expect(signing(page)).toBeHidden();
+  await expect(signButton(page)).toBeEnabled();
   expect(wallet.requests).toHaveLength(1);
   expect(await listLaunches()).toHaveLength(before.length);
 });
@@ -122,9 +130,9 @@ test("a wallet without enough SOL is told so before signing", async ({ page, wal
   await page.goto("/launch");
   await connectWallet(page);
   await fillForm(page, { name: "Too Poor", symbol: "POOR" });
-  await page.getByRole("button", { name: "Review launch" }).click();
+  await signButton(page).click();
   await expect(formAlert(page)).toHaveText("Your wallet doesn't have enough SOL to pay for the launch. Add SOL and try again.");
-  await expect(review(page)).toBeHidden();
+  await expect(signing(page)).toBeHidden();
   expect(wallet.requests).toHaveLength(0);
 });
 

@@ -1,0 +1,84 @@
+/* A choice as a row: the line on its edge, the accent's two-pixel edge once chosen (new-stoker's .option, in our tokens). */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  min-height: 58px;
+  padding: 12px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--text-body);
+  line-height: 1.4;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard),
+    background-color var(--dur-fast) var(--ease-standard);
+}
+
+@media (hover: hover) {
+  .row:not([data-disabled]):not(:has(input:checked)):hover {
+    border-color: var(--ink-3);
+  }
+}
+
+.row:has(input:checked) {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.row:has(input:focus-visible) {
+  box-shadow: inset 0 0 0 1px var(--accent), var(--ring);
+}
+
+.row[data-disabled] {
+  cursor: not-allowed;
+  color: var(--ink-2);
+}
+
+/* Drawn here rather than by the browser, whose unchecked radio is a grey disc on the dark scheme: a ring, and a dot in it once chosen. */
+.radio {
+  flex: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 1.5px solid var(--ink-3);
+  border-radius: 50%;
+  background: transparent;
+  cursor: inherit;
+  transition: border-color var(--dur-fast) var(--ease-standard), background-color var(--dur-fast) var(--ease-standard);
+}
+
+.radio:checked {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: inset 0 0 0 2.5px var(--surface);
+}
+
+.radio:focus-visible {
+  outline: none;
+}
+
+.radio:disabled {
+  border-color: var(--line-strong);
+}
+
+.body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.body b {
+  font-weight: 600;
+}
+
+.end {
+  flex: none;
+  margin-left: auto;
+}

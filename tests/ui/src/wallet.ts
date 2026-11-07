@@ -16,6 +16,11 @@ export type TestWallet = {
   requests: VersionedTransaction[];
   /** The next signature request is declined, as a user pressing "Reject" in their wallet. */
   declineNext: () => void;
+  /**
+   * The next signature request waits until `release` is called, as a user reading their wallet's screen before they
+   * approve: the page shows its signing step meanwhile (the launch summary's signing panel, #172).
+   */
+  holdNext: () => { release: () => void };
 };
 
 type InitArgs = { name: string; icon: string; address: string; publicKey: number[] };
@@ -131,10 +136,25 @@ export async function connectFromSite(page: Page) {
 /** Installs the wallet into a page; call before the first navigation. */
 export async function installTestWallet(page: Page, keypair: Keypair): Promise<TestWallet> {
   let decline = false;
-  const wallet: TestWallet = { keypair, requests: [], declineNext: () => void (decline = true) };
-  await page.exposeFunction("__testWalletSign", (b64: string) => {
+  let held: Promise<void> | null = null;
+  const wallet: TestWallet = {
+    keypair,
+    requests: [],
+    declineNext: () => void (decline = true),
+    holdNext: () => {
+      let release!: () => void;
+      held = new Promise<void>((resolve) => (release = resolve));
+      return { release };
+    },
+  };
+  await page.exposeFunction("__testWalletSign", async (b64: string) => {
     const tx = VersionedTransaction.deserialize(Buffer.from(b64, "base64"));
     wallet.requests.push(tx);
+    if (held) {
+      const wait = held;
+      held = null;
+      await wait;
+    }
     if (decline) {
       decline = false;
       throw new Error("User rejected the request.");

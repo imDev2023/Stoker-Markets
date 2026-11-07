@@ -4,8 +4,9 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { QuoteAsset } from "@launchpad/contract";
 import { searchQuotes } from "@/lib/assets";
 import { CATEGORY_LABELS, inChip, ISSUER_LABELS, PAIRED_CHIPS, type PairedChip } from "@/lib/board";
-import { recommendedQuotes } from "@/lib/landing";
+import { quoteKind, recommendedQuotes } from "@/lib/landing";
 import { formatAmount, quoteTicker } from "@/lib/format";
+import { OptionRow } from "./OptionRow";
 import { QuoteLogo } from "./QuoteLogo";
 import styles from "./QuoteChooser.module.css";
 
@@ -76,12 +77,13 @@ function CardBody({ q, size }: { q: QuoteAsset; size: number }) {
 }
 
 /**
- * The Quote Asset chooser on the launch form (phase 5, #136, after the research): the recommended three as cards (SOL,
- * the deepest stablecoin and the deepest stock) and one more cell, "Choose another", which opens the full picker. An
- * asset chosen from the picker takes that cell, so the chosen asset is never shown twice. Each card says what kind of
- * asset it is; what its issuer can do is on the asset's page, never a chip under its name (owner, 2026-10-10).
+ * The Quote Asset chooser on the launch form (#172, after new-stoker's launch page): the recommended three as rows (SOL,
+ * the deepest stablecoin and the deepest stock), each with its kind at its end, and under them "Any other asset", a
+ * field that reads like a select and opens the full picker with its search, since a plain select of six hundred assets
+ * can't be searched. An asset chosen from the picker is named in that field, and no row is checked. `labelId` names the
+ * section's heading, which the form renders above.
  */
-export function QuoteChooser({ quotes, value, onChange }: { quotes: QuoteAsset[]; value: string | null; onChange: (mint: string) => void }) {
+export function QuoteChooser({ quotes, value, onChange, labelId }: { quotes: QuoteAsset[]; value: string | null; onChange: (mint: string) => void; labelId: string }) {
   const id = useId();
   const [open, setOpen] = useState(false);
   const picks = useMemo(() => recommendedQuotes(quotes), [quotes]);
@@ -90,32 +92,45 @@ export function QuoteChooser({ quotes, value, onChange }: { quotes: QuoteAsset[]
 
   return (
     <div className={styles.chooser}>
-      <div className={styles.featured} role="radiogroup" aria-label="Recommended">
+      <div className={styles.rows} role="radiogroup" aria-labelledby={labelId}>
         {picks.map((q) => (
-          <label key={q.mint} className={`${styles.card} ${styles.big} ${q.launchable ? "" : styles.closed}`}>
-            <input type="radio" name={`${id}-pick`} value={q.mint} checked={q.mint === value} disabled={!q.launchable} onChange={() => onChange(q.mint)} />
-            <CardBody q={q} size={40} />
-          </label>
+          <OptionRow
+            key={q.mint}
+            name={`${id}-pick`}
+            value={q.mint}
+            checked={q.mint === value}
+            disabled={!q.launchable}
+            onChange={() => onChange(q.mint)}
+            end={<span className="tag">{quoteKind(q)}</span>}
+          >
+            <QuoteLogo quote={q} size={32} />
+            <span className={styles.rowTicker}>{quoteTicker(q)}</span>
+          </OptionRow>
         ))}
-        {/* The fourth cell: the asset chosen from the picker, or the way to it. */}
+      </div>
+      <div className={styles.other}>
+        <span className={styles.otherLabel} aria-hidden>Any other asset</span>
         <button
           type="button"
-          className={`${styles.card} ${styles.big} ${styles.another} ${other ? styles.chosenOther : ""}`}
-          aria-pressed={other ? true : undefined}
+          className={`input ${styles.select}`}
+          aria-haspopup="dialog"
           aria-label={other ? `${quoteTicker(other)} chosen. Choose another Quote Asset` : "Choose another Quote Asset"}
           onClick={() => setOpen(true)}
         >
-          {other ? (
-            <CardBody q={other} size={40} />
-          ) : (
-            <>
-              <span className={styles.plus} aria-hidden />
-              <span className={styles.text}>
-                <span className={styles.title}><span className={styles.ticker}>Choose another</span></span>
-                <span className={styles.meta}><span className={styles.kind}>Any of the {quotes.filter((q) => q.launchable).length.toLocaleString("en-US")} assets Raydium quotes</span></span>
-              </span>
-            </>
-          )}
+          {other && <QuoteLogo quote={other} size={20} />}
+          <span className={styles.selectText}>
+            {other ? (
+              <>
+                <b>{quoteTicker(other)}</b>
+                {distinctName(other) && <span className={styles.selectName}> {distinctName(other)}</span>}
+              </>
+            ) : (
+              "Choose"
+            )}
+          </span>
+          <svg className={styles.chevron} viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </button>
       </div>
       <QuotePicker quotes={quotes} value={value} open={open} onChange={onChange} onClose={() => setOpen(false)} />

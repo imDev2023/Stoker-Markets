@@ -1,472 +1,134 @@
 /*
- * The launch page (phase 5 of the rework, #136; docs/design/principles.md section 13): the form in eight columns as one
- * surface card in named sections with a sticky step index over it, and the launch summary in four on a raised card that
- * stays in view, holding the one action. Under 768px the steps show one at a time and the summary is the review step.
- * The buttons, chips, tags, the input well and the dialog are the primitives in globals.css; this file only places them.
- */
+  The launch form after new-stoker's launch page (#172, the owner's answer of 2026-11-06): its layout and spacing, in this
+  site's tokens and type. The form's sections stand on the page as headed groups (no card around them), and the summary
+  is the one card, sticky beside them on a desktop and after them on a phone.
+*/
 .page {
   align-items: start;
-  padding-top: clamp(24px, 4vw, 44px);
-  padding-bottom: 80px;
-}
-
-.main {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  min-width: 0;
+  padding-top: clamp(32px, 5vw, 64px);
+  padding-bottom: 96px;
 }
 
 .head {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  margin-bottom: 16px;
 }
 
 .title {
   margin: 0;
 }
 
-.lede {
-  margin: 0;
-  max-width: 60ch;
-  font-size: var(--text-body);
-  color: var(--ink-2);
-  text-wrap: pretty;
-}
-
-/* The step index: a row across the grid, sticky under the header, the list of four at the form's width on an opaque strip. */
-.steps {
-  position: sticky;
-  top: var(--header-h);
-  z-index: 2;
-  margin: 0;
-  pointer-events: none;
-}
-
-.stepList {
+.form {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
-  margin: 0 -4px;
-  padding: 8px 4px;
-  list-style: none;
-  background: var(--bg);
-  pointer-events: auto;
-}
-
-.stepButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 40px;
-  padding: 0 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-control);
-  background: var(--surface);
-  color: var(--ink-2);
-  font: inherit;
-  font-size: var(--text-ui);
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
-}
-
-@media (hover: hover) {
-  .stepButton:hover {
-    border-color: var(--line-strong);
-    background: var(--hover);
-  }
-}
-
-.stepButton:focus-visible {
-  outline: none;
-  box-shadow: var(--ring);
-}
-
-.stepButton[aria-current="step"] {
-  border-color: var(--accent);
-  background: var(--plate);
-  color: var(--ink);
-}
-
-/* The step's number in a small disc, which becomes a tick once the step has what it needs. */
-.stepNumber {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--sunken);
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  font-variant-numeric: tabular-nums;
-}
-
-.stepButton[aria-current="step"] .stepNumber {
-  background: var(--accent);
-  color: var(--on-accent);
-}
-
-.stepItem[data-done] .stepNumber {
-  background: var(--up-bg);
-  color: var(--up);
-}
-
-.tick {
-  display: block;
-  width: 5px;
-  height: 9px;
-  margin-top: -2px;
-  border: solid currentColor;
-  border-width: 0 1.5px 1.5px 0;
-  transform: rotate(45deg);
-}
-
-/* The card is the primitive; the fieldset only has to lose its own box. */
-.card {
-  display: flex;
-  flex-direction: column;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 40px;
+  min-width: 0;
   margin: 0;
   padding: 0;
-  min-width: 0;
-  transition: opacity var(--dur-base) var(--ease-standard);
+  border: 0;
 }
 
-.card:disabled {
-  opacity: 0.6;
-}
-
-.block {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  padding: 24px;
-  border-top: 1px solid var(--line);
+.set {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
   min-width: 0;
 }
 
-.block:first-child {
-  border-top: 0;
-}
-
-.blockHead {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.blockHead h2 {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
+.legend {
   margin: 0;
 }
 
-.blockHead em,
-.field em {
-  font-style: normal;
-  font-weight: 400;
-  font-size: var(--text-ui);
-  letter-spacing: 0;
-  color: var(--ink-3);
-}
-
-.blockHead p {
-  margin: 0;
-  max-width: 68ch;
-  font-size: var(--text-ui);
-  line-height: 1.5;
-  color: var(--ink-3);
-  text-wrap: pretty;
-}
-
-/* The image at the size the site shows it, beside the name and the ticker. */
-.coinRow {
+.two {
   display: grid;
-  grid-template-columns: 160px minmax(0, 1fr);
-  gap: 20px;
-  align-items: start;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
 }
 
-.dropCell {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
+.wide {
+  grid-column: 1 / -1;
 }
 
-.coinFields {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-
-/* The drop zone: a 160px square well with a dashed edge, which fills with the image once chosen. */
-.drop {
-  display: grid;
-  place-items: center;
-  width: 160px;
-  height: 160px;
-  border: 1px dashed var(--line-strong);
-  border-radius: var(--radius-card);
-  background: var(--sunken);
-  color: var(--ink-2);
-  font-size: var(--text-caption);
-  font-weight: 600;
-  text-align: center;
-  cursor: pointer;
-  overflow: hidden;
-  transition: border-color var(--dur-fast) var(--ease-standard), background-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
-}
-
-.dropFilled {
-  border-style: solid;
-  border-color: var(--line);
-}
-
-.dropEmpty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 0 14px;
-}
-
-.dropHint {
-  font-size: var(--text-label);
-  font-weight: 400;
-  line-height: 1.4;
-  color: var(--ink-3);
-}
-
-/* A plus drawn from two bars, in the hint's colour until the well is hovered. */
-.dropPlus {
-  position: relative;
-  width: 28px;
-  height: 28px;
-  color: var(--ink-3);
-  transition: color var(--dur-fast) var(--ease-standard);
-}
-
-.dropPlus::before,
-.dropPlus::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 20px;
-  height: 2px;
-  border-radius: var(--radius-pill);
-  background: currentColor;
-  transform: translate(-50%, -50%);
-}
-
-.dropPlus::after {
-  transform: translate(-50%, -50%) rotate(90deg);
-}
-
-/* Hovers only with a real pointer, so a tap on a phone doesn't leave one behind. */
-@media (hover: hover) {
-  .drop:hover {
-    border-color: var(--accent);
-    background: var(--hover);
-  }
-  .drop:hover .dropPlus {
-    color: var(--accent);
-  }
-}
-
-.drop:focus-within {
-  border-style: solid;
-  border-color: var(--accent);
-  box-shadow: var(--ring);
-}
-
-.drop img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.hint {
-  margin: 0;
-  font-size: var(--text-caption);
-  line-height: 1.5;
-  color: var(--ink-3);
-}
-
-.links {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-/* A link's well: the network's mark at its head in the hint's colour, the address after it. */
-.linkWell {
-  min-height: calc(1.55em + 22px);
-}
-
-.linkWell > input {
-  font: inherit;
-}
-
-.linkMark {
-  flex: none;
-  color: var(--ink-3);
-}
-
-.linkWell:focus-within .linkMark {
-  color: var(--ink-2);
-}
-
-.moreLinks {
-  align-self: flex-start;
-  font-size: var(--text-caption);
-}
-
-/* The summary's links: the marks with their names, wrapping. */
-.linkRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-}
-
-.linkChip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.linkChip svg {
-  color: var(--ink-3);
-}
-
+/* A field: its name over the well, and Copy Protection's verdict under it once there is one. */
 .field {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  gap: 8px;
   min-width: 0;
 }
 
 .field > label {
   font-size: var(--text-ui);
   font-weight: 500;
-  color: var(--ink-2);
 }
 
-/* A field is a well on sunken with the line on its edge and the ring when it has focus (the input primitive's rules). */
-.field > input,
-.field > textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-control);
-  background: var(--sunken);
-  color: var(--ink);
-  transition: border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
+.well {
+  min-height: 48px;
+  padding: 0 14px;
+  font-size: var(--text-body);
 }
 
-.field > textarea {
+.well > input {
+  align-self: stretch;
+}
+
+.area {
+  align-items: stretch;
+  padding: 12px 14px;
+}
+
+.area > textarea {
+  min-height: 72px;
+  font-size: var(--text-body);
+  line-height: 1.5;
   resize: vertical;
-  min-height: 88px;
+}
+
+/* The image: a wide dashed strip, the picture in it once chosen. */
+.drop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  height: 120px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-control);
+  color: var(--ink-2);
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
 }
 
 @media (hover: hover) {
-  .field > input:hover:not(:focus),
-  .field > textarea:hover:not(:focus),
-  .checked:hover:not(:focus-within),
-  .linkWell:hover:not(:focus-within) {
-    border-color: var(--line-strong);
+  .drop:hover {
+    border-color: var(--ink-3);
+    color: var(--ink);
   }
 }
 
-.field > input:focus,
-.field > textarea:focus {
-  outline: none;
+.drop:has(input:focus-visible) {
   border-color: var(--accent);
   box-shadow: var(--ring);
 }
 
-/* The name and the ticker: the input primitive, with the copy check's mark at the end once the field has a value. */
-.checked {
-  min-height: calc(1.55em + 22px);
+.dropImage {
+  width: 88px;
+  height: 88px;
+  border-radius: var(--radius-card);
+  object-fit: cover;
 }
 
-.checked > input {
-  font: inherit;
-}
-
-/* A ticker is a word, set like the fields beside it. */
-.ticker {
-  letter-spacing: 0.02em;
-}
-
-.field input::placeholder,
-.field textarea::placeholder {
-  color: var(--ink-3);
-  opacity: 0.88;
-}
-
-.counter {
-  align-self: flex-end;
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  font-variant-numeric: tabular-nums;
-  color: var(--ink-3);
-}
-
-/* The copy check's mark: a disc that is the accent when the field is free, the caution when it is taken, and turns while checking. */
-.mark {
-  flex: none;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 1.5px solid var(--ink-3);
-}
-
-.mark[data-status="free"] {
-  border-color: var(--accent);
-  background: var(--accent);
-  box-shadow: inset 0 0 0 2.5px var(--sunken);
-}
-
-.mark[data-status="taken"] {
-  border-color: var(--caution);
-  background: var(--caution);
-}
-
-.mark[data-status="unchecked"] {
-  border-style: dashed;
-}
-
-.mark[data-status="pending"] {
-  border-color: var(--accent);
-  border-top-color: transparent;
-  animation: spin 0.9s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* The verdict under the field, in the caution when the name is someone else's. */
+/* The verdict: quiet when free, in the caution when the name is someone else's. */
 .check {
   margin: 0;
   font-size: var(--text-caption);
   line-height: 1.45;
   color: var(--ink-3);
   overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+.check[data-status="free"] {
+  color: var(--ink-2);
 }
 
 .check[data-status="taken"] {
@@ -474,276 +136,137 @@
   font-weight: 500;
 }
 
-.check[data-status="free"] {
-  color: var(--ink-2);
-}
-
-.field[data-check="taken"] .checked {
+.field[data-check="taken"] .well {
   border-color: color-mix(in oklab, var(--caution) 55%, var(--line));
 }
 
-/* The step's foot: only on a phone, where the steps show one at a time. */
-.stepNav {
-  display: none;
-  justify-content: flex-end;
-  gap: 10px;
-  padding-top: 4px;
+.more {
+  justify-self: start;
 }
 
-/* The summary column: sticky beside the form, under the step index, scrolling within its own height when the window is shorter than it. */
+/*
+  The summary column: sticky beside the form, under the header; when it is taller than the window (a laptop's 800px),
+  it sticks with its foot 24px above the window's bottom, so the action never leaves the window while the form scrolls.
+  `--side-h` is its height, measured by the form.
+*/
 .side {
   position: sticky;
-  top: calc(var(--header-h) + 64px);
+  top: min(calc(var(--header-h) + 24px), calc(100dvh - var(--side-h, 0px) - 24px));
   min-width: 0;
 }
 
 .summary {
-  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  padding: 24px;
 }
 
-.summaryScroll {
-  max-height: calc(100dvh - var(--header-h) - 80px);
-  overflow-y: auto;
-  scrollbar-width: thin;
-  /* Room for the card's shadow and ring. */
-  margin: -4px;
-  padding: 4px;
-}
-
-/* The fade over the card's foot while there is more below: a visible sign that it scrolls, never a cut line. */
-.summary[data-fade]::after {
-  content: "";
-  position: absolute;
-  inset: auto 4px 4px;
-  height: 40px;
-  border-radius: calc(var(--radius-card) - 4px);
-  background: linear-gradient(to bottom, transparent, var(--raised));
-  pointer-events: none;
-}
-
-/* A raised card (the primitive); this only lays it out. */
-.summaryCard {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 18px 20px 20px;
-  min-width: 0;
-}
-
-.summaryHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.summaryEyebrow {
-  margin: 0;
-}
-
-.fixedTag {
-  flex: none;
-}
-
-.pricedIn {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-
+/* The preview window: a well that holds the coin as the site's coin card draws it. */
 .preview {
-  display: flex;
-  gap: 12px;
-  align-items: center;
+  display: grid;
+  gap: 10px;
   min-width: 0;
-}
-
-.previewTitles {
-  flex: 1;
-  min-width: 0;
-}
-
-.preview img,
-.previewImage {
-  flex: none;
-  width: 56px;
-  height: 56px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-control);
-  object-fit: cover;
+  padding: 12px;
+  border-radius: var(--radius-card);
   background: var(--sunken);
+  box-shadow: var(--shadow-sunken);
 }
 
-.previewName {
-  margin: 4px 0 0;
-  font-size: var(--text-ui);
-  color: var(--ink-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.previewLabel {
+  margin: 0;
+  font-size: var(--text-label);
+  font-weight: 500;
+  color: var(--ink-3);
 }
 
-/* The terms, label beside value, each a step smaller and lighter than the value it names. */
 .facts {
   display: grid;
-  gap: 0;
   margin: 0;
-  border-top: 1px solid var(--line);
 }
 
 .facts > div {
-  display: grid;
-  grid-template-columns: 6.5em minmax(0, 1fr);
-  gap: 8px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--line);
-  font-size: var(--text-caption);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  font-size: var(--text-ui);
+}
+
+.facts > div:first-child {
+  border-top: 0;
+  padding-top: 0;
 }
 
 .facts dt {
-  font-size: var(--text-caption);
-  color: var(--ink-3);
+  color: var(--ink-2);
+  white-space: nowrap;
 }
 
 .facts dd {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  margin: 0;
   min-width: 0;
+  margin: 0;
   font-weight: 500;
-  color: var(--ink);
+  text-align: right;
   overflow-wrap: anywhere;
-}
-
-.facts dd :global(.mono) {
-  font-size: var(--text-caption);
-}
-
-.factNote {
-  font-size: var(--text-caption);
-  font-weight: 400;
-  color: var(--ink-3);
 }
 
 .factLink {
   color: var(--accent);
-  font-size: var(--text-caption);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.factLink:hover {
-  color: var(--accent-strong);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-/* The fee split behind a disclosure: one line open, the words under it when asked. */
-.feeDetails {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.factLink:hover {
+  color: var(--accent-strong);
 }
 
-.feeDetails > summary {
-  list-style: none;
-  cursor: pointer;
-  color: var(--accent);
-  font-weight: 600;
-}
-
-.feeDetails > summary::-webkit-details-marker {
-  display: none;
-}
-
-.feeDetails > summary::after {
-  content: "";
-  display: inline-block;
-  width: 5px;
-  height: 5px;
-  margin-left: 6px;
-  margin-bottom: 2px;
-  border: solid currentColor;
-  border-width: 0 1.5px 1.5px 0;
-  transform: rotate(45deg);
-  transition: transform var(--dur-base) var(--ease-standard);
-}
-
-.feeDetails[open] > summary::after {
-  transform: rotate(225deg);
-  margin-bottom: 0;
-}
-
-.termsNote {
-  display: block;
-  font-size: var(--text-caption);
-  font-weight: 400;
-  color: var(--ink-3);
-}
-
-/* The trust lines, each with a tick in the gain colour. */
-.trust {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+/* The three promises, each with a tick in the accent. */
+.checks {
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: var(--text-caption);
-  line-height: 1.5;
-  color: var(--ink-2);
 }
 
-.trust li {
-  position: relative;
+.checks li {
   display: flex;
-  gap: 10px;
-  align-items: flex-start;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  font-size: var(--text-ui);
+  font-weight: 500;
 }
 
-/* A disc in the gain's ground, with a tick drawn from two borders centred in it. */
-.trust li::before {
+.checks li + li {
+  border-top: 1px solid var(--line);
+}
+
+.checks li::before {
   content: "";
   flex: none;
   width: 16px;
   height: 16px;
-  margin-top: 2px;
-  border-radius: 50%;
-  background: var(--up-bg);
+  background: var(--accent);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='m3 9.5 4 4 8-9' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
-.trust li::after {
-  content: "";
-  position: absolute;
-  left: 5.5px;
-  top: 5px;
-  width: 4px;
-  height: 7.5px;
-  border: solid var(--up);
-  border-width: 0 1.5px 1.5px 0;
-  transform: rotate(45deg);
-}
-
-/* The action in the summary: the review, the button or the connect prompt, and the one-line disclaimer under it. */
+/* The action: the error, then the button, the signing panel, the status or the way back, and the one-line disclaimer under it. */
 .action {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 12px;
-  padding-top: 4px;
-  border-top: 1px solid var(--line);
 }
 
-.action > :first-child {
-  margin-top: 8px;
+.primary {
+  width: 100%;
 }
 
-.disclaimer {
+.note {
   margin: 0;
-  color: var(--ink-3);
   font-size: var(--text-caption);
   line-height: 1.5;
+  color: var(--ink-3);
 }
 
 .error {
@@ -756,41 +279,16 @@
   font-weight: 500;
 }
 
-/* The one action fills the card's width; a busy one shows progress. */
-.primary {
-  width: 100%;
+.failed {
+  display: grid;
+  gap: 12px;
 }
 
-.primary:disabled {
-  cursor: progress;
-}
-
-/* The review: edged in the accent, since it is the step that asks for a signature. */
-.review {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 14px;
-  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
-  border-radius: var(--radius-control);
-  background: color-mix(in srgb, var(--plate) 55%, transparent);
-}
-
-.review p {
+.failed p {
   margin: 0;
   font-size: var(--text-caption);
   line-height: 1.5;
   color: var(--ink-2);
-}
-
-.review p strong {
-  color: var(--ink);
-}
-
-/* An amount and its unit stay on one line. */
-.review :global(.mono) {
-  white-space: nowrap;
-  font-size: var(--text-caption);
 }
 
 .actions {
@@ -803,19 +301,7 @@
   flex: 1 1 auto;
 }
 
-.connect {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.connect p {
-  margin: 0;
-  color: var(--ink-2);
-  font-size: var(--text-ui);
-}
-
-/* The signing step, like nothing else on the page: the mark's dark tile, the ring, the wallet's name and the exact amounts. */
+/* The signing step, styled like nothing else on the page: the mark's dark tile, the ring, and what the wallet pays. */
 .signing {
   display: flex;
   flex-direction: column;
@@ -869,7 +355,7 @@
   font-weight: 500;
 }
 
-/* The status while the launch lands: a live dot, the elapsed time and the transaction on the explorer. */
+/* While the launch lands: a pulsing dot, the seconds, and the transaction. */
 .status {
   display: flex;
   align-items: center;
@@ -903,80 +389,25 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mark[data-status="pending"],
   .statusDot {
     animation: none;
   }
 }
 
+/* Under 960px the summary follows the form, so a phone scrolls the one page. */
 @media (max-width: 960px) {
-  .main,
+  .form,
   .side {
     grid-column: 1 / -1;
   }
   .side {
     position: static;
   }
-  .summaryScroll {
-    max-height: none;
-    overflow: visible;
-  }
-  .summary[data-fade]::after {
-    display: none;
-  }
-  .coinRow {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .dropCell {
-    align-items: center;
-    text-align: center;
-  }
-  .links {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
-/* A phone: one step a screen, the index sticky under the header, the summary as the review step. */
-@media (max-width: 767px) {
-  .stepList {
-    gap: 4px;
-    margin: 0;
-    padding: 6px 0;
-  }
-  .stepButton {
-    gap: 6px;
-    padding: 0 6px;
-  }
-  .block {
-    display: none;
-    padding: 18px 16px 20px;
-    border-top: 0;
-  }
-  .page[data-step="coin"] .block[data-step="coin"],
-  .page[data-step="pair"] .block[data-step="pair"],
-  .page[data-step="launch"] .block[data-step="launch"] {
-    display: flex;
-  }
-  .page[data-step="launch"] .block[data-step="launch"] + .block[data-step="launch"] {
-    border-top: 1px solid var(--line);
-  }
-  .side {
-    display: none;
-  }
-  .page[data-step="review"] .side {
-    display: block;
-  }
-  .stepNav {
-    display: flex;
-  }
-  .facts > div {
+/* One field a row where two would crowd (new-stoker's breakpoint). */
+@media (max-width: 520px) {
+  .two {
     grid-template-columns: minmax(0, 1fr);
-    gap: 2px;
-  }
-}
-
-@media (max-width: 480px) {
-  .stepLabel {
-    font-size: var(--text-caption);
   }
 }

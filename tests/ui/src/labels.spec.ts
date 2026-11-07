@@ -4,7 +4,7 @@
 // Labels inform; none stops a launch or a trade.
 import type { Page } from "@playwright/test";
 import { expect, fundedKeypair, launchViaApi, QUOTES, test } from "./fixtures";
-import { chooseQuote, connectWallet, openPicker } from "./launchPage";
+import { chooseQuote, connectWallet, openPicker, pairRows, signButton } from "./launchPage";
 
 const group = (page: Page) => page.getByRole("radiogroup", { name: "Pair with" });
 const card = (page: Page, ticker: string) => group(page).getByRole("radio", { name: new RegExp(`^${ticker}\\b`) });
@@ -28,12 +28,12 @@ test("the chooser names each Quote Asset's kind and never a label, and choosing 
   // closes on the choice; the deepest stock is one of the recommended three, chosen there).
   await page.getByRole("dialog", { name: "Pair with" }).getByRole("button", { name: "Close" }).click();
   await chooseQuote(page, "NVDAx");
-  await expect(page.getByRole("radiogroup", { name: "Recommended" }).getByRole("radio", { name: /^NVDAx\b/ })).toBeChecked();
+  await expect(pairRows(page).getByRole("radio", { name: /^NVDAx\b/ })).toBeChecked();
   await expect(page.locator("details", { hasText: /label|risk|freeze/i })).toHaveCount(0);
   await expect(page.getByRole("list", { name: "NVDAx risk labels" })).toHaveCount(0);
 
   await connectWallet(page);
-  await expect(page.getByRole("button", { name: "Review launch" })).toBeEnabled();
+  await expect(signButton(page)).toBeEnabled();
   expect(wallet.requests).toHaveLength(0);
 });
 

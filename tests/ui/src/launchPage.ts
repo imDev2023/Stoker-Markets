@@ -16,14 +16,13 @@ const MORE_LINK_LABELS = { discord: "Discord", tiktok: "TikTok", instagram: "Ins
 
 export async function connectWallet(page: Page) {
   await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
-  await expect(page.getByRole("button", { name: "Review launch" })).toBeVisible();
+  await expect(signButton(page)).toBeVisible();
 }
 
-/** Fills the links on the launch step, by role: the header's and footer's "Stoker on X" and "Stoker on Telegram" links share the words. */
+/** Fills the links, by role: the header's and footer's "Stoker on X" and "Stoker on Telegram" links share the words. */
 async function fillLinks(page: Page, coin: Partial<typeof COIN> & Partial<Record<keyof typeof MORE_LINK_LABELS, string>>) {
   const more = (Object.keys(MORE_LINK_LABELS) as (keyof typeof MORE_LINK_LABELS)[]).filter((k) => coin[k]);
   if (!coin.website && !coin.x && !coin.telegram && more.length === 0) return;
-  await toStep(page, "launch");
   if (coin.telegram) await page.getByRole("textbox", { name: "Telegram" }).fill(coin.telegram);
   if (coin.x) await page.getByRole("textbox", { name: /^X\b/ }).fill(coin.x);
   if (coin.website) await page.getByLabel("Website").fill(coin.website);
@@ -32,7 +31,6 @@ async function fillLinks(page: Page, coin: Partial<typeof COIN> & Partial<Record
     await page.getByRole("button", { name: /^More links/ }).click();
     for (const k of more) await page.getByRole("textbox", { name: MORE_LINK_LABELS[k] }).fill(coin[k]!);
   }
-  await toStep(page, "coin");
 }
 
 export async function fillForm(page: Page, coin: Partial<typeof COIN> = COIN) {
@@ -40,7 +38,6 @@ export async function fillForm(page: Page, coin: Partial<typeof COIN> = COIN) {
   // coin with a launched coin's image for the stack's window.
   const symbol = coin.symbol ?? COIN.symbol;
   const buffer = symbol === COIN.symbol ? COIN_PNG : coinImage(symbol);
-  await toStep(page, "coin");
   await page.locator('input[type="file"]').setInputFiles({ name: "coin.png", mimeType: "image/png", buffer });
   await page.getByLabel("Name").fill(coin.name ?? COIN.name);
   await page.getByLabel("Ticker").fill(coin.symbol ?? COIN.symbol);
@@ -50,26 +47,15 @@ export async function fillForm(page: Page, coin: Partial<typeof COIN> = COIN) {
 
 /** Sets the launch options: a First Buy in SOL, and an Airdrop list as the Creator would type it. */
 export async function fillOptions(page: Page, o: { firstBuy?: string; airdrop?: string }) {
-  await toStep(page, "launch");
-  if (o.firstBuy !== undefined) await page.getByLabel(/^Amount/).fill(o.firstBuy);
+  if (o.firstBuy !== undefined) await firstBuyField(page).fill(o.firstBuy);
   if (o.airdrop !== undefined) {
     await page.getByRole("checkbox", { name: "Airdrop part of your first buy to other wallets" }).check();
     await page.getByLabel("Wallets and amounts").fill(o.airdrop);
   }
 }
 
-/** The form's steps (phase 5): on a phone one shows at a time, on a desktop the index scrolls to the section. */
-export type StepId = "coin" | "pair" | "launch" | "review";
-
-/** Goes to a step: a no-op in effect on a desktop, where every step is in view, and the way to a hidden one on a phone. */
-export async function toStep(page: Page, step: StepId) {
-  const label = { coin: "Coin", pair: "Pair", launch: "Launch", review: "Review" }[step];
-  await page.getByRole("navigation", { name: "Steps" }).getByRole("button", { name: label }).click();
-}
-
-/** Opens the full picker from the pair step's fourth cell, which names the asset chosen from it once there is one. */
+/** Opens the full picker from the "Any other asset" field, which names the asset chosen from it once there is one. */
 export async function openPicker(page: Page) {
-  await toStep(page, "pair");
   await page.getByRole("button", { name: /Choose another Quote Asset/ }).click();
   await expect(page.getByRole("dialog", { name: "Pair with" })).toBeVisible();
 }
@@ -85,19 +71,31 @@ export async function chooseQuote(page: Page, ticker: string) {
   await expect(page.getByRole("dialog", { name: "Pair with" })).toBeHidden();
 }
 
-/** The asset the form has chosen: checked among the recommended three, or named by the fourth cell when it came from the picker. */
+/** The recommended three, as rows under the section's heading. */
+export const pairRows = (page: Page) => page.getByRole("radiogroup", { name: "Paired with" });
+
+/** The asset the form has chosen: checked among the recommended three, or named by the "Any other asset" field when it came from the picker. */
 export async function expectChosen(page: Page, ticker: string) {
-  const recommended = page.getByRole("radiogroup", { name: "Recommended" }).getByRole("radio", { name: new RegExp(`^${ticker}\\b`) });
+  const recommended = pairRows(page).getByRole("radio", { name: new RegExp(`^${ticker}\\b`) });
   if ((await recommended.count()) > 0) await expect(recommended).toBeChecked();
-  else await expect(page.getByRole("button", { name: `${ticker} chosen. Choose another Quote Asset` })).toHaveAttribute("aria-pressed", "true");
+  else await expect(page.getByRole("button", { name: `${ticker} chosen. Choose another Quote Asset` })).toBeVisible();
 }
 
-/** The one action once the launch is reviewed: "Stoke TRCR for 0.0213 SOL", the exact cost from the simulation. */
-export const signButton = (page: Page) => review(page).getByRole("button", { name: /^Stoke \S+ for / });
+export const firstBuyField = (page: Page) => page.getByRole("textbox", { name: "First buy" });
+export const summary = (page: Page) => page.getByRole("complementary", { name: "Launch summary" });
+/** The one action (#172): "Stoke TRCR" prepares, simulates and asks the wallet to sign. */
+export const signButton = (page: Page) => summary(page).getByRole("button", { name: /^Stoke / });
+/** The signing panel while the wallet asks, with what the wallet pays from the simulation. */
+export const signing = (page: Page) => summary(page).getByRole("status").filter({ hasText: "Confirm in" });
+
+/** The simulated cost in SOL the signing panel shows. */
+export async function signingCost(page: Page) {
+  const text = await signing(page).locator("dd.mono").first().textContent();
+  return Number(text?.replace(" SOL", ""));
+}
 
 export const disclaimer = (page: Page) => page.getByRole("dialog", { name: "Before you launch" });
 export const formAlert = (page: Page) => page.getByRole("main").getByRole("alert");
-export const review = (page: Page) => page.getByRole("region", { name: "Review your launch" });
 export const notConfirmed = (page: Page) => page.getByRole("region", { name: "Launch not confirmed" });
 
 export async function acceptDisclaimer(page: Page) {

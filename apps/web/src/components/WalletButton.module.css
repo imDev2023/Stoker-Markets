@@ -7,6 +7,19 @@
   margin-left: auto;
 }
 
+/* The launch summary's action: the full width of its card. */
+.block,
+.block .connect,
+.block .connected {
+  width: 100%;
+}
+
+.block .menu {
+  left: 0;
+  right: 0;
+  min-width: 0;
+}
+
 /* In the phone menu's foot the control fills the width like the launch button above it. */
 .inMenu,
 .inMenu .connect,

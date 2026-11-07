@@ -4,7 +4,7 @@ import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import type { Page } from "@playwright/test";
 import { PreparedAirdrop, PreparedLaunch } from "@launchpad/contract";
 import { allowAirdrops, coinBalance, drain, expect, fund, fundQuote, launchViaApi, listLaunches, sol, test } from "./fixtures";
-import { chooseQuote, connectWallet, fillForm, fillOptions, formAlert, notConfirmed, review, signButton } from "./launchPage";
+import { chooseQuote, connectWallet, fillForm, fillOptions, firstBuyField, formAlert, notConfirmed, signButton, signing, summary } from "./launchPage";
 import { connectTestWallet } from "./wallet";
 
 const airdropCard = (page: Page) => page.getByRole("region", { name: "Airdrop" });
@@ -31,7 +31,7 @@ test("the form offers an airdrop only to a wallet the operator has allowed", asy
   await page.goto("/launch");
   await connectWallet(page);
   expect(await (await answered).json()).toEqual({ airdrop: false });
-  await expect(page.getByLabel(/^Amount/)).toBeVisible();
+  await expect(firstBuyField(page)).toBeVisible();
   await expect(airdropOption(page)).toHaveCount(0);
   expect(wallet.requests).toHaveLength(0);
 });
@@ -47,22 +47,17 @@ test("a Creator launches with a first buy and an airdrop, then sends the airdrop
     // Pasted the way people keep lists: commas, spaces or semicolons, thousands grouped, blank lines in between.
     airdrop: `${recipients[0]}, 1,000,000\n\n${recipients[1]} 2500000\n${recipients[2]};500000.5`,
   });
-  // The first buy's coins are quoted before anything is prepared, and the list is read as typed.
-  await expect(page.getByText(/^You get [\d,]+ PARTY, [\d.]+% of the supply, in the launch transaction itself/)).toBeVisible();
+  // The first buy's coins are quoted in the summary before anything is prepared, and the list is read as typed.
+  await expect(summary(page)).toContainText(/First buy\s*0\.2 SOL/);
+  await expect(summary(page)).toContainText(/You get\s*[\d,]+ PARTY \([\d.]+%\)/);
   await expect(page.getByText(/^3 wallets get 4,000,000\.5 PARTY, 0\.4% of the supply\. You keep [\d,]+\. Sent from your wallet/)).toBeVisible();
 
   const prepared = nextPrepared(page);
-  await page.getByRole("button", { name: "Review launch" }).click();
+  await signButton(page).click();
   const launch = await prepared;
-  await expect(review(page)).toContainText(/Launching PARTY paired with SOL, with your first buy of 0\.2 SOL for [\d,]+ PARTY/);
-  await expect(review(page)).toContainText("Then send the airdrop from your coin's page: 3 wallets get 4,000,000.5 PARTY.");
+  await page.waitForURL(`**/coin/${launch.mint}`);
   // A First Buy is a curve trade, so it pays the Platform Fee, half of which is the Creator's own (ADR 0009).
   const firstBuyShare = sol(BigInt(launch.firstBuy!.fees.platform) / 2n);
-  await expect(review(page)).toContainText(`Like any trade, the first buy pays the Platform Fee, and half of it, ${firstBuyShare} SOL, comes back to you as the coin's creator.`);
-  expect(wallet.requests).toHaveLength(0);
-
-  await signButton(page).click();
-  await page.waitForURL(`**/coin/${launch.mint}`);
   expect(wallet.requests).toHaveLength(1);
   const bought = BigInt(launch.firstBuy!.amountOut);
   expect(await coinBalance(wallet.keypair.publicKey, launch.mint)).toBe(bought);
@@ -105,16 +100,17 @@ test("a First Buy in USDC is quoted, reviewed and paid in USDC", async ({ page, 
   await expect(page.getByText("Enter a first buy above zero with up to 6 decimal places.")).toBeVisible();
   await fillOptions(page, { firstBuy: "20" });
   await expect(page.locator("#first-buy").locator("..")).toContainText("USDC");
-  await expect(page.getByText(/^You get [\d,]+ DFST, [\d.]+% of the supply/)).toBeVisible();
+  await expect(summary(page)).toContainText(/You get\s*[\d,]+ DFST \([\d.]+%\)/);
+  await expect(summary(page)).toContainText(/Graduates at\s*150 USDC raised/);
 
+  // While the wallet asks, the signing panel names the USDC the first buy spends beside the SOL the wallet pays.
+  const held = wallet.holdNext();
   const prepared = nextPrepared(page);
-  await page.getByRole("button", { name: "Review launch" }).click();
+  await signButton(page).click();
   const launch = await prepared;
   expect(launch.firstBuy).toMatchObject({ amountIn: "20000000" });
-  await expect(review(page)).toContainText(/with your first buy of 20 USDC for [\d,]+ DFST .* It graduates at 150 USDC raised\./);
-  await expect(review(page)).toContainText("Your wallet pays the USDC and about");
-
-  await signButton(page).click();
+  await expect(signing(page)).toContainText(/First buy\s*20 USDC/);
+  held.release();
   await page.waitForURL(`**/coin/${launch.mint}`);
   expect(await coinBalance(wallet.keypair.publicKey, launch.mint)).toBe(BigInt(launch.firstBuy!.amountOut));
   const history = page.getByRole("region", { name: "Trades" });
@@ -139,10 +135,10 @@ test("launch options explain what is wrong before anything is prepared", async (
   await fillOptions(page, { airdrop: `${a}, 900000000\n${b}, 1` });
   await expect(page.getByText("The airdrop gives away more coins than your first buy gets. Buy more or airdrop less.")).toBeVisible();
 
-  await page.getByRole("button", { name: "Review launch" }).click();
+  await signButton(page).click();
   await expect(formAlert(page)).toHaveText("The airdrop gives away more coins than your first buy gets. Buy more or airdrop less.");
-  await page.getByLabel(/^Amount/).fill("");
-  await page.getByRole("button", { name: "Review launch" }).click();
+  await firstBuyField(page).fill("");
+  await signButton(page).click();
   await expect(formAlert(page)).toHaveText("An airdrop is paid from your first buy. Add a first buy.");
   expect(wallet.requests).toHaveLength(0);
   expect(await launchesNamed("Wrong Lists")).toHaveLength(0);
@@ -153,14 +149,15 @@ test("a launch the network refuses says why, and trying again launches that same
   await connectWallet(page);
   await fillForm(page, { name: "Second Try", symbol: "AGAIN" });
   await fillOptions(page, { firstBuy: "0.1" });
+  const held = wallet.holdNext();
   const prepared = nextPrepared(page);
-  await page.getByRole("button", { name: "Review launch" }).click();
-  const first = await prepared;
-  await expect(review(page)).toBeVisible();
-
-  // The Creator spends their SOL elsewhere between reviewing and signing.
-  await drain(wallet.keypair, 0.01);
   await signButton(page).click();
+  const first = await prepared;
+  await expect(signing(page)).toBeVisible();
+
+  // The Creator spends their SOL elsewhere while the wallet asks, then approves.
+  await drain(wallet.keypair, 0.01);
+  held.release();
   await expect(formAlert(page)).toHaveText(
     "Your wallet no longer has enough SOL to pay for the launch, so it wasn't sent and nothing was created. Add SOL and try again.",
   );
@@ -170,7 +167,6 @@ test("a launch the network refuses says why, and trying again launches that same
   const again = nextPrepared(page);
   await notConfirmed(page).getByRole("button", { name: "Try again" }).click();
   expect((await again).mint).toBe(first.mint);
-  await signButton(page).click();
   await page.waitForURL(`**/coin/${first.mint}`);
   expect(wallet.requests).toHaveLength(2);
   expect((await launchesNamed("Second Try")).map((l) => l.mint)).toEqual([first.mint]);
@@ -194,9 +190,8 @@ test("when a launch can't be confirmed, trying again finds the coin instead of l
   await connectWallet(page);
   await fillForm(page, { name: "Lost Reply", symbol: "LOST" });
   const prepared = nextPrepared(page);
-  await page.getByRole("button", { name: "Review launch" }).click();
-  const launch = await prepared;
   await signButton(page).click();
+  const launch = await prepared;
 
   await expect(formAlert(page)).toHaveText("We couldn't confirm whether your coin launched. Check your connection, then try again.");
   // It may have launched, so the Creator can't start over with a new coin, only check and try again.

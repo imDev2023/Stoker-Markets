@@ -66,7 +66,7 @@ export function useCopyCheck({ name, symbol, image, creator }: { name: string; s
 
 function describe(field: CopyField, verdict: CopyVerdict | null): string {
   if (!verdict) return "Checking";
-  if (verdict.status === "free") return field === "image" ? "Not a copy of a protected coin's" : "Free";
+  if (verdict.status === "free") return field === "image" ? "Not a protected coin's image" : "Free";
   if (verdict.status === "unchecked") return "Can't be read for a copy (PNG or JPEG can)";
   const of = verdict.of!;
   const until = new Date(of.protectedUntil).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });

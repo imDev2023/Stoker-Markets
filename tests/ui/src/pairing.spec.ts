@@ -1,9 +1,9 @@
-// Asset Pairing in the web app: choosing a Quote Asset from the form's cards, launching against it at the exact Graduation Target, being refused
+// Asset Pairing in the web app: choosing a Quote Asset from the form's rows and its picker, launching against it at the exact Graduation Target, being refused
 // one without a price, and trading a coin paired with something other than SOL.
 import type { Page } from "@playwright/test";
 import { PreparedLaunch } from "@launchpad/contract";
 import { QUOTES, coinImage, expect, fundQuote, fundedKeypair, launchViaApi, listLaunches, test } from "./fixtures";
-import { chooseQuote, expectChosen, openPicker, signButton } from "./launchPage";
+import { chooseQuote, expectChosen, openPicker, pairRows, signButton, signing } from "./launchPage";
 import { connectTestWallet } from "./wallet";
 
 const group = (page: Page) => page.getByRole("radiogroup", { name: "Pair with" });
@@ -13,7 +13,6 @@ const card = (page: Page, ticker: string) => group(page).getByRole("radio", { na
 const search = (page: Page) => page.getByRole("searchbox", { name: "Search Quote Assets" });
 const kinds = (page: Page) => page.getByRole("group", { name: "Kind" });
 const terms = (page: Page) => page.getByRole("definition").filter({ hasText: "raised" });
-const review = (page: Page) => page.getByRole("region", { name: "Review your launch" });
 
 async function connectWallet(page: Page) {
   await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
@@ -33,9 +32,9 @@ async function choose(page: Page, ticker: string) {
 
 test("the Quote Asset chooser finds assets by kind, ticker, name or mint, and shows unpriced ones without letting them be chosen", async ({ page }) => {
   await page.goto("/launch");
-  // The recommended three lead, SOL chosen; the full picker opens from the fourth cell (phase 5, #136).
-  await expect(page.getByRole("radiogroup", { name: "Recommended" }).getByRole("radio", { name: /^SOL\b/ })).toBeChecked();
-  await expect(terms(page)).toHaveText("1 SOL raised, then moves to Raydium");
+  // The recommended three lead as rows, SOL chosen; the full picker opens from "Any other asset" (#172).
+  await expect(pairRows(page).getByRole("radio", { name: /^SOL\b/ })).toBeChecked();
+  await expect(terms(page)).toHaveText("1 SOL raised");
   await openPicker(page);
   await expect(card(page, "SOL")).toBeChecked();
 
@@ -80,9 +79,7 @@ test("the Quote Asset chooser finds assets by kind, ticker, name or mint, and sh
   await page.keyboard.press("Space");
   await expect(page.getByRole("dialog", { name: "Pair with" })).toBeHidden();
   await expectChosen(page, "USDC");
-  await expect(terms(page)).toHaveText(
-    "150 USDC raised, worth 1 SOL today, then moves to RaydiumThe amount is fixed from USDC's price when you launch.",
-  );
+  await expect(terms(page)).toHaveText("150 USDC raised");
   await expect(page.getByRole("complementary", { name: "Launch summary" })).toContainText("TICKER paired with USDC");
 });
 
@@ -91,18 +88,16 @@ test("a Creator launches a coin paired with a tokenized stock at the exact Gradu
   await connectWallet(page);
   await fillCoin(page, "Chip Stock Pair", "CHIP");
   await choose(page, "NVDAx");
-  await expect(terms(page)).toContainText("0.8333 NVDAx raised, worth 1 SOL today");
+  await expect(terms(page)).toHaveText("0.8333 NVDAx raised");
 
   const prepared = page.waitForResponse((r) => r.url().endsWith("/v1/launches/prepare"));
-  await page.getByRole("button", { name: "Review launch" }).click();
-  const target = PreparedLaunch.parse(await (await prepared).json()).graduationTarget;
-  // 1 SOL at 150 USD is 150 USD of NVDAx at 180 USD: 0.83333333 at 8 decimals, shown to the last raw unit.
-  expect(target.raw).toBe("83333333");
-  await expect(review(page)).toContainText("Launching CHIP paired with NVDAx. It graduates at 0.83333333 NVDAx raised.");
-  expect(wallet.requests).toHaveLength(0);
-
   await signButton(page).click();
+  const target = PreparedLaunch.parse(await (await prepared).json()).graduationTarget;
+  // 1 SOL at 150 USD is 150 USD of NVDAx at 180 USD: 0.83333333 at 8 decimals, which the transaction fixes.
+  expect(target.raw).toBe("83333333");
   await page.waitForURL(/\/coin\/[1-9A-HJ-NP-Za-km-z]{32,44}$/);
+  // One action, one signature: the button prepared, simulated and had the wallet sign the launch once (#172).
+  expect(wallet.requests).toHaveLength(1);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/CHIP paired with NVDAx/);
   await expect(page.getByText("0 of 0.8333 NVDAx raised")).toBeVisible();
   const launch = (await listLaunches()).find((l) => l.mint === page.url().split("/").pop());
@@ -122,14 +117,14 @@ test("a Quote Asset that lost its price by launch time is refused with the reaso
     await route.continue({ postData: Buffer.from(body.replace(QUOTES.USDC.toBase58(), QUOTES.BULLWHALE.toBase58()), "latin1") });
   });
   const refused = page.waitForResponse((r) => r.url().endsWith("/v1/launches/prepare"));
-  await page.getByRole("button", { name: "Review launch" }).click();
+  await signButton(page).click();
   expect((await refused).status()).toBe(422);
 
   await expect(page.getByRole("main").getByRole("alert")).toHaveText(
     "No reliable price for BULLWHALE yet, so its Graduation Target can't be set.",
   );
-  await expect(review(page)).toBeHidden();
-  await expect(page.getByRole("button", { name: "Review launch" })).toBeEnabled();
+  await expect(signing(page)).toBeHidden();
+  await expect(signButton(page)).toBeEnabled();
   expect(wallet.requests).toHaveLength(0);
   expect(await listLaunches()).toHaveLength(before.length);
 });

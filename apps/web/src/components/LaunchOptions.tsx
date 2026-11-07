@@ -7,6 +7,7 @@ import {
 import { getLaunchPermissions, getLaunchQuote } from "@/lib/api";
 import { parseAirdropList } from "@/lib/airdrop";
 import { COIN_DECIMALS, COIN_SUPPLY, formatUnits, parseUnits } from "@/lib/format";
+import { OptionRow } from "./OptionRow";
 import styles from "./LaunchOptions.module.css";
 
 const QUOTE_DEBOUNCE_MS = 250;
@@ -117,9 +118,9 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
 export type LaunchOptionsState = ReturnType<typeof useLaunchOptions>;
 
 /**
- * The launch type on the launch form, after the coin's identity (phase 5, #136): a standard coin, or a Reward Launch with
- * its Payout Asset (the coin itself or the Quote Asset), and then its Reward Tax, every card with a one-line title. All
- * of it is fixed at launch. `labelId` names the section's heading, which the form renders above.
+ * The launch type on the launch form (#172, after new-stoker's launch page): four rows, a standard coin, a Reward Launch
+ * paid in the coin, one paid in the Quote Asset, and Holder rewards, shown before it is built; a Reward Launch then asks
+ * its Reward Tax. All of it is fixed at launch. `labelId` names the section's heading, which the form renders above.
  */
 export function LaunchType({ options: o, coin, labelId }: { options: LaunchOptionsState; coin: string; labelId: string }) {
   const coinLabel = coin || "the coin";
@@ -133,48 +134,30 @@ export function LaunchType({ options: o, coin, labelId }: { options: LaunchOptio
   return (
     <div className={styles.type}>
       <div className={styles.types} role="radiogroup" aria-labelledby={labelId}>
-        <label className={styles.typeCard}>
-          <input type="radio" name="launch-type" checked={!reward} onChange={() => o.setRewardTax(null)} />
-          <span className={styles.typeName}>Standard coin</span>{" "}
-          <span className={styles.typeHint}>No tax on transfers: every coin sent arrives in full.</span>
-        </label>
-        <label className={styles.typeCard}>
-          <input type="radio" name="launch-type" checked={reward && o.rewardPayout === "coin"} onChange={() => chooseReward("coin")} />
-          <span className={styles.typeName}>Reward Launch paid in {coinLabel}</span>{" "}
-          <span className={styles.typeHint}>Every transfer withholds a Reward Tax, paid to holders in {coinLabel} itself.</span>
-        </label>
-        <label className={styles.typeCard}>
-          <input
-            type="radio"
-            name="launch-type"
-            checked={reward && o.rewardPayout === "quote"}
-            onChange={() => chooseReward("quote")}
-            disabled={!quoteLabel}
-          />
-          <span className={styles.typeName}>Reward Launch paid in {quoteLabel ?? "the Quote Asset"}</span>{" "}
-          <span className={styles.typeHint}>
-            Every transfer withholds a Reward Tax, sold for {quoteLabel ?? "the Quote Asset"} and paid to holders in it.
-          </span>
-        </label>
-        {/* #113's Holders destination (ADR 0011), shown before it is built (owner, 2026-10-30): the card says so and takes no choice. */}
-        <label className={styles.typeCard}>
-          <input type="radio" name="launch-type" disabled />
-          <span className={styles.typeName}>
-            Holder rewards <span className={`tag ${styles.typeTag}`}>Coming soon</span>
-          </span>{" "}
-          <span className={styles.typeHint}>
-            Your Creator Earnings go to the coin&apos;s holders instead of your wallet, paid in {quoteLabel ?? "the Quote Asset"}.
-          </span>
-        </label>
+        <OptionRow name="launch-type" value="standard" checked={!reward} onChange={() => o.setRewardTax(null)}>
+          <span><b>Standard</b></span>
+        </OptionRow>
+        <OptionRow name="launch-type" value="coin" checked={reward && o.rewardPayout === "coin"} onChange={() => chooseReward("coin")}>
+          <span><b>Reward Launch</b>, paid in the coin</span>
+        </OptionRow>
+        <OptionRow name="launch-type" value="quote" checked={reward && o.rewardPayout === "quote"} onChange={() => chooseReward("quote")} disabled={!quoteLabel}>
+          <span><b>Reward Launch</b>, paid in {quoteLabel ?? "its pair"}</span>
+        </OptionRow>
+        {/* #113's Holders destination (ADR 0011), shown before it is built (owner, 2026-10-30): the row says so and takes no choice. */}
+        <OptionRow name="launch-type" value="holders" checked={false} disabled end={<span className="tag">Coming soon</span>}>
+          <span><b>Holder rewards</b></span>
+        </OptionRow>
       </div>
       {reward && (
         <div className={styles.rates} role="group" aria-label="Reward Tax">
-          <span className={styles.ratesLabel}>Reward Tax</span>
-          {REWARD_TAX_RATES.map((bps) => (
-            <button key={bps} type="button" className="chip" aria-pressed={o.rewardTax === bps} onClick={() => o.setRewardTax(bps)}>
-              {bps / 100}%
-            </button>
-          ))}
+          <span className={styles.ratesLabel} aria-hidden>Reward Tax</span>
+          <div className={`segmented ${styles.segmented}`}>
+            {REWARD_TAX_RATES.map((bps) => (
+              <button key={bps} type="button" aria-pressed={o.rewardTax === bps} onClick={() => o.setRewardTax(bps)}>
+                {bps / 100}%
+              </button>
+            ))}
+          </div>
           <p className={styles.hint}>
             {o.rewardPayout === "coin" ? (
               <>Holders are paid in {coinLabel} itself, never sold. Fixed at launch, like the rate.</>
@@ -185,53 +168,42 @@ export function LaunchType({ options: o, coin, labelId }: { options: LaunchOptio
               </>
             )}
           </p>
-          <p className={styles.hint}>
-            Fixed for good: LaunchLab holds the tax authority until graduation, then the platform gives it up on-chain.
-          </p>
         </div>
       )}
     </div>
   );
 }
 
+/**
+ * The First Buy (#172, after new-stoker's launch page): one large amount in the Quote Asset, whose live quote the summary
+ * shows, and for a Creator the operator has allowed, an airdrop paid from it.
+ */
 export function LaunchOptions({ options: o, coin }: { options: LaunchOptionsState; coin: string }) {
   const coinLabel = coin || "coins";
   const kept = o.bought !== null && o.airdropOn && !o.airdrop.problem ? o.bought - o.airdrop.total : null;
 
   return (
     <div className={styles.options}>
-      <div className={styles.field}>
-        <label htmlFor="first-buy">
-          Amount <em>optional</em>
-        </label>
-        <div className={`${styles.amount} ${o.firstBuyProblem ? styles.invalid : ""}`}>
-          <input
-            id="first-buy"
-            className="mono"
-            inputMode="decimal"
-            autoComplete="off"
-            placeholder="0.00"
-            value={o.firstBuyText}
-            onChange={(e) => o.setFirstBuyText(e.target.value.replace(",", "."))}
-            aria-invalid={Boolean(o.firstBuyProblem)}
-            aria-describedby="first-buy-hint"
-          />
-          <span className={styles.unit}>{o.quote?.symbol}</span>
-        </div>
-        <p id="first-buy-hint" className={o.firstBuyProblem ? styles.hintError : styles.hint}>
-          {o.firstBuyProblem ? (
-            o.firstBuyProblem
-          ) : o.firstBuyQuote ? (
-            <>
-              You get <span className="mono">{formatUnits(o.firstBuyQuote.amountOut, COIN_DECIMALS, 0)}</span> {coinLabel},{" "}
-              {supplyShare(BigInt(o.firstBuyQuote.amountOut))} of the supply, in the launch transaction itself, so nobody can
-              buy before you.
-            </>
-          ) : (
-            "Paid in the launch transaction itself; the quote shows what it gets before anything is prepared."
-          )}
+      <label className={`${styles.amount} ${o.firstBuyProblem ? styles.invalid : ""}`}>
+        <input
+          id="first-buy"
+          className="mono"
+          inputMode="decimal"
+          autoComplete="off"
+          placeholder="0"
+          aria-label="First buy"
+          value={o.firstBuyText}
+          onChange={(e) => o.setFirstBuyText(e.target.value.replace(",", "."))}
+          aria-invalid={Boolean(o.firstBuyProblem)}
+          aria-describedby={o.firstBuyProblem ? "first-buy-error" : undefined}
+        />
+        <span className={styles.unit}>{o.quote?.symbol}</span>
+      </label>
+      {o.firstBuyProblem && (
+        <p id="first-buy-error" className={styles.hintError}>
+          {o.firstBuyProblem}
         </p>
-      </div>
+      )}
 
       {o.airdropAllowed && (
         <div className={styles.airdrop}>
