@@ -7,9 +7,11 @@ import { describe, expect, it } from "vitest";
 import { PublicKey } from "@solana/web3.js";
 import { avatarHues, MarkList, MARKS_PER_CANDLE, NotableWallet, NotableWalletList, type JobRun } from "@launchpad/contract";
 import { freePort, startApi } from "@launchpad/stack";
-import { coinsOf, connection, deliverWebhook, env, fundedWallet, getLaunch, launch, SOL, trade, trades } from "./client";
+import { coinsOf, connection, deliverWebhook, env, fundedWallet, getLaunch, launch, rawTransaction, SOL, trade, trades } from "./client";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+/** The test stack's Snipe Window (`startStack`'s `snipeWindowSlots`). */
+const SNIPE_WINDOW_SLOTS = 40;
 const operator = () => ({ authorization: `Bearer ${env().operatorToken}`, "content-type": "application/json" });
 
 async function marks(mint: string, query: Record<string, string>) {
@@ -49,9 +51,12 @@ describe("Marks on a coin's chart", () => {
     const early = [await trade(a, mint, "buy", SOL(0.1)), await trade(b, mint, "buy", SOL(0.05)), await trade(a, mint, "buy", SOL(0.02))];
     await deliverWebhook(early.map((t) => t.signature));
 
-    // After the Snipe Window (40 slots, about 16 seconds): a wallet that buys and sells everything (no role at all), and a
-    // notable wallet that does the same, named by the operator with a picture the API copies.
-    await sleep(20_000);
+    // After the Snipe Window (40 slots, about 16 seconds on an idle Mac): a wallet that buys and sells everything (no role
+    // at all), and a notable wallet that does the same, named by the operator with a picture the API copies. The wait is
+    // counted in the chain's slots, never in seconds: a loaded machine makes fewer than 40 slots in 20 seconds, and the
+    // notable wallet's trades then counted as snipes (2026-11-09, a video render beside the suite).
+    const launchSlot = (await rawTransaction(signature)).slot;
+    while ((await connection().getSlot("confirmed")) <= launchSlot + SNIPE_WINDOW_SLOTS) await sleep(500);
     const [f, g] = await Promise.all([fundedWallet(), fundedWallet()]);
     const notablePicture = `${env().x.url}/pictures/notable_g.png`;
     const added = await fetch(`${env().apiUrl}/v1/operator/notable-wallets`, {
