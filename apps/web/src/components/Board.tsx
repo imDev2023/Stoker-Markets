@@ -76,9 +76,11 @@ export function Board({
   }, []);
 
   // The view came from the visitor's cookie when the address named none: the address says it too, so a link copied
-  // from here opens in the same shape.
+  // from here opens in the same shape. A passive effect runs a moment after hydration, and a click on the toggle can
+  // land in that moment (the suite's board flow did, now and then): it reads the view the visitor holds now, never the
+  // one the page was born with, so it never writes back a view the click has just left.
   useEffect(() => {
-    if (initialView === "cards" && !new URLSearchParams(window.location.search).has("view")) {
+    if (initialView === "cards" && viewRef.current === "cards" && !new URLSearchParams(window.location.search).has("view")) {
       window.history.replaceState(null, "", `${window.location.pathname}${boardViewSearch(latest.current, "cards")}${window.location.hash}`);
     }
   }, [initialView]);
