@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { CANDLE_INTERVALS, type CandleInterval, type LaunchSummary } from "@launchpad/contract";
 import { LIBRARY_PATH, loadChartingLibrary, type ChartWidget } from "@/lib/charting";
 import { chartLook, chartOverrides, chartStudiesOverrides, paintChart, shareFonts } from "@/lib/chartTheme";
+import type { MarksShown, MarkTarget } from "@/lib/chartMarks";
 import { createDatafeed, intervalOf, RESOLUTION, tickerOf, type ChartCurrency, type ChartMeasure, type ChartSeries } from "@/lib/datafeed";
 import { COIN_DECIMALS, formatPriceCompact } from "@/lib/format";
 import { Price } from "./Price";
@@ -77,12 +79,17 @@ export function CoinChart({ launch, quote, poll, hasTrades }: {
   const [state, setState] = useState<State>("loading");
   const [interval, setIntervalState] = useState<CandleInterval>(FIRST_INTERVAL);
   const [series, setSeries] = useState<ChartSeries>({ measure: "price", currency: "quote" });
+  // The marks (#160): the key wallets' trades and the posts on X by default, every trade on request.
+  const [shown, setShown] = useState<MarksShown>({ trades: "key", mentions: true });
+  const [markCount, setMarkCount] = useState<number | null>(null);
+  const targets = useRef(new Map<string, MarkTarget>());
+  const wallet = useWallet().publicKey?.toBase58() ?? null;
 
   const market = launch.market;
   // USD for one whole Quote Asset, from the market cap the API prices both ways; null when the asset has no USD price.
   const usdPerQuote = market.marketCap && market.marketCap.usd !== null && market.marketCap.quote > 0 ? market.marketCap.usd / market.marketCap.quote : null;
-  const live = useRef({ price: market.price, usdPerQuote, interval, series });
-  live.current = { price: market.price, usdPerQuote, interval, series };
+  const live = useRef({ price: market.price, usdPerQuote, interval, series, shown, wallet });
+  live.current = { price: market.price, usdPerQuote, interval, series, shown, wallet };
 
   useEffect(() => {
     // Before the first trade there is nothing to draw: the note stands alone, and the library waits for that trade.
@@ -96,6 +103,15 @@ export function CoinChart({ launch, quote, poll, hasTrades }: {
         price: () => live.current.price,
         usdPerQuote: () => live.current.usdPerQuote,
         onReset: () => chart?.activeChart().resetData(),
+        marks: () => live.current.shown,
+        wallet: () => live.current.wallet,
+        // The library asks for marks range by range, so every answer adds to what a click can find, until they are cleared.
+        onMarks: (answered) => {
+          if (gone) return;
+          for (const [id, target] of answered) targets.current.set(id, target);
+          setMarkCount(targets.current.size);
+        },
+        onBars: () => chart?.activeChart().refreshMarks(),
       },
     );
     poll.current = feed.poll;
@@ -145,6 +161,11 @@ export function CoinChart({ launch, quote, poll, hasTrades }: {
             const i = intervalOf(r);
             if (i) setIntervalState(i);
           });
+          // A post's mark opens the post on X; a trade's says everything in its tooltip.
+          ready.subscribe("onMarkClick", (id) => {
+            const target = targets.current.get(String(id));
+            if (target?.kind === "mention") window.open(target.url, "_blank", "noopener,noreferrer");
+          });
           // The fonts copied into the frame may still be loading: the chart is painted once they are in, which draws it again.
           await el.querySelector("iframe")?.contentDocument?.fonts.ready;
           await paintChart(ready, chartLook());
@@ -168,6 +189,16 @@ export function CoinChart({ launch, quote, poll, hasTrades }: {
       chart?.remove();
     };
   }, [launch.mint, launch.symbol, launch.quote.decimals, quote, hasTrades]);
+
+  // What the marks show, and whose trades are the visitor's own, change the marks on the bars already drawn.
+  // The library's refresh only adds what the datafeed answers, so the marks drawn are cleared first.
+  useEffect(() => {
+    if (state !== "ready" || !widget.current) return;
+    targets.current = new Map();
+    setMarkCount(0);
+    widget.current.activeChart().clearMarks();
+    widget.current.activeChart().refreshMarks();
+  }, [state, shown, wallet]);
 
   function changeInterval(next: CandleInterval) {
     setIntervalState(next);
@@ -225,6 +256,26 @@ export function CoinChart({ launch, quote, poll, hasTrades }: {
               </button>
             ))}
           </div>
+          {hasTrades && (
+            <div className={`segmented ${styles.choice}`} role="group" aria-label="Marks on the chart">
+              <button
+                type="button"
+                aria-pressed={shown.trades !== "none"}
+                title="Who traded, in circles on the candles"
+                onClick={() => setShown((s) => ({ ...s, trades: s.trades === "none" ? "key" : "none" }))}
+              >
+                Trades
+              </button>
+              <button
+                type="button"
+                aria-pressed={shown.mentions}
+                title="Posts on X that named the coin, in circles on the candles"
+                onClick={() => setShown((s) => ({ ...s, mentions: !s.mentions }))}
+              >
+                Posts
+              </button>
+            </div>
+          )}
           <div className={`segmented ${styles.intervals}`} role="group" aria-label="Candle interval">
             {CANDLE_INTERVALS.map((i) => (
               <button key={i} type="button" aria-pressed={i === interval} title={`${INTERVAL_LABEL[i]} candles`} onClick={() => changeInterval(i)}>
@@ -234,7 +285,7 @@ export function CoinChart({ launch, quote, poll, hasTrades }: {
           </div>
         </div>
       </div>
-      <div className={styles.plot} data-chart={hasTrades ? state : "empty"}>
+      <div className={styles.plot} data-chart={hasTrades ? state : "empty"} data-marks={markCount ?? undefined}>
         <div ref={box} className={styles.canvas} />
         {state === "failed" ? (
           <p className={styles.note} role="status">The chart could not load. Reload the page to try again.</p>
@@ -245,6 +296,27 @@ export function CoinChart({ launch, quote, poll, hasTrades }: {
           </p>
         ) : null}
       </div>
+      {hasTrades && (shown.trades !== "none" || shown.mentions) && (
+        <div className={styles.legend}>
+          <ul className={styles.keys} aria-label="What the circles mean">
+            {shown.trades !== "none" && (
+              <>
+                <li data-ring="buy">Buy</li>
+                <li data-ring="sell">Sell</li>
+              </>
+            )}
+            {shown.mentions && <li data-ring="post">Post on X</li>}
+          </ul>
+          {shown.trades !== "none" && (
+            <p className={styles.scope}>
+              {shown.trades === "key" ? "Trades by you, the Creator, the snipers, the top holders and known wallets." : "Every trade, up to ten a candle."}
+              <button type="button" className="button button-text button-sm" onClick={() => setShown((s) => ({ ...s, trades: s.trades === "all" ? "key" : "all" }))}>
+                {shown.trades === "all" ? "Key wallets only" : "Show every trade"}
+              </button>
+            </p>
+          )}
+        </div>
+      )}
     </section>
   );
 }

@@ -44,6 +44,9 @@ import { runBurns } from "./burn/engine";
 import { runRewardRounds } from "./rewards/engine";
 import { tradeRoutes } from "./routes/trades";
 import { trustRoutes } from "./routes/trust";
+import { markRoutes, operatorMarkRoutes } from "./routes/marks";
+import { pollMentions } from "./mentions";
+import { isWallet, isXId, notableAvatarKey, servePicture, walletAvatar, xAvatarKey } from "./pictures";
 
 const app = new Hono<AppEnv>();
 
@@ -238,6 +241,7 @@ app.route("/v1", announcementRoutes);
 app.route("/v1", keyRoutes);
 app.route("/v1", regionRoutes);
 app.route("/v1", statsRoutes);
+app.route("/v1", markRoutes);
 
 /** Every operator endpoint needs the operator token. */
 app.use("/v1/operator/*", async (c, next) => {
@@ -255,6 +259,7 @@ app.route("/v1/operator", operatorFeeRoutes);
 app.route("/v1/operator", operatorAirdropRoutes);
 app.route("/v1/operator", operatorMintKeyRoutes);
 app.route("/v1/operator", operatorRegionRoutes);
+app.route("/v1/operator", operatorMarkRoutes);
 
 /**
  * Runs one scheduled job now, as its Cron Trigger would, and answers with the run: 500 with the failed run when it
@@ -306,6 +311,9 @@ app.post("/v1/operator/jobs/creator-forward", (c) =>
 
 app.post("/v1/operator/jobs/metadata-upload", (c) => manualJob(c, "metadata-upload", () => uploadMetadata(uploadDeps(c.env, c.get("db")))));
 
+/** The mentions job (#160, ADR 0018): searches X for the coins that traded lately; without TWITTERAPI_API_KEY it calls nothing. */
+app.post("/v1/operator/jobs/mentions", (c) => manualJob(c, "mentions", () => pollMentions({ db: c.get("db"), cfg: c.get("cfg"), bucket: c.env.METADATA_BUCKET })));
+
 /** Operator alerts, newest first: open ones and recently resolved ones. */
 app.get("/v1/operator/alerts", async (c) => {
   const rows = await c.get("db").select().from(operatorAlerts).orderBy(desc(operatorAlerts.raisedAt)).limit(200);
@@ -352,6 +360,16 @@ app.get("/metadata/:mint/image", async (c) => {
     },
   });
 });
+
+/**
+ * The pictures on the chart's marks (#160): a wallet's generated avatar, and our copies of X pictures (a mention's author,
+ * a notable wallet's account). Outside /v1, like the coin images: no database, no API key, cached by the browser.
+ */
+app.get("/avatars/wallet/:wallet", (c) => walletAvatar(c.req.param("wallet")));
+app.get("/avatars/x/:id", (c) => (isXId(c.req.param("id")) ? servePicture(c.env.METADATA_BUCKET, xAvatarKey(c.req.param("id"))) : c.json({ error: "not found" }, 404)));
+app.get("/avatars/notable/:wallet", (c) =>
+  isWallet(c.req.param("wallet")) ? servePicture(c.env.METADATA_BUCKET, notableAvatarKey(c.req.param("wallet"))) : c.json({ error: "not found" }, 404),
+);
 
 function timingSafeEqual(a: string, b: string) {
   if (b === "") return false;
@@ -402,6 +420,10 @@ export default {
       // Reward Rounds: harvest each Reward Launch's tax, open a round where enough has collected, pay the open ones.
       if (run(CRONS.rewardRounds))
         await job(runJob(db, "reward-rounds", () => runRewardRounds({ db, cfg: config(env), operations: operationsKey(env) }), { exclusive: true }));
+      // Posts on X naming the coins that traded lately (#160, ADR 0018), on the same ten-minute clock: a paid search per
+      // coin, so it runs only once the owner has set the key, and never on a stack without one.
+      if (run(CRONS.rewardRounds) && env.TWITTERAPI_API_KEY)
+        await job(runJob(db, "mentions", () => pollMentions({ db, cfg: config(env), bucket: env.METADATA_BUCKET }), { exclusive: true }));
       // Whatever the run raised (a stuck Launch, a failed job, a stalled round) reaches the operator's webhook.
       await job(notifyPending(db, config(env)));
       if (failures.length) throw new AggregateError(failures, failures.map((f) => f.message).join("; "));

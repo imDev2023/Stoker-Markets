@@ -1,9 +1,9 @@
 import {
   API_KEY_HEADER, AirdropStatus, ApiError, ApiKeyList, BurnsPage, CandleList, CoinRewards, CopyCheck, CreatorEarnings, CreatorForwardList, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
-  HolderList, LaunchTrust, IssuedApiKey, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PlatformStats, PreparedAirdrop,
+  HolderList, LaunchTrust, IssuedApiKey, MarkList, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PlatformStats, PreparedAirdrop,
   PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAsset, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, TradeList,
   Region, RegionGatesView, TradeQuote, WalletRewards,
-  type AnnounceFeeChange, type CandleInterval, type CreateApiKey, type CurveStatus, type LaunchField, type LaunchSort, type PrepareTradeRequest,
+  type AnnounceFeeChange, type CandleInterval, type MarkQuery, type CreateApiKey, type CurveStatus, type LaunchField, type LaunchSort, type PrepareTradeRequest,
   type QuoteCategory, type QuoteIssuer, type RegionGates, type TradeQuoteQuery,
 } from "@launchpad/contract";
 
@@ -162,6 +162,12 @@ export async function getCandles(mint: string, interval: CandleInterval, page: {
   if (page.limit !== undefined) query.set("limit", String(page.limit));
   const url = `${API_URL}/v1/launches/${encodeURIComponent(mint)}/candles?${query}`;
   return read(await apiFetch(url, { cache: "no-store", signal: page.signal }), CandleList);
+}
+
+/** The marks on a coin's chart (#160): the key wallets' trades (or every trade) and the posts on X that named it, by candle. */
+export async function getMarks(mint: string, query: MarkQuery, signal?: AbortSignal) {
+  const params = new URLSearchParams(Object.entries(query).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)]));
+  return read(await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/marks?${params}`, { cache: "no-store", signal }), MarkList);
 }
 
 /** A Creator's earnings per Quote Asset and per Launch (ADR 0009); null if the address isn't a valid wallet address. */

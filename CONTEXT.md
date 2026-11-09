@@ -57,6 +57,19 @@ The part of the trust figures that lists the snipers, what they bought in the Sn
 Labels only: nothing is refused or taxed, since LaunchLab has one platform-wide fee and no sniper tax.
 _Avoid_: Anti-sniper (nothing is stopped), bundle checker
 
+**Chart Mark**:
+A circle on a candle of a coin's chart with a picture in it (#160): a Trade Mark for one wallet's trades on one side in that candle, its ring the up colour for a buy and the down colour for a sell, or a Mention for a post on X, its ring the accent.
+By default only the key wallets' trades are marked: the visitor's own, the Creator's, the Snipers', the ten largest holders' by their trades and the Notable Wallets'; every trade on request.
+_Avoid_: Bubble, dot, annotation
+
+**Mention**:
+A post on X that named a coin by its mint address, its ticker as a cashtag or its page's link, found by the mentions job while the coin trades (ADR 0018) and stored once with the market cap the coin stood at when it was posted.
+_Avoid_: Tweet (X's old word), social signal, buzz
+
+**Notable Wallet**:
+A wallet the operator has named after its owner's X account, whose Trade Marks show that account's handle and picture; the only way a trade carries an X name until sign-in links wallets to X (#159).
+_Avoid_: KOL wallet, influencer, whale
+
 **Quote Risk Label**:
 A fact about a Quote Asset that a Creator or trader should know before using it, such as an unverified issuer, an issuer's power to freeze or move tokens, a transfer fee, or no reliable price.
 Labels inform rather than block, and are shown as further information (the asset's page, the launch form, a coin's page), never beside the asset's name (owner, 2026-10-10).

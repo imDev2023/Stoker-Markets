@@ -1,6 +1,8 @@
 import { CANDLE_INTERVALS, CANDLES_MAX, type Candle, type CandleInterval } from "@launchpad/contract";
-import { getCandles } from "./api";
+import { getCandles, getMarks } from "./api";
 import type { Bar, Datafeed, LibrarySymbolInfo, PeriodParams, ResolutionString } from "./charting";
+import { toChartMarks, type MarksShown, type MarkTarget } from "./chartMarks";
+import { chartLook } from "./chartTheme";
 
 /**
  * The coin page's datafeed for Advanced Charts (#126): the library asks, on its own schedule, for a coin's candles from
@@ -68,6 +70,12 @@ type Live = {
   usdPerQuote: () => number | null;
   /** The series was reset (a candle already drawn changed): the page reloads it with `resetData()`. */
   onReset: () => void;
+  /** Which marks the chart shows (#160), and the visitor's wallet, whose trades are always among them; null when none is connected. */
+  marks: () => MarksShown;
+  wallet: () => string | null;
+  /** The marks just answered, by id, for a click on one; and a poll sent new candles, so the marks may have moved. */
+  onMarks: (targets: Map<string, MarkTarget>) => void;
+  onBars: () => void;
 };
 
 type Subscription = {
@@ -136,19 +144,24 @@ export function createDatafeed(coin: Coin, live: Live) {
         intervals.map((i) => getCandles(coin.mint, i, { limit: POLL_CANDLES, signal: AbortSignal.timeout(TIMEOUT_MS) })),
       );
       const byInterval = new Map(intervals.map((i, n) => [i, answers[n]!]));
+      let ticked = false;
       // A copy: resetting a series makes the library unsubscribe it from inside the callback.
       for (const [guid, sub] of [...subscriptions]) {
         const answer = byInterval.get(sub.interval);
         // A failed read is retried by the next poll, which reads every candle since the last one drawn.
         if (!subscriptions.has(guid) || answer?.status !== "fulfilled") continue;
-        update(sub, answer.value.candles.map((c) => toBar(c, sub.scale, coin.quoteDecimals)));
+        ticked = update(sub, answer.value.candles.map((c) => toBar(c, sub.scale, coin.quoteDecimals))) || ticked;
       }
+      if (ticked) live.onBars();
     } finally {
       polling = false;
     }
   }
 
-  /** Sends what changed since the last poll, oldest first; a change to a candle before the newest drawn reloads the series. */
+  /**
+   * Sends what changed since the last poll, oldest first; a change to a candle before the newest drawn reloads the series.
+   * Answers whether anything was sent.
+   */
   function update(sub: Subscription, bars: Bar[]) {
     const last = sub.last;
     const changedBefore = last !== null && bars.some((b) => b.time < last && sub.recent.has(b.time) && !sameBar(sub.recent.get(b.time)!, b));
@@ -157,12 +170,14 @@ export function createDatafeed(coin: Coin, live: Live) {
     if (changedBefore || gap) {
       sub.onReset();
       live.onReset();
-      return;
+      return true;
     }
+    let sentAny = false;
     for (const bar of bars) {
       if (last !== null && bar.time < last) continue;
       const sent = sub.recent.get(bar.time);
       if (sent && sameBar(sent, bar)) continue;
+      sentAny = true;
       sub.onTick({ ...bar });
       sub.recent.set(bar.time, bar);
       sub.last = Math.max(sub.last ?? bar.time, bar.time);
@@ -170,6 +185,7 @@ export function createDatafeed(coin: Coin, live: Live) {
     // Only what a poll can still read is kept.
     const times = [...sub.recent.keys()].sort((a, b) => a - b);
     for (const t of times.slice(0, Math.max(0, times.length - POLL_CANDLES))) sub.recent.delete(t);
+    return sentAny;
   }
 
   const datafeed: Datafeed = {
@@ -179,7 +195,7 @@ export function createDatafeed(coin: Coin, live: Live) {
           supported_resolutions: [...RESOLUTIONS],
           exchanges: [],
           symbols_types: [],
-          supports_marks: false,
+          supports_marks: true,
           supports_timescale_marks: false,
           supports_time: false,
         }),
@@ -263,6 +279,37 @@ export function createDatafeed(coin: Coin, live: Live) {
 
     unsubscribeBars(listenerGuid) {
       subscriptions.delete(listenerGuid);
+    },
+
+    // The marks (#160): the key wallets' trades (or every trade) and the posts on X, on the bars from `from` to `to`.
+    getMarks(symbolInfo, from, to, onData, resolution) {
+      const interval = intervalOf(resolution);
+      const series = seriesOf(symbolInfo.ticker ?? symbolInfo.name, coin.mint);
+      const shown = live.marks();
+      const usd = series?.currency === "usd" ? rates.get(symbolInfo.ticker ?? symbolInfo.name) : 1;
+      if (!interval || !series || usd === undefined || (shown.trades === "none" && !shown.mentions))
+        return later(() => {
+          live.onMarks(new Map());
+          onData([]);
+        });
+      const wallet = live.wallet();
+      getMarks(
+        coin.mint,
+        { interval, from, to, trades: shown.trades, mentions: shown.mentions ? "true" : "false", ...(wallet ? { wallet } : {}) },
+        AbortSignal.timeout(TIMEOUT_MS),
+      ).then(
+        (list) => {
+          if (disposed) return;
+          const { marks, targets } = toChartMarks(list, shown, {
+            symbol: coin.symbol, quote: coin.quote, quoteDecimals: coin.quoteDecimals,
+            unit: series.currency === "usd" ? "USD" : coin.quote, perQuote: usd, look: chartLook(),
+          });
+          live.onMarks(targets);
+          onData(marks);
+        },
+        // A mark is a note on the chart, not the chart: a failed read leaves the bars without them until the next refresh.
+        () => onData([]),
+      );
     },
   };
 

@@ -145,6 +145,17 @@ export type Bindings = {
   ARWEAVE_GATEWAY_URL?: string;
   /** SOL sent to Turbo for upload credits each time an upload is refused for want of them; 0.05 SOL unless set. */
   ARWEAVE_TOP_UP_LAMPORTS?: string;
+  /**
+   * twitterapi.io's key (#160, ADR 0018): with it, the mentions job searches X for the coins that traded lately, a paid
+   * request per coin per run; without it nothing is called and no coin has mentions. A secret, set by the owner alone.
+   */
+  TWITTERAPI_API_KEY?: string;
+  /** Tests only: the stand-in for twitterapi.io in tools/stack. Refused on mainnet. */
+  TWITTERAPI_API_URL?: string;
+  /** Coins the mentions job searches per run, the most recently traded first; 10 unless set, which caps a run's cost. */
+  MENTIONS_COINS_MAX?: string;
+  /** A coin is searched while it has traded within this many seconds; 1800 (half an hour) unless set. */
+  MENTIONS_ACTIVE_SECONDS?: string;
   HYPERDRIVE: Hyperdrive;
   METADATA_BUCKET: R2Bucket;
 };
@@ -194,7 +205,28 @@ export type Config = {
   quoteRuleWritesMax: number;
   solRoute: SolRouteConfig | null;
   arweave: ArweaveConfig;
+  /** Where the mentions job searches X (#160); null without a key, when the job calls nothing. */
+  mentions: MentionsConfig | null;
+  /** The site's address, for the coin page links a mention may carry. */
+  webOrigin: string;
 };
+
+export type MentionsConfig = { apiUrl: string; apiKey: string; coinsMax: number; activeSeconds: number };
+
+const TWITTERAPI_API_URL = "https://api.twitterapi.io";
+
+function mentionsConfig(env: Bindings): MentionsConfig | null {
+  if (env.TWITTERAPI_API_URL && env.CLUSTER === "mainnet") throw new Error("TWITTERAPI_API_URL names the tests' stand-in; on mainnet leave it unset");
+  if (!env.TWITTERAPI_API_KEY) return null;
+  const coinsMax = env.MENTIONS_COINS_MAX ? Number(env.MENTIONS_COINS_MAX) : 10;
+  if (!Number.isInteger(coinsMax) || coinsMax < 1 || coinsMax > 100) throw new Error(`MENTIONS_COINS_MAX must be a whole number from 1 to 100 (got ${env.MENTIONS_COINS_MAX})`);
+  return {
+    apiUrl: (env.TWITTERAPI_API_URL || TWITTERAPI_API_URL).replace(/\/$/, ""),
+    apiKey: env.TWITTERAPI_API_KEY,
+    coinsMax,
+    activeSeconds: env.MENTIONS_ACTIVE_SECONDS ? seconds(env.MENTIONS_ACTIVE_SECONDS, "MENTIONS_ACTIVE_SECONDS") : 1800,
+  };
+}
 
 export type ArweaveConfig = {
   turbo: { upload: string; payment: string };
@@ -370,6 +402,8 @@ export function config(env: Bindings): Config {
     quoteRuleWritesMax: env.QUOTE_RULE_WRITES_MAX ? seconds(env.QUOTE_RULE_WRITES_MAX, "QUOTE_RULE_WRITES_MAX") : QUOTE_RULE_WRITES_DEFAULT,
     solRoute: solRouteConfig(env),
     arweave: arweaveConfig(env),
+    mentions: mentionsConfig(env),
+    webOrigin: env.WEB_ORIGIN.split(",")[0]!.trim().replace(/\/$/, ""),
   };
 }
 

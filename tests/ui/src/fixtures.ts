@@ -229,6 +229,71 @@ export async function runFeeCollector() {
   }
 }
 
+/** Puts a post on X in the stand-in for twitterapi.io (#160); its author's picture is the stand-in's, one colour per handle. */
+export async function postOnX(post: { id: string; text: string; urls?: string[]; author: { id: string; userName: string; name: string } }) {
+  const res = await fetch(`${stackEnv().x.url}/stand-in/posts`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ posts: [post] }) });
+  if (!res.ok) throw new Error(`posting to the X stand-in failed: ${res.status}`);
+}
+
+/** Runs the mentions job once, against the stand-in: every stack's search goes there, never to twitterapi.io. */
+export async function runMentions() {
+  const { apiUrl, operatorToken } = stackEnv();
+  const res = await fetch(`${apiUrl}/v1/operator/jobs/mentions`, { method: "POST", headers: { authorization: `Bearer ${operatorToken}` } });
+  const body = (await res.json()) as { status: string; summary?: { found: number } };
+  if (!res.ok || body.status !== "succeeded") throw new Error(`the mentions job failed: ${res.status} ${JSON.stringify(body)}`);
+  return body.summary!;
+}
+
+/**
+ * Where the lowest post's mark sits on the coin's chart, in page coordinates: the chart draws marks on its canvas, so the
+ * test finds the ring by the accent colour the chart gives posts and takes the middle of it. Null while none is drawn.
+ */
+export async function postMarkAt(page: Page) {
+  return page.evaluate(() => {
+    const probe = document.createElement("canvas").getContext("2d")!;
+    probe.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+    const hex = String(probe.fillStyle);
+    const want = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const frame = document.querySelector<HTMLIFrameElement>("[data-chart] iframe");
+    if (!frame?.contentDocument) return null;
+    const box = frame.getBoundingClientRect();
+    for (const canvas of frame.contentDocument.querySelectorAll("canvas")) {
+      if (canvas.width < 200 || canvas.height < 200) continue;
+      const rect = canvas.getBoundingClientRect();
+      const scale = canvas.width / rect.width;
+      const px = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data;
+      const hits: [number, number][] = [];
+      for (let y = 0; y < canvas.height; y++)
+        for (let x = 0; x < canvas.width; x++) {
+          const i = (y * canvas.width + x) * 4;
+          if (px[i + 3]! > 200 && want.every((v, k) => Math.abs(px[i + k]! - v) < 10)) hits.push([x, y]);
+        }
+      if (!hits.length) continue;
+      const [x0, y0] = hits.reduce((a, b) => (b[1] > a[1] || (b[1] === a[1] && b[0] < a[0]) ? b : a));
+      const ring = hits.filter(([x, y]) => Math.abs(x - x0) < 24 && Math.abs(y - y0) < 24);
+      const xs = ring.map((h) => h[0]);
+      const ys = ring.map((h) => h[1]);
+      return {
+        x: box.x + rect.x + (Math.min(...xs) + Math.max(...xs)) / 2 / scale,
+        y: box.y + rect.y + (Math.min(...ys) + Math.max(...ys)) / 2 / scale,
+      };
+    }
+    return null;
+  });
+}
+
+/** The chart's tooltip, which the library draws in its own frame as a mark is hovered. */
+export const markTooltip = (page: Page) => page.frameLocator("[data-chart] iframe").locator('[class*="tooltip-"][class*="show-"]');
+
+/** Brings the pointer over a mark until the library shows its tooltip: now and then the first arrival is not taken. */
+export async function hoverMark(page: Page, at: { x: number; y: number }) {
+  await expect(async () => {
+    await page.mouse.move(at.x - 30, at.y);
+    await page.mouse.move(at.x, at.y, { steps: 4 });
+    await expect(markTooltip(page)).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
+}
+
 /** Runs the Reward Engine once, as its Cron Trigger would: harvests, sells (for a Quote Asset payout), opens and pays rounds. */
 export async function runRewardRounds() {
   const { apiUrl, operatorToken } = stackEnv();

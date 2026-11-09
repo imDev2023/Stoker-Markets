@@ -5,7 +5,7 @@ import type { Page } from "@playwright/test";
 import { LedgerPage, Revenue } from "@launchpad/contract";
 import {
   allowAirdrops, COIN_PNG, drain, expect, expectHydrated, expectNoHorizontalOverflow, expectNoTruncatedText, fixedKeypair, forgetDisclaimer, giveCoins, listLaunches,
-  QUOTES, SEED_CREATOR, SEED_HOLDER, test,
+  hoverMark, markTooltip, postMarkAt, QUOTES, SEED_CREATOR, SEED_HOLDER, test,
 } from "./fixtures";
 import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, REWARD_QUOTE } from "./seedData";
 import { chooseQuote, firstBuyField, signButton, signing, summary } from "./launchPage";
@@ -201,6 +201,30 @@ test("coin page with trades", async ({ page }) => {
   await expect(page.getByRole("region", { name: "Trades", exact: true }).getByRole("row")).toHaveCount(5);
   await expect(page.getByText(/^Market cap [\d.,]+ \w+$/)).toBeVisible();
   await snap(page, "coin-traded.png", tradedDynamic);
+});
+
+test("a post's mark on the chart and its tooltip", async ({ page, context }) => {
+  // A post's mark opens the post on X when clicked: answered here, should a tap count as one, so the test never reaches X.
+  await context.route("https://x.com/**", (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<title>post</title>" }));
+  await page.goto(`/coin/${await mintOf("Harbor Lights")}`);
+  const plot = page.locator("[data-chart]");
+  await expect(plot).toHaveAttribute("data-chart", "ready", { timeout: 60_000 });
+  // The posts alone, so the seeded post's ring is the one drawn in the accent; the legend then names posts only.
+  await page.getByRole("group", { name: "Marks on the chart" }).getByRole("button", { name: "Trades" }).click();
+  await expect(plot).toHaveAttribute("data-marks", "1");
+  // On a phone the library's legend lies over a young coin's marks near the top of the plot, which the ring finder
+  // cannot read through: the phone looks prove the mark is drawn, and its shots are the desktop's.
+  if (test.info().project.use.hasTouch) return;
+  await expect.poll(() => postMarkAt(page), { timeout: 30_000 }).not.toBeNull();
+  const at = (await postMarkAt(page))!;
+  // The mark itself: the ring in the accent around the author's picture, on the chart's own surface.
+  await page.mouse.move(0, 0);
+  await expect(page).toHaveScreenshot("chart-post-mark.png", { clip: { x: Math.round(at.x) - 14, y: Math.round(at.y) - 14, width: 28, height: 28 } });
+  await hoverMark(page, at);
+  await expect(markTooltip(page)).toContainText("@harbor_watch on X");
+  // A page shot clipped to the tooltip: an element shot scrolls it into view first, which ends the hover.
+  const box = (await markTooltip(page).boundingBox())!;
+  await expect(page).toHaveScreenshot("chart-post-tooltip.png", { clip: { x: Math.floor(box.x), y: Math.floor(box.y), width: Math.ceil(box.width), height: Math.ceil(box.height) } });
 });
 
 test("trade panel, buy and sell, quote and review", async ({ page, wallet }) => {

@@ -131,3 +131,58 @@
     padding: 0;
   }
 }
+
+/* What the circles on the candles mean (#160): a ring per kind, then whose trades are marked and the switch to every trade. */
+.legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: var(--text-caption);
+  color: var(--ink-3);
+}
+
+.keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.keys > li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.keys > li::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--ring);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+}
+
+.keys > li[data-ring="buy"] {
+  --ring: var(--up);
+}
+
+.keys > li[data-ring="sell"] {
+  --ring: var(--down);
+}
+
+.keys > li[data-ring="post"] {
+  --ring: var(--accent);
+}
+
+.scope {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 4px;
+  margin: 0;
+}

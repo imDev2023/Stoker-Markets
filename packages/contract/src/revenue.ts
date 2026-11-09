@@ -125,7 +125,7 @@ export type Revenue = z.infer<typeof Revenue>;
 // ---------------------------------------------------------------------------------------------------------------------
 // Operator: scheduled job runs.
 
-export const JobName = z.enum(["quote-registry", "graduation-watch", "fee-collector", "creator-forward", "reward-tax-lock", "reward-rounds", "burn", "metadata-upload"]);
+export const JobName = z.enum(["quote-registry", "graduation-watch", "fee-collector", "creator-forward", "reward-tax-lock", "reward-rounds", "burn", "metadata-upload", "mentions"]);
 export type JobName = z.infer<typeof JobName>;
 
 export const JobRun = z.object({

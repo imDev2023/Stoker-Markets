@@ -169,6 +169,13 @@
       "when": 1793596732327,
       "tag": "0023_launch_links",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794122113049,
+      "tag": "0024_chart_marks",
+      "breakpoints": true
     }
   ]
 }

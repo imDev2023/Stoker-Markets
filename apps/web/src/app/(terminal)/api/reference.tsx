@@ -91,6 +91,14 @@ export const SECTIONS: readonly Section[] = [
         ),
       },
       {
+        endpoint: ["GET /launches/:mint/marks?interval=&from=&to="],
+        text: (
+          <>
+            The marks on the coin&apos;s chart, on the candles of one <C>interval</C> that start from <C>from</C> to <C>to</C> (Unix seconds). <C>trades</C>: one mark per wallet, side and candle, with how many trades it stands for, what they bought or sold and paid, the market cap right after the last of them, and the wallet&apos;s picture. By default (<C>trades=key</C>) only the key wallets&apos;, each with its <C>roles</C>: the Creator, the snipers, the ten largest holders by their trades, the wallets known by an X account, and the wallet named in <C>wallet</C>; <C>trades=all</C> marks every trade and <C>trades=none</C> none, ten at most a candle, the key wallets first. <C>mentions</C>: the posts on X that named the coin, each on the candle it falls in, with its author, its text, a link to it and the market cap when it was posted; <C>mentions=false</C> leaves them out. Pictures are served from <C>/avatars/</C> on this API.
+          </>
+        ),
+      },
+      {
         endpoint: "GET /launches/:mint/quote",
         text: (
           <>
@@ -266,12 +274,16 @@ export const SECTIONS: readonly Section[] = [
         endpoint: "POST /operator/jobs/:job",
         text: (
           <>
-            Runs a job now: <C>quote-registry</C>, <C>fee-collector</C>, <C>creator-forward</C>, <C>reward-rounds</C>, <C>burn</C> or <C>metadata-upload</C>; <C>?fail=simulated</C> makes it fail on purpose to see the alert path.
+            Runs a job now: <C>quote-registry</C>, <C>fee-collector</C>, <C>creator-forward</C>, <C>reward-rounds</C>, <C>burn</C>, <C>metadata-upload</C> or <C>mentions</C> (the search of X for the coins that traded lately, which calls nothing until the owner sets its key); <C>?fail=simulated</C> makes it fail on purpose to see the alert path.
           </>
         ),
       },
       { endpoint: "POST /operator/rewards/rules", text: <>Announces a Reward Round rules change, effective no sooner than the announced lead ahead.</> },
       { endpoint: "PUT /operator/platform-token", text: <>Names the Platform Token the Burn buys.</> },
+      {
+        endpoint: ["GET /operator/notable-wallets", "POST /operator/notable-wallets", "DELETE /operator/notable-wallets/:wallet"],
+        text: <>The wallets known by an X account, whose trades the chart marks with the account&apos;s handle and picture: <C>wallet</C>, <C>handle</C>, an optional <C>name</C> and <C>avatarUrl</C> (a picture copied once, under 1 MB). A post replaces what is known of a wallet.</>,
+      },
       {
         endpoint: ["GET /operator/airdrop-creators", "POST /operator/airdrop-creators", "DELETE /operator/airdrop-creators/:wallet"],
         text: <>The Creator wallets allowed an airdrop at launch (<C>wallet</C>). The list starts empty, so nobody is offered one until the operator names a wallet.</>,

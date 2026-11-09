@@ -1,7 +1,8 @@
 // What a trader does on a coin page, end to end against the real chain, API and Indexer.
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
 import type { Page } from "@playwright/test";
-import { expect, forgetDisclaimer, fundedKeypair, launchViaApi, listLaunches, stackEnv, test, tradeViaApi } from "./fixtures";
+import { MarkList } from "@launchpad/contract";
+import { expect, forgetDisclaimer, fundedKeypair, launchViaApi, listLaunches, hoverMark, markTooltip, postMarkAt, postOnX, runMentions, stackEnv, test, tradeViaApi } from "./fixtures";
 import { connectTestWallet } from "./wallet";
 
 const panel = (page: Page) => page.getByRole("region", { name: /^Trade( |$)/ });
@@ -127,6 +128,60 @@ test("a trader buys, then sells half, and sees both in the history and the chart
   await expect(chartFrame(page).getByText("BUYS market cap in USD", { exact: true })).toBeVisible();
   await expect(chart(page).getByText(/^Market cap [\d.,]+ USD$/)).toBeVisible();
   await expect(chart(page).getByText(/^24h volume [\d.,]+ USD$/)).toBeVisible();
+});
+
+test("the chart marks who traded, the visitor's own trades among them, and the posts on X that named the coin", async ({ page, wallet, context }) => {
+  const mint = await freshCoin("MARK");
+  // Two traders, then the visitor's own wallet, buy; a post names the coin, and the mentions job finds it in the stand-in.
+  for (const sol of [0.1, 0.05]) await tradeViaApi(await fundedKeypair(), mint, "buy", BigInt(sol * LAMPORTS_PER_SOL));
+  await tradeViaApi(wallet.keypair, mint, "buy", BigInt(0.02 * LAMPORTS_PER_SOL));
+  const postId = String(1_910_000_000_000_000_000n + BigInt(Date.now()));
+  await postOnX({ id: postId, text: `The MARK chart is heating up ${mint}`, author: { id: "5502", userName: "mark_watcher", name: "Mark Watcher" } });
+  await runMentions();
+
+  // The chart asks for the key wallets' trades with the visitor's wallet, and draws each of them and the post.
+  const keyMarks = page.waitForResponse((r) => r.url().includes(`/launches/${mint}/marks?`) && r.url().includes(`wallet=${wallet.keypair.publicKey.toBase58()}`));
+  await openConnected(page, mint);
+  const marks = MarkList.parse(await (await keyMarks).json());
+  expect(marks.trades.find((m) => m.wallet === wallet.keypair.publicKey.toBase58())?.roles).toContain("you");
+  expect(marks.mentions.map((m) => m.id)).toEqual([postId]);
+  const plot = chart(page).locator("[data-chart]");
+  await expect(plot).toHaveAttribute("data-chart", "ready", { timeout: 60_000 });
+  await expect(plot).toHaveAttribute("data-marks", String(marks.trades.length + 1));
+
+  // The legend says what the rings mean and whose trades are marked, and every trade is one click away.
+  const legend = chart(page).getByRole("list", { name: "What the circles mean" });
+  await expect(legend.getByRole("listitem")).toHaveText(["Buy", "Sell", "Post on X"]);
+  await expect(chart(page).getByText("Trades by you, the Creator, the snipers, the top holders and known wallets.")).toBeVisible();
+  const every = page.waitForResponse((r) => r.url().includes(`/launches/${mint}/marks?`) && r.url().includes("trades=all"));
+  await chart(page).getByRole("button", { name: "Show every trade" }).click();
+  await every;
+  await expect(chart(page).getByText("Every trade, up to ten a candle.")).toBeVisible();
+  await chart(page).getByRole("button", { name: "Key wallets only" }).click();
+
+  // The posts alone: the trades' rings leave the chart and the legend.
+  const toggles = chart(page).getByRole("group", { name: "Marks on the chart" });
+  await toggles.getByRole("button", { name: "Trades" }).click();
+  await expect(toggles.getByRole("button", { name: "Trades" })).toHaveAttribute("aria-pressed", "false");
+  await expect(plot).toHaveAttribute("data-marks", "1");
+  await expect(legend.getByRole("listitem")).toHaveText(["Post on X"]);
+
+  // Hovering the post's mark shows who posted what at what market cap; a click opens the post on X (answered here, so
+  // the test never reaches X).
+  await context.route("https://x.com/**", (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<title>post</title>" }));
+  await expect.poll(() => postMarkAt(page), { timeout: 30_000 }).not.toBeNull();
+  const at = (await postMarkAt(page))!;
+  await hoverMark(page, at);
+  await expect(markTooltip(page)).toContainText(`@mark_watcher on X: “The MARK chart is heating up ${mint.slice(0, 4)}…${mint.slice(-4)}” Market cap then:`);
+  // The post opens without an opener, so it arrives as a new page of the context rather than as this page's popup.
+  const opened = context.waitForEvent("page");
+  await page.mouse.click(at.x, at.y);
+  await expect(await opened).toHaveURL(`https://x.com/mark_watcher/status/${postId}`);
+
+  // Neither feed: no marks and no legend.
+  await toggles.getByRole("button", { name: "Posts" }).click();
+  await expect(plot).toHaveAttribute("data-marks", "0");
+  await expect(legend).toBeHidden();
 });
 
 test("the chart follows the header's light or dark toggle", async ({ page }) => {

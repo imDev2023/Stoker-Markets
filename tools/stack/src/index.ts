@@ -15,6 +15,7 @@ import { runMigrations } from "@launchpad/db/migrate";
 import { bootstrapPlatform, LOCAL_QUOTE_LOGOS, LOCAL_QUOTE_PRICES_USD, LOCAL_QUOTE_TOKEN_LIST, localnetKeys, startLocalnet, type LocalnetState } from "@launchpad/localnet";
 import { createSolRoutes, type SolRoutes } from "@launchpad/localnet/routes";
 import { startTurboStandIn, type TurboStandIn } from "./turbo";
+import { startXStandIn } from "./x";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -40,6 +41,11 @@ export type StackEnv = {
    * sent to `depositAddress` on the local chain, and every coin's metadata URI resolves at `url/<id>`.
    */
   turbo: { url: string; depositAddress: string };
+  /**
+   * Stands in for twitterapi.io (#160): the mentions job searches it with `apiKey`; `POST /stand-in/posts` puts posts
+   * there, `POST /stand-in/rate-limit` makes searches answer 429, `GET /stand-in/requests` lists the searches made.
+   */
+  x: { url: string; apiKey: string };
   /** What one top-up sends Turbo, in lamports, as the API has it. */
   arweaveTopUpLamports: string;
   /** How long a sold-out curve waits for migration before the API alerts. */
@@ -335,6 +341,8 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
     cleanups.push(sink.stop);
     const turbo: TurboStandIn = await startTurboStandIn({ rpcUrl: chain.rpcUrl, port: await freePort() });
     cleanups.push(turbo.stop);
+    const x = await startXStandIn(await freePort());
+    cleanups.push(x.stop);
     // Small, so a test's top-up is cheap, and still enough for many of the largest images.
     const arweaveTopUpLamports = String(LAMPORTS_PER_SOL / 50);
     const graduationAlertAfterSeconds = opts.graduationAlertAfterSeconds ?? 5;
@@ -384,6 +392,11 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       TURBO_PAYMENT_URL: turbo.url,
       ARWEAVE_GATEWAY_URL: turbo.url,
       ARWEAVE_TOP_UP_LAMPORTS: arweaveTopUpLamports,
+      // The mentions job (#160) searches the stand-in, never twitterapi.io: no test ever makes a paid call.
+      TWITTERAPI_API_URL: x.url,
+      TWITTERAPI_API_KEY: x.apiKey,
+      // Every coin a test trades is searched in one run, however many others traded lately.
+      MENTIONS_COINS_MAX: "100",
       MINT_KEY_SECRET: randomBytes(32).toString("hex"),
       TREASURY_WALLET: fees.treasury,
       SWEEP_THRESHOLD_LAMPORTS: fees.sweepThresholdLamports,
@@ -451,7 +464,8 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
         // A separate build directory, so tests never fight a developer's running `next dev` for its lock.
         { NEXT_PUBLIC_API_URL: apiUrl, API_KEY: webApiKey, NEXT_DIST_DIR: `.next-test-${webPort}`, NEXT_TELEMETRY_DISABLED: "1" },
       );
-      cleanups.push(web.stop, () => rmSync(join(REPO, "apps", "web", `.next-test-${webPort}`), { recursive: true, force: true }));
+      // `next dev` may still be writing as it stops, so the removal tries again for a moment.
+      cleanups.push(web.stop, () => rmSync(join(REPO, "apps", "web", `.next-test-${webPort}`), { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }));
       await waitFor("web", async () => (await fetch(webUrl)).ok, 180_000, web.log);
     }
 
@@ -460,13 +474,14 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       env: {
         apiUrl, webUrl, rpcUrl: chain.rpcUrl, databaseUrl: pg.url, webhookSecret: WEBHOOK_SECRET, operatorToken: OPERATOR_TOKEN,
         alertSinkUrl: sink.url, heliusApiUrl: helius.url, heliusApiKey: HELIUS_API_KEY, heliusWebhookId: HELIUS_WEBHOOK_ID,
-        turbo: { url: turbo.url, depositAddress: turbo.depositAddress }, arweaveTopUpLamports,
+        turbo: { url: turbo.url, depositAddress: turbo.depositAddress }, x: { url: x.url, apiKey: x.apiKey }, arweaveTopUpLamports,
         graduationAlertAfterSeconds, poolBackfillSeconds, ...fees, referralShareBps, feeChangeLeadSeconds, platform, solRoutes, webApiKey, apiVars: vars,
       },
       stop,
     };
   } catch (e) {
-    await stop();
+    // The reason the start failed is what the caller needs: a cleanup that also fails is logged, never thrown over it.
+    await stop().catch((cleanup: unknown) => console.error("stopping the stack after a failed start also failed:", cleanup));
     throw e;
   }
 }

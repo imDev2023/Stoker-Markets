@@ -57,6 +57,8 @@ export function chartLook() {
 export function chartOverrides(l: ChartLook): Record<string, string | number | boolean> {
   return {
     "paneProperties.backgroundType": "solid",
+    // Room above the highest candle for the marks stacked on it (#160): the library's 10% left them cut at the top.
+    "paneProperties.topMargin": 22,
     "paneProperties.background": l.surface,
     "paneProperties.vertGridProperties.color": withAlpha(l.surface, 0),
     "paneProperties.horzGridProperties.color": l.line,

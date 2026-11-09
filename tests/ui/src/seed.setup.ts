@@ -3,7 +3,7 @@
 import { test as setup } from "@playwright/test";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
-  coinBalance, fund, fundedKeypair, fundQuote, graduate, launchViaApi, payAirdropViaApi, runFeeCollector, runRewardRounds, SEED_CREATOR,
+  coinBalance, fund, fundedKeypair, fundQuote, graduate, launchViaApi, payAirdropViaApi, postOnX, runFeeCollector, runMentions, runRewardRounds, SEED_CREATOR, stackEnv,
   SEED_HOLDER, tradeViaApi,
   type LaunchFields,
 } from "./fixtures";
@@ -87,4 +87,15 @@ setup("seed the board", async () => {
   // Gown's pool fee and Fee Key LP fees, so the revenue page shows every stream. The Creator Forward then sends each
   // Creator their share, so the Creator Fee page has payments from the platform in SOL and USDC.
   await runFeeCollector();
+
+  // A post on X names Harbor Lights after its trades, and the mentions job finds it in the stand-in (#160), so the coin's
+  // chart carries a post's mark at a market cap that follows from the fixed trades.
+  await postOnX({
+    id: "1900000000000000001",
+    // Named by its page's link, not its mint in the text: the mint differs every run, and the tooltip's shot shows the text.
+    text: "Harbor Lights is lit tonight, the night shift is buying.",
+    urls: [`${new URL(stackEnv().webUrl!).host}/coin/${mints.get("Harbor Lights")}`],
+    author: { id: "5501", userName: "harbor_watch", name: "Harbor Watch" },
+  });
+  await runMentions();
 });

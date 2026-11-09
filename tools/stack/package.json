@@ -4,7 +4,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./turbo": "./src/turbo.ts"
+    "./turbo": "./src/turbo.ts",
+    "./x": "./src/x.ts"
   },
   "scripts": {
     "typecheck": "tsc -p .",

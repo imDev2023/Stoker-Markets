@@ -1,4 +1,4 @@
-import { bigint, doublePrecision, index, integer, jsonb, numeric, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
+import { bigint, boolean, doublePrecision, index, integer, jsonb, numeric, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
 import type { QuoteLabel } from "@launchpad/contract";
 
 /** One row per Launch on our platform, written by the Indexer from the launch transaction. */
@@ -618,4 +618,49 @@ export const arweaveTopUps = pgTable("arweave_top_ups", {
   error: text("error"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   settledAt: timestamp("settled_at", { withTimezone: true }),
+});
+
+/**
+ * Posts on X that name a coin (#160): its mint address, its ticker as a cashtag or its page's link, found by the mentions
+ * job while the coin trades and drawn as marks on its chart. Each post is stored once per coin, with the market cap the
+ * coin stood at when it was posted (the latest trade's price at or before then, times the supply).
+ */
+export const coinMentions = pgTable(
+  "coin_mentions",
+  {
+    mint: text("mint").notNull(),
+    tweetId: text("tweet_id").notNull(),
+    url: text("url").notNull(),
+    text: text("text").notNull(),
+    authorId: text("author_id").notNull(),
+    authorHandle: text("author_handle").notNull(),
+    authorName: text("author_name"),
+    /** Whether the author's picture is cached in the bucket (`x-avatars/<author id>`), which the API serves. */
+    authorAvatar: boolean("author_avatar").notNull().default(false),
+    postedAt: timestamp("posted_at", { withTimezone: true }).notNull(),
+    /** Whole Quote Asset units; null when the coin had not traded by then and no later trade gives its opening price. */
+    marketCap: doublePrecision("market_cap"),
+    foundAt: timestamp("found_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.mint, t.tweetId] }), index("coin_mentions_mint_posted_idx").on(t.mint, t.postedAt)],
+);
+
+/** Where the mentions job's search for each coin last reached: the next search asks only for posts since then. */
+export const mentionPolls = pgTable("mention_polls", {
+  mint: text("mint").primaryKey(),
+  polledAt: timestamp("polled_at", { withTimezone: true }).notNull(),
+});
+
+/**
+ * Wallets the operator has named after their owner's X account (#160, the way other terminals list known traders): a
+ * trade mark by one of them shows the handle and the picture. Until sign-in links a wallet to X (#159), this list is the
+ * only source of such names.
+ */
+export const notableWallets = pgTable("notable_wallets", {
+  wallet: text("wallet").primaryKey(),
+  handle: text("handle").notNull(),
+  name: text("name"),
+  /** Whether a picture is cached in the bucket (`notable-avatars/<wallet>`), which the API serves. */
+  avatar: boolean("avatar").notNull().default(false),
+  addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
 });

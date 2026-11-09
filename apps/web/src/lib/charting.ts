@@ -58,6 +58,24 @@ export interface HistoryMetadata {
   nextTime?: number | null;
 }
 
+/** A mark on a bar (`getMarks`): a circle on the bar at `time` (Unix seconds, a bar's own time), its ring `color.border`. */
+export interface Mark {
+  id: string | number;
+  time: number;
+  color: { border: string; background: string };
+  /** What the mark's tooltip says. */
+  text: string;
+  /** The letter inside the circle, shown until `imageUrl` loads. */
+  label: string;
+  labelFontColor: string;
+  minSize: number;
+  borderWidth?: number;
+  hoveredBorderWidth?: number;
+  /** A square picture to fill the circle with. */
+  imageUrl?: string;
+  showLabelWhenImageLoaded?: boolean;
+}
+
 export interface DatafeedConfiguration {
   supported_resolutions?: ResolutionString[];
   exchanges?: { value: string; name: string; desc: string }[];
@@ -87,6 +105,8 @@ export interface Datafeed {
     onResetCacheNeededCallback: () => void,
   ): void;
   unsubscribeBars(listenerGuid: string): void;
+  /** Called only when `supports_marks` is set: the marks of the bars from `from` to `to` (Unix seconds), answered once. */
+  getMarks?(symbolInfo: LibrarySymbolInfo, from: number, to: number, onDataCallback: (marks: Mark[]) => void, resolution: ResolutionString): void;
 }
 
 /** A value formatter: the price scale, the legend and the crosshair's label all read prices through it. */
@@ -126,6 +146,10 @@ export interface ChartApi {
   resetData(): void;
   applyOverrides(overrides: Record<string, string | number | boolean>): void;
   onIntervalChanged(): Subscription<(interval: ResolutionString) => void>;
+  /** Asks the datafeed for the visible bars' marks again; the marks already drawn stay unless cleared. */
+  refreshMarks(): void;
+  /** Removes the marks drawn. */
+  clearMarks(): void;
 }
 
 /** The library's `IChartingLibraryWidget`. */
@@ -137,6 +161,8 @@ export interface ChartWidget {
   applyOverrides(overrides: Record<string, string | number | boolean>): void;
   applyStudiesOverrides(overrides: Record<string, string | number | boolean>): void;
   setCSSCustomProperty(name: string, value: string): void;
+  /** A click on a mark on a bar names the mark's id. */
+  subscribe(event: "onMarkClick", callback: (markId: Mark["id"]) => void): void;
   remove(): void;
 }
 
