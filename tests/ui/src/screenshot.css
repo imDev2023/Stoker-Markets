@@ -19,6 +19,20 @@ time {
   width: 9ch;
 }
 
+/* A board card's age, and a board row's once the row stacks on a phone, sit in boxes sized by their content, so there too
+   a time's 100% is its own text's width: "4m ago" against "15m ago" moved the mask, and on the card the figure beside it,
+   between a quick run and a slow one (2026-11-09, a run beside a video render rewrote five board and asset baselines).
+   A fixed box keeps both where they are. The row's breakpoint is CoinRow's own. */
+[data-age] time {
+  width: 8ch;
+}
+
+@media (max-width: 760px) {
+  [data-label="Age"] time {
+    width: 8ch;
+  }
+}
+
 /* The board's "updated 4s ago" sits in a sentence too; a fixed box keeps the mask the same width run to run. */
 [data-updated] time {
   width: 7ch;

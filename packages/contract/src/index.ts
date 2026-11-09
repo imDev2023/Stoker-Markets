@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { LaunchMarket } from "./board";
+import { PublishedBudgetTable } from "./budget";
 import { GraduationTarget, QuoteRef } from "./quotes";
 import { CurveProgress, Graduation, SolRouteSource } from "./trades";
 import { LaunchModeFields, LaunchModesSummary, RewardTax } from "./launchModes";
@@ -14,6 +15,7 @@ export * from "./launchModes";
 export * from "./revenue";
 export * from "./rewards";
 export * from "./burns";
+export * from "./budget";
 export * from "./apiKeys";
 export * from "./operator";
 export * from "./region";
@@ -218,6 +220,11 @@ export const PlatformInfo = z.object({
    * of it). Paid in the Quote Asset once the amount owed is worth `minLamports`.
    */
   creatorForward: z.object({ shareBps: z.number().int(), curveBps: z.number(), poolBps: z.number(), minLamports: z.string() }),
+  /**
+   * The Budget Table (ADR 0019): how what the platform keeps after the Creators' share is divided between the Burn, the
+   * Flywheel, the trader programs and the treasury, as the version in force and any announced for later.
+   */
+  budgetTable: PublishedBudgetTable,
   /** What a referred curve trade pays its referrer, in basis points, where the Quote Asset allows a share fee. */
   referralShareBps: z.number().int(),
   /** Where buys paid with SOL on a Launch paired with anything else get their Quote Asset; null when this deployment has no route. */

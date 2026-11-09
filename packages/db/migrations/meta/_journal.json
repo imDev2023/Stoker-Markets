@@ -176,6 +176,13 @@
       "when": 1794122113049,
       "tag": "0024_chart_marks",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794208282873,
+      "tag": "0025_budget_table",
+      "breakpoints": true
     }
   ]
 }

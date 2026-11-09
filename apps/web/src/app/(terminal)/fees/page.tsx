@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { REWARD_TAX_RATES } from "@launchpad/contract";
+import { BUDGET_ROWS, REWARD_TAX_RATES, TRADER_PROGRAMS_MAX_BPS, type BudgetRow } from "@launchpad/contract";
 import { getBurns, getPlatform } from "@/lib/api";
+import { BUDGET_ROW_LABELS, budgetLine } from "@/lib/budget";
 import { graduationFeeSol, pct } from "@/lib/fees";
 import { formatUtc } from "@/lib/format";
 import { JUPITER_REFERRAL, JUPITER_REFERRAL_FEE_BPS, JUPITER_REFERRAL_KEEP_BPS } from "@/lib/jupiterReferral";
@@ -17,9 +18,10 @@ type Row = { fee: string; amount: ReactNode; note?: ReactNode; pays: ReactNode; 
 
 /**
  * The Fees page (owner, 2026-10-30): the one place on the site that shows a fee figure. One table of every fee, each
- * with who pays it, when, in what asset and who receives it; every figure from `GET /v1/platform` (and the Burn's
- * shares from `GET /v1/burns`), never a constant, so a fee change shows here the moment the chain has it. Everywhere
- * else the site says what a fee is for and links here.
+ * with who pays it, when, in what asset and who receives it; every figure from `GET /v1/platform`, never a constant,
+ * so a fee change shows here the moment the chain has it. Under it, the Budget Table (ADR 0019): how what the platform
+ * keeps after the Creators' share is divided, the version in force and any announced for later. Everywhere else the
+ * site says what a fee is for and links here.
  */
 export default async function FeesPage() {
   const [platform, burns] = await Promise.all([getPlatform(), getBurns().catch(() => null)]);
@@ -28,6 +30,17 @@ export default async function FeesPage() {
   const raydiumKeeps = (platform.poolCreatorFeeBps * platform.poolCreatorFeeShareBps) / 10_000;
   const lpShare = (platform.raydiumFee.poolBps * platform.raydiumFee.poolLpShareBps) / 10_000;
   const referralToPlatform = (JUPITER_REFERRAL_FEE_BPS * (10_000 - JUPITER_REFERRAL_KEEP_BPS)) / 10_000;
+  const shares = platform.budgetTable.inForce.shares;
+  // A trader program's row has no share until the program is built (ADR 0019); the row says so rather than hiding.
+  const program = (what: string, row: BudgetRow) => (shares[row] > 0 ? what : `${what} Not built yet, so nothing is set aside for it.`);
+  const uses: Record<BudgetRow, string> = {
+    burn: "Buys the Platform Token on the market and burns it, on a public schedule.",
+    flywheel: `Buys the ${burns ? `${burns.shares.flywheelTopN} ` : ""}graduated coins with the most trading volume and burns them.`,
+    rebates: program("Paid back to traders by their volume.", "rebates"),
+    referrals: program("A referrer’s share on any pair, paid by the platform rather than by the trade.", "referrals"),
+    integrators: program("For the apps and bots that bring trades through the API.", "integrators"),
+    treasury: "The rest leaves the operations wallet for the treasury every hour; every move is on the Ledger with its transaction.",
+  };
 
   const rows: Row[] = [
     {
@@ -247,30 +260,31 @@ export default async function FeesPage() {
 
       <section className={`card ${styles.card}`} aria-labelledby="revenue-title">
         <h2 id="revenue-title" className={`t-h3 ${styles.cardTitle}`}>What the platform does with its share</h2>
-        <ul className={styles.uses}>
-          <li>
-            <span>Forwarded to Creators</span>
-            <span>Half of what it collects on each coin&apos;s trades, in the Quote Asset, within about an hour of collection; never swept.</span>
-          </li>
-          {burns && (
-            <>
-              <li>
-                <span>The Burn</span>
-                <span>{pct(burns.shares.burnBps)} of its own revenue buys the Platform Token on the market and burns it, on a public schedule.</span>
-              </li>
-              <li>
-                <span>The Flywheel</span>
-                <span>{pct(burns.shares.flywheelBps)} buys the {burns.shares.flywheelTopN} graduated coins with the most trading volume and burns them.</span>
-              </li>
-            </>
-          )}
-          <li>
-            <span>Swept to the treasury</span>
-            <span>The rest leaves the operations wallet for the treasury every hour; every move is on the Ledger with its transaction.</span>
-          </li>
+        <p className={styles.words}>
+          Half of what the platform collects on each coin&apos;s trades is forwarded to that coin&apos;s Creator first, in the Quote Asset,
+          within about an hour of collection. The Fee Key&apos;s part of a pool trade, {pct(lpShare)} of the trade, is the platform&apos;s alone:
+          no Creator&apos;s share comes out of it. What is left is the platform&apos;s share, and one table divides all of it.
+        </p>
+        <ul className={`${styles.uses} ${styles.budget}`} aria-label="How the platform's share is divided">
+          {BUDGET_ROWS.map((row) => (
+            <li key={row} data-row={row} className={shares[row] === 0 ? styles.idle : undefined}>
+              <span>{BUDGET_ROW_LABELS[row]}</span>
+              <span className={styles.share}>{pct(shares[row])}</span>
+              <span>{uses[row]}</span>
+            </li>
+          ))}
         </ul>
+        {platform.budgetTable.upcoming.map((next) => (
+          <p key={next.version} className={styles.upcoming} data-upcoming={next.version}>
+            From <time dateTime={next.effectiveAt}>{formatUtc(next.effectiveAt)}</time>: {budgetLine(next.shares)}.
+            {next.note && <> {next.note}.</>} It applies to what is collected from then on, never to what came before.
+          </p>
+        ))}
         <p className={styles.note}>
-          The figures behind this are on <Link href="/revenue">Stats</Link>, and the API that serves them is documented under <Link href="/api">Developers</Link>.
+          The shares always sum to 100%, and a share applies only to what is collected while it is in force. A change to this table is
+          announced at least a day ahead under <Link href="/announcements">Announcements</Link>. Once the trader programs start they take{" "}
+          {pct(TRADER_PROGRAMS_MAX_BPS)} together at most, out of the Burn&apos;s share alone. The figures behind this are on{" "}
+          <Link href="/revenue">Stats</Link>, and the API that serves them is documented under <Link href="/api">Developers</Link>.
         </p>
       </section>
     </div>

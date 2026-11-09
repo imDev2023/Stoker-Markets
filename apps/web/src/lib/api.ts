@@ -1,5 +1,5 @@
 import {
-  API_KEY_HEADER, AirdropStatus, ApiError, ApiKeyList, BurnsPage, CandleList, CoinRewards, CopyCheck, CreatorEarnings, CreatorForwardList, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
+  API_KEY_HEADER, AirdropStatus, ApiError, ApiKeyList, BudgetsPage, BurnsPage, CandleList, CoinRewards, CopyCheck, CreatorEarnings, CreatorForwardList, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
   HolderList, LaunchTrust, IssuedApiKey, MarkList, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PlatformStats, PreparedAirdrop,
   PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAsset, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, TradeList,
   Region, RegionGatesView, TradeQuote, WalletRewards,
@@ -235,6 +235,11 @@ export async function reportTransaction(signature: string) {
 /** Every announced Platform Fee or Creator Fee change, newest effective time first; public, so none comes as a surprise. */
 export async function listAnnouncements() {
   return read(await apiFetch(`${API_URL}/v1/announcements`, { cache: "no-store" }), FeeAnnouncementList);
+}
+
+/** The Budget Table's every version and each row's allotment, spending and remainder (ADR 0019). */
+export async function getBudgets() {
+  return read(await apiFetch(`${API_URL}/v1/budgets`, { cache: "no-store" }), BudgetsPage);
 }
 
 // The operator view, behind the operator token, which the operator's browser keeps for the session only.

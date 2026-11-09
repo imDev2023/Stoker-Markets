@@ -8,8 +8,8 @@ import { feeKeys, graduations, jobTransactions, launches, ledgerEntries, trades,
 import type { Config } from "../env";
 import { fetchRawTransaction } from "../indexer";
 import { JobFailure } from "../jobs";
-import { reservedLamports } from "../burn/engine";
 import { rewardPotLamports } from "../rewards/sales";
+import { reservedLamports } from "./budget";
 import { creatorMoney, unforwarded } from "./creatorShares";
 import { withholdGraduationFees, type Withheld } from "./graduationFee";
 import { recordRevenue, revenueContext } from "./ledger";
@@ -178,8 +178,8 @@ async function poolsTradedSinceLastFeeKeyCollection(db: Db, pools: string[]) {
 }
 
 /**
- * Sweeps the operations wallet into the treasury: its SOL down to the float (plus the Burn's and Flywheel's unspent
- * budgets) once it holds more than the threshold above that, and
+ * Sweeps the operations wallet into the treasury: its SOL down to the float (plus what every row of the Budget Table
+ * but the treasury's has not spent yet, ADR 0019) once it holds more than the threshold above that, and
  * of every other token, the revenue the Ledger shows it collected and has not swept yet. Anything else the wallet holds
  * in that token (a Reward Round's harvested tax, or a Quote Asset payout's pot, say) stays, and so does what Creators
  * are owed and have not been forwarded yet (ADR 0009, less the Graduation Fees withheld out of it, ADR 0015), in SOL or
@@ -208,9 +208,9 @@ async function sweep(
   const tokens = held
     .map((t) => ({ ...t, amount: t.amount < owed.get(t.mint.toBase58())! ? t.amount : owed.get(t.mint.toBase58())! }))
     .filter((t) => t.amount > 0n);
-  // SOL the Burn and Flywheel have not spent yet stays behind, on top of the float, and so do SOL owed to Creators and
-  // the SOL that Reward Sales brought in for holders.
-  const keep = cfg.sweepFloatLamports + (await reservedLamports(db, cfg)) + unforwarded(creators, WSOL) + (await rewardPotLamports(db));
+  // SOL the Budget Table's spending rows (the Burn, the Flywheel, a trader program once it has a share) have not spent
+  // yet stays behind, on top of the float, and so do SOL owed to Creators and the SOL that Reward Sales brought in.
+  const keep = cfg.sweepFloatLamports + (await reservedLamports(db)) + unforwarded(creators, WSOL) + (await rewardPotLamports(db));
   const balance = BigInt(await connection.getBalance(ops, "confirmed"));
   const lamports = balance > cfg.sweepThresholdLamports + keep - cfg.sweepFloatLamports ? balance - keep : 0n;
   if (lamports === 0n && tokens.length === 0) return false;

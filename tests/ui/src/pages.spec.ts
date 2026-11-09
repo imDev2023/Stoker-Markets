@@ -102,6 +102,7 @@ test("on a phone the tab bar carries the launch with its name and the account sh
 test("the Fees page lists every fee from the platform facts, and the landing's footer leads to it", async ({ page, stack }) => {
   const platform = (await (await fetch(`${stack.apiUrl}/v1/platform`)).json()) as {
     platformFeeBps: number; poolCreatorFeeBps: number; referralShareBps: number; graduationFeeLamports: string; creatorForward: { curveBps: number };
+    budgetTable: { inForce: { shares: Record<string, number> }; upcoming: unknown[] };
   };
   await page.goto("/fees");
   await expect(page.getByRole("heading", { level: 1, name: "Fees" })).toBeVisible();
@@ -119,8 +120,24 @@ test("the Fees page lists every fee from the platform facts, and the landing's f
   await expect(rows.filter({ hasText: "Swapping any Solana token" })).toContainText("0.5% of every swap");
   // Dated, and pointing at the announcements for changes.
   await expect(page.getByText(/^Figures as of /).locator("time")).toHaveCount(1);
-  await expect(page.getByRole("link", { name: "Announcements" })).toHaveAttribute("href", "/announcements");
+  await expect(page.getByText(/^Figures as of /).getByRole("link", { name: "Announcements" })).toHaveAttribute("href", "/announcements");
+  // The Budget Table (#187, ADR 0019): how the platform's own share is divided, every row with its share from the API,
+  // the trader programs present at nothing until they are built, and the shares summing to the whole.
+  const shares = platform.budgetTable.inForce.shares;
+  const budget = page.getByRole("list", { name: "How the platform's share is divided" }).getByRole("listitem");
+  await expect(budget).toHaveCount(6);
+  for (const [name, row] of [["The Burn", "burn"], ["The Flywheel", "flywheel"], ["Volume rebates", "rebates"], ["Referrals on every pair", "referrals"], ["Integrator share", "integrators"], ["Treasury", "treasury"]] as const)
+    await expect(budget.filter({ hasText: name })).toContainText(`${shares[row]! / 100}%`);
+  expect(Object.values(shares).reduce((sum, bps) => sum + bps, 0)).toBe(10_000);
+  await expect(budget.filter({ hasText: "Volume rebates" })).toContainText("Not built yet");
+  const card = page.getByRole("region", { name: "What the platform does with its share" });
+  await expect(card).toContainText("The Fee Key's part of a pool trade");
+  await expect(card).toContainText("is the platform's alone");
+  await expect(card.getByRole("link", { name: "Announcements" })).toHaveAttribute("href", "/announcements");
   await expectNoHorizontalOverflow(page);
+  // A change to the table is announced beside the fee changes; none has been.
+  await page.goto("/announcements");
+  await expect(page.getByRole("region", { name: "The platform's share" })).toContainText("The division has not changed since the start.");
   // The landing's footer lists it with the legal pages.
   await page.goto("/");
   await expect(page.getByRole("contentinfo").getByRole("link", { name: "Fees" })).toHaveAttribute("href", "/fees");

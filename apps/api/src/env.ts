@@ -117,10 +117,6 @@ export type Bindings = {
   GRADUATION_FEE_LAMPORTS?: string;
   /** How long before it applies a change to the Reward Round rules must be announced, in seconds (a day on mainnet). */
   REWARD_RULES_LEAD_SECONDS?: string;
-  /** The Burn's share of revenue, in basis points; 6000 (60%) unless set. */
-  BURN_SHARE_BPS?: string;
-  /** The Flywheel's share of revenue, in basis points; 500 (5%) unless set. */
-  FLYWHEEL_SHARE_BPS?: string;
   /** How many top Launches the Flywheel buys; 10 unless set. */
   FLYWHEEL_TOP_N?: string;
   /** A buy-and-burn under this many lamports is not worth its network fee and waits; 0.01 SOL unless set. */
@@ -194,8 +190,6 @@ export type Config = {
   /** Bundle Radar's Snipe Window after a launch, in slots after the launch's own. */
   snipeWindowSlots: number;
   rewardRulesLeadSeconds: number;
-  burnShareBps: number;
-  flywheelShareBps: number;
   flywheelTopN: number;
   burnMinSpendLamports: bigint;
   referralShareBps: number;
@@ -391,8 +385,6 @@ export function config(env: Bindings): Config {
       : CREATOR_FORWARD_MIN_DEFAULT_LAMPORTS,
     graduationFeeLamports: env.GRADUATION_FEE_LAMPORTS ? lamports(env.GRADUATION_FEE_LAMPORTS, "GRADUATION_FEE_LAMPORTS") : GRADUATION_FEE_DEFAULT_LAMPORTS,
     rewardRulesLeadSeconds: env.REWARD_RULES_LEAD_SECONDS ? seconds(env.REWARD_RULES_LEAD_SECONDS, "REWARD_RULES_LEAD_SECONDS") : REWARD_RULES_LEAD_DEFAULT_SECONDS,
-    burnShareBps: bps(env.BURN_SHARE_BPS, "BURN_SHARE_BPS", 6_000),
-    flywheelShareBps: bps(env.FLYWHEEL_SHARE_BPS, "FLYWHEEL_SHARE_BPS", 500),
     flywheelTopN: env.FLYWHEEL_TOP_N ? seconds(env.FLYWHEEL_TOP_N, "FLYWHEEL_TOP_N") : 10,
     burnMinSpendLamports: env.BURN_MIN_SPEND_LAMPORTS ? lamports(env.BURN_MIN_SPEND_LAMPORTS, "BURN_MIN_SPEND_LAMPORTS") : BURN_MIN_SPEND_DEFAULT_LAMPORTS,
     referralShareBps: bps(env.REFERRAL_SHARE_BPS, "REFERRAL_SHARE_BPS", 50),

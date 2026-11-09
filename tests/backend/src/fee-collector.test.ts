@@ -10,7 +10,7 @@ import BN from "bn.js";
 import { cpmmCoder, launchlabPdas, lockCoder, lockPdas, programsFor, WSOL_MINT } from "@launchpad/chain";
 import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
 import { FEE_COLLECTOR_CRON } from "@launchpad/stack";
-import { BurnsPage, CoinRewards, HolderList, JobRun, JobRunList, LaunchList, LedgerPage, Revenue, type LedgerEntry } from "@launchpad/contract";
+import { BudgetsPage, CoinRewards, HolderList, JobRun, JobRunList, LaunchList, LedgerPage, Revenue, type LedgerEntry } from "@launchpad/contract";
 import {
   SOL, coinsOf, connection, deliverWebhook, env, feeAt, feeRates, fundedWallet, graduationFeeIn, launch, launchedCoin, networkFee, quote, tokenBalance, trade,
  platformInfo, uniqueTag } from "./client";
@@ -378,9 +378,10 @@ describe("the sweep", () => {
     const run = await runCollector();
     const sweeps = sentBy(run).filter((s) => s.purpose === "sweep");
     expect(sweeps).toHaveLength(1);
-    // SOL the Burn and Flywheel have not spent yet stays behind with the float (ADR 0006).
-    const budgets = BurnsPage.parse(await (await fetch(`${env().apiUrl}/v1/burns`)).json()).budgets;
-    const reserved = BigInt(budgets.burn.available) + BigInt(budgets.flywheel.available);
+    // SOL the Budget Table's spending rows have not spent yet stays behind with the float (ADR 0006, ADR 0019): the
+    // Burn's and the Flywheel's, and a trader program's once it has had a share.
+    const budgets = BudgetsPage.parse(await (await fetch(`${env().apiUrl}/v1/budgets`)).json());
+    const reserved = budgets.rows.reduce((sum, r) => sum + BigInt(r.availableLamports ?? "0"), 0n);
     // So does SOL owed to Creators (ADR 0009): what the Creator Forward then paid, and what still waits for its minimum.
     const forwards = await forwarded();
     expect(forwards.every((f) => f.mint === WSOL)).toBe(true);

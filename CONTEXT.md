@@ -202,10 +202,21 @@ a coin the platform has approved and works on with its team, launched by the pla
 Only a wallet that stakes STOKER can buy one, and the more it stakes, the larger its allocation of that launch.
 The header's "Curated" section lists them; none exists before the Platform Token does.
 
+**Platform Net**:
+What the platform keeps of its revenue: everything the Ledger records as collected (Platform Fee, pool creator fee, Fee Key) less the Creators' share of it, valued in SOL at the Quote Registry's latest prices (ADR 0019).
+Fee Key collections enter it whole, since no Creator's share comes out of them.
+_Avoid_: Profit, the platform's half (the Creator's share will not stay a half), revenue (that is before the Creators' share)
+
+**Budget Table**:
+The one table that divides the Platform Net between the Burn, the Flywheel, the trader programs (volume rebates, referrals on every pair, the integrator share) and the Treasury, each row a share in basis points and the six summing to 100% (ADR 0019).
+It is versioned: a version is announced ahead like a fee change, and its shares apply only to what is collected while it is in force.
+A row is a budget; what a row has been allotted less what the Ledger shows it spent is what it has left, which the Sweep leaves in the Operations Wallet.
+_Avoid_: Revenue split, allocation, tokenomics
+
 **Burn**:
-Using platform revenue to buy the Platform Token on the market and destroy it, on a public schedule.
+Using the Burn's row of the Budget Table to buy the Platform Token on the market and destroy it, on a public schedule.
 _Avoid_: Buyback (on its own), revenue share, dividend
 
 **Flywheel**:
-Using platform revenue to buy the top Launches by an announced rule and burn them.
+Using the Flywheel's row of the Budget Table to buy the top Launches by an announced rule and burn them.
 _Avoid_: Top-10 buyback, support buys
