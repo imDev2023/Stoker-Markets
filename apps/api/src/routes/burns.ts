@@ -5,7 +5,8 @@ import { WSOL_MINT } from "@launchpad/chain";
 import { SetPlatformToken, type BurnsPage, type BurnEvent } from "@launchpad/contract";
 import { launches, ledgerEntries, platformSettings } from "@launchpad/db";
 import type { AppEnv } from "../env";
-import { budgets, budgetsView, flywheelPicks, platformToken, PLATFORM_TOKEN_SETTING } from "../burn/engine";
+import { budgetsView, flywheelPicks, platformToken, PLATFORM_TOKEN_SETTING } from "../burn/engine";
+import { budgets } from "../fees/budget";
 import { revenueAssets } from "../fees/ledger";
 
 /** Burn and Flywheel, public: the shares, the rule, what has been spent and burned, and every buy and burn so far. */
@@ -18,8 +19,9 @@ burnRoutes.get("/burns", async (c) => {
   const [entries, picks, b] = await Promise.all([
     db.select().from(ledgerEntries).where(inArray(ledgerEntries.kind, ["burn", "flywheel"])).orderBy(desc(ledgerEntries.slot), desc(ledgerEntries.signature), desc(ledgerEntries.eventIndex)).limit(400),
     flywheelPicks(db, cfg.flywheelTopN),
-    budgets(db, cfg),
+    budgets(db),
   ]);
+  const shares = { burnBps: b.rows.burn.shareBps, flywheelBps: b.rows.flywheel.shareBps };
   const asset = await revenueAssets(db, cfg.publicApiUrl, new Map(entries.map((e) => [e.assetMint, e.assetDecimals])));
   // Two Ledger rows per burn: the SOL spent, and the coins destroyed; shown as one event.
   const bySignature = new Map<string, BurnEvent>();
@@ -39,8 +41,9 @@ burnRoutes.get("/burns", async (c) => {
   for (const e of events) burnedByCoin.set(e.coin.mint, (burnedByCoin.get(e.coin.mint) ?? 0n) + BigInt(e.amount));
   const res: BurnsPage = {
     platformToken: token?.toBase58() ?? null,
-    shares: { burnBps: cfg.burnShareBps, flywheelBps: cfg.flywheelShareBps, flywheelTopN: cfg.flywheelTopN },
-    rule: `Every run, ${cfg.burnShareBps / 100}% of all revenue so far (valued in SOL at the latest prices), less what earlier runs spent, buys the Platform Token and burns it; ${cfg.flywheelShareBps / 100}% is split equally between the ${cfg.flywheelTopN} graduated coins with the most trading volume over the last 24 hours, each bought and burned. Coins without a SOL route are skipped and their share waits.`,
+    // The shares are the Budget Table's rows in force (ADR 0019); each applies to what is collected while its version is.
+    shares: { ...shares, flywheelTopN: cfg.flywheelTopN },
+    rule: `Every run, the Burn's share of what the platform keeps after the Creators' share, ${shares.burnBps / 100}% (valued in SOL at the latest prices), less what earlier runs spent, buys the Platform Token and burns it; the Flywheel's share, ${shares.flywheelBps / 100}%, is split equally between the ${cfg.flywheelTopN} graduated coins with the most trading volume over the last 24 hours, each bought and burned. Coins without a SOL route are skipped and their share waits. A changed share is announced ahead and applies only to what is collected after it takes effect.`,
     budgets: (({ revenueLamports, burn, flywheel }) => ({
       revenueLamports, burn: { spent: burn.spent, available: burn.available }, flywheel: { spent: flywheel.spent, available: flywheel.available },
     }))(budgetsView(b)),

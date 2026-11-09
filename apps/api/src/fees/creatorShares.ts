@@ -23,17 +23,23 @@ const curveShare = sql`coalesce(sum(${half(trades.platformFee)}), 0)::text`;
 /** What the pool fee collections of a coin earn its Creator, as SQL over `ledger_entries`. */
 const poolShare = sql`coalesce(sum(${half(ledgerEntries.amount)}), 0)::text`;
 
+/** A Ledger time as SQL: a `Date` parameter fails under our client's settings, so it goes as text with a cast. */
+const ledgerTime = (time: Date) => sql`${time.toISOString()}::timestamptz`;
+
 /**
  * A curve trade's fee has been collected once a Platform Fee claim for its Quote Asset landed at or after the trade:
- * the vault it was paid into was emptied into the operations wallet.
+ * the vault it was paid into was emptied into the operations wallet. With `before`, only claims that landed before
+ * that time count, which is what had been collected by then.
  */
-const collected = sql`${trades.slot} <= coalesce(
-  (select max(le.slot) from ${ledgerEntries} le where le.kind = 'platform_fee' and le.asset_mint = ${launches.quoteMint}), -1)`;
+const collected = (before?: Date) => sql`${trades.slot} <= coalesce(
+  (select max(le.slot) from ${ledgerEntries} le where le.kind = 'platform_fee' and le.asset_mint = ${launches.quoteMint}${before ? sql` and le.block_time < ${ledgerTime(before)}` : sql``}), -1)`;
 
 type Scope = {
   /** Only what the platform has already collected, which is what it owes; otherwise everything earned so far. */
   collectedOnly: boolean;
   creator?: string;
+  /** With `collectedOnly`: only what Ledger entries before this time collected (ADR 0019's periods). */
+  before?: Date;
 };
 
 /** Each Creator's share per Quote Asset. A pool's share only ever counts collected fees: the Ledger knows no others. */
@@ -44,13 +50,13 @@ export async function creatorShares(db: Db, scope: Scope): Promise<CreatorShare[
       .select({ creator: launches.creator, mint: launches.quoteMint, amount: sql<string>`${curveShare}` })
       .from(trades)
       .innerJoin(launches, eq(launches.mint, trades.mint))
-      .where(sql`${trades.venue} = 'curve' ${mine} ${scope.collectedOnly ? sql`and ${collected}` : sql``}`)
+      .where(sql`${trades.venue} = 'curve' ${mine} ${scope.collectedOnly ? sql`and ${collected(scope.before)}` : sql``}`)
       .groupBy(launches.creator, launches.quoteMint),
     db
       .select({ creator: launches.creator, mint: ledgerEntries.assetMint, amount: sql<string>`${poolShare}` })
       .from(ledgerEntries)
       .innerJoin(launches, eq(launches.mint, ledgerEntries.launchMint))
-      .where(sql`${ledgerEntries.kind} = 'pool_fee' and ${ledgerEntries.assetMint} = ${launches.quoteMint} ${mine}`)
+      .where(sql`${ledgerEntries.kind} = 'pool_fee' and ${ledgerEntries.assetMint} = ${launches.quoteMint} ${mine} ${scope.before ? sql`and ${ledgerEntries.blockTime} < ${ledgerTime(scope.before)}` : sql``}`)
       .groupBy(launches.creator, ledgerEntries.assetMint),
   ]);
   const shares = new Map<string, CreatorShare>();
@@ -96,7 +102,7 @@ export async function collectedSharesByLaunch(db: Db, mints: string[]) {
       .select({ mint: launches.mint, amount: sql<string>`${curveShare}` })
       .from(trades)
       .innerJoin(launches, eq(launches.mint, trades.mint))
-      .where(sql`${trades.venue} = 'curve' and ${inArray(launches.mint, mints)} and ${collected}`)
+      .where(sql`${trades.venue} = 'curve' and ${inArray(launches.mint, mints)} and ${collected()}`)
       .groupBy(launches.mint),
     db
       .select({ mint: launches.mint, amount: sql<string>`${poolShare}` })
@@ -114,12 +120,16 @@ export async function collectedSharesByLaunch(db: Db, mints: string[]) {
  * Per Creator and Quote Asset, what Graduation Fees have been withheld from their share so far (ADR 0015): every
  * `graduation_fee` entry on the Ledger, which names the coin, and through it the Creator.
  */
-export async function withheldGraduationFees(db: Db, creator?: string) {
+export async function withheldGraduationFees(db: Db, creator?: string, before?: Date) {
   const rows = await db
     .select({ creator: launches.creator, mint: ledgerEntries.assetMint, amount: sql<string>`sum(${ledgerEntries.amount})::text` })
     .from(ledgerEntries)
     .innerJoin(launches, eq(launches.mint, ledgerEntries.launchMint))
-    .where(and(eq(ledgerEntries.kind, "graduation_fee"), creator ? eq(launches.creator, creator) : undefined))
+    .where(and(
+      eq(ledgerEntries.kind, "graduation_fee"),
+      creator ? eq(launches.creator, creator) : undefined,
+      before ? sql`${ledgerEntries.blockTime} < ${ledgerTime(before)}` : undefined,
+    ))
     .groupBy(launches.creator, ledgerEntries.assetMint);
   return new Map(rows.map((r) => [`${r.creator} ${r.mint}`, BigInt(r.amount)]));
 }
@@ -147,12 +157,13 @@ export async function committedForwards(db: Db, creator?: string) {
 /**
  * Per Quote Asset, what the platform has collected for Creators, less the Graduation Fees withheld out of it (ADR 0015),
  * and what the Ledger shows it has forwarded so far. The difference is still in the operations wallet and is not the
- * platform's: the sweep leaves it there, and the Burn and Flywheel budgets are shares of revenue without it.
+ * platform's: the sweep leaves it there, and the Budget Table's rows are shares of revenue without it (ADR 0019).
+ * With `before`, what had been collected for them by Ledger entries before that time; the forwards are not cut off.
  */
-export async function creatorMoney(db: Db) {
+export async function creatorMoney(db: Db, before?: Date) {
   const [shares, withheld, forwarded] = await Promise.all([
-    creatorShares(db, { collectedOnly: true }),
-    withheldGraduationFees(db),
+    creatorShares(db, { collectedOnly: true, before }),
+    withheldGraduationFees(db, undefined, before),
     db
       .select({ mint: ledgerEntries.assetMint, amount: sql<string>`sum(${ledgerEntries.amount})::text` })
       .from(ledgerEntries)

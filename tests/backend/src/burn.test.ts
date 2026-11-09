@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 import { PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync, getMint, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { BurnsPage, LedgerPage } from "@launchpad/contract";
+import { BudgetsPage, BurnsPage, LedgerPage } from "@launchpad/contract";
 import { BURN_CRON, FEE_COLLECTOR_CRON } from "@launchpad/stack";
 import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
 import { connection, deliverWebhook, env, fundedWallet, launch, launchedCoin, quote, SOL, tokenBalance, trade } from "./client";
@@ -227,8 +227,9 @@ describe("Burn and Flywheel", () => {
   it("runs on its Cron Trigger too, and the Fee Collector's sweep leaves the unspent budgets behind", async () => {
     expect((await api(`/__scheduled?cron=${encodeURIComponent(BURN_CRON)}`)).ok).toBe(true);
     expect((await api(`/__scheduled?cron=${encodeURIComponent(FEE_COLLECTOR_CRON)}`)).ok).toBe(true);
-    const page = await burns();
-    const reserved = BigInt(page.budgets.burn.available) + BigInt(page.budgets.flywheel.available);
+    // Every spending row of the Budget Table (ADR 0019), not the Burn's and the Flywheel's alone.
+    const page = BudgetsPage.parse(await (await api("/v1/budgets")).json());
+    const reserved = page.rows.reduce((sum, r) => sum + BigInt(r.availableLamports ?? "0"), 0n);
     const balance = BigInt(await connection().getBalance(new PublicKey(env().platform.operationsWallet), "confirmed"));
     expect(balance).toBeGreaterThanOrEqual(reserved);
   });

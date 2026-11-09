@@ -1,4 +1,5 @@
-import { bigint, boolean, doublePrecision, index, integer, jsonb, numeric, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { bigint, boolean, check, doublePrecision, index, integer, jsonb, numeric, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
 import type { QuoteLabel } from "@launchpad/contract";
 
 /** One row per Launch on our platform, written by the Indexer from the launch transaction. */
@@ -430,6 +431,42 @@ export const rewardRules = pgTable("reward_rules", {
   announcedAt: timestamp("announced_at", { withTimezone: true }).notNull().defaultNow(),
   effectiveAt: timestamp("effective_at", { withTimezone: true }).notNull(),
 });
+
+/**
+ * The Budget Table (ADR 0019), one row per version: how the Platform Net (the Ledger's revenue less the Creators'
+ * share) is divided between the Burn, the Flywheel, the trader programs and the treasury, each share in basis points.
+ * A version is announced first and takes effect later, and its shares apply to the net collected while it is in force.
+ * The shares of a version sum to 100%, which Postgres itself checks.
+ */
+export const budgetTables = pgTable(
+  "budget_tables",
+  {
+    version: integer("version").primaryKey(),
+    burnBps: integer("burn_bps").notNull(),
+    flywheelBps: integer("flywheel_bps").notNull(),
+    /** Volume rebates to traders; 0 until the program is built. */
+    rebatesBps: integer("rebates_bps").notNull(),
+    /** The off-chain referral program for every pair; 0 until it is built. */
+    referralsBps: integer("referrals_bps").notNull(),
+    /** The integrator share; 0 until it is built. */
+    integratorsBps: integer("integrators_bps").notNull(),
+    /** The remainder, which the sweep moves to the Treasury; written out so that a mistake in another row fails the sum. */
+    treasuryBps: integer("treasury_bps").notNull(),
+    note: text("note"),
+    announcedAt: timestamp("announced_at", { withTimezone: true }).notNull().defaultNow(),
+    effectiveAt: timestamp("effective_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    check(
+      "budget_tables_shares_sum",
+      sql`${t.burnBps} + ${t.flywheelBps} + ${t.rebatesBps} + ${t.referralsBps} + ${t.integratorsBps} + ${t.treasuryBps} = 10000`,
+    ),
+    check(
+      "budget_tables_shares_not_negative",
+      sql`${t.burnBps} >= 0 and ${t.flywheelBps} >= 0 and ${t.rebatesBps} >= 0 and ${t.referralsBps} >= 0 and ${t.integratorsBps} >= 0 and ${t.treasuryBps} >= 0`,
+    ),
+  ],
+);
 
 /** One Reward Round of one Reward Launch: its snapshot, the pot it pays out, and how far it has got. */
 export const rewardRounds = pgTable(

@@ -1,20 +1,23 @@
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/meta";
 import Link from "next/link";
-import { getPlatform, listAnnouncements } from "@/lib/api";
+import { getBudgets, getPlatform, listAnnouncements } from "@/lib/api";
+import { budgetLine } from "@/lib/budget";
 import { explorerUrl, formatUtc } from "@/lib/format";
 import styles from "../rewards/page.module.css";
 
 export const metadata: Metadata = pageMeta({
   path: "/announcements",
   title: "Fee changes",
-  description: "Every announced change to the Platform Fee or Creator Fee, before it applies and after, with the transaction that applied it.",
+  description: "Every announced change to the Platform Fee or Creator Fee, and to how the platform's own share is divided, before it applies and after.",
 });
 
 /** Every fee change ever announced, public: a change to every live curve at once is announced ahead and recorded after. */
 export default async function AnnouncementsPage() {
-  const [list, platform] = await Promise.all([listAnnouncements(), getPlatform()]);
+  const [list, platform, budgets] = await Promise.all([listAnnouncements(), getPlatform(), getBudgets()]);
   const now = Date.now();
+  // The first version is how the share was divided from the start; every later one was announced here first (ADR 0019).
+  const tables = budgets.versions.filter((v) => v.version > 1).reverse();
   return (
     <div className={`shell ${styles.page}`}>
       <h1 className={`t-h1 ${styles.title}`}>Fee changes</h1>
@@ -42,6 +45,31 @@ export default async function AnnouncementsPage() {
                     )}
                   </span>
                   <span className={styles.when}>announced {formatUtc(a.announcedAt)}</span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+      <section className={`card ${styles.card}`} aria-labelledby="budget-title">
+        <h2 id="budget-title" className={`t-h3 ${styles.cardTitle}`}>The platform&apos;s share</h2>
+        <p className={styles.note}>
+          What the platform keeps after the Creators&apos; share is divided by one table, shown on the <Link href="/fees">Fees page</Link>. A new
+          division is announced here at least a day ahead and applies only to what is collected from its date on.
+        </p>
+        {tables.length === 0 ? (
+          <p className={styles.note}>The division has not changed since the start.</p>
+        ) : (
+          <ul className={styles.list}>
+            {tables.map((v) => {
+              const state = v.version === budgets.inForce ? "in force" : new Date(v.effectiveAt).getTime() > now ? "announced" : "replaced";
+              return (
+                <li key={v.version}>
+                  <span>
+                    {budgetLine(v.shares)} from {formatUtc(v.effectiveAt)} ({state})
+                    {v.note && <> · {v.note}</>}
+                  </span>
+                  <span className={styles.when}>announced {formatUtc(v.announcedAt)}</span>
                 </li>
               );
             })}

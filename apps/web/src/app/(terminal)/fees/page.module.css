@@ -154,6 +154,43 @@
   text-wrap: pretty;
 }
 
+/* The Budget Table: a row's name, its share and what it pays for. The share keeps a column of its own, so the figures line up. */
+.budget li {
+  grid-template-columns: minmax(0, 200px) 56px minmax(0, 1fr);
+}
+
+.share {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+/* A row without a share yet (a trader program not built): present, and quieter than the rows that spend. */
+.budget li.idle > :first-child,
+.budget li.idle .share {
+  color: var(--ink-3);
+}
+
+.words {
+  margin: 0;
+  max-width: 78ch;
+  font-size: var(--text-ui);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+/* A version announced for later: the next division and its date, set off from the one in force. */
+.upcoming {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  font-size: var(--text-ui);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
 .note {
   margin: 0;
   font-size: var(--text-caption);
@@ -200,6 +237,13 @@
   }
   .uses li {
     grid-template-columns: minmax(0, 1fr);
+  }
+  /* The name and its share share a line; what the row pays for runs under both. */
+  .budget li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .budget li > :last-child {
+    grid-column: 1 / -1;
   }
 }
 

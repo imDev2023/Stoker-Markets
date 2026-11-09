@@ -133,6 +133,14 @@ export const SECTIONS: readonly Section[] = [
         ),
       },
       { endpoint: "GET /burns", text: <>Burn and Flywheel: shares, rule, budgets, picks, every buy and burn.</> },
+      {
+        endpoint: "GET /budgets",
+        text: (
+          <>
+            The Budget Table: what the platform keeps after the Creators&apos; share (<C>netLamports</C>, valued in SOL at the latest prices), every version of the table with its shares in basis points and the time it takes effect, and each row&apos;s allotment, spending and remainder. A version&apos;s shares apply to what Ledger entries collected while it was in force, so the allotments can be redone from the Ledger and the versions alone. The version in force and any announced for later are also on <C>GET /platform</C> as <C>budgetTable</C>.
+          </>
+        ),
+      },
       { endpoint: "GET /announcements", text: <>Every announced Platform Fee or Creator Fee change, with the transaction that applied it once it has.</> },
       {
         endpoint: ["GET /metadata/:mint.json", "GET /metadata/:mint/image"],
@@ -280,6 +288,7 @@ export const SECTIONS: readonly Section[] = [
       },
       { endpoint: "POST /operator/rewards/rules", text: <>Announces a Reward Round rules change, effective no sooner than the announced lead ahead.</> },
       { endpoint: "PUT /operator/platform-token", text: <>Names the Platform Token the Burn buys.</> },
+      { endpoint: "POST /operator/budget-table", text: <>Announces the next version of the Budget Table: every row&apos;s share (summing to 10000 basis points), effective no sooner than a fee change&apos;s lead ahead and after every earlier version.</> },
       {
         endpoint: ["GET /operator/notable-wallets", "POST /operator/notable-wallets", "DELETE /operator/notable-wallets/:wallet"],
         text: <>The wallets known by an X account, whose trades the chart marks with the account&apos;s handle and picture: <C>wallet</C>, <C>handle</C>, an optional <C>name</C> and <C>avatarUrl</C> (a picture copied once, under 1 MB). A post replaces what is known of a wallet.</>,

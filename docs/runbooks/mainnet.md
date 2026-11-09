@@ -119,7 +119,7 @@ The mainnet values are in the `env.production` block of `apps/api/wrangler.jsonc
 | `CREATOR_FORWARD_MIN_LAMPORTS` | `10000000` (0.01 SOL): what a Creator must be owed in one Quote Asset, at the Quote Registry's price, before the Creator Forward pays it (ADR 0009) | the job runs hourly, right after the Fee Collector |
 | `GRADUATION_FEE_LAMPORTS` | `15000000` (0.015 SOL, owner 2026-10-30, ADR 0015): withheld from the Creator's earnings on a coin once it graduates, in the coin's Quote Asset at the Quote Registry's price, by the Fee Collector and the Creator Forward | fixed on each graduation as it is indexed; `0` charges none; the database must carry migration `0022_graduation_fee` first |
 | `FEE_CHANGE_LEAD_SECONDS`, `REWARD_RULES_LEAD_SECONDS` | `86400` | the fee lead is refused under an hour on mainnet |
-| `BURN_SHARE_BPS`, `FLYWHEEL_SHARE_BPS`, `FLYWHEEL_TOP_N`, `BURN_MIN_SPEND_LAMPORTS` | `6000`, `500`, `10`, `10000000` (PRD) | whole basis points |
+| `FLYWHEEL_TOP_N`, `BURN_MIN_SPEND_LAMPORTS` | `10`, `10000000` (PRD) | the Burn's and the Flywheel's shares are rows of the Budget Table, section 14, never a setting |
 | `REFERRAL_SHARE_BPS` | `50` | capped per Quote Asset by its GlobalConfig |
 | `ANON_RATE_LIMIT_PER_MINUTE`, `ANON_PREPARE_RATE_LIMIT_PER_MINUTE` | `300`, `25` | what one IP may do each minute without an API key |
 | `TURBO_UPLOAD_URL`, `TURBO_PAYMENT_URL`, `ARWEAVE_GATEWAY_URL` | `https://upload.ardrive.io`, `https://payment.ardrive.io`, `https://arweave.net` (the local defaults name the stand-in) | https on a public host; the gateway is in every coin's on-chain URI and can never change (section 8, ADR 0008) |
@@ -268,3 +268,23 @@ Only the owner can create it, since the account's admin is a wallet that signs.
    The dashboard is where the fees are claimed (they sit in token accounts the Referral Program owns until claimed, one per asset); claiming is a wallet action, so it is the owner's too, and what is claimed goes to the treasury like any revenue (ADR 0004).
 
 Until the account exists the widget takes no fee and its line under the frame says nothing about one; the Fees page states the rate. The landing's hero stays the live rows (the swap was its hero for an hour on 2026-10-30, `?hero=swap` still shows it).
+
+## 14. The Budget Table (operator)
+
+What the platform keeps after the Creators' share is divided by one table (ADR 0019): the Burn, the Flywheel, the three trader programs and the treasury, in basis points that sum to 10000.
+Migration `0025_budget_table` writes version 1 (60 / 5 / 0 / 0 / 0 / 35), which is what `BURN_SHARE_BPS` and `FLYWHEEL_SHARE_BPS` gave before; those two settings are gone, so apply the migration before the API that follows it.
+`GET /v1/platform` (`budgetTable`) and the Fees page show the version in force and any announced; `GET /v1/budgets` shows every version and each row's allotment, spending and remainder.
+
+A change is announced, never deployed:
+
+```sh
+curl -sS -X POST https://api.stoker.markets/v1/operator/budget-table \
+  -H "authorization: Bearer $(cat ~/.config/stoker/mainnet/operator-token)" -H "content-type: application/json" \
+  -d '{"shares":{"burn":5000,"flywheel":500,"rebates":1000,"referrals":0,"integrators":0,"treasury":3500},"effectiveAt":"2027-01-15T00:00:00.000Z","note":"volume rebates go live"}'
+```
+
+- Every row is named, the treasury included, and the six must sum to 10000; the three trader programs may take 2000 together at most (the owner's ceiling of 2026-11-09, paid by the Burn's row alone).
+- `effectiveAt` is at least `FEE_CHANGE_LEAD_SECONDS` ahead (a day) and later than every earlier version's.
+- A version is never edited or withdrawn: a mistake is corrected by announcing the next one, which also waits its day.
+- A new version's shares count only for what is collected from `effectiveAt` on, so nothing already allotted to a row moves.
+- A trader program's row gets a share only once its program is built and running; a row with a share and no spender only keeps SOL in the operations wallet.

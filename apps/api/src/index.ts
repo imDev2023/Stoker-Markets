@@ -12,6 +12,7 @@ import { createDb, jobRuns, launchMetadata, operatorAlerts } from "@launchpad/db
 import { apiKeyMiddleware, keyRoutes, operatorKeyRoutes, pruneUsage } from "./apiKeys";
 import { config, operationsKey, quoteMarket, solRoutes, type AppEnv, type Bindings } from "./env";
 import { collectFees } from "./fees/collector";
+import { publishedBudgetTable } from "./fees/budget";
 import { CREATOR_SHARE_BPS } from "./fees/creatorShares";
 import { forwardCreatorShares } from "./fees/forward";
 import { notifyPending, watchGraduations } from "./graduation";
@@ -38,6 +39,7 @@ import { mintKeypair, nextChosenMint } from "./mintKeys";
 import { mayAirdrop } from "./airdropAccess";
 import { operatorJobRoutes, revenueRoutes } from "./routes/revenue";
 import { operatorRewardRoutes, rewardRoutes } from "./routes/rewards";
+import { budgetRoutes, operatorBudgetRoutes } from "./routes/budget";
 import { burnRoutes, operatorBurnRoutes } from "./routes/burns";
 import { announcementRoutes, operatorFeeRoutes, operatorViewRoutes, platformFees } from "./routes/operator";
 import { runBurns } from "./burn/engine";
@@ -84,6 +86,7 @@ app.get("/v1/platform", async (c) => {
   const cfg = c.get("cfg");
   // The fees as the chain has them, so a fee change (#22) shows everywhere at once.
   const fees = await platformFees(c.get("db"), cfg);
+  const budgetTable = await publishedBudgetTable(c.get("db"));
   const info: PlatformInfo = {
     cluster: cfg.cluster,
     // The browser's RPC, never the Worker's own (which carries its provider key on mainnet).
@@ -105,6 +108,7 @@ app.get("/v1/platform", async (c) => {
       poolBps: (fees.poolCreatorFeeBps * (10_000 - fees.poolCreatorFeeShareBps) * CREATOR_SHARE_BPS) / 100_000_000,
       minLamports: cfg.creatorForwardMinLamports.toString(),
     },
+    budgetTable,
     referralShareBps: cfg.referralShareBps,
     solRoute: cfg.solRoute?.source ?? null,
     solRouteToleranceBps: ROUTE_TOLERANCE_BPS,
@@ -237,6 +241,7 @@ app.route("/v1", creatorEarningsRoutes);
 app.route("/v1", revenueRoutes);
 app.route("/v1", rewardRoutes);
 app.route("/v1", burnRoutes);
+app.route("/v1", budgetRoutes);
 app.route("/v1", announcementRoutes);
 app.route("/v1", keyRoutes);
 app.route("/v1", regionRoutes);
@@ -253,6 +258,7 @@ app.use("/v1/operator/*", async (c, next) => {
 app.route("/v1/operator", operatorJobRoutes);
 app.route("/v1/operator", operatorRewardRoutes);
 app.route("/v1/operator", operatorBurnRoutes);
+app.route("/v1/operator", operatorBudgetRoutes);
 app.route("/v1/operator", operatorKeyRoutes);
 app.route("/v1/operator", operatorViewRoutes);
 app.route("/v1/operator", operatorFeeRoutes);

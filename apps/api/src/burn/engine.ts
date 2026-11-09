@@ -1,36 +1,25 @@
-// Burn and Flywheel (#18): on a public schedule, 60% of platform revenue buys the Platform Token and burns it, and 5%
-// buys the top Launches by the published rule and burns them. Budgets come from the Ledger, so every SOL spent is
-// accounted for against revenue already recorded, and every buy and burn goes on the Ledger with its transaction.
+// Burn and Flywheel (#18): on a public schedule, the Burn's row of the Budget Table (ADR 0019; 60% of the Platform Net
+// in its first version) buys the Platform Token and burns it, and the Flywheel's row (5%) buys the top Launches by the
+// published rule and burns them. Budgets come from the Ledger, so every SOL spent is accounted for against revenue
+// already recorded, and every buy and burn goes on the Ledger with its transaction.
 import { Connection, PublicKey, type Keypair, type TransactionInstruction } from "@solana/web3.js";
 import {
   createAssociatedTokenAccountIdempotentInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import BN from "bn.js";
-import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import {
   cpmmSolSwap, graduationPoolAddress, loadCurve, loadPool, poolSides, poolSwap, poolSwapExactOut, routedQuoteAccount, signedTransaction,
   swapBaseOutputIx, transferFeeBps, WSOL_MINT, type SolSwap,
 } from "@launchpad/chain";
-import { graduations, launches, ledgerEntries, platformSettings, quoteAssets, trades, type Db } from "@launchpad/db";
+import { graduations, launches, platformSettings, quoteAssets, trades, type Db } from "@launchpad/db";
 import type { Config } from "../env";
 import { JobFailure } from "../jobs";
 import type { SolRoutes } from "../solRoutes";
-import { creatorMoney } from "../fees/creatorShares";
+import { budgets, type Budgets, type RowBudget } from "../fees/budget";
 import { recordBurn } from "./decode";
 
 export type BurnDeps = { db: Db; cfg: Config; operations: Keypair; routes: SolRoutes | null };
-
-/** What the Burn and Flywheel have to spend, in lamports, from the Ledger. */
-export type Budgets = {
-  /**
-   * Every Platform Fee, pool fee and Fee Key collection so far, less what of it is the Creators' (ADR 0009; the
-   * Graduation Fees withheld out of their share are the platform's, ADR 0015), valued in SOL at the Quote Registry's
-   * latest prices.
-   */
-  revenueLamports: bigint;
-  burn: { shareBps: number; spent: bigint; available: bigint };
-  flywheel: { shareBps: number; spent: bigint; available: bigint };
-};
 
 /** Budgets as a job summary carries them: strings, since a summary is stored and logged as JSON. */
 export type BudgetsView = {
@@ -40,8 +29,8 @@ export type BudgetsView = {
 };
 
 export function budgetsView(b: Budgets): BudgetsView {
-  const share = (s: Budgets["burn"]) => ({ shareBps: s.shareBps, spent: s.spent.toString(), available: s.available.toString() });
-  return { revenueLamports: b.revenueLamports.toString(), burn: share(b.burn), flywheel: share(b.flywheel) };
+  const share = (s: RowBudget) => ({ shareBps: s.shareBps, spent: s.spent.toString(), available: s.available.toString() });
+  return { revenueLamports: b.revenueLamports.toString(), burn: share(b.rows.burn), flywheel: share(b.rows.flywheel) };
 }
 
 export type BurnSummary = {
@@ -60,67 +49,11 @@ export const PLATFORM_TOKEN_SETTING = "platform_token_mint";
 /** How much worse than quoted a buy may fill before it fails and nothing is spent. */
 const SLIPPAGE_BPS = 100;
 const POLL_MS = 400;
-const LAMPORTS_PER_SOL = 1_000_000_000n;
 
 /** The Platform Token, once the operator has named it: Launch #1, fair-launched on our own platform. */
 export async function platformToken(db: Db): Promise<PublicKey | null> {
   const [row] = await db.select().from(platformSettings).where(eq(platformSettings.key, PLATFORM_TOKEN_SETTING)).limit(1);
   return row?.value ? new PublicKey(row.value) : null;
-}
-
-/**
- * Budgets from the Ledger: revenue entries, net of the Creators' share, valued in SOL at the registry's latest price per Quote Asset (SOL at par;
- * an asset without a price, or a coin a Fee Key paid out, counts for nothing), less what earlier burns spent.
- */
-export async function budgets(db: Db, cfg: Config): Promise<Budgets> {
-  const collected = await db
-    .select({ mint: ledgerEntries.assetMint, decimals: ledgerEntries.assetDecimals, amount: sql<string>`sum(${ledgerEntries.amount})::text` })
-    .from(ledgerEntries)
-    .where(inArray(ledgerEntries.kind, ["platform_fee", "pool_fee", "fee_key"]))
-    .groupBy(ledgerEntries.assetMint, ledgerEntries.assetDecimals);
-  const priced = new Map(
-    (await db.select({ mint: quoteAssets.mint, priceSol: quoteAssets.priceSol, decimals: quoteAssets.decimals }).from(quoteAssets).where(isNotNull(quoteAssets.priceSol)))
-      .map((q) => [q.mint, q]),
-  );
-  // What was collected for Creators (ADR 0009) is theirs, forwarded or not, and no part of any budget.
-  const creators = await creatorMoney(db);
-  let revenue = 0n;
-  for (const c of collected) {
-    const gross = BigInt(c.amount);
-    const theirs = creators.get(c.mint)?.accrued ?? 0n;
-    const amount = gross > theirs ? gross - theirs : 0n;
-    if (c.mint === WSOL_MINT.toBase58()) {
-      revenue += amount;
-      continue;
-    }
-    const q = priced.get(c.mint);
-    if (!q) continue;
-    const [whole, fraction = ""] = q.priceSol!.split(".");
-    const price = BigInt(whole! + fraction);
-    revenue += (amount * price * LAMPORTS_PER_SOL) / (10n ** BigInt(q.decimals) * 10n ** BigInt(fraction.length));
-  }
-  const spent = async (kind: string) => {
-    const [row] = await db
-      .select({ lamports: sql<string>`coalesce(sum(${ledgerEntries.amount}), 0)::text` })
-      .from(ledgerEntries)
-      .where(and(eq(ledgerEntries.kind, kind), eq(ledgerEntries.assetMint, WSOL_MINT.toBase58())));
-    return BigInt(row!.lamports);
-  };
-  const share = (bps: number, used: bigint) => {
-    const total = (revenue * BigInt(bps)) / 10_000n;
-    return { shareBps: bps, spent: used, available: total > used ? total - used : 0n };
-  };
-  return {
-    revenueLamports: revenue,
-    burn: share(cfg.burnShareBps, await spent("burn")),
-    flywheel: share(cfg.flywheelShareBps, await spent("flywheel")),
-  };
-}
-
-/** SOL the Fee Collector's sweep must leave in the operations wallet: what the Burn and Flywheel have not spent yet. */
-export async function reservedLamports(db: Db, cfg: Config) {
-  const b = await budgets(db, cfg);
-  return b.burn.available + b.flywheel.available;
 }
 
 /**
@@ -147,13 +80,13 @@ export async function flywheelPicks(db: Db, n: number) {
 export async function runBurns({ db, cfg, operations, routes }: BurnDeps): Promise<BurnSummary> {
   const connection = new Connection(cfg.rpcUrl, "confirmed");
   const token = await platformToken(db);
-  const before = await budgets(db, cfg);
+  const before = await budgets(db);
   const summary: BurnSummary = { platformToken: token?.toBase58() ?? null, budgets: budgetsView(before), burned: null, flywheel: [], skipped: [], problems: [] };
   // Below the minimum a buy isn't worth its network fee; the budget waits.
   const minSpend = cfg.burnMinSpendLamports;
-  if (token && before.burn.available >= minSpend) {
+  if (token && before.rows.burn.available >= minSpend) {
     try {
-      const done = await buyAndBurn(db, cfg, connection, operations, routes, token, before.burn.available, "burn");
+      const done = await buyAndBurn(db, cfg, connection, operations, routes, token, before.rows.burn.available, "burn");
       summary.burned = done ?? null;
       if (!done) summary.skipped.push({ mint: token.toBase58(), reason: "no SOL route to the Platform Token" });
     } catch (e) {
@@ -161,8 +94,8 @@ export async function runBurns({ db, cfg, operations, routes }: BurnDeps): Promi
     }
   }
   const picks = await flywheelPicks(db, cfg.flywheelTopN);
-  if (picks.length && before.flywheel.available >= minSpend) {
-    const each = before.flywheel.available / BigInt(picks.length);
+  if (picks.length && before.rows.flywheel.available >= minSpend) {
+    const each = before.rows.flywheel.available / BigInt(picks.length);
     for (const pick of picks) {
       if (each < minSpend) {
         summary.skipped.push({ mint: pick.mint, reason: "the Flywheel budget is too small to split this far" });
@@ -177,7 +110,7 @@ export async function runBurns({ db, cfg, operations, routes }: BurnDeps): Promi
       }
     }
   }
-  summary.budgets = budgetsView(await budgets(db, cfg));
+  summary.budgets = budgetsView(await budgets(db));
   if (summary.problems.length) throw new JobFailure(summary.problems.join("; "), summary);
   return summary;
 }
