@@ -54,7 +54,8 @@ describe("Marks on a coin's chart", () => {
     // After the Snipe Window (40 slots, about 16 seconds on an idle Mac): a wallet that buys and sells everything (no role
     // at all), and a notable wallet that does the same, named by the operator with a picture the API copies. The wait is
     // counted in the chain's slots, never in seconds: a loaded machine makes fewer than 40 slots in 20 seconds, and the
-    // notable wallet's trades then counted as snipes (2026-11-09, a video render beside the suite).
+    // notable wallet's trades then counted as snipes (2026-11-09, a video render beside the suite). The forty slots then
+    // take a minute and more, which is why this test has four minutes.
     const launchSlot = (await rawTransaction(signature)).slot;
     while ((await connection().getSlot("confirmed")) <= launchSlot + SNIPE_WINDOW_SLOTS) await sleep(500);
     const [f, g] = await Promise.all([fundedWallet(), fundedWallet()]);
@@ -150,7 +151,7 @@ describe("Marks on a coin's chart", () => {
     expect((await fetch(gMark.avatarUrl)).status).toBe(404);
     const after = await marks(mint, { interval: "1m", from: "0", to: String(now), trades: "all" });
     expect(after.trades.filter((m) => m.wallet === kg).every((m) => m.x === null && m.roles.length === 0)).toBe(true);
-  });
+  }, 240_000);
 
   it("refuses a bad request, an unknown coin and an operator call without the token", async () => {
     const { prepared, signature } = await launch(await fundedWallet());

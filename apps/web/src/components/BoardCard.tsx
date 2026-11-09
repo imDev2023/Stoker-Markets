@@ -111,7 +111,7 @@ export function BoardCard({ launch, now, platform }: { launch: LaunchSummary; no
             <span className={styles.factLabel}>24h vol </span>
             {formatMarketValue(market.volume24h, launch.quote)}
           </span>
-          <span className={`${styles.fact} ${styles.age}`}>
+          <span className={`${styles.fact} ${styles.age}`} data-age>
             <RelativeTime iso={launch.createdAt} now={now} />
           </span>
         </span>
