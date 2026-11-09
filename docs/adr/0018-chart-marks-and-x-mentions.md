@@ -1,6 +1,7 @@
 # Chart Marks: trades from the indexed trades, Mentions from twitterapi.io while a coin trades
 
-Status: accepted (#160, the owner's ask of 2026-10-31, built in the relay's charts lane on 2026-11-08; the X-linked names of part 3 wait on #159).
+Status: accepted (#160, the owner's ask of 2026-10-31, built in the relay's charts lane on 2026-11-08, merged as PR #180 on 2026-11-09; the X-linked names of part 3 wait on #159).
+The mentions are off (owner, 2026-11-09): `TWITTERAPI_API_KEY` stays unset on every Worker, so the chart shows the trade marks alone, and the posts are switched on by that one secret only if the community asks for them.
 
 The owner wants a coin's chart to tell its story the way Pump.fun's and Axiom's do: who bought at what market cap, and which post on X moved it, as circles on the candles with the trader's or the author's picture.
 Advanced Charts (#126, ADR 0017) draws such marks from the datafeed's `getMarks`, at most ten on a bar, each a circle with a ring colour, an image and a tooltip.
