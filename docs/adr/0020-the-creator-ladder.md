@@ -13,8 +13,8 @@ The owner answered them on 2026-11-10:
 - A tier belongs to the coin, never to the Creator across their coins.
 - Coins that graduated before the ladder are on the same ladder as any other.
 
-The owner's days were given as a count beside the choice of Active Days as the measure, so the 15 and the 30 are read as Active Days.
-If calendar days since Graduation were meant instead, that is a new version of the ladder's rule and a change of the count in `ladder.ts`, not of the model.
+The owner's days were given as a count beside the choice of Active Days as the measure, so the 15 and the 30 were built as Active Days.
+Asked to confirm that reading after the build, the owner raised linking a tier to market cap instead, heard the case against it (Considered Options) and kept Active Days alone, on one condition: the measure stays open to change if the community asks for another.
 
 ## The ladder
 
@@ -72,6 +72,16 @@ The ladder is versioned like the Budget Table (ADR 0019) and the Reward Round ru
 
 A fourth tier would be a migration, as a seventh row of the Budget Table would.
 
+## Changing the measure later
+
+The owner's condition of 2026-11-10 is that the measure can change on the community's demand, so what each kind of change takes is written down here.
+
+- The shares, the Active Days each tier takes and the floor of an Active Day change by one announced version, with no build and no deploy.
+- Another measure is a build, and a small one: a field on the ladder's version (a migration) and a clause in the count in `ladder.ts`, announced as a version like any other.
+  A condition on each day is the natural shape, such as the day closing at or above the coin's Graduation price, which was the way offered to bring market cap in.
+- Whatever changes, a coin keeps every tier it has been recorded on, nothing already collected is shared again, and the change waits the fee change's lead time.
+  A new measure therefore only decides how coins climb from its date on.
+
 ## Earlier coins
 
 A coin that graduated before the ladder is counted like any other: its Active Days since Graduation, its tier recorded by the first Fee Collector run that finds it has reached one, and the tier's share on what is collected from then on.
@@ -89,6 +99,9 @@ Mainnet had no Launch when the ladder was written; the devnet rehearsal's three 
 ## Considered Options
 
 - 60% from the Graduation itself, ADR 0019's table: replaced by the owner on 2026-11-10 with 15 Active Days, which keeps the busy days after a Graduation at half.
+- A tier reached by market cap, raised by the owner on 2026-11-10: one buy can lift a thin pool's price past a threshold and be sold straight back (doubling the price of a pool 85 SOL deep takes a buy of about 35 SOL, for under 1 SOL in fees), and a tier never falls, so a spike would hold the top tier for good; it would also pay for price rather than for the trading the platform earns on, and pay a Creator to push the price.
+- A market cap condition on each Active Day (the day closing at or above the Graduation price), offered the same day as the way to bring market cap in: not taken for now.
+  It is far stricter, since coins commonly fall below their Graduation price soon after graduating, so fewer would ever climb.
 - A count of holders held over a period: cheap to fake with dust wallets, and the indexed holder count comes from trades, so it misses transfers.
 - Days since Graduation with a total volume: exact from the Ledger alone, but a coin that did its volume in two days and died would still reach the top tier.
 - A tier per Creator across their coins: one success would carry any number of weak coins, and a wallet's rank can be farmed.
