@@ -4,7 +4,7 @@ import { PublishedBudgetTable } from "./budget";
 import { PublishedCreatorLadder } from "./ladder";
 import { GraduationTarget, QuoteRef } from "./quotes";
 import { CurveProgress, Graduation, SolRouteSource } from "./trades";
-import { LaunchModeFields, LaunchModesSummary, RewardTax } from "./launchModes";
+import { CreatorEarningsDestination, LaunchModeFields, LaunchModesSummary, RewardTax } from "./launchModes";
 
 /** The public API contract, shared by the API (which validates with it) and every client, including our web app. */
 
@@ -142,6 +142,8 @@ export const LaunchSummary = z.object({
   graduation: Graduation.nullable(),
   /** A Reward Launch's Reward Tax; null for a standard coin. */
   rewardTax: RewardTax.nullable(),
+  /** Where the Creator's earnings on the coin go (ADR 0011), fixed at launch: a coin launched without our API pays its Creator's wallet. */
+  earningsDestination: CreatorEarningsDestination,
   market: LaunchMarket,
   /**
    * The price over the last 24 hours, in whole Quote Asset units per whole coin: 24 points an hour apart, the latest last,

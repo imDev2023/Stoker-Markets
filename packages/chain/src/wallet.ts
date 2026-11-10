@@ -19,7 +19,8 @@ export type UnsignedTransaction = {
  * The trader's token accounts for one trade of a coin against its Quote Asset, with the instructions that open them
  * before the trade and close them after.
  * SOL goes through a temporary wrapped-SOL account opened and closed inside the transaction, so the trader ends up with
- * plain SOL and any wrapped SOL they already hold is never touched. A buy funds it with what the trader pays.
+ * plain SOL and any wrapped SOL they already hold is never touched. A buy funds it with what the trader pays, or with
+ * the most an exact-out buy may take, and closing it gives back what the buy left.
  */
 export async function tradeAccounts(
   connection: Connection,
@@ -31,10 +32,12 @@ export async function tradeAccounts(
     quoteTokenProgram: PublicKey;
     side: "buy" | "sell";
     amountIn: BN;
+    /** Where the coins of a buy arrive when not in the trader's associated token account; the caller opens it. */
+    baseAccount?: PublicKey;
   },
 ) {
   const { trader, side } = t;
-  const base = getAssociatedTokenAddressSync(t.baseMint, trader, false, t.baseTokenProgram);
+  const base = t.baseAccount ?? getAssociatedTokenAddressSync(t.baseMint, trader, false, t.baseTokenProgram);
   const setup: TransactionInstruction[] = [];
   const cleanup: TransactionInstruction[] = [];
   let quote: PublicKey;
@@ -49,7 +52,7 @@ export async function tradeAccounts(
     quote = getAssociatedTokenAddressSync(t.quoteMint, trader, false, t.quoteTokenProgram);
     if (side === "sell") setup.push(createAssociatedTokenAccountIdempotentInstruction(trader, quote, trader, t.quoteMint, t.quoteTokenProgram));
   }
-  if (side === "buy") setup.push(createAssociatedTokenAccountIdempotentInstruction(trader, base, trader, t.baseMint, t.baseTokenProgram));
+  if (side === "buy" && !t.baseAccount) setup.push(createAssociatedTokenAccountIdempotentInstruction(trader, base, trader, t.baseMint, t.baseTokenProgram));
   return { base, quote, setup, cleanup };
 }
 

@@ -251,8 +251,9 @@ export function StatsDashboard({ platform, quotes, revenue, burns, ledger, token
                 </dl>
                 {(t.creatorForwarded !== "0" || t.creatorPending !== "0" || t.graduationFee !== "0") && (
                   <dl className={`${styles.streams} ${styles.creators}`}>
-                    <div><dt>Sent to Creators</dt><dd className="mono">{total(t.creatorForwarded, t.asset)}</dd></div>
-                    <div><dt>Still to be sent to Creators</dt><dd className="mono">{total(t.creatorPending, t.asset)}</dd></div>
+                    {/* What has left for Creators: to their wallets, or to their coins' holders and buybacks where they pointed it there (ADR 0011). */}
+                    <div><dt>Paid out for Creators</dt><dd className="mono">{total(t.creatorForwarded, t.asset)}</dd></div>
+                    <div><dt>Still to pay out for Creators</dt><dd className="mono">{total(t.creatorPending, t.asset)}</dd></div>
                     {t.graduationFee !== "0" && <div><dt>Kept as Graduation Fees</dt><dd className="mono">{total(t.graduationFee, t.asset)}</dd></div>}
                   </dl>
                 )}
@@ -319,8 +320,9 @@ export function StatsDashboard({ platform, quotes, revenue, burns, ledger, token
           <section className={`card ${styles.card}`} aria-labelledby="wallets-title">
             <h2 id="wallets-title" className={`t-h3 ${styles.cardTitle}`}>Where it goes</h2>
             <p className={styles.muted}>
-              Half or more of what the curves and pools bring in is the Creators&apos;, sent to each Creator&apos;s wallet within the hour of being collected;
-              it never goes to the treasury.
+              Half or more of what the curves and pools bring in is the Creators&apos;, sent to each Creator&apos;s wallet within the hour of being collected,
+              or to the coin&apos;s holders, a buyback and burn, or its liquidity where the Creator pointed it there at launch; it never goes to the
+              treasury.
             </p>
             {revenue && (
               <dl className={styles.wallets}>

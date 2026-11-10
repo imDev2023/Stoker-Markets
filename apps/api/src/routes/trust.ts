@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { and, asc, count, eq, gte, inArray, lte, ne, sql } from "drizzle-orm";
 import type { CreatorRecord, LaunchTrust, Sniper } from "@launchpad/contract";
 import { graduations, launches, trades, type Db } from "@launchpad/db";
-import type { AppEnv } from "../env";
+import { operationsKey, type AppEnv } from "../env";
 
 /**
  * A coin's trust figures (#41, ADR 0013): the Creator's record and First Buy, and Bundle Radar, the wallets that bought
@@ -27,19 +27,24 @@ trustRoutes.get("/launches/:mint/trust", async (c) => {
   if (!launch) return c.json({ error: "launch not found" }, 404);
   const windowSlots = c.get("cfg").snipeWindowSlots;
   const supply = BigInt(launch.supply);
-  const [snipers, creator] = await Promise.all([radar(db, launch, supply, windowSlots), creatorRecord(db, launch, supply)]);
+  const [snipers, creator] = await Promise.all([radar(db, launch, operationsKey(c.env).publicKey.toBase58(), supply, windowSlots), creatorRecord(db, launch, supply)]);
   const body: LaunchTrust = { mint: launch.mint, supply: launch.supply, creator, snipers };
   return c.json(body);
 });
 
 type LaunchRow = { mint: string; creator: string; createdSlot: number; createdSignature: string };
 
-/** The buys inside the window by anyone but the Creator, grouped by wallet, and what those wallets hold by their trades. */
-async function radar(db: Db, launch: LaunchRow, supply: bigint, windowSlots: number) {
+/**
+ * The buys inside the window by anyone but the Creator, grouped by wallet, and what those wallets hold by their trades.
+ * The operations wallet's own buys are a Creator's buyback (ADR 0011), burned or locked in the transaction that made
+ * them, and never a snipe.
+ */
+async function radar(db: Db, launch: LaunchRow, operations: string, supply: bigint, windowSlots: number) {
   const inWindow = and(
     eq(trades.mint, launch.mint),
     eq(trades.side, "buy"),
     ne(trades.trader, launch.creator),
+    ne(trades.trader, operations),
     gte(trades.slot, launch.createdSlot),
     lte(trades.slot, launch.createdSlot + windowSlots),
   );

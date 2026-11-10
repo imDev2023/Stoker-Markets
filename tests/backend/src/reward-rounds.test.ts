@@ -126,36 +126,44 @@ describe("Reward Rounds", () => {
   });
 
   it("resumes a round cut short and pays the rest without paying anyone twice", async () => {
-    // Settle every other Reward Launch first, so this run's one payout is this coin's.
+    // Settle every other Reward Launch first, so as little as possible stands between a run's budget and this coin.
     await runRounds();
     const { mint } = await rewardCoin(500);
-    const holders = await Promise.all([1, 2, 3].map(() => fundedWallet(10)));
+    // Eight holders: the run that first reaches this coin has a budget one payout larger than a run that did not, so
+    // it can only pay all eight if the coins ahead of it stopped paying seven payouts between two runs.
+    const holders = await Promise.all(Array.from({ length: 8 }, () => fundedWallet(10)));
     for (const h of holders) await trade(h, mint, "buy", 40_000_000n);
     const holdings = await Promise.all(holders.map((h) => held(mint, h)));
 
-    // The first run dies after this coin's first payout. Reward Launches are paid oldest first, and one that another
-    // test file left with tax still to sell pays a round of its own on every run, so the run is given as many payouts
-    // as it takes for one to reach this coin.
+    // The first run dies inside this coin's round. Rounds are paid oldest coin first, and a coin that another test file
+    // left with tax still to sell pays a round of its own on every run, shrinking as it goes, so the run is given as
+    // many payouts as it takes for some to reach this coin: how many reach it depends on that company, and is never
+    // all of them.
     let first = await runRounds(1);
     expect(first.summary.opened.filter((o) => o.mint === mint)).toHaveLength(1);
     const { rounds: [round] } = await rewards(mint);
     const own = (run: typeof first) => run.summary.paid.filter((p) => p.round === round!.id);
-    for (let budget = 2; budget <= 12 && own(first).length === 0; budget++) first = await runRounds(budget);
-    expect(own(first)).toEqual([{ round: round!.id, payouts: 1 }]);
+    for (let budget = 2; budget <= 24 && own(first).length === 0; budget++) first = await runRounds(budget);
+    const cut = own(first)[0]?.payouts ?? 0;
+    expect(own(first)).toEqual([{ round: round!.id, payouts: cut }]);
+    expect(cut).toBeGreaterThanOrEqual(1);
+    expect(cut).toBeLessThan(holders.length);
     expect(first.summary.finished).not.toContain(round!.id);
     expect((await rewards(mint)).rounds[0]!.status).toBe("paying");
 
-    // The next run pays the other two and closes the round.
+    // The next run pays the others and closes the round.
     const second = await runRounds();
     expect(second.summary.opened.filter((o) => o.mint === mint)).toEqual([]);
-    expect(own(second)).toEqual([{ round: round!.id, payouts: 2 }]);
+    expect(own(second)).toEqual([{ round: round!.id, payouts: holders.length - cut }]);
     expect(second.summary.finished).toContain(round!.id);
 
     const detail = RewardRoundDetail.parse(await (await api(`/v1/rewards/rounds/${round!.id}`)).json());
     expect(detail.status).toBe("paid");
     expect(detail.payouts.every((p) => p.status === "paid")).toBe(true);
     const signatures = new Set(detail.payouts.map((p) => p.signature));
-    expect(signatures.size).toBe(2); // one transaction for the first payout, one for the other two
+    // At least one transaction a run, and every holder in exactly one of them: the balances below say nobody was paid twice.
+    expect(signatures.size).toBeGreaterThanOrEqual(2);
+    expect(detail.payouts).toHaveLength(holders.length);
     for (const [i, h] of holders.entries()) {
       const payout = BigInt(detail.payouts.find((p) => p.wallet === h.publicKey.toBase58())!.amount);
       expect((await held(mint, h)) - holdings[i]!).toBe(payout - (payout * 500n + 9_999n) / 10_000n);

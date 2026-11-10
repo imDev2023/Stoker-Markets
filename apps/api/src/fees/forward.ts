@@ -1,12 +1,14 @@
 import { Connection, PublicKey, SendTransactionError, type Keypair } from "@solana/web3.js";
-import { and, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { creatorForwardInstructions, readTokenHoldings, signedTransaction, WSOL_MINT, type SweepToken } from "@launchpad/chain";
 import { creatorForwards, ledgerEntries, type Db } from "@launchpad/db";
 import type { Config } from "../env";
 import { fetchRawTransaction } from "../indexer";
 import { JobFailure } from "../jobs";
 import { committedForwards, creatorShares, withheldGraduationFees } from "./creatorShares";
+import { revenueHeld } from "./held";
 import { withholdGraduationFees, type Withheld } from "./graduationFee";
+import { applyEarningsRules, type RulesSummary } from "./rules";
 import { valuer } from "./value";
 
 const WSOL = WSOL_MINT.toBase58();
@@ -32,11 +34,14 @@ export type ForwardSummary = {
   belowMinimum: number;
   /** What could not even be tried, such as an amount the wallet does not hold. */
   problems: string[];
+  /** The coins whose earnings go to a rule instead of the wallet (ADR 0011): what this run did for them. */
+  rules: RulesSummary;
 };
 
 /**
  * The Creator Forward (ADR 0009), run by its Cron Trigger right after the Fee Collector: pays every Creator what the
- * platform has collected for them and not forwarded yet, per Quote Asset, once it is worth the minimum. Each forward is
+ * platform has collected for them on the coins that pay their wallet and not forwarded yet, per Quote Asset, once it is
+ * worth the minimum, then applies the rule of every coin whose earnings go elsewhere (ADR 0011, `rules/`). Each forward is
  * written down with its signature before it is sent, and what a Creator is owed counts every forward that landed or
  * may still land, so a run that dies half way, or is retried, never pays the same share twice. A landed forward goes
  * on the Ledger. One that fails does not stop the others; the run then fails with its summary, for the operator.
@@ -45,7 +50,10 @@ export type ForwardSummary = {
 export async function forwardCreatorShares({ db, cfg, operations }: ForwardDeps): Promise<ForwardSummary> {
   const connection = new Connection(cfg.rpcUrl, "confirmed");
   const ops = operations.publicKey;
-  const summary: ForwardSummary = { settled: [], graduationFees: [], sent: [], belowMinimum: 0, problems: [] };
+  const summary: ForwardSummary = {
+    settled: [], graduationFees: [], sent: [], belowMinimum: 0, problems: [],
+    rules: { settled: [], dividends: [], buybacks: [], belowMinimum: 0, skipped: [], problems: [] },
+  };
 
   // Anything an earlier run sent but could not see land is settled first; a Creator's asset still in flight waits.
   const busy = new Set<string>();
@@ -57,9 +65,10 @@ export async function forwardCreatorShares({ db, cfg, operations }: ForwardDeps)
 
   summary.graduationFees = await withholdGraduationFees(db, connection, ops);
   const [shares, committed, withheld, worth] = await Promise.all([
-    creatorShares(db, { collectedOnly: true }),
+    // Only the coins that pay their Creator's wallet: a coin with a rule has a pot of its own (ADR 0011).
+    creatorShares(db, { collectedOnly: true, walletOnly: true }),
     committedForwards(db),
-    withheldGraduationFees(db),
+    withheldGraduationFees(db, undefined, undefined, true),
     valuer(db, cfg.creatorForwardMinLamports),
   ]);
   const owed = shares
@@ -104,29 +113,19 @@ export async function forwardCreatorShares({ db, cfg, operations }: ForwardDeps)
     summary.sent.push(await sendAndRecord(db, connection, operations, o.creator, asset));
   }
 
+  // Then the coins with a rule, each from its own pot: a dividend round, a buyback and burn, a buyback and liquidity.
+  summary.rules = await applyEarningsRules({ db, cfg, operations, connection });
+
   const failed = [
     ...summary.sent.filter((s) => s.outcome !== "paid").map((s) => `forward to ${s.creator} of ${s.mint}: ${s.outcome}${s.error ? ` (${s.error})` : ""}`),
     ...summary.problems,
+    ...summary.rules.problems,
   ];
   if (failed.length) throw new JobFailure(failed.join("; "), summary);
   return summary;
 }
 
 const min = (a: bigint, b: bigint) => (a < b ? a : b);
-
-/** Per token, the revenue the Ledger shows the operations wallet still holds: collected, less swept and forwarded. */
-async function revenueHeld(db: Db, mints: string[]) {
-  if (!mints.length) return new Map<string, bigint>();
-  const rows = await db
-    .select({
-      mint: ledgerEntries.assetMint,
-      amount: sql<string>`sum(case when ${ledgerEntries.kind} in ('sweep', 'creator_forward') then -${ledgerEntries.amount} else ${ledgerEntries.amount} end)::text`,
-    })
-    .from(ledgerEntries)
-    .where(and(inArray(ledgerEntries.kind, ["platform_fee", "pool_fee", "fee_key", "sweep", "creator_forward"]), inArray(ledgerEntries.assetMint, mints), ne(ledgerEntries.assetMint, WSOL)))
-    .groupBy(ledgerEntries.assetMint);
-  return new Map(rows.map((r) => [r.mint, BigInt(r.amount)]));
-}
 
 /**
  * Signs, writes down, sends and waits for one forward. A transaction the node refuses is marked failed; one that never

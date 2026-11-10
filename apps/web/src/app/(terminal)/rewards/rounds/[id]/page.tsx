@@ -11,9 +11,14 @@ type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  return pageMeta({ path: `/rewards/rounds/${id}`, title: "Reward Round", description: "One Reward Round: the Reward Launch it paid, its snapshot of holders, the pot and every payout." });
+  return pageMeta({ path: `/rewards/rounds/${id}`, title: "Reward Round", description: "One Reward Round: the coin whose holders it paid, its snapshot of them, the pot and every payout." });
 }
 
+/**
+ * One Reward Round, of either source (ADR 0011): a Reward Launch's collected Reward Tax, in the coin or in its Quote
+ * Asset, or the Creator's earnings on a coin whose Creator pointed them at its holders, always in the Quote Asset. The
+ * snapshot, the rules and the payouts read the same; the pot says where it came from.
+ */
 export default async function RewardRoundPage({ params }: Props) {
   const { id } = await params;
   const round = await getRewardRound(id);
@@ -22,21 +27,34 @@ export default async function RewardRoundPage({ params }: Props) {
   const symbol = launch?.symbol ?? shortAddress(round.mint);
   const coins = (raw: string) => formatUnits(raw, COIN_DECIMALS, 2);
   // Holdings are in the coin; the pot and every payout in the round's Payout Asset.
-  const paid = (raw: string) => `${formatUnits(raw, round.payout.decimals, Math.min(round.payout.decimals, 4))} ${round.payout.symbol}`;
+  const amount = (raw: string) => formatUnits(raw, round.payout.decimals, Math.min(round.payout.decimals, 4));
+  const paid = (raw: string) => `${amount(raw)} ${round.payout.symbol}`;
   return (
     <div className={`shell ${styles.page}`}>
       <h1 className={`t-h1 ${styles.title}`}>
-        <Link href={`/coin/${round.mint}`}>{symbol}</Link> round of {formatUtc(round.startedAt)}
+        <Link href={`/coin/${round.mint}`}>{symbol}</Link> round of <time dateTime={round.startedAt}>{formatUtc(round.startedAt)}</time>
       </h1>
+      {round.source === "earnings" && (
+        <p className={styles.lead}>
+          At launch, the Creator of {symbol} pointed their earnings on this coin at its holders. This round pays what the platform had
+          collected for the Creator to every eligible holder, in {round.payout.symbol}.
+        </p>
+      )}
       <section className={`card ${styles.card}`} aria-labelledby="round-title">
         <h2 id="round-title" className={`t-h3 ${styles.cardTitle}`}>{round.status === "paid" ? "Paid in full" : "Paying out"}</h2>
         <dl className={styles.rules}>
           {/* The pot is the round's one key figure. */}
-          {round.sold !== null ? (
+          {round.source === "earnings" ? (
+            <div className={styles.key}>
+              <dt>Creator&apos;s earnings</dt>
+              {/* The unit beside the figure, never inside it: at the figure's size a ticker wrapped onto a line of its own. */}
+              <dd><span className="mono">{amount(round.pot)}</span> {round.payout.symbol}</dd>
+            </div>
+          ) : round.sold !== null ? (
             <>
               <div className={styles.key}>
                 <dt>Pot</dt>
-                <dd><span className="mono">{paid(round.pot)}</span></dd>
+                <dd><span className="mono">{amount(round.pot)}</span> {round.payout.symbol}</dd>
               </div>
               <div>
                 <dt>Tax sold for it</dt>
@@ -68,7 +86,7 @@ export default async function RewardRoundPage({ params }: Props) {
           {round.finishedAt && (
             <div>
               <dt>Finished</dt>
-              <dd>{formatUtc(round.finishedAt)}</dd>
+              <dd><time dateTime={round.finishedAt}>{formatUtc(round.finishedAt)}</time></dd>
             </div>
           )}
         </dl>

@@ -213,6 +213,11 @@
   overflow-wrap: anywhere;
 }
 
+/* A fact that runs to two lines (what is earned, with where it goes) breaks them evenly, never leaving one word behind. */
+.factWords {
+  text-wrap: balance;
+}
+
 .factLink {
   color: var(--accent);
   text-decoration: underline;

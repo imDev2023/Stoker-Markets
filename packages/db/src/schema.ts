@@ -27,6 +27,12 @@ export const launches = pgTable(
      */
     rewardPayout: text("reward_payout", { enum: ["coin", "quote"] }),
     /**
+     * Where the Creator's earnings on the coin go (ADR 0011, #113, #184): their wallet, the coin's holders, a buyback
+     * that burns the coin, or a buyback that adds locked liquidity to its pool. Copied from the launch draft when the
+     * launch is indexed and never changed; a coin launched without our API pays the wallet.
+     */
+    earningsDestination: text("earnings_destination", { enum: ["wallet", "holders", "burn", "liquidity"] }).notNull().default("wallet"),
+    /**
      * The transaction in which the operations wallet gave up the coin's transfer-fee-config authority for good, once
      * Raydium's migration handed it over; from then on nobody can change the Reward Tax. Null until then.
      */
@@ -272,6 +278,8 @@ export const launchDrafts = pgTable(
     rewardTaxBps: integer("reward_tax_bps"),
     /** The Payout Asset the Creator chose for a Reward Launch; null for a standard Launch. */
     rewardPayout: text("reward_payout", { enum: ["coin", "quote"] }),
+    /** Where the Creator chose their earnings on the coin to go (ADR 0011). */
+    earningsDestination: text("earnings_destination", { enum: ["wallet", "holders", "burn", "liquidity"] }).notNull().default("wallet"),
     /** Newest transaction of the Creator's coin account already scanned for airdrop payments. */
     airdropScannedUntil: text("airdrop_scanned_until"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -327,7 +335,7 @@ export const ledgerEntries = pgTable(
     signature: text("signature").notNull(),
     /** Position among the movements in the transaction. */
     eventIndex: integer("event_index").notNull(),
-    /** platform_fee, pool_fee, fee_key, sweep, creator_forward, burn, flywheel, arweave_top_up, metadata_upload, reward_sale or graduation_fee so far. */
+    /** platform_fee, pool_fee, fee_key, sweep, creator_forward, burn, flywheel, arweave_top_up, metadata_upload, reward_sale, graduation_fee, holder_dividend, creator_burn or creator_liquidity so far. */
     kind: text("kind").notNull(),
     /** What moved: a Quote Asset or a coin; SOL as the wrapped-SOL mint. */
     assetMint: text("asset_mint").notNull(),
@@ -360,7 +368,7 @@ export const jobTransactions = pgTable("job_transactions", {
   job: text("job").notNull(),
   /** What the transaction does, such as a revenue kind. */
   purpose: text("purpose").notNull(),
-  /** The account it acts on: a fee vault, a pool, or the treasury. */
+  /** The account it acts on: a fee vault, a pool, a locked position's Fee Key, or the treasury. */
   subject: text("subject").notNull(),
   status: text("status", { enum: ["pending", "landed", "failed", "expired"] }).notNull().default("pending"),
   /** Past this block height an unconfirmed transaction can never land. */
@@ -533,6 +541,12 @@ export const rewardRounds = pgTable(
     mint: text("mint").notNull(),
     rulesVersion: integer("rules_version").notNull(),
     status: text("status", { enum: ["paying", "paid"] }).notNull(),
+    /**
+     * What the round pays out (ADR 0011): `tax`, a Reward Launch's collected Reward Tax, or `earnings`, the Creator's
+     * share of platform revenue on a coin whose earnings go to its holders. A coin may have one round of each paying
+     * at a time, and each has its own pot.
+     */
+    source: text("source", { enum: ["tax", "earnings"] }).notNull().default("tax"),
     snapshotSlot: bigint("snapshot_slot", { mode: "number" }).notNull(),
     /** The Payout Asset the round pays in: the coin's mint, or the Quote Asset's (SOL as the wrapped-SOL mint, paid as plain SOL). */
     payoutMint: text("payout_mint").notNull(),
@@ -552,7 +566,7 @@ export const rewardRounds = pgTable(
     startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
     finishedAt: timestamp("finished_at", { withTimezone: true }),
   },
-  (t) => [index("reward_rounds_mint_started_idx").on(t.mint, t.startedAt)],
+  (t) => [index("reward_rounds_mint_started_idx").on(t.mint, t.startedAt), index("reward_rounds_source_status_idx").on(t.source, t.status)],
 );
 
 /**
@@ -613,6 +627,54 @@ export const rewardSales = pgTable(
   (t) => [index("reward_sales_mint_idx").on(t.mint, t.status), index("reward_sales_round_idx").on(t.roundId)],
 );
 
+/**
+ * Creator Buybacks (ADR 0011, #113, #184): one row per run of a coin's `burn` or `liquidity` rule, the buyback its
+ * Creator's earnings pay for, written with its transaction's signature before the transaction is sent and settled by
+ * it. What a rule has spent of its coin's share counts every row that landed (what it spent) or may still land (the
+ * most it may spend), so a run that dies, or a retry, never spends the same share twice; a `failed` or `expired` row
+ * moved nothing and frees its amount.
+ */
+export const creatorBuybacks = pgTable(
+  "creator_buybacks",
+  {
+    signature: text("signature").primaryKey(),
+    mint: text("mint").notNull(),
+    kind: text("kind", { enum: ["burn", "liquidity"] }).notNull(),
+    /** Where the coin was bought: its curve, or its CPMM pool after Graduation. Liquidity is only ever added to the pool. */
+    venue: text("venue", { enum: ["curve", "pool"] }).notNull(),
+    /** The curve's or the pool's address. */
+    market: text("market").notNull(),
+    status: text("status", { enum: ["sending", "landed", "failed", "expired"] }).notNull().default("sending"),
+    quoteMint: text("quote_mint").notNull(),
+    quoteDecimals: integer("quote_decimals").notNull(),
+    coinDecimals: integer("coin_decimals").notNull(),
+    /** The most Quote Asset the transaction may spend, raw units: counted against the coin's share while it may still land. */
+    budget: numeric("budget", { precision: 40, scale: 0 }).notNull(),
+    /** The Quote Asset it spent, raw units: the buy, and for liquidity the Quote Asset paired with the coins. Null until it has landed. */
+    spent: numeric("spent", { precision: 40, scale: 0 }),
+    /** Coins it bought, raw units. Null until it has landed. */
+    coins: numeric("coins", { precision: 40, scale: 0 }),
+    /** Coins it destroyed, raw units: all it bought under the burn rule. Null until it has landed, and for liquidity. */
+    burned: numeric("burned", { precision: 40, scale: 0 }),
+    /** Liquidity: the coins and the Quote Asset that went into the pool, raw units. Null until it has landed, and for a burn. */
+    coinsAdded: numeric("coins_added", { precision: 40, scale: 0 }),
+    quoteAdded: numeric("quote_added", { precision: 40, scale: 0 }),
+    /** Liquidity: the LP tokens the deposit minted and the lock took, as the transaction was built. Null for a burn. */
+    lpAmount: numeric("lp_amount", { precision: 40, scale: 0 }),
+    /** Liquidity: the Fee Key of the locked position this run opened (its NFT mint), and the position. Null for a burn. */
+    feeKey: text("fee_key"),
+    lockedLiquidity: text("locked_liquidity"),
+    /** Past this block height an unconfirmed transaction can never land. */
+    lastValidBlockHeight: bigint("last_valid_block_height", { mode: "number" }).notNull(),
+    slot: bigint("slot", { mode: "number" }),
+    blockTime: timestamp("block_time", { withTimezone: true }),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    settledAt: timestamp("settled_at", { withTimezone: true }),
+  },
+  (t) => [index("creator_buybacks_mint_idx").on(t.mint, t.status)],
+);
+
 /** An integrator's API key (#21): only its hash is kept; the key itself is shown once, when issued. */
 export const apiKeys = pgTable("api_keys", {
   id: text("id").primaryKey(),
@@ -660,14 +722,29 @@ export const platformSettings = pgTable("platform_settings", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-/** Fee Key NFTs the operations wallet holds, each found on-chain once: which pool's locked LP it collects for. */
-export const feeKeys = pgTable("fee_keys", {
-  nftMint: text("nft_mint").primaryKey(),
-  nftAccount: text("nft_account").notNull(),
-  lockedLiquidity: text("locked_liquidity").notNull(),
-  pool: text("pool").notNull().unique(),
-  foundAt: timestamp("found_at", { withTimezone: true }).notNull().defaultNow(),
-});
+/**
+ * The Fee Keys the operations wallet holds: the NFT of each locked liquidity position in a graduated coin's pool, with
+ * which the Fee Collector collects the position's LP fees. A pool has the position Raydium's migration locked, and one
+ * more for every liquidity addition a Creator's earnings paid for (ADR 0011, #184), so a pool can have many.
+ */
+export const feeKeys = pgTable(
+  "fee_keys",
+  {
+    nftMint: text("nft_mint").primaryKey(),
+    nftAccount: text("nft_account").notNull(),
+    lockedLiquidity: text("locked_liquidity").notNull(),
+    pool: text("pool").notNull(),
+    foundAt: timestamp("found_at", { withTimezone: true }).notNull().defaultNow(),
+    /**
+     * When the Fee Collector last looked at what this position has earned; null before the first look. A run looks at
+     * the positions it has not looked at for longest, a bounded number of them, so its work stays within a Cron
+     * Trigger's time however many positions there are.
+     */
+    checkedAt: timestamp("checked_at", { withTimezone: true }),
+  },
+  (t) => [index("fee_keys_pool_idx").on(t.pool), index("fee_keys_checked_at_idx").on(t.checkedAt)],
+);
+
 
 /**
  * Permanent metadata (#44): one row per data item of a Launch, its image and its metadata JSON, each an ANS-104 item

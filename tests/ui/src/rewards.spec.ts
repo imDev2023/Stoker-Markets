@@ -23,10 +23,11 @@ test("a Creator launches a Reward Launch paid in SOL, and the coin page says so"
   // says otherwise, and each Reward Launch names its Payout Asset and explains itself once chosen.
   const types = page.getByRole("radiogroup", { name: "Launch type" });
   const terms = page.getByRole("group", { name: "Reward Tax" });
-  await expect(types.getByRole("radio")).toHaveCount(4);
+  await expect(types.getByRole("radio")).toHaveCount(3);
   await expect(types.getByRole("radio", { name: /^Standard/ })).toBeChecked();
-  // The Holder rewards launch (#113) is announced on the form before it exists, and takes no choice yet.
-  await expect(types.getByRole("radio", { name: /^Holder rewards Coming soon/ })).toBeDisabled();
+  // Paying holders from the Creator's earnings, once announced here as a fourth type, is a choice of its own section now
+  // (ADR 0011, `earnings.spec.ts`): the launch type keeps to the Reward Tax.
+  await expect(types.getByRole("radio", { name: /Holder rewards/ })).toHaveCount(0);
   await expect(terms).toHaveCount(0);
   await types.getByRole("radio", { name: "Reward Launch, paid in the coin" }).check();
   // Five rates, 1% to 5% (owner, 2026-11-07), the lowest chosen until the Creator picks another.

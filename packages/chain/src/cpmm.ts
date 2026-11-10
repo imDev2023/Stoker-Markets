@@ -1,6 +1,7 @@
 import {
   ComputeBudgetProgram, PublicKey, SYSVAR_CLOCK_PUBKEY, TransactionInstruction, type AccountMeta, type Connection,
 } from "@solana/web3.js";
+import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import BN from "bn.js";
 import { cpmmCoder, launchlabCoder } from "./coder";
 import type { Side, TradeFees } from "./curve";
@@ -48,17 +49,21 @@ export type Pool = {
   creatorFees: [BN, BN];
   /** The pool's LP mint; the locked LP behind a Fee Key is in it. */
   lpMint: PublicKey;
+  /** Every LP token there is, as the pool counts them: a deposit takes each reserve in proportion to the LP it mints. */
+  lpSupply: BN;
   /** Unix seconds before which the pool refuses swaps: a migrated pool opens one second after its migration. */
   openTime: number;
   /** The chain's clock when the pool was read, in Unix seconds; it can lag the wall clock, and it is what `openTime` is checked against. */
   chainTime: number;
   swapEnabled: boolean;
+  /** Whether the pool takes deposits; its admin can switch them off apart from swaps. */
+  depositEnabled: boolean;
 };
 
 type PoolStateData = {
   amm_config: PublicKey; pool_creator: PublicKey; lp_mint: PublicKey; token_0_vault: PublicKey; token_1_vault: PublicKey;
   token_0_mint: PublicKey; token_1_mint: PublicKey; token_0_program: PublicKey; token_1_program: PublicKey;
-  observation_key: PublicKey; status: number; mint_0_decimals: number; mint_1_decimals: number;
+  observation_key: PublicKey; status: number; mint_0_decimals: number; mint_1_decimals: number; lp_supply: BN;
   protocol_fees_token_0: BN; protocol_fees_token_1: BN; fund_fees_token_0: BN; fund_fees_token_1: BN;
   creator_fees_token_0: BN; creator_fees_token_1: BN; open_time: BN; creator_fee_on: number; enable_creator_fee: boolean;
 };
@@ -70,7 +75,8 @@ const tokenAmount = (data: Buffer) => new BN(data.subarray(64, 72), "le");
 // The Clock sysvar: slot, epoch start timestamp, epoch, leader schedule epoch, then the Unix timestamp.
 const CLOCK_UNIX_TIMESTAMP_OFFSET = 32;
 
-// Bit 2 of a pool's status switches swaps off.
+// A pool's status switches its operations off one bit each: bit 0 deposits, bit 2 swaps.
+const DEPOSIT_DISABLED = 1 << 0;
 const SWAP_DISABLED = 1 << 2;
 
 /** Reads a CPMM pool with its fee rates and tradeable reserves. Null if there is no pool at the address. */
@@ -110,9 +116,11 @@ export async function loadPool(connection: Connection, address: PublicKey): Prom
     creatorFeeOn: s.creator_fee_on,
     creatorFees: [s.creator_fees_token_0, s.creator_fees_token_1],
     lpMint: s.lp_mint,
+    lpSupply: s.lp_supply,
     openTime: s.open_time.toNumber(),
     chainTime: new BN(clock.data.subarray(CLOCK_UNIX_TIMESTAMP_OFFSET, CLOCK_UNIX_TIMESTAMP_OFFSET + 8), "le").toNumber(),
     swapEnabled: (s.status & SWAP_DISABLED) === 0,
+    depositEnabled: (s.status & DEPOSIT_DISABLED) === 0,
   };
 }
 
@@ -328,6 +336,36 @@ export function swapBaseOutputIx(cpmm: PublicKey, pool: Pool, p: SwapAccounts & 
     programId: cpmm,
     data: cpmmCoder.instruction.encode("swap_base_output", { max_amount_in: p.maxAmountIn, amount_out: p.amountOut }),
     keys: swapKeys(cpmm, pool, p),
+  });
+}
+
+/**
+ * `deposit`: mints exactly `lpAmount` LP tokens to `lpAccount`, which must exist, and takes from the owner's two token
+ * accounts what that share of each reserve costs, rounded up, plus any Token-2022 transfer fee on top. Above either
+ * maximum, given in the pool's token order, it fails with ExceededSlippage (6005).
+ */
+export function depositIx(
+  cpmm: PublicKey, pool: Pool, p: { owner: PublicKey; lpAccount: PublicKey; tokenAccounts: [PublicKey, PublicKey]; lpAmount: BN; maximums: [BN, BN] },
+) {
+  const [t0, t1] = pool.tokens;
+  return new TransactionInstruction({
+    programId: cpmm,
+    data: cpmmCoder.instruction.encode("deposit", { lp_token_amount: p.lpAmount, maximum_token_0_amount: p.maximums[0], maximum_token_1_amount: p.maximums[1] }),
+    keys: [
+      meta(p.owner, true),
+      meta(cpmmPdas(cpmm).authority),
+      meta(pool.address, false, true),
+      meta(p.lpAccount, false, true),
+      meta(p.tokenAccounts[0], false, true),
+      meta(p.tokenAccounts[1], false, true),
+      meta(t0.vault, false, true),
+      meta(t1.vault, false, true),
+      meta(TOKEN_PROGRAM_ID),
+      meta(TOKEN_2022_PROGRAM_ID),
+      meta(t0.mint),
+      meta(t1.mint),
+      meta(pool.lpMint, false, true),
+    ],
   });
 }
 

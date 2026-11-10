@@ -1,5 +1,5 @@
 import {
-  API_KEY_HEADER, AirdropStatus, ApiError, ApiKeyList, BudgetsPage, BurnsPage, CandleList, CoinRewards, CopyCheck, CreatorEarnings, CreatorForwardList, CreatorLadderPage, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
+  API_KEY_HEADER, AirdropStatus, ApiError, ApiKeyList, BudgetsPage, BurnsPage, CandleList, CoinEarnings, CoinRewards, CopyCheck, CreatorEarnings, CreatorForwardList, CreatorLadderPage, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
   HolderList, LaunchTrust, IssuedApiKey, MarkList, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PlatformStats, PreparedAirdrop,
   PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAsset, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, TradeList,
   Region, RegionGatesView, TradeQuote, WalletRewards,
@@ -177,6 +177,16 @@ export async function getCreatorEarnings(creator: string): Promise<CreatorEarnin
   return read(res, CreatorEarnings);
 }
 
+/**
+ * Where one coin's Creator Earnings go and what has become of them (ADR 0011): the rule its Creator fixed at launch, its
+ * pot, and the rule's rounds or buybacks; null when there is no such coin.
+ */
+export async function getCoinEarnings(mint: string): Promise<CoinEarnings | null> {
+  const res = await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/earnings`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  return read(res, CoinEarnings);
+}
+
 /** What the platform has sent a Creator (ADR 0009), newest first. */
 export async function listCreatorForwards(creator: string) {
   return read(await apiFetch(`${API_URL}/v1/creators/${encodeURIComponent(creator)}/forwards?limit=100`, { cache: "no-store" }), CreatorForwardList);
@@ -294,7 +304,7 @@ export async function revokeApiKey(token: string, id: string) {
   if (!res.ok) throw new ApiRequestError(res.status === 401 ? "unauthorized" : `revoking the key failed (${res.status})`, res.status);
 }
 
-export async function runOperatorJob(token: string, job: "quote-registry" | "fee-collector" | "reward-rounds" | "burn" | "metadata-upload") {
+export async function runOperatorJob(token: string, job: "quote-registry" | "fee-collector" | "creator-forward" | "reward-rounds" | "burn" | "metadata-upload") {
   const res = await apiFetch(`${API_URL}/v1/operator/jobs/${job}`, operator(token, {}));
   const body: unknown = await res.json().catch(() => null);
   if (!res.ok && res.status === 401) throw new ApiRequestError("unauthorized", 401);

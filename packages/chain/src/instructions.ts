@@ -184,37 +184,66 @@ export type TradeParams = {
  * referred trade names the referrer's account first among them.
  */
 export function tradeExactInIx(side: "buy" | "sell", p: TradeParams) {
-  const pdas = launchlabPdas(p.program);
   const data = launchlabCoder.instruction.encode(side === "buy" ? "buy_exact_in" : "sell_exact_in", {
     amount_in: p.amountIn,
     minimum_amount_out: p.minAmountOut,
     share_fee_rate: p.share?.rate ?? new BN(0),
   });
-  return new TransactionInstruction({
-    programId: p.program,
-    data,
-    keys: [
-      meta(p.trader, true, true),
-      meta(pdas.authority),
-      meta(p.globalConfig),
-      meta(p.platformConfig),
-      meta(p.pool, false, true),
-      meta(p.traderBaseAccount, false, true),
-      meta(p.traderQuoteAccount, false, true),
-      meta(pdas.vault(p.pool, p.baseMint), false, true),
-      meta(pdas.vault(p.pool, p.quoteMint), false, true),
-      meta(p.baseMint),
-      meta(p.quoteMint),
-      meta(p.baseTokenProgram),
-      meta(p.quoteTokenProgram),
-      meta(pdas.eventAuthority),
-      meta(p.program),
-      ...(p.share ? [meta(p.share.receiver, false, true)] : []),
-      meta(SystemProgram.programId),
-      meta(pdas.platformFeeVault(p.platformConfig, p.quoteMint), false, true),
-      meta(pdas.creatorFeeVault(p.creator, p.quoteMint), false, true),
-    ],
+  return new TransactionInstruction({ programId: p.program, data, keys: tradeKeys(p) });
+}
+
+export type BuyExactOutParams = Omit<TradeParams, "amountIn" | "minAmountOut"> & {
+  /**
+   * Coins that reach the buyer's account: for a coin with a transfer fee the curve pays out enough for this many to
+   * arrive after it.
+   */
+  amountOut: BN;
+  /**
+   * The buy fails on-chain with ExceededSlippage (6004) if it would take more Quote Asset than this out of the buyer's
+   * account, the Quote Asset's own transfer fee included.
+   */
+  maxAmountIn: BN;
+};
+
+/**
+ * `buy_exact_out`: an exact number of coins for no more than `maxAmountIn`, with the accounts of every curve trade.
+ * Exact with one exception, proven on the local chain: asked for more coins than the curve has left to sell, the
+ * program gives what is left and charges for that, instead of failing. A caller that must know what arrived reads the
+ * curve first (`quoteBuyExactOut` prices nothing the curve cannot fill) and makes the transaction fail on a shortfall.
+ */
+export function buyExactOutIx(p: BuyExactOutParams) {
+  const data = launchlabCoder.instruction.encode("buy_exact_out", {
+    amount_out: p.amountOut,
+    maximum_amount_in: p.maxAmountIn,
+    share_fee_rate: p.share?.rate ?? new BN(0),
   });
+  return new TransactionInstruction({ programId: p.program, data, keys: tradeKeys(p) });
+}
+
+/** The accounts all four curve trade instructions name, in the program's order, the remaining accounts last. */
+function tradeKeys(p: Omit<TradeParams, "amountIn" | "minAmountOut">): AccountMeta[] {
+  const pdas = launchlabPdas(p.program);
+  return [
+    meta(p.trader, true, true),
+    meta(pdas.authority),
+    meta(p.globalConfig),
+    meta(p.platformConfig),
+    meta(p.pool, false, true),
+    meta(p.traderBaseAccount, false, true),
+    meta(p.traderQuoteAccount, false, true),
+    meta(pdas.vault(p.pool, p.baseMint), false, true),
+    meta(pdas.vault(p.pool, p.quoteMint), false, true),
+    meta(p.baseMint),
+    meta(p.quoteMint),
+    meta(p.baseTokenProgram),
+    meta(p.quoteTokenProgram),
+    meta(pdas.eventAuthority),
+    meta(p.program),
+    ...(p.share ? [meta(p.share.receiver, false, true)] : []),
+    meta(SystemProgram.programId),
+    meta(pdas.platformFeeVault(p.platformConfig, p.quoteMint), false, true),
+    meta(pdas.creatorFeeVault(p.creator, p.quoteMint), false, true),
+  ];
 }
 
 /** A standard (SPL) Launch; our curve rule for the Quote Asset is passed as the remaining account the program checks. */

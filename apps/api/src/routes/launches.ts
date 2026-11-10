@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { Connection, PublicKey, type ParsedAccountData } from "@solana/web3.js";
 import { alias } from "drizzle-orm/pg-core";
-import { and, asc, count, desc, eq, ilike, like, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, like, ne, or, sql, type SQL } from "drizzle-orm";
 import { cpmmPdas, launchlabPdas, programsFor } from "@launchpad/chain";
 import {
   LaunchListQuery, LINK_KINDS, SPARKLINE_POINTS, type CoinCreatorTier, type Holder, type HolderKind, type HolderList, type LaunchLinks, type LaunchList, type LaunchQuoteList,
@@ -35,7 +35,7 @@ function searchClause(q: string) {
  * price from its latest trade on the curve or in its pool (launch_markets), the volume from its trades, and SOL and USD
  * values from the Quote Registry's prices.
  */
-async function queryLaunches(db: Db, filters: Filters, sort: LaunchListQuery["sort"] = "new", limit = 1, offset = 0) {
+async function queryLaunches(db: Db, operations: string, filters: Filters, sort: LaunchListQuery["sort"] = "new", limit = 1, offset = 0) {
   // The protected coin a copy launched against (Copy Protection, #120), for its label.
   const original = alias(launches, "original");
   const volume = db.$with("volume").as(
@@ -46,11 +46,14 @@ async function queryLaunches(db: Db, filters: Filters, sort: LaunchListQuery["so
       .groupBy(trades.mint),
   );
   // Who holds the coin by the trades alone: a trader whose buys outweigh their sells. A floor on the chain's count
-  // (transfers and airdrops move coins without a trade), cheap enough for every row of the board.
+  // (transfers and airdrops move coins without a trade), cheap enough for every row of the board. The operations
+  // wallet is never a holder: what it buys for a Creator's buyback it burns or locks in the pool in the same
+  // transaction (ADR 0011), and what it sells is a Reward Launch's tax.
   const holding = db.$with("holding").as(
     db
       .select({ mint: trades.mint, trader: trades.trader })
       .from(trades)
+      .where(ne(trades.trader, operations))
       .groupBy(trades.mint, trades.trader)
       .having(sql`sum(case when ${trades.side} = 'buy' then ${trades.baseAmount} else -${trades.baseAmount} end) > 0`),
   );
@@ -172,6 +175,7 @@ function toSummary(cfg: Config, r: Row, creatorTier: CoinCreatorTier | null = nu
             payout: l.rewardPayout ?? "coin",
             locked: l.rewardTaxLockedSignature && l.rewardTaxLockedAt ? { signature: l.rewardTaxLockedSignature, at: l.rewardTaxLockedAt.toISOString() } : null,
           },
+    earningsDestination: l.earningsDestination,
     market: {
       price: r.market?.price ?? null,
       marketCap: cap,
@@ -229,7 +233,7 @@ launchRoutes.get("/launches", async (c) => {
   if (!query.success) return c.json({ error: "invalid launch list query", details: query.error.issues }, 400);
   const { sort, limit, offset, fields = [], ...filters } = query.data;
   const db = c.get("db");
-  const found = await queryLaunches(db, filters, sort, limit + 1, offset);
+  const found = await queryLaunches(db, operationsKey(c.env).publicKey.toBase58(), filters, sort, limit + 1, offset);
   const rows = found.slice(0, limit);
   const lines = fields.includes("sparkline") ? await sparklines(db, rows.map((r) => r.launch.mint)) : null;
   const body: LaunchList = {
@@ -283,7 +287,7 @@ launchRoutes.get("/launches/quotes", async (c) => {
 });
 
 launchRoutes.get("/launches/:mint", async (c) => {
-  const [row] = await queryLaunches(c.get("db"), { mint: c.req.param("mint") });
+  const [row] = await queryLaunches(c.get("db"), operationsKey(c.env).publicKey.toBase58(), { mint: c.req.param("mint") });
   if (!row) return c.json({ error: "launch not found" }, 404);
   const cfg = c.get("cfg");
   // A graduated coin's place on the Creator Ladder (ADR 0020), which only this answer carries.

@@ -232,6 +232,10 @@ export async function simulateFeeKeyCollection(
     commitment: "confirmed",
     accounts: { encoding: "base64", addresses: recipients.map((r) => r.toBase58()) },
   });
+  // A position whose fees are not yet worth one unit of either of the pool's tokens: the pool refuses to withdraw
+  // nothing (its `ZeroTradingTokens`), which is not a fault but nothing to collect yet. A small position in a pool
+  // that has traded little since it was opened, a Creator's liquidity addition say, is in that state for a while.
+  if (sim.value.err && (sim.value.logs ?? []).some((l) => l.includes("ZeroTradingTokens"))) return [0n, 0n];
   if (sim.value.err) throw new Error(`simulating the Fee Key collection of pool ${pool.address.toBase58()} failed: ${JSON.stringify(sim.value.err)}\n${(sim.value.logs ?? []).join("\n")}`);
   const amount = (i: number, info: { data: Buffer; owner: PublicKey } | null) => (info ? unpackAccount(recipients[i]!, { ...info, lamports: 0, executable: false }, info.owner).amount : 0n);
   const after = sim.value.accounts ?? [];
@@ -314,11 +318,13 @@ function unwrapSol(owner: PublicKey, mints: PublicKey[]) {
 /** A transaction signed by one key, ready to send, and its signature, known before it is sent. */
 export async function signedTransaction(
   connection: Connection, signer: Keypair, instructions: TransactionInstruction[], lookupTables: AddressLookupTableAccount[] = [],
+  /** Keys that sign beside the payer, such as the mint of an account the transaction creates. */
+  extraSigners: Keypair[] = [],
 ) {
   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
   const message = new TransactionMessage({ payerKey: signer.publicKey, recentBlockhash: blockhash, instructions }).compileToV0Message(lookupTables);
   const tx = new VersionedTransaction(message);
-  tx.sign([signer]);
+  tx.sign([signer, ...extraSigners]);
   return { serialized: tx.serialize(), signature: bs58.encode(tx.signatures[0]!), lastValidBlockHeight };
 }
 

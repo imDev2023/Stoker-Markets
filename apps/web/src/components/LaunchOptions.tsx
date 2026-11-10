@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  AIRDROP_MAX_RECIPIENTS, REWARD_SALE_MAX_RESERVE_BPS, REWARD_TAX_RATES, type RewardPayoutAsset, type RewardTaxBps, type TradeQuote,
+  AIRDROP_MAX_RECIPIENTS, EARNINGS_DESTINATIONS, REWARD_SALE_MAX_RESERVE_BPS, REWARD_TAX_RATES,
+  type CreatorEarningsDestination, type RewardPayoutAsset, type RewardTaxBps, type TradeQuote,
 } from "@launchpad/contract";
 import { getLaunchPermissions, getLaunchQuote } from "@/lib/api";
 import { parseAirdropList } from "@/lib/airdrop";
+import { DESTINATION_NAMES, destinationChoiceLine } from "@/lib/earnings";
 import { COIN_DECIMALS, COIN_SUPPLY, formatUnits, parseUnits } from "@/lib/format";
 import { OptionRow } from "./OptionRow";
 import styles from "./LaunchOptions.module.css";
@@ -25,14 +27,16 @@ export function supplyShare(raw: bigint) {
 }
 
 /**
- * The launch modes on the launch form: the launch type (a standard coin or a Reward Launch), a first buy inside the
- * launch transaction, and an airdrop paid from it.
+ * The launch modes on the launch form: the launch type (a standard coin or a Reward Launch), where the Creator's
+ * earnings on the coin go (ADR 0011), a first buy inside the launch transaction, and an airdrop paid from it.
  * Holds their state, the live first-buy quote, and what (if anything) stops the launch from being prepared.
  */
 export function useLaunchOptions(quote: OptionsQuote | null, creator: string | null) {
   const [rewardTax, setRewardTax] = useState<RewardTaxBps | null>(null);
   // What a Reward Launch pays its holders in: the coin itself, or the Quote Asset bought with the tax (ADR 0006).
   const [rewardPayout, setRewardPayout] = useState<RewardPayoutAsset>("coin");
+  // Where the Creator's earnings on the coin go, for good (ADR 0011): their wallet unless they point them elsewhere.
+  const [earningsDestination, setEarningsDestination] = useState<CreatorEarningsDestination>("wallet");
   const [firstBuyText, setFirstBuyText] = useState("");
   const [airdropChosen, setAirdropOn] = useState(false);
   const [airdropText, setAirdropText] = useState("");
@@ -99,7 +103,7 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
 
   return {
     quote,
-    rewardTax, setRewardTax, rewardPayout, setRewardPayout,
+    rewardTax, setRewardTax, rewardPayout, setRewardPayout, earningsDestination, setEarningsDestination,
     firstBuyText, setFirstBuyText, firstBuyInvalid, firstBuyQuote, firstBuyProblem,
     airdropAllowed, airdropOn, setAirdropOn, airdropText, setAirdropText, airdrop, airdropProblem, airdropMissing, bought,
     /** What stops the launch from being prepared, if anything. */
@@ -108,6 +112,8 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
     fields(): [string, string][] {
       const out: [string, string][] = [];
       if (rewardTax !== null) out.push(["rewardTax", String(rewardTax)], ["rewardPayout", rewardPayout]);
+      // The wallet is what the API takes a launch without the field to mean.
+      if (earningsDestination !== "wallet") out.push(["earningsDestination", earningsDestination]);
       if (firstBuy !== null) out.push(["firstBuy", firstBuy.toString()]);
       if (airdropOn && airdrop.recipients.length > 0)
         out.push(["airdrop", JSON.stringify(airdrop.recipients.map((r) => ({ wallet: r.wallet, amount: r.amount.toString() })))]);
@@ -119,9 +125,10 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
 export type LaunchOptionsState = ReturnType<typeof useLaunchOptions>;
 
 /**
- * The launch type on the launch form (#172, after new-stoker's launch page): four rows, a standard coin, a Reward Launch
- * paid in the coin, one paid in the Quote Asset, and Holder rewards, shown before it is built; a Reward Launch then asks
- * its Reward Tax. All of it is fixed at launch. `labelId` names the section's heading, which the form renders above.
+ * The launch type on the launch form (#172, after new-stoker's launch page): three rows, a standard coin, a Reward Launch
+ * paid in the coin and one paid in the Quote Asset; a Reward Launch then asks its Reward Tax. All of it is fixed at
+ * launch. `labelId` names the section's heading, which the form renders above. Paying holders out of the Creator's
+ * earnings, once announced here as a fourth type, is a choice of `EarningsChoice` below (ADR 0011).
  */
 export function LaunchType({ options: o, coin, labelId }: { options: LaunchOptionsState; coin: string; labelId: string }) {
   const coinLabel = coin || "the coin";
@@ -143,10 +150,6 @@ export function LaunchType({ options: o, coin, labelId }: { options: LaunchOptio
         </OptionRow>
         <OptionRow name="launch-type" value="quote" checked={reward && o.rewardPayout === "quote"} onChange={() => chooseReward("quote")} disabled={!quoteLabel}>
           <span><b>Reward Launch</b>, paid in {quoteLabel ?? "its pair"}</span>
-        </OptionRow>
-        {/* #113's Holders destination (ADR 0011), shown before it is built (owner, 2026-10-30): the row says so and takes no choice. */}
-        <OptionRow name="launch-type" value="holders" checked={false} disabled end={<span className="tag">Coming soon</span>}>
-          <span><b>Holder rewards</b></span>
         </OptionRow>
       </div>
       {reward && (
@@ -171,6 +174,41 @@ export function LaunchType({ options: o, coin, labelId }: { options: LaunchOptio
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Where the Creator's earnings on the coin go (ADR 0011, #113, #184), right after the launch type: four rows, the
+ * Creator's wallet unless they choose otherwise, the coin's holders, a buyback that burns, or liquidity locked in the
+ * coin's pool, each with one line on what it does. Any coin may take any of them, a Reward Launch included, and the
+ * choice is fixed at launch. `labelId` names the section's heading, which the form renders above.
+ */
+export function EarningsChoice({ options: o, coin, labelId }: { options: LaunchOptionsState; coin: string; labelId: string }) {
+  const coinLabel = coin || "the coin";
+  const quoteLabel = o.quote?.symbol ?? "its pair";
+  return (
+    <div className={styles.type}>
+      <div className={styles.types} role="radiogroup" aria-labelledby={labelId}>
+        {EARNINGS_DESTINATIONS.map((destination) => (
+          <OptionRow
+            key={destination}
+            name="earnings-destination"
+            value={destination}
+            checked={o.earningsDestination === destination}
+            onChange={() => o.setEarningsDestination(destination)}
+          >
+            <span className={styles.choice}>
+              <b>{DESTINATION_NAMES[destination]}</b>{" "}
+              <span className={styles.choiceLine}>{destinationChoiceLine(destination, coinLabel, quoteLabel)}</span>
+            </span>
+          </OptionRow>
+        ))}
+      </div>
+      <p className={styles.hint}>
+        Fixed at launch: where a coin&apos;s earnings go can never be changed.
+        {o.earningsDestination === "liquidity" && <> A coin has no pool until it graduates, so until then your earnings wait.</>}
+      </p>
     </div>
   );
 }

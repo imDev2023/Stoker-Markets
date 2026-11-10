@@ -201,6 +201,11 @@
   overflow-wrap: anywhere;
 }
 
+/* What a coin's rule has paid or spent, in the same quiet line: its figure at the line's own size. */
+.coinTier :global(.mono) {
+  font-size: var(--text-caption);
+}
+
 .coinEarned {
   flex: none;
   max-width: 55%;

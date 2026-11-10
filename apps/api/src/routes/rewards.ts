@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { WSOL_MINT } from "@launchpad/chain";
 import {
   AnnounceRewardRules, REWARD_RULES_LEAD_SECONDS_MIN, REWARD_SALE_MAX_RESERVE_BPS, REWARD_SALE_SLIPPAGE_BPS, type CoinRewards, type RewardPayoutAssetRef,
@@ -29,16 +29,17 @@ const ruleVersion = (r: typeof rewardRules.$inferSelect): RewardRuleVersion => (
 });
 
 /** The asset a round, or a coin's next round, pays in: the coin itself, or its Quote Asset by the registry's ticker. */
-const payoutRef = (coin: { mint: string; symbol: string; decimals: number }, payoutMint: string, payoutDecimals: number, quoteSymbol: string | null): RewardPayoutAssetRef =>
+export const payoutRef = (coin: { mint: string; symbol: string; decimals: number }, payoutMint: string, payoutDecimals: number, quoteSymbol: string | null): RewardPayoutAssetRef =>
   payoutMint === coin.mint
     ? { asset: "coin", mint: coin.mint, symbol: coin.symbol, decimals: coin.decimals }
     : { asset: "quote", mint: payoutMint, symbol: payoutMint === WSOL_MINT.toBase58() ? "SOL" : (quoteSymbol ?? `${payoutMint.slice(0, 4)}...`), decimals: payoutDecimals };
 
-const roundSummary = (r: typeof rewardRounds.$inferSelect, payout: RewardPayoutAssetRef): RewardRoundSummary => ({
+export const roundSummary = (r: typeof rewardRounds.$inferSelect, payout: RewardPayoutAssetRef): RewardRoundSummary => ({
   id: r.id,
   mint: r.mint,
   rulesVersion: r.rulesVersion,
   status: r.status,
+  source: r.source,
   snapshotSlot: r.snapshotSlot,
   payout,
   pot: r.pot,
@@ -65,14 +66,20 @@ rewardRoutes.get("/rewards/rules", async (c) => {
   return c.json(res);
 });
 
-/** A Reward Launch with what the engine needs to describe its rounds. */
-async function rewardLaunch(db: Db, mint: string) {
+/** A Launch with what it takes to describe its rounds. */
+async function roundLaunch(db: Db, mint: string) {
   const [row] = await db
     .select({ launch: launches, quoteSymbol: quoteAssets.symbol, quoteDecimals: quoteAssets.decimals })
     .from(launches)
     .leftJoin(quoteAssets, eq(quoteAssets.mint, launches.quoteMint))
     .where(eq(launches.mint, mint))
     .limit(1);
+  return row ?? null;
+}
+
+/** A Reward Launch, the same way. */
+async function rewardLaunch(db: Db, mint: string) {
+  const row = await roundLaunch(db, mint);
   return row && row.launch.rewardTaxBps !== null ? row : null;
 }
 
@@ -86,7 +93,13 @@ rewardRoutes.get("/launches/:mint/rewards", async (c) => {
   const { launch } = row;
   const inQuote = launch.rewardPayout === "quote";
   const payout = payoutRef(launch, inQuote ? launch.quoteMint : launch.mint, inQuote ? (row.quoteDecimals ?? 9) : launch.decimals, row.quoteSymbol);
-  const rounds = await db.select().from(rewardRounds).where(eq(rewardRounds.mint, mint.toBase58())).orderBy(desc(rewardRounds.startedAt)).limit(50);
+  // The rounds that paid out Reward Tax: a round of the Creator's earnings (ADR 0011) is on the coin's earnings.
+  const rounds = await db
+    .select()
+    .from(rewardRounds)
+    .where(and(eq(rewardRounds.mint, mint.toBase58()), eq(rewardRounds.source, "tax")))
+    .orderBy(desc(rewardRounds.startedAt))
+    .limit(50);
   const waiting = await taxWaiting(new Connection(cfg.rpcUrl, "confirmed"), operationsKey(c.env).publicKey, mint);
   const { inForce } = await publishedRules(db);
   const [pot, sales] = inQuote ? await Promise.all([quotePot(db, launch.mint), salesOf(db, launch.mint)]) : [waiting.held, null];
@@ -118,7 +131,8 @@ rewardRoutes.get("/rewards/rounds/:id", async (c) => {
   const db = c.get("db");
   const [round] = await db.select().from(rewardRounds).where(eq(rewardRounds.id, id)).limit(1);
   if (!round) return c.json({ error: "not found" }, 404);
-  const row = await rewardLaunch(db, round.mint);
+  // Any coin can have a round: a standard coin whose Creator Earnings go to its holders has earnings rounds.
+  const row = await roundLaunch(db, round.mint);
   if (!row) return c.json({ error: "not found" }, 404);
   const payouts = await db.select().from(rewardPayouts).where(eq(rewardPayouts.roundId, id)).orderBy(desc(rewardPayouts.amount), asc(rewardPayouts.wallet));
   const res: RewardRoundDetail = {
@@ -150,6 +164,7 @@ rewardRoutes.get("/wallets/:address/rewards", async (c) => {
       name: r.name,
       decimals: r.decimals,
       payout: payoutRef({ mint: r.round.mint, symbol: r.symbol, decimals: r.decimals }, r.round.payoutMint, r.round.payoutDecimals, r.quoteSymbol),
+      source: r.round.source,
       holding: r.payout.holding,
       amount: r.payout.amount,
       status: r.payout.status,

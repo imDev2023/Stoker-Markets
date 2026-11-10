@@ -30,8 +30,17 @@ const raw = z.string().regex(/^\d+$/, "must be a whole number of raw units");
  *   their coin, in the coin's Quote Asset, keyed by the graduation transaction; nothing moves, the platform keeps it. It
  *   is platform revenue that was already counted when it arrived as a `platform_fee` or `pool_fee`, so it is never
  *   added to a `total`.
+ * - `holder_dividend`: a Creator's share paid to their coin's holders (ADR 0011): the Quote Asset one payout transaction
+ *   of an earnings round sent, from the operations wallet to the holders of the coin it names.
+ * - `creator_burn`: a Creator's share spent on a buyback that burns (ADR 0011), two entries of one transaction: the
+ *   Quote Asset spent in the coin's own market, and the coins destroyed.
+ * - `creator_liquidity`: a Creator's share spent on a buyback that adds locked liquidity (ADR 0011, #184), two entries
+ *   of one transaction: the Quote Asset spent (the buy and the half paired with it), and the coins that went into the pool.
  */
-export const LedgerKind = z.enum(["platform_fee", "pool_fee", "fee_key", "sweep", "creator_forward", "burn", "flywheel", "arweave_top_up", "metadata_upload", "reward_sale", "graduation_fee"]);
+export const LedgerKind = z.enum([
+  "platform_fee", "pool_fee", "fee_key", "sweep", "creator_forward", "burn", "flywheel", "arweave_top_up", "metadata_upload", "reward_sale", "graduation_fee",
+  "holder_dividend", "creator_burn", "creator_liquidity",
+]);
 export type LedgerKind = z.infer<typeof LedgerKind>;
 
 /**
@@ -89,7 +98,10 @@ export const RevenueTotal = RevenueStreams.extend({
   asset: RevenueAsset,
   /** Moved on to the treasury so far. */
   swept: raw,
-  /** Forwarded to Creators so far (ADR 0009): their share of what was collected. */
+  /**
+   * What has left for Creators so far, out of their share of what was collected: forwarded to their wallets (ADR 0009),
+   * or, where a coin's earnings go to a rule, paid to its holders or spent on its buybacks (ADR 0011).
+   */
   creatorForwarded: raw,
   /** Collected for Creators and not forwarded yet: still in the operations wallet, and not the platform's. */
   creatorPending: raw,

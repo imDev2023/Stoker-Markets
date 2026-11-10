@@ -7,16 +7,22 @@ import {
   SEED_HOLDER, tradeViaApi,
   type LaunchFields,
 } from "./fixtures";
-import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, REWARD_CREATOR, REWARD_QUOTE } from "./seedData";
+import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, EARNINGS_COINS, REWARD_CREATOR, REWARD_QUOTE } from "./seedData";
 
 export const SEEDED: LaunchFields[] = [
-  // The traded coin carries a website and both socials, so the coin page's shots show where a coin's links go.
+  // The traded coin carries a website and both socials, so the coin page's shots show where a coin's links go. Its
+  // Creator's earnings buy it back and burn it (ADR 0011), so its page carries the Creator earnings card of that rule.
   {
-    name: "Harbor Lights", symbol: "HRBR", description: "A coin for the night shift at the port.",
+    name: EARNINGS_COINS.burn, symbol: "HRBR", description: "A coin for the night shift at the port.",
     website: "https://example.com/harbor", x: "https://x.com/harborlights", telegram: "https://t.me/harborlights",
+    earningsDestination: "burn",
   },
   { name: "Q", symbol: "Q" },
-  { name: "Dollar Paired", symbol: "USDP", quote: "USDC", description: "Priced and traded in USDC, with its Graduation Target set in USDC." },
+  // Its Creator's earnings are paid to its holders, in USDC.
+  {
+    name: EARNINGS_COINS.holders, symbol: "USDP", quote: "USDC", description: "Priced and traded in USDC, with its Graduation Target set in USDC.",
+    earningsDestination: "holders",
+  },
   { name: "Chipmaker Pair", symbol: "CHPX", quote: "NVDAx", description: "Paired with a tokenized stock." },
   {
     name: "Maximum Length Coin Name Here 32",
@@ -29,9 +35,11 @@ export const SEEDED: LaunchFields[] = [
   { name: "Signal Fire", symbol: "$FIRE", description: "Short." },
   // Fresh off the form with a website and both socials and no trade yet: the coin page's own shot (it was a flow's coin
   // until the visuals moved ahead of the flows, 2026-10-30).
+  // Its Creator's earnings are pointed at liquidity, and with no trade and no pool its card shows a rule still waiting.
   {
-    name: "First Light",
+    name: EARNINGS_COINS.waiting,
     symbol: "FRST",
+    earningsDestination: "liquidity",
     description: "A coin fresh off the form, with a website and both socials, before its first trade.",
     website: "https://example.com/first",
     x: "https://x.com/firstlight",
@@ -39,8 +47,10 @@ export const SEEDED: LaunchFields[] = [
   },
 ];
 
-/** A coin Raydium moved into its pool, which has traded there since. */
-const GRADUATED: LaunchFields = { name: "Cap and Gown", symbol: "GOWN", description: "Graduated, and trading in its Raydium pool." };
+/** A coin Raydium moved into its pool, which has traded there since; its Creator's earnings are added to that pool as locked liquidity. */
+const GRADUATED: LaunchFields = {
+  name: EARNINGS_COINS.liquidity, symbol: "GOWN", description: "Graduated, and trading in its Raydium pool.", earningsDestination: "liquidity",
+};
 
 /** Trades on the first seeded coin, so its page has a chart, a history and a price. Fixed amounts keep prices fixed. */
 const TRADES = [
@@ -56,11 +66,11 @@ setup("seed the board", async () => {
   await fund(AIRDROP_CREATOR.publicKey, 20);
   await launchViaApi(AIRDROP_CREATOR, AIRDROP_SENDING);
   await payAirdropViaApi(AIRDROP_CREATOR, await launchViaApi(AIRDROP_CREATOR, AIRDROP_PAID));
-  // A Reward Launch paid in SOL (#43): one holder buys, the Reward Engine sells a slice of the tax and pays the round.
+  // A Reward Launch paid in SOL (#43): one holder buys; the Reward Engine's one run, at the seed's end, sells a slice of
+  // the tax and pays the round.
   await fund(REWARD_CREATOR.publicKey, 5);
   const rewardCoin = await launchViaApi(REWARD_CREATOR, REWARD_QUOTE);
   await tradeViaApi(await fundedKeypair(5), rewardCoin, "buy", BigInt(0.3 * LAMPORTS_PER_SOL));
-  await runRewardRounds();
 
   // One fixed Creator, so the visual tests can open the creator earnings page as that Creator.
   const creator = await fundedKeypair(20, SEED_CREATOR);
@@ -85,8 +95,15 @@ setup("seed the board", async () => {
 
   // The Fee Collector's hourly run takes in the platform's revenue: the Platform Fee of every curve so far, and Cap and
   // Gown's pool fee and Fee Key LP fees, so the revenue page shows every stream. The Creator Forward then sends each
-  // Creator their share, so the Creator Fee page has payments from the platform in SOL and USDC.
+  // Creator their share, so the creator page has a payment from the platform in SOL, and applies the rule of the three
+  // coins whose earnings go elsewhere (ADR 0011, `EARNINGS_COINS`): it buys Harbor Lights back on its curve and burns
+  // it, buys Cap and Gown in its pool and adds the pair as locked liquidity, and opens a round that pays Dollar Paired's
+  // holders in USDC, so the creator page's USDC went to a rule rather than the wallet.
   await runFeeCollector();
+  // The Reward Engine runs once, after the Creator Forward, as its cron follows the collector's: it pays the earnings
+  // round just opened, and sells the Reward Launch's tax and pays its round. Run before the collector as well, it would
+  // sell and pay the Reward Launch a second time here.
+  await runRewardRounds();
 
   // A post on X names Harbor Lights after its trades, and the mentions job finds it in the stand-in (#160), so the coin's
   // chart carries a post's mark at a market cap that follows from the fixed trades.
