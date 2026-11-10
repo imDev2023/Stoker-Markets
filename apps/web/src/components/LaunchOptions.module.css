@@ -183,6 +183,20 @@
   gap: 10px;
 }
 
+/* A choice with a line under its name (where the Creator's earnings go): the name, then what it does, a step quieter. */
+.choice {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.choiceLine {
+  font-size: var(--text-ui);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
 /* A Reward Launch's tax: its label, the rates in the segmented primitive, and what the holders are paid in. */
 .rates {
   display: grid;

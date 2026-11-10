@@ -5,6 +5,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useEffect, useState } from "react";
 import type { CreatorEarnings, CreatorEarningsAsset, CreatorForward, CurveStatus, PlatformInfo } from "@launchpad/contract";
 import { getCreatorEarnings, listCreatorForwards } from "@/lib/api";
+import { DESTINATION_APPLIED, DESTINATION_TAGS } from "@/lib/earnings";
 import { graduationFeeSol } from "@/lib/fees";
 import { explorerUrl, formatUnits, formatUtc, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { TIER_NAMES, tierCount } from "@/lib/ladder";
@@ -24,7 +25,8 @@ type Loaded = { creator: string; earnings: CreatorEarnings; forwards: CreatorFor
 
 /**
  * The connected Creator's own earnings page (ADR 0009): per Quote Asset what their coins earned, what the platform has
- * sent them and what is still to come, what each coin earned, and every payment. There is no public creator page
+ * sent them, what is still to come and what went where they pointed it instead (ADR 0011), what each coin earned and
+ * where its earnings go, and every payment. There is no public creator page
  * (owner, 2026-10-08): without a wallet it asks for one, and the header's account menu leads here only once the wallet
  * has launched a coin. Every payment is on the public Ledger anyway.
  */
@@ -107,6 +109,8 @@ function Earnings({ earnings, forwards, platform }: { earnings: CreatorEarnings;
           <ul className={styles.coins}>
             {earnings.launches.map((l) => {
               const earned = BigInt(l.curve) + BigInt(l.pool);
+              // A coin whose earnings go to a rule rather than this wallet (ADR 0011), and what the rule has done with them.
+              const rule = l.destination === "wallet" ? null : l.destination;
               return (
                 <li key={l.mint}>
                   <Link href={`/coin/${l.mint}`} className={styles.coin}>
@@ -118,12 +122,18 @@ function Earnings({ earnings, forwards, platform }: { earnings: CreatorEarnings;
                       {l.status === "graduated" && (
                         <span className={styles.coinTier} data-creator-tier={l.tier.tier}>{TIER_NAMES[l.tier.tier]}: {tierCount(l.tier)}</span>
                       )}
+                      {rule && l.applied && l.applied !== "0" && (
+                        <span className={styles.coinTier}>
+                          <span className="mono">{formatUnits(l.applied, l.quote.decimals, 6)}</span> {quoteTicker(l.quote)} {DESTINATION_APPLIED[rule]}
+                        </span>
+                      )}
                     </span>
                     <span className={styles.coinEarned}>
                       <span>
                         <span className="mono">{formatUnits(earned.toString(), l.quote.decimals, 6)}</span> {quoteTicker(l.quote)}
                       </span>
                       <span className={styles.earning}>{EARNING[l.status]}</span>
+                      {rule && <span className={styles.earning} data-earnings={rule}>{DESTINATION_TAGS[rule]}</span>}
                       {/* A second pill, never a longer one: the row's names keep their room on a phone. */}
                       {l.graduationFee && <span className={styles.earning}>{l.graduationFee.settledAt ? "Graduation Fee paid" : "Graduation Fee due"}</span>}
                     </span>
@@ -147,6 +157,10 @@ function Earnings({ earnings, forwards, platform }: { earnings: CreatorEarnings;
             It arrives in your wallet within about an hour of being collected, once it is worth{" "}
             {formatUnits(platform.creatorForward.minLamports, SOL_DECIMALS)} SOL, with nothing to claim. Every payment is on
             the <Link href="/revenue">public ledger</Link>, and every rate on the <Link href="/fees">Fees page</Link>.
+          </p>
+          <p>
+            A coin&apos;s earnings go where you pointed them when you launched it: a coin you pointed at its holders, a buyback and burn, or
+            liquidity pays that instead of your wallet, and its page lists every payment and buyback.
           </p>
           {graduationFee && (
             <p>
@@ -179,7 +193,10 @@ function Earnings({ earnings, forwards, platform }: { earnings: CreatorEarnings;
   );
 }
 
-/** One Quote Asset: what the Creator's coins earned in it, what has reached their wallet and what is still to come. */
+/**
+ * One Quote Asset: what the Creator's coins earned in it, what has reached their wallet, what is still to come, and
+ * what went to the rules of the coins they pointed elsewhere (ADR 0011), which never comes to the wallet.
+ */
 function AssetCard({ asset }: { asset: CreatorEarningsAsset }) {
   const { quote } = asset;
   const symbol = quoteTicker(quote);
@@ -205,6 +222,12 @@ function AssetCard({ asset }: { asset: CreatorEarningsAsset }) {
           <dt>Still to be sent</dt>
           <dd><span className="mono">{units(asset.pending)}</span> {symbol}</dd>
         </div>
+        {asset.toRule !== "0" && (
+          <div>
+            <dt>To holders, burns or liquidity</dt>
+            <dd><span className="mono">{units(asset.toRule)}</span> {symbol}</dd>
+          </div>
+        )}
         {asset.withheld !== "0" && (
           <div>
             <dt>Kept as Graduation Fees</dt>

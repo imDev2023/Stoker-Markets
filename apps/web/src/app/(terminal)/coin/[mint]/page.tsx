@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAirdrop, getCoinRewards, getHolders, getLaunch, getPlatform, getQuoteAsset, getTrust, listTrades } from "@/lib/api";
+import { getAirdrop, getCoinEarnings, getCoinRewards, getHolders, getLaunch, getPlatform, getQuoteAsset, getTrust, listTrades } from "@/lib/api";
 import { explorerUrl, isSol, quoteTicker } from "@/lib/format";
 import { breadcrumbList, clip, pageMeta } from "@/lib/meta";
 import { siteOrigin } from "@/lib/origin";
 import { AirdropCard } from "@/components/AirdropCard";
 import { CoinMarket, type CoinLink } from "@/components/CoinMarket";
+import { EarningsCard } from "@/components/EarningsCard";
 import { JsonLd } from "@/components/JsonLd";
 import { QuoteLabelList } from "@/components/QuoteLabels";
 import { RewardsCard } from "@/components/RewardsCard";
@@ -37,7 +38,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
  * the graduation bar and the activity under it, the trade panel docked beside it with the pair's other half and, under
  * those, the About block with the description, the launch's details, the coin's links and the addresses: owner,
  * 2026-10-31, the facts belong under the trade panel as the terminals place them), and below the grid only what some
- * coins have: the Quote Asset's labels, the rewards and a finished Airdrop.
+ * coins have: the Quote Asset's labels, the rewards, the Creator's earnings under a rule (ADR 0011) and a finished
+ * Airdrop.
  */
 export default async function CoinPage({ params, searchParams }: Props) {
   const { mint } = await params;
@@ -50,9 +52,14 @@ export default async function CoinPage({ params, searchParams }: Props) {
     getAirdrop(mint),
   ]);
   if (!launch) notFound();
-  const rewards = launch.rewardTax ? await getCoinRewards(mint).catch(() => null) : null;
-  // The Quote Asset's card wants its price and liquidity; its labels are shown for any asset but SOL (#11).
-  const quoteAsset = await getQuoteAsset(launch.quote.mint).catch(() => null);
+  // What only some coins have, read together: a Reward Launch's rewards; the Creator's earnings where they go to a rule
+  // rather than the wallet (ADR 0011); and the Quote Asset, whose card wants its price and liquidity and whose labels
+  // are shown for any asset but SOL (#11). A read that fails leaves its card out, never the page.
+  const [rewards, earnings, quoteAsset] = await Promise.all([
+    launch.rewardTax ? getCoinRewards(mint).catch(() => null) : null,
+    launch.earningsDestination !== "wallet" ? getCoinEarnings(mint).catch(() => null) : null,
+    getQuoteAsset(launch.quote.mint).catch(() => null),
+  ]);
   // An Airdrop still being paid sits under the title row, where its Creator sends it (the market component draws it); a finished one joins the cards below.
   const airdropDone = airdrop?.recipients.every((r) => r.status === "paid") ?? false;
   const quote = quoteTicker(launch.quote);
@@ -80,7 +87,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
         initialTrust={trust} renderedAt={Date.now()} referrer={referrer} airdrop={airdropDone ? null : airdrop}
       />
 
-      {(quoteAsset && !isSol(launch.quote)) || rewards || airdropDone ? (
+      {(quoteAsset && !isSol(launch.quote)) || rewards || earnings || airdropDone ? (
         <section className={`grid ${styles.more}`} aria-label="More about this coin">
 
           {quoteAsset && !isSol(launch.quote) && (
@@ -95,6 +102,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
             </section>
           )}
           {rewards && <div className={styles.wide}><RewardsCard rewards={rewards} symbol={launch.symbol} platform={platform} /></div>}
+          {earnings && <div className={styles.wide}><EarningsCard earnings={earnings} symbol={launch.symbol} platform={platform} /></div>}
           {airdropDone && airdrop && <div className={styles.wide}><AirdropCard initial={airdrop} symbol={launch.symbol} platform={platform} /></div>}
         </section>
       ) : null}

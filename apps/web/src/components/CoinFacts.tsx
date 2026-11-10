@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { LaunchSummary, LaunchTrust, PlatformInfo } from "@launchpad/contract";
+import { destinationSentence } from "@/lib/earnings";
 import { explorerUrl, formatDuration, formatShare, formatUnits, formatUtc, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { TIER_NAMES, tierProgress } from "@/lib/ladder";
 import { LINK_KINDS, type LinkKind } from "@/lib/links";
@@ -13,8 +14,10 @@ import styles from "./CoinFacts.module.css";
 /**
  * The About block and the addresses, under the trade panel and the pair card (owner, 2026-10-31): the description, the
  * launch's details, what the Creator earns (in words: the Fees page is the one place a fee figure is shown, owner
- * 2026-10-30; after graduation the coin's tier on the Creator Ladder with its Active Days, ADR 0020) and the Graduation Fee once there is one, the liquidity's state, the dates, the Copy Protection's length and end, the
- * coin's own links and the aggregators, then every address with its copy button. Drawn on the client from data like the
+ * 2026-10-30; after graduation the coin's tier on the Creator Ladder with its Active Days, ADR 0020; and where those
+ * earnings go, the Creator's wallet or the rule they fixed at launch, ADR 0011) and the Graduation Fee once there is
+ * one, the liquidity's state, the dates, the Copy Protection's length and end, the coin's own links and the
+ * aggregators, then every address with its copy button. Drawn on the client from data like the
  * rest of the market: a server-rendered tree handed through the client boundary as a prop warned about missing keys on
  * the page with an Airdrop to send (2026-10-31), the same trap the pair card met.
  */
@@ -29,6 +32,9 @@ export function CoinFacts({ launch, platform, trust, renderedAt }: {
   const quote = quoteTicker(launch.quote);
   // A graduated coin's place on the Creator Ladder (ADR 0020); null on the curve, where every coin is on the first tier.
   const tier = launch.graduation?.creatorTier ?? null;
+  // Where the Creator's earnings go (ADR 0011): their wallet, in the words the page has always used, or the rule's own.
+  const rule = launch.earningsDestination === "wallet" ? null : launch.earningsDestination;
+  const ruleLine = rule && destinationSentence(rule, { symbol: launch.symbol, quote, graduated: launch.graduation !== null });
   const protectionOpen = new Date(launch.protection.until).getTime() <= renderedAt;
   // The window's length as well as its end: a short window ends the minute the coin launched, which read as the same date twice (owner, 2026-10-31).
   const protectionLength = formatDuration(new Date(launch.protection.until).getTime() - new Date(launch.createdAt).getTime());
@@ -91,7 +97,7 @@ export function CoinFacts({ launch, platform, trust, renderedAt }: {
             <dt>Creator earns</dt>
             {tier ? (
               // Graduated: the coin's place on the Creator Ladder, in words (ADR 0020); the shares are the Fees page's.
-              <dd data-creator-tier={tier.tier}>
+              <dd data-creator-tier={tier.tier} data-earnings={launch.earningsDestination}>
                 {tier.tier === 1 ? "Half of what the platform collects on this coin" : `${TIER_NAMES[tier.tier]} of the Creator Ladder: more than half of this coin’s pool fees`}
                 <span>
                   {tier.tier === 1 ? (
@@ -102,13 +108,13 @@ export function CoinFacts({ launch, platform, trust, renderedAt }: {
                       {tier.next ? `; ${tierProgress(tier)}.` : `, after ${tier.activeDays} Active Days.`}
                     </>
                   )}{" "}
-                  Sent to the Creator&apos;s wallet with nothing to claim. <Link href="/fees#creator-ladder">Every fee, explained</Link>
+                  {ruleLine ?? "Sent to the Creator's wallet with nothing to claim."} <Link href="/fees#creator-ladder">Every fee, explained</Link>
                 </span>
               </dd>
             ) : (
-              <dd>
+              <dd data-earnings={launch.earningsDestination}>
                 Half of what the platform collects on this coin
-                <span>Sent to the Creator&apos;s wallet with nothing to claim, on the curve and after graduation. <Link href="/fees">Every fee, explained</Link></span>
+                <span>{ruleLine ?? "Sent to the Creator's wallet with nothing to claim, on the curve and after graduation."} <Link href="/fees">Every fee, explained</Link></span>
               </dd>
             )}
           </div>
