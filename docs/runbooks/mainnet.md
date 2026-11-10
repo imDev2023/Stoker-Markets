@@ -288,3 +288,20 @@ curl -sS -X POST https://api.stoker.markets/v1/operator/budget-table \
 - A version is never edited or withdrawn: a mistake is corrected by announcing the next one, which also waits its day.
 - A new version's shares count only for what is collected from `effectiveAt` on, so nothing already allotted to a row moves.
 - A trader program's row gets a share only once its program is built and running; a row with a share and no spender only keeps SOL in the operations wallet.
+
+## 15. The Creator Ladder (operator)
+
+A Creator's share of a graduated coin's pool creator fee climbs with the coin's Active Days (ADR 0020): half from the launch, 60% after 15 Active Days, 70% after 30, a day counting when the pool traded at least 1% of the coin's Graduation Target.
+Migration `0026_creator_ladder` writes that ladder as version 1 and the table of recorded tiers; apply it before the API that follows it.
+Nothing is paid differently until a coin has 15 Active Days, and the Fee Collector records each tier by itself before it collects (its job summary lists them under `tiers`).
+`GET /v1/platform` (`creatorForward.ladder`) and the Fees page show the version in force and any announced; `GET /v1/creator-ladder` shows every version.
+
+A change is announced, never deployed, with the fee change's lead time (a day on mainnet), and a coin keeps every tier it has already reached:
+
+```sh
+curl -X POST https://api.stoker.markets/v1/operator/creator-ladder \
+  -H "authorization: Bearer $(cat ~/.config/stoker/mainnet/operator-token)" -H "content-type: application/json" \
+  -d '{"secondBps":6000,"secondActiveDays":15,"topBps":7000,"topActiveDays":30,"activeDayFloorBps":100,"effectiveAt":"<at least a day ahead, ISO 8601>","note":"<why>"}'
+```
+
+`ACTIVE_DAY_SECONDS` exists for test stacks alone; the API refuses to start on mainnet with any length but a UTC day.

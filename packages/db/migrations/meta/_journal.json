@@ -183,6 +183,13 @@
       "when": 1794208282873,
       "tag": "0025_budget_table",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794284059877,
+      "tag": "0026_creator_ladder",
+      "breakpoints": true
     }
   ]
 }

@@ -7,6 +7,7 @@ import type { CreatorEarnings, CreatorEarningsAsset, CreatorForward, CurveStatus
 import { getCreatorEarnings, listCreatorForwards } from "@/lib/api";
 import { graduationFeeSol } from "@/lib/fees";
 import { explorerUrl, formatUnits, formatUtc, quoteTicker, SOL_DECIMALS } from "@/lib/format";
+import { TIER_NAMES, tierProgress } from "@/lib/ladder";
 import { QuoteLogo } from "./QuoteLogo";
 import { WalletButton } from "./WalletButton";
 import styles from "./CreatorDashboard.module.css";
@@ -59,7 +60,8 @@ export function CreatorDashboard({ platform }: { platform: PlatformInfo }) {
       <header className={styles.head}>
         <h1 className={`t-h1 ${styles.title}`}>Your creator earnings</h1>
         <p className={styles.lede}>
-          Your coins earn you half of what the platform collects on them, sent straight to your wallet with nothing to claim.
+          Your coins earn you half of what the platform collects on them, and more of a graduated coin&apos;s pool fees the longer it keeps
+          trading, sent straight to your wallet with nothing to claim.
         </p>
       </header>
       {!creator ? (
@@ -112,6 +114,10 @@ function Earnings({ earnings, forwards, platform }: { earnings: CreatorEarnings;
                     <span className={styles.coinNames}>
                       <span className={styles.coinSymbol}>{l.symbol}</span>
                       <span className={styles.coinName}>{l.name}</span>
+                      {/* Its place on the Creator Ladder once it has graduated (ADR 0020): the tier in words, and the climb. */}
+                      {l.status === "graduated" && (
+                        <span className={styles.coinTier} data-creator-tier={l.tier.tier}>{TIER_NAMES[l.tier.tier]}: {tierProgress(l.tier)}</span>
+                      )}
                     </span>
                     <span className={styles.coinEarned}>
                       <span>
@@ -134,7 +140,8 @@ function Earnings({ earnings, forwards, platform }: { earnings: CreatorEarnings;
           <h2 id="rule-title" className={`t-h3 ${styles.cardTitle}`}>How you are paid</h2>
           <p>
             While a coin trades on its curve, every trade pays the Platform Fee, and half of it is yours. After graduation the coin
-            trades in its Raydium pool, where the platform collects the pool&apos;s creator fee, and half of what arrives is yours.
+            trades in its Raydium pool, where the platform collects the pool&apos;s creator fee: half of what arrives is yours at first, and
+            your share climbs with the coin&apos;s Active Days, the days its pool keeps trading. A tier, once reached, is never lost.
           </p>
           <p>
             It arrives in your wallet within about an hour of being collected, once it is worth{" "}

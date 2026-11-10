@@ -152,6 +152,8 @@ describe("on the curve", () => {
     expect(platform.poolCreatorFeeShareBps).toBe(shareBps);
     expect(platform.creatorForward).toEqual({
       shareBps: 5000, curveBps: rates.platform / 2, poolBps: (poolBps * (10_000 - shareBps)) / 10_000 / 2, minLamports: env().creatorForwardMinLamports,
+      // The Creator Ladder (ADR 0020), which `creator-ladder.test.ts` covers: the first tier is this half.
+      ladder: expect.objectContaining({ inForce: expect.objectContaining({ tiers: expect.arrayContaining([{ tier: 1, activeDays: 0, shareBps: 5000 }]) }) }),
     });
     // Mainnet's config, which the local chain carries: 1% of which Raydium keeps 5%, so 0.475% reaches the Creator.
     expect(platform.creatorForward.poolBps).toBe(47.5);

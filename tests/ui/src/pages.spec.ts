@@ -101,7 +101,8 @@ test("on a phone the tab bar carries the launch with its name and the account sh
 // The Fees page (owner, 2026-10-30): the one place the site shows a fee figure, every one of them read from the API.
 test("the Fees page lists every fee from the platform facts, and the landing's footer leads to it", async ({ page, stack }) => {
   const platform = (await (await fetch(`${stack.apiUrl}/v1/platform`)).json()) as {
-    platformFeeBps: number; poolCreatorFeeBps: number; referralShareBps: number; graduationFeeLamports: string; creatorForward: { curveBps: number };
+    platformFeeBps: number; poolCreatorFeeBps: number; poolCreatorFeeShareBps: number; referralShareBps: number; graduationFeeLamports: string;
+    creatorForward: { curveBps: number; ladder: { inForce: { tiers: { tier: number; activeDays: number; shareBps: number }[]; activeDayFloorBps: number }; upcoming: unknown[] } };
     budgetTable: { inForce: { shares: Record<string, number> }; upcoming: unknown[] };
   };
   await page.goto("/fees");
@@ -134,10 +135,29 @@ test("the Fees page lists every fee from the platform facts, and the landing's f
   await expect(card).toContainText("The Fee Key's part of a pool trade");
   await expect(card).toContainText("is the platform's alone");
   await expect(card.getByRole("link", { name: "Announcements" })).toHaveAttribute("href", "/announcements");
+  // The Creator Ladder (#188, ADR 0020): the three tiers with their shares from the API, the Active Days that reach
+  // each, and what a pool trade then pays the Creator; the pool creator fee's row leads to it.
+  const { tiers, activeDayFloorBps } = platform.creatorForward.ladder.inForce;
+  const ladder = page.getByRole("region", { name: "What a Creator earns: the Creator Ladder" });
+  const rungs = ladder.getByRole("list", { name: "The Creator's share by tier" }).getByRole("listitem");
+  await expect(rungs).toHaveCount(3);
+  const pct = (bps: number) => `${Number((bps / 100).toFixed(3))}%`;
+  const ofPoolTrade = (shareBps: number) => pct((platform.poolCreatorFeeBps * (10_000 - platform.poolCreatorFeeShareBps) * shareBps) / 100_000_000);
+  for (const [i, name] of ["First tier", "Second tier", "Top tier"].entries()) {
+    await expect(rungs.nth(i)).toContainText(name);
+    await expect(rungs.nth(i)).toContainText(pct(tiers[i]!.shareBps));
+    await expect(rungs.nth(i)).toContainText(`${ofPoolTrade(tiers[i]!.shareBps)} of every trade in the pool`);
+    if (i > 0) await expect(rungs.nth(i)).toContainText(`After ${tiers[i]!.activeDays} Active Days`);
+  }
+  expect(tiers.map((t) => t.shareBps)).toEqual([5000, 6000, 7000]);
+  await expect(ladder).toContainText(`at least ${pct(activeDayFloorBps)} of the coin's own Graduation Target`);
+  await expect(ladder).toContainText("a tier, once reached, is never lost");
+  await expect(rows.filter({ hasText: "Pool creator fee" }).getByRole("link", { name: "Creator Ladder" })).toHaveAttribute("href", "#creator-ladder");
   await expectNoHorizontalOverflow(page);
-  // A change to the table is announced beside the fee changes; none has been.
+  // A change to the table or to the ladder is announced beside the fee changes; none has been.
   await page.goto("/announcements");
   await expect(page.getByRole("region", { name: "The platform's share" })).toContainText("The division has not changed since the start.");
+  await expect(page.getByRole("region", { name: "The Creator's share" })).toContainText("The ladder has not changed since the start.");
   // The landing's footer lists it with the legal pages.
   await page.goto("/");
   await expect(page.getByRole("contentinfo").getByRole("link", { name: "Fees" })).toHaveAttribute("href", "/fees");

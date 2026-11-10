@@ -65,6 +65,11 @@ export type Bindings = {
   POOL_BACKFILL_SECONDS: string;
   /** Copy Protection (#120, ADR 0012): for this long after a launch nobody else may launch a coin here with its name, ticker or image; seven days unless set. */
   COPY_PROTECTION_SECONDS?: string;
+  /**
+   * The Creator Ladder (ADR 0020): how long an Active Day is, in seconds, counted from the epoch; a UTC day unless set.
+   * Only a test stack sets it, to see a coin climb in seconds; mainnet refuses any other length.
+   */
+  ACTIVE_DAY_SECONDS?: string;
   /** Bundle Radar (#41, ADR 0013): a buy in the launch's slot or this many after it is a snipe; 5 unless set (about two seconds). */
   SNIPE_WINDOW_SLOTS?: string;
   /** The Authorization header value Helius sends with every webhook delivery. */
@@ -187,6 +192,8 @@ export type Config = {
   graduationFeeLamports: bigint;
   /** Copy Protection's window after a launch, in seconds. */
   copyProtectionSeconds: number;
+  /** The length of an Active Day in seconds (ADR 0020): 86,400, a UTC day, everywhere but a test stack. */
+  activeDaySeconds: number;
   /** Bundle Radar's Snipe Window after a launch, in slots after the launch's own. */
   snipeWindowSlots: number;
   rewardRulesLeadSeconds: number;
@@ -270,6 +277,8 @@ export const COPY_PROTECTION_DEFAULT_SECONDS = 7 * 86_400;
 /** Five slots, about two seconds: a bot that watches the program for pool creations buys in the launch's slot or the next few. */
 export const SNIPE_WINDOW_DEFAULT_SLOTS = 5;
 const FEE_CHANGE_LEAD_DEFAULT_SECONDS = 24 * 60 * 60;
+/** An Active Day is a UTC day (ADR 0020). */
+export const ACTIVE_DAY_DEFAULT_SECONDS = 86_400;
 /** Curve rule writes per Quote Registry refresh; a first run over mainnet's hundreds of Quote Assets completes over a few runs. */
 const QUOTE_RULE_WRITES_DEFAULT = 120;
 /** On mainnet a fee change to every live curve is announced at least this long ahead, whatever the setting says. */
@@ -320,6 +329,8 @@ function refuseLocalOnlySettingsOnMainnet(env: Bindings) {
   if (!env.RPC_URL.startsWith("https://")) throw new Error(`RPC_URL must be https on mainnet (got ${env.RPC_URL})`);
   if (env.JUPITER_API_URL) throw new Error("JUPITER_API_URL names the local stand-in; on mainnet Jupiter's own host is chosen by the key, so leave it unset");
   if (env.COUNTRY_HEADER) throw new Error("COUNTRY_HEADER lets a request name its own country, which is for tests; on mainnet the region gate reads Cloudflare's reading alone");
+  if (env.ACTIVE_DAY_SECONDS && seconds(env.ACTIVE_DAY_SECONDS, "ACTIVE_DAY_SECONDS") !== ACTIVE_DAY_DEFAULT_SECONDS)
+    throw new Error(`ACTIVE_DAY_SECONDS shortens the Creator Ladder's day for tests; on mainnet an Active Day is a UTC day (${ACTIVE_DAY_DEFAULT_SECONDS} seconds), so leave it unset`);
   if (env.FEE_CHANGE_LEAD_SECONDS && seconds(env.FEE_CHANGE_LEAD_SECONDS, "FEE_CHANGE_LEAD_SECONDS") < FEE_CHANGE_LEAD_MAINNET_MIN_SECONDS)
     throw new Error(`FEE_CHANGE_LEAD_SECONDS must be at least ${FEE_CHANGE_LEAD_MAINNET_MIN_SECONDS} on mainnet: a fee change hits every live curve at once`);
 }
@@ -371,6 +382,7 @@ export function config(env: Bindings): Config {
     poolBackfillSeconds: seconds(env.POOL_BACKFILL_SECONDS, "POOL_BACKFILL_SECONDS"),
     copyProtectionSeconds: env.COPY_PROTECTION_SECONDS ? seconds(env.COPY_PROTECTION_SECONDS, "COPY_PROTECTION_SECONDS") : COPY_PROTECTION_DEFAULT_SECONDS,
     snipeWindowSlots: env.SNIPE_WINDOW_SLOTS ? slots(env.SNIPE_WINDOW_SLOTS, "SNIPE_WINDOW_SLOTS") : SNIPE_WINDOW_DEFAULT_SLOTS,
+    activeDaySeconds: env.ACTIVE_DAY_SECONDS ? seconds(env.ACTIVE_DAY_SECONDS, "ACTIVE_DAY_SECONDS") : ACTIVE_DAY_DEFAULT_SECONDS,
     alertWebhookUrl: env.ALERT_WEBHOOK_URL ? new URL(env.ALERT_WEBHOOK_URL).toString() : null,
     countryHeader: env.COUNTRY_HEADER ? env.COUNTRY_HEADER.toLowerCase() : null,
     helius: heliusConfig(env),

@@ -318,6 +318,11 @@ test("coin page after graduation", async ({ page }) => {
   await expect(page.locator("article header img").first()).toHaveJSProperty("complete", true);
   await expect(page.getByText("Graduated to its Raydium pool")).toBeVisible();
   await expect(page.getByText(/^Market cap [\d.,]+ \w+$/)).toBeVisible();
+  // Its place on the Creator Ladder, in words (#188, ADR 0020): the first tier with its Active Days, and no figure.
+  const earns = page.locator("[data-creator-tier]");
+  await expect(earns).toContainText(/First tier of the Creator Ladder, \d+ of 15 Active Days to the second/);
+  await expect(earns).not.toContainText("%");
+  await expect(earns.getByRole("link", { name: "Every fee, explained" })).toHaveAttribute("href", "/fees#creator-ladder");
   await snap(page, "coin-graduated.png", tradedDynamic);
 });
 

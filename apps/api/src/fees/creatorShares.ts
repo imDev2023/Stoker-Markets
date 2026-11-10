@@ -1,18 +1,21 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
+import { CREATOR_SHARE_FLOOR_BPS } from "@launchpad/contract";
 import { creatorForwards, graduations, launches, ledgerEntries, trades, type Db } from "@launchpad/db";
+import { poolShareBps } from "./ladder";
 
 /**
- * What Creators earn (ADR 0009): half of what the platform collects on their Launches' trades, on either venue.
+ * What Creators earn (ADR 0009, ADR 0020): their share of what the platform collects on their Launches' trades.
  * - on the curve, half of each trade's Platform Fee;
- * - after Graduation, half of each pool creator fee collection from the coin's pool.
- * Both are in the Launch's Quote Asset, and each half is rounded down on its own, so a sum per Creator, per Launch or
- * per asset is the same whichever way the fees are grouped. Everything here is a sum over indexed trades and the
- * Ledger, so anyone can redo it. A coin's Graduation Fee (ADR 0015) comes out of its Creator's share once it graduates:
- * what was withheld is on the Ledger as `graduation_fee` entries, and the platform's.
+ * - after Graduation, each pool creator fee collection from the coin's pool at the share of the Creator Tier the coin
+ *   held when it was collected: half on the first tier, more on the second and the top (`ladder.ts`).
+ * Both are in the Launch's Quote Asset, and each share is rounded down on its own, so a sum per Creator, per Launch or
+ * per asset is the same whichever way the fees are grouped. Everything here is a sum over indexed trades, the Ledger,
+ * the published ladder and the recorded tiers, so anyone can redo it. A coin's Graduation Fee (ADR 0015) comes out of
+ * its Creator's share once it graduates: what was withheld is on the Ledger as `graduation_fee` entries, and the platform's.
  */
 
-/** The Creator's share of what the platform collects on their coin's trades, in basis points: half. */
-export const CREATOR_SHARE_BPS = 5_000;
+/** The Creator's share of the Platform Fee on the curve, and the first tier's share of a pool fee, in basis points: half. */
+export const CREATOR_SHARE_BPS = CREATOR_SHARE_FLOOR_BPS;
 
 /** A Creator's share in one Quote Asset, by where it was earned; raw units. */
 export type CreatorShare = { creator: string; mint: string; curve: bigint; pool: bigint };
@@ -20,8 +23,8 @@ export type CreatorShare = { creator: string; mint: string; curve: bigint; pool:
 const half = (amount: unknown) => sql`floor(${amount} * ${CREATOR_SHARE_BPS} / 10000)`;
 /** What a curve trade earns its Creator, as SQL over `trades`. */
 const curveShare = sql`coalesce(sum(${half(trades.platformFee)}), 0)::text`;
-/** What the pool fee collections of a coin earn its Creator, as SQL over `ledger_entries`. */
-const poolShare = sql`coalesce(sum(${half(ledgerEntries.amount)}), 0)::text`;
+/** What the pool fee collections of a coin earn its Creator, each at its tier's share, as SQL over `ledger_entries`. */
+const poolShare = sql`coalesce(sum(floor(${ledgerEntries.amount} * ${poolShareBps} / 10000)), 0)::text`;
 
 /** A Ledger time as SQL: a `Date` parameter fails under our client's settings, so it goes as text with a cast. */
 const ledgerTime = (time: Date) => sql`${time.toISOString()}::timestamptz`;
@@ -92,7 +95,7 @@ export async function creatorSharesByLaunch(db: Db, creator: string) {
 
 /**
  * What a graduated coin's Creator has been credited with in its Quote Asset and the platform has collected: half of the
- * Platform Fee of its curve trades whose claim has landed, and half of its pool fee collections. What a Graduation Fee
+ * Platform Fee of its curve trades whose claim has landed, and its tiers' shares of its pool fee collections. What a Graduation Fee
  * may be withheld from (ADR 0015): the coin's own earnings, never another coin's.
  */
 export async function collectedSharesByLaunch(db: Db, mints: string[]) {

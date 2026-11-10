@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { LaunchMarket } from "./board";
 import { PublishedBudgetTable } from "./budget";
+import { PublishedCreatorLadder } from "./ladder";
 import { GraduationTarget, QuoteRef } from "./quotes";
 import { CurveProgress, Graduation, SolRouteSource } from "./trades";
 import { LaunchModeFields, LaunchModesSummary, RewardTax } from "./launchModes";
@@ -16,6 +17,7 @@ export * from "./revenue";
 export * from "./rewards";
 export * from "./burns";
 export * from "./budget";
+export * from "./ladder";
 export * from "./apiKeys";
 export * from "./operator";
 export * from "./region";
@@ -214,12 +216,16 @@ export const PlatformInfo = z.object({
     poolLpShareBps: z.number(),
   }),
   /**
-   * The Creator Forward (ADR 0009): what the platform pays a Creator, `shareBps` of what it collects on their coin's
-   * trades on either venue. That is `curveBps` of every curve trade (out of the Platform Fee) and `poolBps` of every
-   * pool trade (out of the pool creator fee at the rate of the CPMM config graduated pools use, less Raydium's share
-   * of it). Paid in the Quote Asset once the amount owed is worth `minLamports`.
+   * The Creator Forward (ADR 0009): what the platform pays a Creator out of what it collects on their coin's trades.
+   * `shareBps` is the first Creator Tier's share, half: `curveBps` of every curve trade (out of the Platform Fee) and
+   * `poolBps` of every pool trade (out of the pool creator fee at the rate of the CPMM config graduated pools use, less
+   * Raydium's share of it). After Graduation the share of the pool creator fee climbs with the coin's Active Days,
+   * by `ladder` (ADR 0020): the version in force and any announced for later. Paid in the Quote Asset once the amount
+   * owed is worth `minLamports`.
    */
-  creatorForward: z.object({ shareBps: z.number().int(), curveBps: z.number(), poolBps: z.number(), minLamports: z.string() }),
+  creatorForward: z.object({
+    shareBps: z.number().int(), curveBps: z.number(), poolBps: z.number(), minLamports: z.string(), ladder: PublishedCreatorLadder,
+  }),
   /**
    * The Budget Table (ADR 0019): how what the platform keeps after the Creators' share is divided between the Burn, the
    * Flywheel, the trader programs and the treasury, as the version in force and any announced for later.

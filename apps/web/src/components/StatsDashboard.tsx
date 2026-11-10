@@ -319,7 +319,7 @@ export function StatsDashboard({ platform, quotes, revenue, burns, ledger, token
           <section className={`card ${styles.card}`} aria-labelledby="wallets-title">
             <h2 id="wallets-title" className={`t-h3 ${styles.cardTitle}`}>Where it goes</h2>
             <p className={styles.muted}>
-              Half of what the curves and pools bring in is the Creators&apos;, sent to each Creator&apos;s wallet within the hour of being collected;
+              Half or more of what the curves and pools bring in is the Creators&apos;, sent to each Creator&apos;s wallet within the hour of being collected;
               it never goes to the treasury.
             </p>
             {revenue && (
