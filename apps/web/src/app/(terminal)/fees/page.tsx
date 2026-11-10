@@ -89,7 +89,7 @@ export default async function FeesPage() {
       note: (
         <>
           Half of it, {pct(platform.creatorForward.curveBps)} of the trade, is forwarded to the coin&apos;s Creator as Creator Earnings
-          (sent to their wallet, nothing to claim); the platform keeps the other half.
+          (sent to their wallet with nothing to claim, unless they pointed it elsewhere at launch); the platform keeps the other half.
         </>
       ),
       pays: "The trader",
@@ -290,6 +290,10 @@ export default async function FeesPage() {
             {next.note && <> {next.note}.</>} It applies to what is collected from then on, and a coin keeps every tier it has reached.
           </p>
         ))}
+        <p className={styles.note}>
+          Where that share goes is the Creator&apos;s choice on the launch form: their own wallet, or instead the coin&apos;s holders, a buyback
+          that burns the coin, or liquidity locked in its pool. The choice is fixed at launch, and the share is the same wherever it goes.
+        </p>
         <p className={styles.note}>
           A tier&apos;s share is of the pool creator fee that arrives, after Raydium&apos;s part; the Fee Key&apos;s part of a pool trade stays the
           platform&apos;s at every tier. A coin&apos;s Active Days are counted and its tier recorded before each hourly collection, and both are shown

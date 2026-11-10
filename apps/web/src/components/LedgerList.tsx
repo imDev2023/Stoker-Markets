@@ -20,16 +20,31 @@ const KIND: Record<LedgerKind, string> = {
   metadata_upload: "Permanent metadata",
   reward_sale: "Reward Tax sold for holders",
   graduation_fee: "Graduation Fee, kept from a Creator's share",
-  holder_dividend: "Creator's earnings paid to holders",
-  creator_burn: "Creator's earnings, bought back and burned",
-  creator_liquidity: "Creator's earnings, bought back and added as liquidity",
+  holder_dividend: "Creator Earnings paid to holders",
+  creator_burn: "Creator Earnings bought back and burned",
+  creator_liquidity: "Creator Earnings added as liquidity",
 };
 
 /** Entries that move revenue out of the operations wallet rather than into it. */
-const OUT = new Set<LedgerKind>(["sweep", "creator_forward", "arweave_top_up", "metadata_upload"]);
+const OUT = new Set<LedgerKind>(["sweep", "creator_forward", "holder_dividend", "arweave_top_up", "metadata_upload"]);
 
-/** A Reward Sale is two entries: the coins that left the wallet, and the Quote Asset that came in (the holders' pot, not revenue). */
-const isOut = (e: LedgerEntry) => OUT.has(e.kind) || (e.kind === "reward_sale" && e.launch?.mint === e.asset.mint);
+/** A Creator's buyback (ADR 0011), which burns what it buys or adds it to the pool: two entries of one transaction. */
+const BUYBACK = new Set<LedgerKind>(["creator_burn", "creator_liquidity"]);
+
+/** An entry in the coin it names rather than in a Quote Asset: the coins a Reward Sale sold, or a buyback burned or added. */
+const inItsCoin = (e: LedgerEntry) => e.launch?.mint === e.asset.mint;
+
+/**
+ * A buyback's second entry: the coins it burned or added to the pool. They were bought and gone in the one
+ * transaction, so they are a count beside the money spent, neither revenue in nor revenue out.
+ */
+const isCoinCount = (e: LedgerEntry) => BUYBACK.has(e.kind) && inItsCoin(e);
+
+/**
+ * A Reward Sale is two entries: the coins that left the wallet, and the Quote Asset that came in (the holders' pot, not
+ * revenue). A buyback is two as well: the Quote Asset that left the wallet, and the coins it burned or added.
+ */
+const isOut = (e: LedgerEntry) => OUT.has(e.kind) || (e.kind === "reward_sale" && inItsCoin(e)) || (BUYBACK.has(e.kind) && !inItsCoin(e));
 
 /** Where an entry's money came from, in words: every curve pools its Platform Fee in one vault per Quote Asset. */
 function origin(e: LedgerEntry, platform: PlatformInfo) {
@@ -43,6 +58,20 @@ function origin(e: LedgerEntry, platform: PlatformInfo) {
   if (e.kind === "reward_sale") return e.launch ? <>For the holders of <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link></> : "For holders";
   // Nothing moved: the Creator's share of what was already collected becomes the platform's, against the graduation.
   if (e.kind === "graduation_fee") return e.launch ? <>Out of the Creator&apos;s earnings on <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link></> : "Out of a Creator's earnings";
+  // A Creator's share that went where they pointed it at launch instead of their wallet (ADR 0011).
+  if (e.kind === "holder_dividend") return e.launch ? <>To the holders of <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link></> : "To a coin's holders";
+  if (e.kind === "creator_burn") {
+    if (!e.launch) return "Bought back and burned";
+    return inItsCoin(e)
+      ? <>Burned, every coin of <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link> it bought</>
+      : <>Spent buying <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link> in its own market</>;
+  }
+  if (e.kind === "creator_liquidity") {
+    if (!e.launch) return "Added to a pool, locked";
+    return inItsCoin(e)
+      ? <>Added to the pool of <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link>, locked for good</>
+      : <>Spent buying <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link> and pairing it, into its pool</>;
+  }
   if (e.kind === "burn" || e.kind === "flywheel")
     return e.launch ? <>Bought and burned <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link></> : "Bought and burned";
   if (e.launch) return <>From <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link></>;
@@ -88,10 +117,10 @@ export function LedgerList({ initial, platform }: { initial: LedgerPage; platfor
       <h2 id="ledger-title" className={`t-h3 ${styles.title}`}>Ledger</h2>
       <ol className={styles.entries}>
         {inReadingOrder(entries).map((e) => (
-          <li key={`${e.signature}.${e.index}`} className={isOut(e) ? styles.out : undefined}>
+          <li key={`${e.signature}.${e.index}`} className={isOut(e) || isCoinCount(e) ? styles.out : undefined}>
             <span className={styles.kind}>{KIND[e.kind]}</span>
             <span className={styles.amount}>
-              {isOut(e) ? "−" : "+"}
+              {isCoinCount(e) ? "" : isOut(e) ? "−" : "+"}
               <span className="mono">{formatUnits(e.amount, e.asset.decimals, e.asset.decimals)}</span> {quoteTicker(e.asset)}
             </span>
             <span className={styles.origin}>{origin(e, platform)}</span>

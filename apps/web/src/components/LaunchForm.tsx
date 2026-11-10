@@ -11,13 +11,14 @@ import { LAUNCH_IMAGE_MAX_BYTES, type PlatformInfo, type PreparedLaunch, type Qu
 import { ApiRequestError, getLaunchQuote, prepareLaunch, reportTransaction, retryLaunch } from "@/lib/api";
 import { landedError } from "@/lib/transactions";
 import { graduationFeeSol } from "@/lib/fees";
+import { DESTINATION_SUMMARY } from "@/lib/earnings";
 import { COIN_DECIMALS, COIN_SUPPLY, formatAmount, formatUnits, isSol, quoteTicker } from "@/lib/format";
 import { FIRST_LINKS, LINK_INFO, LINK_KINDS, MORE_LINKS, type LinkKind } from "@/lib/links";
 import { Address } from "./Address";
 import { CoinCard, type CoinCardData } from "./CoinCard";
 import { useCopyCheck, type CopyStatus } from "./CopyCheck";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
-import { LaunchOptions, LaunchType, supplyShare, useLaunchOptions, type LaunchOptionsState } from "./LaunchOptions";
+import { EarningsChoice, LaunchOptions, LaunchType, supplyShare, useLaunchOptions, type LaunchOptionsState } from "./LaunchOptions";
 import { Ring } from "./Mark";
 import { QuoteChooser } from "./QuoteChooser";
 import { WalletButton } from "./WalletButton";
@@ -41,11 +42,12 @@ const DESCRIPTION_MAX = 1000;
 
 /**
  * The launch form after new-stoker's launch page (#172; the owner's answer of 2026-11-06: its look and layout in this
- * site's colours and type). One page without steps: the coin, the pair, the launch type, the links and the First Buy
- * as plain headed sections, and beside them the summary, which is the review and holds the one action: a preview of the
- * coin as the site's coin card draws it, the terms it launches on, and "Stoke TRCR", which prepares the launch on the
- * server, simulates it, and asks the wallet to sign while the signing panel says what it pays; then it sends, waits for
- * the chain, reports the transaction for indexing and opens the coin's page. On a phone the summary follows the form.
+ * site's colours and type). One page without steps: the coin, the pair, the launch type, where the Creator's earnings
+ * go (ADR 0011), the links and the First Buy as plain headed sections, and beside them the summary, which is the review
+ * and holds the one action: a preview of the coin as the site's coin card draws it, the terms it launches on, and
+ * "Stoke TRCR", which prepares the launch on the server, simulates it, and asks the wallet to sign while the signing
+ * panel says what it pays; then it sends, waits for the chain, reports the transaction for indexing and opens the coin's
+ * page. On a phone the summary follows the form.
  * `initialQuote` is the asset an asset's page sent the Creator here for; the first launchable one otherwise.
  */
 export function LaunchForm({
@@ -238,6 +240,11 @@ export function LaunchForm({
         <section className={styles.set} aria-labelledby="block-type">
           <h2 id="block-type" className={`t-h3 ${styles.legend}`}>Launch type</h2>
           <LaunchType options={options} coin={symbol} labelId="block-type" />
+        </section>
+
+        <section className={styles.set} aria-labelledby="block-earnings">
+          <h2 id="block-earnings" className={`t-h3 ${styles.legend}`}>Creator earnings</h2>
+          <EarningsChoice options={options} coin={symbol} labelId="block-earnings" />
         </section>
 
         <section className={styles.set} aria-labelledby="block-links">
@@ -495,7 +502,11 @@ function Summary({ platform, quote, ticker, symbol, preview, options, step, fail
         )}
         <div>
           <dt>You earn</dt>
-          <dd><Link href="/fees" className={styles.factLink}>Half of what we collect</Link></dd>
+          <dd className={styles.factWords}>
+            <Link href="/fees" className={styles.factLink}>Half of what we collect</Link>
+            {/* A rule is named in words after the share (ADR 0011); the wallet's row says nothing more. */}
+            {options.earningsDestination !== "wallet" && <>, {DESTINATION_SUMMARY[options.earningsDestination]}</>}
+          </dd>
         </div>
         {fee && (
           <div>

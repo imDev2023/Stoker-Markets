@@ -4,10 +4,10 @@ import { fileURLToPath } from "node:url";
 import type { Page } from "@playwright/test";
 import { LedgerPage, Revenue } from "@launchpad/contract";
 import {
-  allowAirdrops, COIN_PNG, drain, expect, expectHydrated, expectNoHorizontalOverflow, expectNoTruncatedText, fixedKeypair, forgetDisclaimer, giveCoins, listLaunches,
-  hoverMark, markTooltip, postMarkAt, QUOTES, SEED_CREATOR, SEED_HOLDER, test,
+  allowAirdrops, COIN_PNG, coinEarnings, drain, expect, expectHydrated, expectNoHorizontalOverflow, expectNoTruncatedText, fixedKeypair, forgetDisclaimer, giveCoins,
+  listLaunches, hoverMark, markTooltip, postMarkAt, QUOTES, SEED_CREATOR, SEED_HOLDER, test,
 } from "./fixtures";
-import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, REWARD_QUOTE } from "./seedData";
+import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, EARNINGS_COINS, REWARD_QUOTE } from "./seedData";
 import { chooseQuote, firstBuyField, signButton, signing, summary } from "./launchPage";
 import { accountArea, connectFromSite, connectTestWallet, installTestWallet, openWalletMenu, TEST_WALLET_NAME, type TestWallet } from "./wallet";
 
@@ -196,9 +196,13 @@ test("coin page with the longest name and ticker", async ({ page }) => {
 });
 
 test("coin page with trades", async ({ page }) => {
-  await page.goto(`/coin/${await mintOf("Harbor Lights")}`);
+  const mint = await mintOf("Harbor Lights");
+  await page.goto(`/coin/${mint}`);
   await expect(page.locator("article header img").first()).toHaveJSProperty("complete", true);
-  await expect(page.getByRole("region", { name: "Trades", exact: true }).getByRole("row")).toHaveCount(5);
+  // The heading's row, the seed's four trades, and each buyback its Creator's burn rule made (ADR 0011), which is a
+  // trade of the coin like anyone's.
+  const { totals } = await coinEarnings(mint);
+  await expect(page.getByRole("region", { name: "Trades", exact: true }).getByRole("row")).toHaveCount(5 + totals.buybacks);
   await expect(page.getByText(/^Market cap [\d.,]+ \w+$/)).toBeVisible();
   await snap(page, "coin-traded.png", tradedDynamic);
 });
@@ -349,6 +353,76 @@ test("trade panel after graduation, with the pool's fees", async ({ page, wallet
   await giveCoins(wallet.keypair, SEED_HOLDER.publicKey, mint, 1_000_000n * 1_000_000n);
 });
 
+/**
+ * The Creator earnings card of a seeded coin whose Creator pointed their earnings at a rule (ADR 0011, `EARNINGS_COINS`).
+ * The coin's own page shot carries the card too, far down a long page; these shoot it alone.
+ */
+async function earningsCard(page: Page, coin: string, rule: "holders" | "burn" | "liquidity") {
+  await page.goto(`/coin/${await mintOf(coin)}`);
+  const card = page.getByRole("region", { name: "Creator earnings" });
+  await expect(card).toHaveAttribute("data-earnings-rule", rule);
+  return card;
+}
+
+/**
+ * Shoots the card once the page has settled. Its amounts follow from the seed's fixed trades; its times and the
+ * address of a locked position are masked. On a phone the card can be taller than the window less the header, so the
+ * header scrolls away for the shot, as for the trade panel.
+ */
+async function snapCard(page: Page, name: string) {
+  const card = page.getByRole("region", { name: "Creator earnings" });
+  await page.waitForLoadState("networkidle");
+  await page.evaluate(() => document.fonts.ready);
+  await expectHydrated(page);
+  await chartsSettled(page);
+  await unstickHeader(page);
+  await page.mouse.move(0, 0);
+  await expect(card).toHaveScreenshot(name, { mask: tradedDynamic(page) });
+}
+
+// The seed ran the Fee Collector, the Creator Forward and the Reward Engine once each, in that order, so each rule has
+// acted once. A card is shot only once it shows that: a baseline of a rule that never ran would pass every run after it.
+test("Creator earnings card of a coin whose earnings buy it back and burn it", async ({ page }) => {
+  const card = await earningsCard(page, EARNINGS_COINS.burn, "burn");
+  await expect(card).toContainText("buys HRBR in its own market, on the curve or in its pool, and burns every coin it buys");
+  await expect(card.getByRole("link", { name: "Ledger" })).toHaveAttribute("href", "/revenue#ledger-title");
+  const buybacks = card.getByRole("list", { name: "Buybacks" }).getByRole("listitem");
+  await expect(buybacks).toHaveCount(1);
+  await expect(buybacks).toContainText(/Bought and burned [\d,]+ HRBR on the curve/);
+  await expect(card.getByRole("term").filter({ hasText: "Burned" })).toBeVisible();
+  await snapCard(page, "earnings-burn.png");
+});
+
+test("Creator earnings card of a coin whose earnings are paid to its holders", async ({ page }) => {
+  const card = await earningsCard(page, EARNINGS_COINS.holders, "holders");
+  await expect(card).toContainText("is paid in USDC to every wallet holding at least the minimum");
+  const rounds = card.getByRole("list", { name: "Earnings rounds" }).getByRole("listitem");
+  await expect(rounds).toHaveCount(1);
+  await expect(rounds).toContainText("Paid");
+  await expect(rounds.getByRole("link")).toHaveAttribute("href", /^\/rewards\/rounds\//);
+  await expect(card.getByRole("term").filter({ hasText: "Paid to holders" })).toBeVisible();
+  await snapCard(page, "earnings-holders.png");
+});
+
+test("Creator earnings card of a graduated coin whose earnings are added to its pool as liquidity", async ({ page }) => {
+  const card = await earningsCard(page, EARNINGS_COINS.liquidity, "liquidity");
+  await expect(card).toContainText("pairs it with SOL and adds both to the pool, locked for good");
+  const additions = card.getByRole("list", { name: "Liquidity additions" }).getByRole("listitem");
+  await expect(additions).toHaveCount(1);
+  await expect(additions).toContainText(/Added [\d,]+ GOWN and [\d.,]+ SOL to the pool/);
+  await expect(card.getByRole("term").filter({ hasText: "Added to the pool" })).toBeVisible();
+  await snapCard(page, "earnings-liquidity.png");
+});
+
+test("Creator earnings card of a coin whose rule has nothing to work with yet", async ({ page }) => {
+  // Nobody has traded First Light, so nothing is collected for its Creator, and it has no pool for its liquidity.
+  const card = await earningsCard(page, EARNINGS_COINS.waiting, "liquidity");
+  await expect(card).toContainText("A coin has no pool until it graduates, so until then the earnings wait.");
+  await expect(card.locator("[data-earnings-waiting]")).toContainText("Nothing has been collected for the Creator yet.");
+  await expect(card.getByRole("list")).toHaveCount(0);
+  await snapCard(page, "earnings-waiting.png");
+});
+
 test("coin not found", async ({ page }) => {
   const res = await page.goto("/coin/11111111111111111111111111111111");
   expect(res?.status()).toBe(404);
@@ -395,7 +469,7 @@ test("launch form, one page from empty to signing", async ({ page, wallet }) => 
   await expect(page.getByRole("heading", { name: "Stoke a coin" })).toBeVisible();
   // One page on every width (#172): no step index, every section in view, the summary with the action.
   await expect(page.getByRole("navigation", { name: "Steps" })).toHaveCount(0);
-  for (const section of ["Your coin", "Paired with", "Launch type", "Links", "First buy"])
+  for (const section of ["Your coin", "Paired with", "Launch type", "Creator earnings", "Links", "First buy"])
     await expect(page.getByRole("region", { name: new RegExp(`^${section}`) })).toBeVisible();
   await expect(summary(page)).toBeVisible();
   await expect(page.getByRole("region", { name: "Preview" })).toBeVisible();
@@ -498,6 +572,23 @@ test("launch form as a Reward Launch paid in the Quote Asset, and its signing", 
   await page.mouse.move(0, 0);
   await snap(page, "launch-signing-reward.png");
   await launch.end();
+});
+
+test("launch form with the Creator's earnings pointed at liquidity", async ({ page, wallet }) => {
+  await page.goto("/launch");
+  await connectOnForm(page);
+  await fillCoin(page, "Deep Water", "DEEP");
+  const choice = page.getByRole("radiogroup", { name: "Creator earnings" });
+  await expect(choice.getByRole("radio", { name: /^Your wallet/ })).toBeChecked();
+  // Liquidity carries the longest hint: the choice is fixed, and it waits for the pool.
+  await choice.getByRole("radio", { name: /^Liquidity/ }).check();
+  await expect(page.getByText(/A coin has no pool until it graduates, so until then your earnings wait\.$/)).toBeVisible();
+  await expect(summary(page)).toContainText(/You earn\s*Half of what we collect, added as locked liquidity/);
+  await copyCheckSettled(page);
+  await previewPriced(page);
+  await page.mouse.move(0, 0);
+  await snap(page, "launch-earnings.png");
+  expect(wallet.requests).toHaveLength(0);
 });
 
 test("launch form with a mistake in the airdrop list", async ({ page, wallet }) => {

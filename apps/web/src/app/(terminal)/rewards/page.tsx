@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/EmptyState";
 export const metadata: Metadata = pageMeta({
   path: "/rewards",
   title: "Holder rewards",
-  description: "How Reward Rounds pay a Reward Launch's holders, the rules in force, and where any wallet's rewards are.",
+  description: "How Reward Rounds pay a coin's holders, from a Reward Launch's tax or from its Creator's earnings, the rules in force, and where any wallet's rewards are.",
 });
 
 export default async function RewardsPage() {
@@ -24,6 +24,10 @@ export default async function RewardsPage() {
         A Reward Launch&apos;s coin withholds its Reward Tax on every transfer. Reward Rounds collect it and pay it to holders pro rata
         in the asset its Creator fixed at launch: the coin itself, never sold, or the coin&apos;s Quote Asset, bought with the tax in
         small, published sales. Every round&apos;s snapshot, rules, sales and payout transactions are public.
+      </p>
+      <p className={styles.lead}>
+        A coin can also pay its holders from its Creator&apos;s earnings: a Creator can point their share of what the platform collects
+        on the coin at its holders when they launch it, and the same rounds pay it out in the coin&apos;s Quote Asset.
       </p>
 
       <section className={`card ${styles.card}`} aria-labelledby="lookup-title">

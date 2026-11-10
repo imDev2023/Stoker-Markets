@@ -1,0 +1,124 @@
+/* A coin's Creator earnings under a rule: the Holder rewards card's shape, so the two read as one family on a coin's page. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  min-width: 0;
+}
+
+/* The title and, at the row's end, what becomes of the earnings; the tag drops under the title when the row is short. */
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.title {
+  margin: 0;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.facts dt {
+  font-size: var(--text-label);
+  color: var(--ink-3);
+}
+
+.facts dd {
+  margin: 2px 0 0;
+  font-size: var(--text-ui);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.note {
+  margin: 0;
+  max-width: 88ch;
+  font-size: var(--text-ui);
+  color: var(--ink-3);
+  text-wrap: pretty;
+}
+
+.note a,
+.rows a {
+  color: var(--ink-2);
+}
+
+.note a:hover,
+.rows a:hover {
+  color: var(--accent);
+}
+
+/* A round or a buyback a row: what happened and when on the left, what it paid or spent on the right. */
+.rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rows li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 16px;
+  align-items: baseline;
+  padding: 10px 0;
+  font-size: var(--text-ui);
+}
+
+.rows li + li {
+  border-top: 1px solid var(--line);
+}
+
+.rows li:first-child {
+  padding-top: 0;
+}
+
+.rows li:last-child {
+  padding-bottom: 0;
+}
+
+/* A buyback's time follows its link; a round's is inside its link and keeps the link's colour. */
+.rows span > time {
+  color: var(--ink-3);
+}
+
+.status {
+  display: inline-flex;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--plate);
+  color: var(--accent-strong);
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+
+.paid {
+  background: var(--up-bg);
+  color: var(--up);
+}
+
+.amount {
+  text-align: right;
+  font-weight: 500;
+}
+
+/* On a phone a row's sentence needs the whole width: what it paid or spent goes under it, as on the rewards pages. */
+@media (max-width: 560px) {
+  .rows li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .amount {
+    text-align: left;
+  }
+}
