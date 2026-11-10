@@ -20,6 +20,9 @@ const KIND: Record<LedgerKind, string> = {
   metadata_upload: "Permanent metadata",
   reward_sale: "Reward Tax sold for holders",
   graduation_fee: "Graduation Fee, kept from a Creator's share",
+  holder_dividend: "Creator's earnings paid to holders",
+  creator_burn: "Creator's earnings, bought back and burned",
+  creator_liquidity: "Creator's earnings, bought back and added as liquidity",
 };
 
 /** Entries that move revenue out of the operations wallet rather than into it. */

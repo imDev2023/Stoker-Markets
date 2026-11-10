@@ -115,6 +115,12 @@ export type Bindings = {
    */
   CREATOR_FORWARD_MIN_LAMPORTS?: string;
   /**
+   * What a coin's pot must be worth, in lamports at the Quote Registry's price, before its `liquidity` rule adds it to
+   * the pool (ADR 0011, #184): every addition opens a locked position of its own, whose rent the platform pays and whose
+   * fees it collects one by one, so a small one is not worth opening; 0.25 SOL unless set.
+   */
+  LIQUIDITY_ADD_MIN_LAMPORTS?: string;
+  /**
    * The Graduation Fee (ADR 0015): what the platform charges when a coin graduates, in lamports, withheld from the
    * Creator's share of what it collects on that coin, in the coin's Quote Asset at the Quote Registry's price; 0.015 SOL
    * unless set, 0 for no fee.
@@ -188,6 +194,8 @@ export type Config = {
   sweepFloatLamports: bigint;
   collectMinLamports: bigint;
   creatorForwardMinLamports: bigint;
+  /** The least a pot is worth before the `liquidity` rule adds it to the pool (ADR 0011). */
+  liquidityAddMinLamports: bigint;
   /** The Graduation Fee in lamports (ADR 0015); 0n charges none. */
   graduationFeeLamports: bigint;
   /** Copy Protection's window after a launch, in seconds. */
@@ -270,6 +278,7 @@ function bps(raw: string | undefined, name: string, fallback: number) {
 const REWARD_RULES_LEAD_DEFAULT_SECONDS = 24 * 60 * 60;
 const BURN_MIN_SPEND_DEFAULT_LAMPORTS = 10_000_000n;
 const CREATOR_FORWARD_MIN_DEFAULT_LAMPORTS = 10_000_000n;
+const LIQUIDITY_ADD_MIN_DEFAULT_LAMPORTS = 250_000_000n;
 /** 0.015 SOL: the owner's figure (2026-10-30, ADR 0015), a setting so it can move. */
 const GRADUATION_FEE_DEFAULT_LAMPORTS = 15_000_000n;
 /** Seven days: the owner's choice (2026-10-26), a setting so it can become 30. */
@@ -395,6 +404,9 @@ export function config(env: Bindings): Config {
     creatorForwardMinLamports: env.CREATOR_FORWARD_MIN_LAMPORTS
       ? lamports(env.CREATOR_FORWARD_MIN_LAMPORTS, "CREATOR_FORWARD_MIN_LAMPORTS")
       : CREATOR_FORWARD_MIN_DEFAULT_LAMPORTS,
+    liquidityAddMinLamports: env.LIQUIDITY_ADD_MIN_LAMPORTS
+      ? lamports(env.LIQUIDITY_ADD_MIN_LAMPORTS, "LIQUIDITY_ADD_MIN_LAMPORTS")
+      : LIQUIDITY_ADD_MIN_DEFAULT_LAMPORTS,
     graduationFeeLamports: env.GRADUATION_FEE_LAMPORTS ? lamports(env.GRADUATION_FEE_LAMPORTS, "GRADUATION_FEE_LAMPORTS") : GRADUATION_FEE_DEFAULT_LAMPORTS,
     rewardRulesLeadSeconds: env.REWARD_RULES_LEAD_SECONDS ? seconds(env.REWARD_RULES_LEAD_SECONDS, "REWARD_RULES_LEAD_SECONDS") : REWARD_RULES_LEAD_DEFAULT_SECONDS,
     flywheelTopN: env.FLYWHEEL_TOP_N ? seconds(env.FLYWHEEL_TOP_N, "FLYWHEEL_TOP_N") : 10,

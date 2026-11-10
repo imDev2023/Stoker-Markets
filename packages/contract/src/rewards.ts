@@ -2,6 +2,14 @@ import { z } from "zod";
 import { RewardPayoutAsset } from "./launchModes";
 
 /**
+ * What a Reward Round pays out (ADR 0011): `tax`, a Reward Launch's collected Reward Tax, or `earnings`, the Creator's
+ * share of platform revenue on a coin whose Creator Earnings go to its holders, always in the Quote Asset. The two have
+ * separate pots, and a coin may have one round of each paying at a time.
+ */
+export const RewardRoundSource = z.enum(["tax", "earnings"]);
+export type RewardRoundSource = z.infer<typeof RewardRoundSource>;
+
+/**
  * Reward Rounds: how a Reward Launch's collected Reward Tax reaches its holders, all public: the rules in force, each
  * round's snapshot and payouts, Reward Sales where the Payout Asset is the Quote Asset, and any wallet's own Holder
  * Rewards. Holdings and the rules are raw units of the coin; a pot and its payouts are raw units of the Payout Asset.
@@ -65,10 +73,14 @@ export const RewardRoundSummary = z.object({
   mint: base58,
   rulesVersion: z.number().int(),
   status: RewardRoundStatus,
+  source: RewardRoundSource,
   /** The slot the holders were snapshotted at. */
   snapshotSlot: z.number().int(),
   payout: RewardPayoutAssetRef,
-  /** What the round pays out, raw units of the Payout Asset: the collected tax, or what the Reward Sales brought in. */
+  /**
+   * What the round pays out, raw units of the Payout Asset: the collected tax, or what the Reward Sales brought in; for
+   * an `earnings` round, the Creator's share collected on the coin and not yet paid out.
+   */
   pot: raw,
   /** For a Quote Asset payout, the coins of tax sold for the pot; null for a coin payout. */
   sold: raw.nullable(),
@@ -165,6 +177,8 @@ export const WalletRewards = z.object({
       decimals: z.number().int(),
       /** What the payout is in. */
       payout: RewardPayoutAssetRef,
+      /** Whether the round paid out Reward Tax or the Creator's earnings. */
+      source: RewardRoundSource,
       snapshotSlot: z.number().int(),
       roundStartedAt: z.iso.datetime(),
     }),

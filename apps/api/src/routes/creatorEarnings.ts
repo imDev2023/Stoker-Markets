@@ -3,12 +3,13 @@ import { HTTPException } from "hono/http-exception";
 import { PublicKey } from "@solana/web3.js";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { WSOL_MINT } from "@launchpad/chain";
-import type { CreatorEarnings, CreatorForwardList, GraduationFee, QuoteRef } from "@launchpad/contract";
-import { creatorForwards, curves, graduations, launches, launchMetadata, quoteAssets, type Db } from "@launchpad/db";
+import type { CoinEarnings, CreatorBuyback, CreatorEarnings, CreatorForwardList, GraduationFee, QuoteRef } from "@launchpad/contract";
+import { creatorBuybacks, creatorForwards, curves, graduations, launches, launchMetadata, quoteAssets, rewardRounds, type Db } from "@launchpad/db";
 import type { AppEnv } from "../env";
-import { committedForwards, creatorShares, creatorSharesByLaunch, withheldGraduationFees } from "../fees/creatorShares";
+import { collectedSharesByLaunch, committedForwards, creatorShares, creatorSharesByLaunch, rulePots, withheldGraduationFees } from "../fees/creatorShares";
 import { coinTiers } from "../fees/ladder";
 import { toQuoteRef } from "../quotes/assets";
+import { payoutRef, roundSummary } from "./rewards";
 
 /**
  * Creator Earnings (ADR 0009): what a Creator has earned from the trades on their Launches, their share of what the
@@ -49,12 +50,13 @@ creatorEarningsRoutes.get("/creators/:address/earnings", async (c) => {
   const address = creatorParam(c.req.param("address")).toBase58();
   const db = c.get("db");
   const cfg = c.get("cfg");
-  const [ownLaunches, shares, committed, withheld, byLaunch] = await Promise.all([
+  const [ownLaunches, shares, walletShares, committed, withheld, walletWithheld, byLaunch] = await Promise.all([
     db
       .select({
         mint: launches.mint,
         name: launches.name,
         symbol: launches.symbol,
+        destination: launches.earningsDestination,
         quote: quoteAssets,
         hasMetadata: sql<boolean>`${launchMetadata.id} is not null`,
         status: curves.status,
@@ -69,10 +71,14 @@ creatorEarningsRoutes.get("/creators/:address/earnings", async (c) => {
       .where(eq(launches.creator, address))
       .orderBy(desc(launches.createdSlot)),
     creatorShares(db, { collectedOnly: false, creator: address }),
+    // The coins that pay the wallet, on their own: the rest of what was earned goes to those coins' rules (ADR 0011).
+    creatorShares(db, { collectedOnly: false, creator: address, walletOnly: true }),
     committedForwards(db, address),
     withheldGraduationFees(db, address),
+    withheldGraduationFees(db, address, undefined, true),
     creatorSharesByLaunch(db, address),
   ]);
+  const pots = new Map((await rulePots(db, ownLaunches.filter((l) => l.destination !== "wallet").map((l) => l.mint))).map((p) => [p.mint, p]));
 
   const tiers = await coinTiers(db, ownLaunches.map((l) => l.mint));
   // SOL first, then the other Quote Assets in a stable order.
@@ -81,12 +87,21 @@ creatorEarningsRoutes.get("/creators/:address/earnings", async (c) => {
   const res: CreatorEarnings = {
     creator: address,
     assets: mints.map((mint) => {
-      const share = shares.find((s) => s.mint === mint);
-      const earned = share ? share.curve + share.pool : 0n;
+      const total = (list: typeof shares) => {
+        const share = list.find((s) => s.mint === mint);
+        return share ? share.curve + share.pool : 0n;
+      };
+      const [earned, walletEarned] = [total(shares), total(walletShares)];
       const kept = withheld.get(`${address} ${mint}`) ?? 0n;
+      const walletKept = walletWithheld.get(`${address} ${mint}`) ?? 0n;
       const forwarded = committed.get(`${address} ${mint}`) ?? 0n;
-      const pending = earned - kept - forwarded;
-      return { quote: quotes.get(mint)!, earned: earned.toString(), withheld: kept.toString(), forwarded: forwarded.toString(), pending: (pending > 0n ? pending : 0n).toString() };
+      // What the coins with a rule earned, less the Graduation Fees withheld on them: it never comes to the wallet.
+      const toRule = earned - walletEarned - (kept - walletKept);
+      const pending = walletEarned - walletKept - forwarded;
+      return {
+        quote: quotes.get(mint)!, earned: earned.toString(), withheld: kept.toString(), forwarded: forwarded.toString(),
+        toRule: (toRule > 0n ? toRule : 0n).toString(), pending: (pending > 0n ? pending : 0n).toString(),
+      };
     }),
     launches: ownLaunches.map((l) => ({
       mint: l.mint,
@@ -98,6 +113,8 @@ creatorEarningsRoutes.get("/creators/:address/earnings", async (c) => {
       status: l.graduated ? "graduated" : (l.status ?? "live"),
       curve: byLaunch.curve.get(l.mint) ?? "0",
       pool: byLaunch.pool.get(l.mint) ?? "0",
+      destination: l.destination,
+      applied: l.destination === "wallet" ? null : (pots.get(l.mint)?.applied ?? 0n).toString(),
       tier: tiers.get(l.mint)!,
       graduationFee: graduationFeeOf(l.graduation),
     })),
@@ -127,6 +144,95 @@ creatorEarningsRoutes.get("/creators/:address/forwards", async (c) => {
       status: r.status as "sending" | "paid",
       time: (r.paidAt ?? r.createdAt).toISOString(),
     })),
+  };
+  return c.json(res);
+});
+
+/** How many of a coin's rounds and buybacks its earnings page lists; the totals count them all. */
+const EARNINGS_LIST = 10;
+
+const buybackOf = (b: typeof creatorBuybacks.$inferSelect): CreatorBuyback => ({
+  signature: b.signature,
+  kind: b.kind,
+  venue: b.venue,
+  status: b.status as "sending" | "landed",
+  spent: b.spent,
+  coins: b.coins,
+  burned: b.burned,
+  liquidity:
+    b.kind === "liquidity" && b.status === "landed" && b.lpAmount && b.feeKey && b.lockedLiquidity
+      ? { coins: b.coinsAdded ?? "0", quote: b.quoteAdded ?? "0", lpAmount: b.lpAmount, feeKey: b.feeKey, lockedLiquidity: b.lockedLiquidity }
+      : null,
+  time: (b.blockTime ?? b.createdAt).toISOString(),
+});
+
+/**
+ * Where one coin's Creator Earnings go and what has become of them (ADR 0011): the rule fixed at launch, the coin's
+ * pot, and the rule's rounds or buybacks with their transactions, so anyone can check a rule was applied.
+ */
+creatorEarningsRoutes.get("/launches/:mint/earnings", async (c) => {
+  const mint = creatorParam(c.req.param("mint")).toBase58();
+  const db = c.get("db");
+  const cfg = c.get("cfg");
+  const [row] = await db
+    .select({ launch: launches, quote: quoteAssets, graduation: graduations })
+    .from(launches)
+    .innerJoin(quoteAssets, eq(quoteAssets.mint, launches.quoteMint))
+    .leftJoin(graduations, eq(graduations.mint, launches.mint))
+    .where(eq(launches.mint, mint))
+    .limit(1);
+  if (!row) return c.json({ error: "not found" }, 404);
+  const { launch } = row;
+  const destination = launch.earningsDestination;
+  const quote = toQuoteRef(row.quote);
+  const none = { paidToHolders: "0", rounds: 0, spent: "0", buybacks: 0, burned: "0", coinsAdded: "0", quoteAdded: "0" };
+  if (destination === "wallet") {
+    const collected = (await collectedSharesByLaunch(db, [mint])).get(mint) ?? 0n;
+    const res: CoinEarnings = {
+      mint, destination, quote, collected: collected.toString(), withheld: row.graduation?.feeWithheld ?? "0", applied: null, waiting: null, minLamports: null,
+      waitsForGraduation: false, rounds: [], buybacks: [], totals: none,
+    };
+    return c.json(res);
+  }
+  const [pot] = await rulePots(db, [mint]);
+  const [rounds, [paid], buybacks, [bought]] = await Promise.all([
+    db.select().from(rewardRounds).where(and(eq(rewardRounds.mint, mint), eq(rewardRounds.source, "earnings"))).orderBy(desc(rewardRounds.startedAt)).limit(EARNINGS_LIST),
+    db
+      .select({ paid: sql<string>`coalesce(sum(${rewardRounds.paid}), 0)::text`, rounds: sql<number>`count(*)::int` })
+      .from(rewardRounds)
+      .where(and(eq(rewardRounds.mint, mint), eq(rewardRounds.source, "earnings"))),
+    db
+      .select()
+      .from(creatorBuybacks)
+      .where(and(eq(creatorBuybacks.mint, mint), inArray(creatorBuybacks.status, ["sending", "landed"])))
+      // Newest first by the row's own clock, which is strictly ordered where the chain's block time is whole seconds.
+      .orderBy(desc(creatorBuybacks.createdAt), desc(creatorBuybacks.signature))
+      .limit(EARNINGS_LIST),
+    db
+      .select({
+        spent: sql<string>`coalesce(sum(${creatorBuybacks.spent}), 0)::text`, buybacks: sql<number>`count(*)::int`,
+        burned: sql<string>`coalesce(sum(${creatorBuybacks.burned}), 0)::text`, coinsAdded: sql<string>`coalesce(sum(${creatorBuybacks.coinsAdded}), 0)::text`,
+        quoteAdded: sql<string>`coalesce(sum(${creatorBuybacks.quoteAdded}), 0)::text`,
+      })
+      .from(creatorBuybacks)
+      .where(and(eq(creatorBuybacks.mint, mint), eq(creatorBuybacks.status, "landed"))),
+  ]);
+  const res: CoinEarnings = {
+    mint,
+    destination,
+    quote,
+    collected: pot!.collected.toString(),
+    withheld: pot!.withheld.toString(),
+    applied: pot!.applied.toString(),
+    waiting: pot!.available.toString(),
+    minLamports: (destination === "liquidity" && cfg.liquidityAddMinLamports > cfg.creatorForwardMinLamports ? cfg.liquidityAddMinLamports : cfg.creatorForwardMinLamports).toString(),
+    waitsForGraduation: destination === "liquidity" && !row.graduation,
+    rounds: rounds.map((r) => roundSummary(r, payoutRef(launch, r.payoutMint, r.payoutDecimals, row.quote.symbol))),
+    buybacks: buybacks.map(buybackOf),
+    totals: {
+      paidToHolders: paid!.paid, rounds: paid!.rounds, spent: bought!.spent, buybacks: bought!.buybacks, burned: bought!.burned,
+      coinsAdded: bought!.coinsAdded, quoteAdded: bought!.quoteAdded,
+    },
   };
   return c.json(res);
 });

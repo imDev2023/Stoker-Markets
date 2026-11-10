@@ -1,7 +1,7 @@
 import type { Connection, PublicKey } from "@solana/web3.js";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { graduations, launches, ledgerEntries, quoteAssets, type Db } from "@launchpad/db";
-import { collectedSharesByLaunch, committedForwards, creatorShares, withheldGraduationFees } from "./creatorShares";
+import { collectedSharesByLaunch, committedForwards, creatorShares, rulePots, withheldGraduationFees } from "./creatorShares";
 import { lamportsWorth, quotePrices, rawWorth } from "./value";
 
 /**
@@ -23,6 +23,7 @@ const min = (a: bigint, b: bigint) => (a < b ? a : b);
  * says which is which, so the Fee Collector's sweep takes it and the Creator Forward pays the rest. Only what the
  * Creator is owed right now is taken (collected, not yet forwarded, not yet withheld), and only out of the coin's own
  * earnings; a forward is never negative, and a fee a young share cannot cover yet waits for the next collection.
+ * A coin whose earnings go to a rule (ADR 0011) pays its fee out of its own pot, before the rule's next run.
  * Idempotent: every withholding so far is on the Ledger and counted against both the fee and the share, so a second
  * run in a row withholds nothing more.
  */
@@ -31,6 +32,7 @@ export async function withholdGraduationFees(db: Db, connection: Connection, ope
     .select({
       mint: graduations.mint, signature: graduations.signature, feeLamports: graduations.feeLamports, paidLamports: graduations.feePaidLamports,
       withheld: graduations.feeWithheld, creator: launches.creator, quoteMint: launches.quoteMint, quoteDecimals: quoteAssets.decimals,
+      destination: launches.earningsDestination,
     })
     .from(graduations)
     .innerJoin(launches, eq(launches.mint, graduations.mint))
@@ -39,14 +41,17 @@ export async function withholdGraduationFees(db: Db, connection: Connection, ope
     .orderBy(graduations.slot, graduations.mint);
   if (open.length === 0) return [];
 
-  const [shares, committed, withheldSoFar, ownShares, prices] = await Promise.all([
-    creatorShares(db, { collectedOnly: true }),
+  const [shares, committed, withheldSoFar, ownShares, pots, prices] = await Promise.all([
+    creatorShares(db, { collectedOnly: true, walletOnly: true }),
     committedForwards(db),
-    withheldGraduationFees(db),
+    withheldGraduationFees(db, undefined, undefined, true),
     collectedSharesByLaunch(db, open.map((g) => g.mint)),
+    rulePots(db, open.filter((g) => g.destination !== "wallet").map((g) => g.mint)),
     quotePrices(db),
   ]);
-  // What each Creator is owed in each Quote Asset right now, which is all a fee can be taken from.
+  // What each Creator is owed in each Quote Asset right now on the coins that pay their wallet, which is all such a
+  // coin's fee can be taken from; a coin with a rule has its own pot instead.
+  const pot = new Map(pots.map((p) => [p.mint, p.available]));
   const owed = new Map(shares.map((s) => {
     const key = `${s.creator} ${s.mint}`;
     return [key, s.curve + s.pool - (committed.get(key) ?? 0n) - (withheldSoFar.get(key) ?? 0n)] as const;
@@ -58,7 +63,7 @@ export async function withholdGraduationFees(db: Db, connection: Connection, ope
   let slot: number | null = null;
   for (const g of open) {
     const key = `${g.creator} ${g.quoteMint}`;
-    const available = min(owed.get(key) ?? 0n, (ownShares.get(g.mint) ?? 0n) - BigInt(g.withheld));
+    const available = g.destination === "wallet" ? min(owed.get(key) ?? 0n, (ownShares.get(g.mint) ?? 0n) - BigInt(g.withheld)) : (pot.get(g.mint) ?? 0n);
     if (available <= 0n) continue;
     // Priced at the moment of withholding, as the forward's minimum is; an asset the registry can't price waits.
     const price = prices.get(g.quoteMint);
@@ -89,7 +94,7 @@ export async function withholdGraduationFees(db: Db, connection: Connection, ope
         })
         .where(eq(graduations.mint, g.mint));
     });
-    owed.set(key, (owed.get(key) ?? 0n) - amount);
+    if (g.destination === "wallet") owed.set(key, (owed.get(key) ?? 0n) - amount);
     result.push({ mint: g.mint, creator: g.creator, assetMint: g.quoteMint, amount: amount.toString(), lamports: lamports.toString(), settled });
   }
   return result;

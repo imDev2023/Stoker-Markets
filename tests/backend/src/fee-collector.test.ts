@@ -490,7 +490,13 @@ describe("the Ledger", () => {
         feeKey: streams.feeKey.toString(),
         total: (streams.platformFee + streams.poolFee + streams.feeKey).toString(),
         swept: total(t.asset.mint, "sweep").toString(),
-        creatorForwarded: total(t.asset.mint, "creator_forward").toString(),
+        // Every way a Creator's share leaves: a forward, a dividend to holders, a buyback (ADR 0011); a buyback's second
+        // entry is the coins, which name their own Launch and are no money out.
+        creatorForwarded: sum(
+          entries
+            .filter((e) => e.asset.mint === t.asset.mint && ["creator_forward", "holder_dividend", "creator_burn", "creator_liquidity"].includes(e.kind) && e.launch?.mint !== e.asset.mint)
+            .map((e) => BigInt(e.amount)),
+        ).toString(),
         creatorPending: expect.stringMatching(/^\d+$/),
         graduationFee: total(t.asset.mint, "graduation_fee").toString(),
       });

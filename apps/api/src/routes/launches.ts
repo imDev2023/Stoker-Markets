@@ -172,6 +172,7 @@ function toSummary(cfg: Config, r: Row, creatorTier: CoinCreatorTier | null = nu
             payout: l.rewardPayout ?? "coin",
             locked: l.rewardTaxLockedSignature && l.rewardTaxLockedAt ? { signature: l.rewardTaxLockedSignature, at: l.rewardTaxLockedAt.toISOString() } : null,
           },
+    earningsDestination: l.earningsDestination,
     market: {
       price: r.market?.price ?? null,
       marketCap: cap,

@@ -1,5 +1,5 @@
 import { Connection, PublicKey, SendTransactionError, type Keypair, type TransactionInstruction } from "@solana/web3.js";
-import { and, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, ne, or, sql } from "drizzle-orm";
 import {
   feeKeyInstructions, findFeeKeys, platformFeeClaimInstructions, poolCreatorFeeInstructions, readPlatformFeeVaults, readPoolKeys,
   readTokenHoldings, signedTransaction, simulateFeeKeyCollection, sweepInstructions, WSOL_MINT, type FeeKey, type PoolKeys, type RevenueContext,
@@ -9,8 +9,8 @@ import type { Config } from "../env";
 import { fetchRawTransaction } from "../indexer";
 import { JobFailure } from "../jobs";
 import { rewardPotLamports } from "../rewards/sales";
-import { reservedLamports } from "./budget";
-import { creatorMoney, unforwarded } from "./creatorShares";
+import { reservedLamports, REVENUE_KINDS } from "./budget";
+import { creatorMoney, creatorPaid, unforwarded } from "./creatorShares";
 import { withholdGraduationFees, type Withheld } from "./graduationFee";
 import { recordCreatorTiers, type TierReached } from "./ladder";
 import { recordRevenue, revenueContext } from "./ledger";
@@ -197,14 +197,14 @@ async function sweep(
 ) {
   const ops = operations.publicKey;
   const creators = await creatorMoney(db);
-  // Revenue still in the wallet per token: collected, less what was swept and what was forwarded to Creators.
+  // Revenue still in the wallet per token: collected, less what was swept and what has left for Creators (ADR 0011).
   const unswept = await db
     .select({
       mint: ledgerEntries.assetMint,
-      amount: sql<string>`sum(case when ${ledgerEntries.kind} in ('sweep', 'creator_forward') then -${ledgerEntries.amount} else ${ledgerEntries.amount} end)::text`,
+      amount: sql<string>`sum(case when ${ledgerEntries.kind} = 'sweep' or ${creatorPaid} then -${ledgerEntries.amount} else ${ledgerEntries.amount} end)::text`,
     })
     .from(ledgerEntries)
-    .where(and(inArray(ledgerEntries.kind, ["platform_fee", "pool_fee", "fee_key", "sweep", "creator_forward"]), ne(ledgerEntries.assetMint, WSOL)))
+    .where(and(or(inArray(ledgerEntries.kind, [...REVENUE_KINDS, "sweep"]), creatorPaid), ne(ledgerEntries.assetMint, WSOL)))
     .groupBy(ledgerEntries.assetMint)
     .orderBy(sql`min(${ledgerEntries.slot})`, ledgerEntries.assetMint);
   const owed = new Map(

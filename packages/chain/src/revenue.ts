@@ -314,11 +314,13 @@ function unwrapSol(owner: PublicKey, mints: PublicKey[]) {
 /** A transaction signed by one key, ready to send, and its signature, known before it is sent. */
 export async function signedTransaction(
   connection: Connection, signer: Keypair, instructions: TransactionInstruction[], lookupTables: AddressLookupTableAccount[] = [],
+  /** Keys that sign beside the payer, such as the mint of an account the transaction creates. */
+  extraSigners: Keypair[] = [],
 ) {
   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
   const message = new TransactionMessage({ payerKey: signer.publicKey, recentBlockhash: blockhash, instructions }).compileToV0Message(lookupTables);
   const tx = new VersionedTransaction(message);
-  tx.sign([signer]);
+  tx.sign([signer, ...extraSigners]);
   return { serialized: tx.serialize(), signature: bs58.encode(tx.signatures[0]!), lastValidBlockHeight };
 }
 
