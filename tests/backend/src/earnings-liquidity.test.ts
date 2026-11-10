@@ -5,15 +5,16 @@
 // Fee Collector then collects beside those of the position Raydium's migration locked. Every figure is checked against
 // the chain: what an addition does to a pool is worked out here from the pool as it stood, to the unit.
 import { describe, expect, it } from "vitest";
-import { PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction, type Keypair } from "@solana/web3.js";
+import { AddressLookupTableProgram, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction, type Keypair } from "@solana/web3.js";
 import { ACCOUNT_SIZE, createBurnCheckedInstruction, getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import BN from "bn.js";
 import {
-  liquidityCoinAccount, loadPool, lockCoder, lockPdas, planLiquidityAddition, poolSides, programsFor, LIQUIDITY_DEPOSIT_SLACK_BPS, WSOL_MINT,
+  liquidityCoinAccount, liquidityLookupAddresses, loadPool, lockCoder, lockPdas, planLiquidityAddition, poolSides, programsFor, LIQUIDITY_DEPOSIT_SLACK_BPS, WSOL_MINT,
   type LiquidityAddition, type Pool,
 } from "@launchpad/chain";
 import { CoinEarnings, CoinRewards, CreatorForwardList, JobRun, LedgerPage } from "@launchpad/contract";
-import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
+import { CPSWAP_CONFIG, LOCAL_QUOTES, localnetKeys, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
+import { freePort, startApi } from "@launchpad/stack";
 import { SOL, coinsOf, connection, deliverWebhook, env, fundedWallet, launch, quote, tokenBalance, trade, trades, uniqueTag } from "./client";
 
 const programs = programsFor("localnet");
@@ -452,6 +453,68 @@ describe("transfer fees", () => {
     // What left the wallet is what the pot was charged, issuer's fee included, and never more than the pot held.
     expect(spent).toBeLessThanOrEqual(BigInt(pot.waiting!));
     expect((await connection().getAccountInfo(getAssociatedTokenAddressSync(TAXQ, ops(), true, TOKEN_2022_PROGRAM_ID), "confirmed"))!.owner.equals(TOKEN_2022_PROGRAM_ID)).toBe(true);
+    await collect();
+  });
+});
+
+describe("a Platform Lookup Table made before there was a liquidity rule", () => {
+  // Devnet's and mainnet's tables were built from a launch's accounts alone, and on mainnet the key that can extend the
+  // table lives only in the Worker. So the rule adds the three addresses an addition names itself, and adds the
+  // liquidity on a later run, once a transaction can rely on them.
+  it("is extended by the rule itself, and the addition then lands on a later run", { timeout: 300_000 }, async () => {
+    const h = env();
+    const conn = connection();
+    const { operations } = localnetKeys();
+    const owner = operations.publicKey;
+    const real = (await conn.getAddressLookupTable(new PublicKey(h.apiVars.PLATFORM_LOOKUP_TABLE!), { commitment: "confirmed" })).value!;
+    const extra = liquidityLookupAddresses({ cpmm: programs.cpmm, lock: programs.lock, cpswapConfig: CPSWAP_CONFIG });
+    const older = real.state.addresses.filter((a) => !extra.some((e) => e.equals(a)));
+    expect(real.state.addresses.length - older.length).toBe(extra.length);
+    // A table as those clusters have it: everything the local one holds but the three.
+    const [create, table] = AddressLookupTableProgram.createLookupTable({ authority: owner, payer: owner, recentSlot: await conn.getSlot("finalized") });
+    await sendAndConfirmTransaction(conn, new Transaction().add(create), [operations]);
+    for (let i = 0; i < older.length; i += 25)
+      await sendAndConfirmTransaction(
+        conn, new Transaction().add(AddressLookupTableProgram.extendLookupTable({ payer: owner, authority: owner, lookupTable: table, addresses: older.slice(i, i + 25) })), [operations],
+      );
+    const stateOfTable = async () => (await conn.getAddressLookupTable(table, { commitment: "confirmed" })).value!.state;
+    /** Until a transaction can rely on the table's latest entries: the rule waits 64 slots after an extension. */
+    const settled = async () => {
+      const { lastExtendedSlot } = await stateOfTable();
+      while ((await conn.getSlot("confirmed")) < lastExtendedSlot + 64) await new Promise((r) => setTimeout(r, 400));
+    };
+
+    const coin = await liquidityCoin();
+    const pool = await graduate(coin, SOL(2));
+    await collect();
+    await settled();
+    const other = await startApi({ port: await freePort(), databaseUrl: h.databaseUrl, vars: { ...h.apiVars, PLATFORM_LOOKUP_TABLE: table.toBase58() } });
+    try {
+      const forward = async () => {
+        const res = await fetch(`${other.url}/v1/operator/jobs/creator-forward`, { method: "POST", headers: operator() });
+        return (JobRun.parse(await res.json()).summary as Forwarded).rules;
+      };
+      // The first run finds the three missing, adds them to the table, and adds nothing to the pool yet.
+      const first = await forward();
+      expect(first.buybacks.filter((b) => b.mint === coin.mint)).toEqual([]);
+      expect(first.skipped.find((s) => s.mint === coin.mint)?.reason, JSON.stringify(first)).toMatch(/^the Platform Lookup Table gained 3 addresses an addition names/);
+      const extended = await stateOfTable();
+      expect(extended.addresses).toHaveLength(older.length + extra.length);
+      expect(extended.addresses.slice(-extra.length).map((a) => a.toBase58()).sort()).toEqual(extra.map((a) => a.toBase58()).sort());
+      expect(await positionsOf(pool)).toHaveLength(1);
+
+      // Once the new entries have settled, the next run adds the liquidity, through the table, and extends nothing more.
+      await settled();
+      const later = await forward();
+      expect(later.problems.filter((p) => p.includes(coin.mint))).toEqual([]);
+      expect(later.buybacks.filter((b) => b.mint === coin.mint), JSON.stringify(later)).toMatchObject([{ kind: "liquidity", venue: "pool", outcome: "landed" }]);
+      expect((await stateOfTable()).addresses).toHaveLength(older.length + extra.length);
+      expect(await positionsOf(pool)).toHaveLength(2);
+      expect((await earningsOf(coin.mint)).totals.buybacks).toBe(1);
+    } finally {
+      await other.stop();
+    }
+    // The new position's first look happens here, not in another file's run of the collector.
     await collect();
   });
 });
