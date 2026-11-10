@@ -650,7 +650,9 @@ export async function bootstrapPlatform(connection: Connection, rpcUrl: string, 
   }
   // SOL first: a SOL launch with a First Buy only fits a transaction with SOL's accounts in the table.
   const quotes = [WSOL_MINT, ...lookupQuoteMints(set)].map((quoteMint) => ({ quoteMint, globalConfig: launchlabPdas(program).globalConfig(quoteMint) }));
-  const lookupTable = await ensureLookupTable(connection, operations, platformLookupAddresses(program, platformConfig, quotes));
+  // With what a liquidity addition to a graduated pool names (ADR 0011), which only fits a transaction through the table.
+  const pools = { cpmm: programsFor("localnet").cpmm, lock: programsFor("localnet").lock, cpswapConfig: CPSWAP_CONFIG };
+  const lookupTable = await ensureLookupTable(connection, operations, platformLookupAddresses(program, platformConfig, quotes, pools));
   return {
     rpcUrl,
     launchlab: program.toBase58(),

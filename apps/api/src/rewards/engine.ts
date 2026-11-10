@@ -456,7 +456,10 @@ export async function taxWaiting(connection: Connection, operationsWallet: Publi
   const accounts = await readCoinAccounts(connection, mint, TOKEN_2022_PROGRAM_ID);
   const inAccounts = accounts.reduce((s, a) => s + a.withheld, 0n);
   const inMint = getTransferFeeConfig(await getMint(connection, mint, "confirmed", TOKEN_2022_PROGRAM_ID))?.withheldAmount ?? 0n;
-  const held = accounts.find((a) => a.owner.equals(operationsWallet))?.amount ?? 0n;
+  // The wallet's associated account, where the tax is withdrawn to. The wallet can own a second account of the coin,
+  // the liquidity rule's own (ADR 0011), and the coins waiting there for the next addition are no tax.
+  const collected = getAssociatedTokenAddressSync(mint, operationsWallet, false, TOKEN_2022_PROGRAM_ID);
+  const held = accounts.find((a) => a.address.equals(collected))?.amount ?? 0n;
   return { inAccounts, inMint, held, total: inAccounts + inMint + held };
 }
 

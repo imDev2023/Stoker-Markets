@@ -61,3 +61,10 @@ export {
 } from "./trade";
 export { buyExactOutInstructions, curveBuyExactOutIx } from "./trade";
 export { quoteBuyExactOut } from "./curve";
+export { depositIx } from "./cpmm";
+export { liquidityLookupAddresses, type LookupPools } from "./lookup";
+export {
+  decodeLiquidityAddition, graduatedPool, liquidityAddInstructions, liquidityCoinAccount, lockCpLiquidityIx, lockedPositionOf, openSeededTokenAccount,
+  planLiquidityAddition, poolAfterSwap, poolDeposit, LIQUIDITY_BUY_SLIPPAGE_BPS, LIQUIDITY_DEPOSIT_SLACK_BPS,
+  type DepositSide, type LiquidityAdded, type LiquidityAddition, type LiquidityAddRequest, type PoolDeposit,
+} from "./liquidity";
