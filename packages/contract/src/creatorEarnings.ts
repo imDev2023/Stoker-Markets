@@ -146,7 +146,7 @@ export const CoinEarnings = z.object({
   buybacks: z.array(CreatorBuyback),
   /** All-time totals of what has landed. */
   totals: z.object({
-    /** `holders`: paid to holders, and the rounds that paid it. */
+    /** `holders`: paid to holders so far, and the earnings rounds there have been, the one still paying included. */
     paidToHolders: raw,
     rounds: z.number().int(),
     /** `burn` and `liquidity`: Quote Asset spent on buybacks, and how many landed. */
