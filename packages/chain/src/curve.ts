@@ -121,6 +121,33 @@ function quoteSellExactIn(c: CurveReserves, rates: FeeRates, amountIn: BN, trans
   };
 }
 
+/**
+ * Buying exactly `amountOut` coins (`buy_exact_out`), the inverse of spending an amount: `amountOut` is what reaches the
+ * buyer, so the curve pays out enough for it to arrive after the coin's own transfer fee, is paid what those coins cost
+ * with the fees on top, and the buyer sends enough for that to arrive after the Quote Asset's transfer fee. `amountIn`
+ * is what leaves the buyer, which the program checks against the buy's `maximum_amount_in`. Null when the curve has
+ * fewer coins left to sell than it would have to pay out, or when nothing is asked for.
+ */
+export function quoteBuyExactOut(c: CurveReserves, rates: FeeRates, amountOut: BN, transfer: TradeTransferFees = {}): TradeQuote | null {
+  const rate = totalRate(rates);
+  const inputReserve = c.virtualQuote.add(c.realQuote);
+  const outputReserve = c.virtualBase.sub(c.realBase);
+  const out = grossForNet(amountOut, transfer.base ?? null);
+  if (out.isZero() || out.gt(c.totalBaseSell.sub(c.realBase))) return null;
+  const net = ceilDiv(inputReserve.mul(out), outputReserve.sub(out));
+  const arrived = ceilDiv(net.mul(DENOMINATOR), DENOMINATOR.sub(rate));
+  const paid = grossForNet(arrived, transfer.quote ?? null);
+  return {
+    side: "buy",
+    amountIn: paid,
+    amountOut,
+    programAmountOut: out,
+    fees: splitFee(arrived.sub(net), rates),
+    transferFees: { quote: paid.sub(arrived), base: out.sub(amountOut) },
+    after: { ...c, realBase: c.realBase.add(out), realQuote: c.realQuote.add(net) },
+  };
+}
+
 /** Prices a buy or sell on a curve, allowing for the transfer fees of the coin and its Quote Asset, if they carry any. */
 export function quoteTrade(c: CurveReserves, rates: FeeRates, side: Side, amountIn: BN, transfer: TradeTransferFees = {}): TradeQuote {
   return side === "buy" ? quoteBuyExactIn(c, rates, amountIn, transfer) : quoteSellExactIn(c, rates, amountIn, transfer);
