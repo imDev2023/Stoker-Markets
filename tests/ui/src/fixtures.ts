@@ -7,7 +7,7 @@ import {
   Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, VersionedTransaction, sendAndConfirmTransaction,
 } from "@solana/web3.js";
 import { createAssociatedTokenAccountIdempotentInstruction, createTransferInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { LaunchList, PreparedAirdrop, PreparedLaunch, PreparedTrade, type TradeSide } from "@launchpad/contract";
+import { CoinEarnings, LaunchList, PreparedAirdrop, PreparedLaunch, PreparedTrade, type TradeSide } from "@launchpad/contract";
 import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
 import { swapThroughSolRoute } from "@launchpad/localnet/routes";
 import { FEE_COLLECTOR_CRON, type StackEnv } from "@launchpad/stack";
@@ -98,6 +98,8 @@ export type LaunchFields = {
   /** A Reward Launch: its Reward Tax in basis points, and its Payout Asset ("coin" unless set). */
   rewardTax?: string;
   rewardPayout?: string;
+  /** Where the Creator's earnings on the coin go (ADR 0011): the wallet unless set. */
+  earningsDestination?: "wallet" | "holders" | "burn" | "liquidity";
 };
 
 /** What a wallet does with a transaction the API prepared: sign, send, wait for confirmation, then report it for indexing. */
@@ -113,6 +115,13 @@ async function signSendReport(prepared: { transaction: string; lastValidBlockHei
   if (result.value.err) throw new Error(`transaction ${signature} failed: ${JSON.stringify(result.value.err)}`);
   await fetch(`${stackEnv().apiUrl}/v1/transactions/${signature}`, { method: "POST" });
   return signature;
+}
+
+/** Where a coin's Creator Earnings go and what its rule has done with them (ADR 0011), as the API answers any client. */
+export async function coinEarnings(mint: string) {
+  const res = await fetch(`${stackEnv().apiUrl}/v1/launches/${mint}/earnings`);
+  if (!res.ok) throw new Error(`reading the earnings of ${mint} failed: ${res.status} ${await res.text()}`);
+  return CoinEarnings.parse(await res.json());
 }
 
 /** Operator: allows a Creator wallet an airdrop at launch. Nobody may have one, or sees the option on the form, until then. */
@@ -216,7 +225,9 @@ export async function moveSolRoute(quote: "USDC" | "JTO", lamports: bigint) {
 
 /**
  * Runs the Fee Collector's Cron Trigger, as its hourly schedule would: the Fee Collector, then the Creator Forward, which
- * sends Creators their share of what was collected. Fails unless both runs succeeded.
+ * sends Creators their share of what was collected and applies the rule of every coin whose earnings go elsewhere
+ * (ADR 0011): it opens a round for a coin that pays its holders, which the Reward Engine then pays (`runRewardRounds`),
+ * and buys back for a coin that burns or adds liquidity. Fails unless both runs succeeded.
  */
 export async function runFeeCollector() {
   const { apiUrl, operatorToken } = stackEnv();
