@@ -71,8 +71,8 @@ test("a Creator points a coin's earnings at its holders on the launch form, and 
   // The card: what the rule does, that the platform's job applies it with every action on the Ledger, and, before
   // anything is collected, nothing to list.
   await expect(card(page)).toHaveAttribute("data-earnings-rule", "holders");
-  await expect(card(page)).toContainText("Paid to holders");
-  await expect(card(page)).toContainText("The Creator of SHARE pointed their earnings on it at its holders when they launched it, for good.");
+  await expect(card(page)).toContainText("To holders");
+  await expect(card(page)).toContainText("At launch, the Creator of SHARE pointed their earnings on this coin at its holders, for good.");
   await expect(card(page)).toContainText("No program on the chain enforces this: the platform's scheduled job applies it");
   await expect(card(page).getByRole("link", { name: "Ledger" })).toHaveAttribute("href", "/revenue#ledger-title");
   await expect(card(page).locator("[data-earnings-waiting]")).toHaveText(
@@ -107,7 +107,7 @@ test("a coin pointed at liquidity keeps its earnings waiting for its pool, and i
     "Kept until the coin graduates, then added to its pool as liquidity locked for good, as its Creator fixed at launch.",
   );
   await expect(card(page)).toHaveAttribute("data-earnings-rule", "liquidity");
-  await expect(card(page)).toContainText("Added as liquidity");
+  await expect(card(page)).toContainText("To liquidity");
   await expect(card(page)).toContainText("A coin has no pool until it graduates, so until then the earnings wait.");
   await expect(fact(page, "Collected so far")).toHaveText(shown(toRule));
   await expect(fact(page, "Waiting for the pool")).toHaveText(shown(toRule));
@@ -122,7 +122,7 @@ test("a coin pointed at liquidity keeps its earnings waiting for its pool, and i
   await connectTestWallet(page, page.getByRole("main").getByRole("button", { name: "Connect wallet" }));
   const pooledRow = page.getByRole("link", { name: /DEND\s*Deep End/ });
   await expect(pooledRow).toContainText("Earning on its curve");
-  await expect(pooledRow.locator('[data-earnings="liquidity"]')).toHaveText("Added as liquidity");
+  await expect(pooledRow.locator('[data-earnings="liquidity"]')).toHaveText("To liquidity");
   await expect(page.getByRole("link", { name: /PLAIN\s*Plain Sailing/ }).locator("[data-earnings]")).toHaveCount(0);
   const asset = page.getByRole("region", { name: "SOL" });
   await expect(asset.getByText("Sent by the platform").locator("xpath=following-sibling::dd")).toHaveText(`${sol(toWallet)} SOL`);
@@ -164,7 +164,7 @@ test("a coin's earnings are paid to its holders in a round, and the round's page
   // The round's page: its pot is the Creator's earnings, in SOL, never "collected tax" in the coin.
   await page.waitForURL(`**/rewards/rounds/${round.id}`);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("PURSE round of");
-  await expect(page.getByText("The Creator of PURSE pointed their earnings on it at its holders when they launched it.")).toBeVisible();
+  await expect(page.getByText("At launch, the Creator of PURSE pointed their earnings on this coin at its holders.")).toBeVisible();
   const facts = page.getByRole("region", { name: "Paid in full" });
   await expect(facts.getByText("Creator's earnings", { exact: true }).locator("xpath=following-sibling::dd")).toHaveText(`${sol(share - (share % 100_000n))} SOL`);
   await expect(facts).not.toContainText("tax");

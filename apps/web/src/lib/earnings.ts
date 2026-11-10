@@ -36,11 +36,14 @@ export const DESTINATION_SUMMARY: Record<EarningsRule, string> = {
   liquidity: "added as locked liquidity",
 };
 
-/** A rule as a state, short enough for a tag or a pill: what becomes of the coin's earnings. */
+/**
+ * A rule short enough for a tag or a pill: where the coin's earnings go. Never in the past tense: a coin carries its
+ * tag from its launch, before its rule has done anything.
+ */
 export const DESTINATION_TAGS: Record<EarningsRule, string> = {
-  holders: "Paid to holders",
-  burn: "Bought back and burned",
-  liquidity: "Added as liquidity",
+  holders: "To holders",
+  burn: "To buyback and burn",
+  liquidity: "To liquidity",
 };
 
 /** What a rule has done with a coin's earnings so far, after the amount: "0.02 SOL paid to holders so far". */

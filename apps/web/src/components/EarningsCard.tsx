@@ -43,18 +43,18 @@ export function EarningsCard({ earnings, symbol, platform }: { earnings: CoinEar
       <p className={styles.note}>
         {rule === "holders" ? (
           <>
-            The Creator of {symbol} pointed their earnings on it at its holders when they launched it, for good. What the platform collects
-            for the Creator is paid in {quote} to every wallet holding at least the minimum, by the size of its holding.
+            At launch, the Creator of {symbol} pointed their earnings on this coin at its holders, for good. What the platform collects for
+            the Creator is paid in {quote} to every wallet holding at least the minimum, by the size of its holding.
           </>
         ) : rule === "burn" ? (
           <>
-            The Creator of {symbol} pointed their earnings on it at a buyback when they launched it, for good. What the platform collects
-            for the Creator buys {symbol} in its own market, on the curve or in its pool, and burns every coin it buys.
+            At launch, the Creator of {symbol} pointed their earnings on this coin at a buyback, for good. What the platform collects for
+            the Creator buys {symbol} in its own market, on the curve or in its pool, and burns every coin it buys.
           </>
         ) : (
           <>
-            The Creator of {symbol} pointed their earnings on it at its liquidity when they launched it, for good. What the platform
-            collects for the Creator buys {symbol} in its pool, pairs it with {quote} and adds both to the pool, locked for good.
+            At launch, the Creator of {symbol} pointed their earnings on this coin at its liquidity, for good. What the platform collects
+            for the Creator buys {symbol} in its pool, pairs it with {quote} and adds both to the pool, locked for good.
             {earnings.waitsForGraduation && <> A coin has no pool until it graduates, so until then the earnings wait.</>}
           </>
         )}

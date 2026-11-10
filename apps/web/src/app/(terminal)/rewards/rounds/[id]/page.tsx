@@ -36,8 +36,8 @@ export default async function RewardRoundPage({ params }: Props) {
       </h1>
       {round.source === "earnings" && (
         <p className={styles.lead}>
-          The Creator of {symbol} pointed their earnings on it at its holders when they launched it. This round pays what the platform
-          had collected for the Creator to every eligible holder, in {round.payout.symbol}.
+          At launch, the Creator of {symbol} pointed their earnings on this coin at its holders. This round pays what the platform had
+          collected for the Creator to every eligible holder, in {round.payout.symbol}.
         </p>
       )}
       <section className={`card ${styles.card}`} aria-labelledby="round-title">
