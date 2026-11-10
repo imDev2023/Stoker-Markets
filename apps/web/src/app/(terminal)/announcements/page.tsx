@@ -1,23 +1,26 @@
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/meta";
 import Link from "next/link";
-import { getBudgets, getPlatform, listAnnouncements } from "@/lib/api";
+import { getBudgets, getCreatorLadder, getPlatform, listAnnouncements } from "@/lib/api";
 import { budgetLine } from "@/lib/budget";
 import { explorerUrl, formatUtc } from "@/lib/format";
+import { ladderLine } from "@/lib/ladder";
 import styles from "../rewards/page.module.css";
 
 export const metadata: Metadata = pageMeta({
   path: "/announcements",
   title: "Fee changes",
-  description: "Every announced change to the Platform Fee or Creator Fee, and to how the platform's own share is divided, before it applies and after.",
+  description: "Every announced change to the Platform Fee or Creator Fee, to the Creator's share and to how the platform's own share is divided, before it applies and after.",
 });
 
 /** Every fee change ever announced, public: a change to every live curve at once is announced ahead and recorded after. */
 export default async function AnnouncementsPage() {
-  const [list, platform, budgets] = await Promise.all([listAnnouncements(), getPlatform(), getBudgets()]);
+  const [list, platform, budgets, ladder] = await Promise.all([listAnnouncements(), getPlatform(), getBudgets(), getCreatorLadder()]);
   const now = Date.now();
   // The first version is how the share was divided from the start; every later one was announced here first (ADR 0019).
   const tables = budgets.versions.filter((v) => v.version > 1).reverse();
+  // Likewise the Creator Ladder: the first version is the ladder coins started on (ADR 0020).
+  const ladders = ladder.versions.filter((v) => v.version > 1).reverse();
   return (
     <div className={`shell ${styles.page}`}>
       <h1 className={`t-h1 ${styles.title}`}>Fee changes</h1>
@@ -45,6 +48,32 @@ export default async function AnnouncementsPage() {
                     )}
                   </span>
                   <span className={styles.when}>announced {formatUtc(a.announcedAt)}</span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+      <section className={`card ${styles.card}`} aria-labelledby="ladder-title">
+        <h2 id="ladder-title" className={`t-h3 ${styles.cardTitle}`}>The Creator&apos;s share</h2>
+        <p className={styles.note}>
+          A Creator&apos;s share of their coin&apos;s fees climbs with the coin by the Creator Ladder, shown on the{" "}
+          <Link href="/fees#creator-ladder">Fees page</Link>. A new ladder is announced here at least a day ahead and applies only to what is
+          collected from its date on; a coin keeps every tier it has reached.
+        </p>
+        {ladders.length === 0 ? (
+          <p className={styles.note}>The ladder has not changed since the start.</p>
+        ) : (
+          <ul className={styles.list}>
+            {ladders.map((v) => {
+              const state = v.version === ladder.inForce ? "in force" : new Date(v.effectiveAt).getTime() > now ? "announced" : "replaced";
+              return (
+                <li key={v.version}>
+                  <span>
+                    {ladderLine(v)}, from {formatUtc(v.effectiveAt)} ({state})
+                    {v.note && <> · {v.note}</>}
+                  </span>
+                  <span className={styles.when}>announced {formatUtc(v.announcedAt)}</span>
                 </li>
               );
             })}

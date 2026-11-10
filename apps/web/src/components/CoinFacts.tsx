@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { LaunchSummary, LaunchTrust, PlatformInfo } from "@launchpad/contract";
 import { explorerUrl, formatDuration, formatShare, formatUnits, formatUtc, quoteTicker, SOL_DECIMALS } from "@/lib/format";
+import { TIER_NAMES, tierProgress } from "@/lib/ladder";
 import { LINK_KINDS, type LinkKind } from "@/lib/links";
 import { Address } from "./Address";
 import { CopyButton } from "./CopyButton";
@@ -12,7 +13,7 @@ import styles from "./CoinFacts.module.css";
 /**
  * The About block and the addresses, under the trade panel and the pair card (owner, 2026-10-31): the description, the
  * launch's details, what the Creator earns (in words: the Fees page is the one place a fee figure is shown, owner
- * 2026-10-30) and the Graduation Fee once there is one, the liquidity's state, the dates, the Copy Protection's length and end, the
+ * 2026-10-30; after graduation the coin's tier on the Creator Ladder with its Active Days, ADR 0020) and the Graduation Fee once there is one, the liquidity's state, the dates, the Copy Protection's length and end, the
  * coin's own links and the aggregators, then every address with its copy button. Drawn on the client from data like the
  * rest of the market: a server-rendered tree handed through the client boundary as a prop warned about missing keys on
  * the page with an Airdrop to send (2026-10-31), the same trap the pair card met.
@@ -26,6 +27,8 @@ export function CoinFacts({ launch, platform, trust, renderedAt }: {
   renderedAt: number;
 }) {
   const quote = quoteTicker(launch.quote);
+  // A graduated coin's place on the Creator Ladder (ADR 0020); null on the curve, where every coin is on the first tier.
+  const tier = launch.graduation?.creatorTier ?? null;
   const protectionOpen = new Date(launch.protection.until).getTime() <= renderedAt;
   // The window's length as well as its end: a short window ends the minute the coin launched, which read as the same date twice (owner, 2026-10-31).
   const protectionLength = formatDuration(new Date(launch.protection.until).getTime() - new Date(launch.createdAt).getTime());
@@ -86,10 +89,28 @@ export function CoinFacts({ launch, platform, trust, renderedAt }: {
           )}
           <div>
             <dt>Creator earns</dt>
-            <dd>
-              Half of what the platform collects on this coin
-              <span>Sent to the Creator&apos;s wallet with nothing to claim, on the curve and after graduation. <Link href="/fees">Every fee, explained</Link></span>
-            </dd>
+            {tier ? (
+              // Graduated: the coin's place on the Creator Ladder, in words (ADR 0020); the shares are the Fees page's.
+              <dd data-creator-tier={tier.tier}>
+                {tier.tier === 1 ? "Half of what the platform collects on this coin" : `${TIER_NAMES[tier.tier]} of the Creator Ladder: more than half of this coin’s pool fees`}
+                <span>
+                  {tier.tier === 1 ? (
+                    `${TIER_NAMES[1]} of the Creator Ladder, ${tierProgress(tier)}.`
+                  ) : (
+                    <>
+                      Reached{tier.reachedAt && <> <time dateTime={tier.reachedAt}>{formatUtc(tier.reachedAt)}</time></>}
+                      {tier.next ? `; ${tierProgress(tier)}.` : `, after ${tier.activeDays} Active Days.`}
+                    </>
+                  )}{" "}
+                  Sent to the Creator&apos;s wallet with nothing to claim. <Link href="/fees#creator-ladder">Every fee, explained</Link>
+                </span>
+              </dd>
+            ) : (
+              <dd>
+                Half of what the platform collects on this coin
+                <span>Sent to the Creator&apos;s wallet with nothing to claim, on the curve and after graduation. <Link href="/fees">Every fee, explained</Link></span>
+              </dd>
+            )}
           </div>
           {launch.graduation?.fee && (
             <div>

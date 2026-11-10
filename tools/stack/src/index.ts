@@ -66,6 +66,8 @@ export type StackEnv = {
   referralShareBps: number;
   /** How long before it applies a fee change must be announced; short, so a test can wait it out. */
   feeChangeLeadSeconds: number;
+  /** The Creator Ladder's Active Day in seconds (ADR 0020): a UTC day unless the stack was started with a shorter one. */
+  activeDaySeconds: number;
   platform: LocalnetState;
   /** The Raydium CPMM pools of SOL the API routes buys paid with SOL through, standing in for Jupiter. */
   solRoutes: SolRoutes;
@@ -87,6 +89,11 @@ export type StackOptions = {
    * keeps it short enough to see a buy fall outside it; the UI suite makes it long enough to hold every seeded trade.
    */
   snipeWindowSlots?: number;
+  /**
+   * The Creator Ladder's Active Day in seconds (ADR 0020); a UTC day unless set, as in production, so no coin of a run
+   * ever counts a second day. The backend suite shortens it to see a coin climb.
+   */
+  activeDaySeconds?: number;
   web?: boolean;
 };
 
@@ -412,6 +419,7 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       // A test visits from any country by naming it in this header; Cloudflare's reading is what production uses.
       COUNTRY_HEADER: "x-test-country",
       SNIPE_WINDOW_SLOTS: String(opts.snipeWindowSlots ?? 40),
+      ...(opts.activeDaySeconds ? { ACTIVE_DAY_SECONDS: String(opts.activeDaySeconds) } : {}),
       // Three top Launches, so a test can see one picked and one left out.
       FLYWHEEL_TOP_N: "3",
       // Tiny, so the Flywheel buys on the little revenue a test run makes.
@@ -475,7 +483,7 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
         apiUrl, webUrl, rpcUrl: chain.rpcUrl, databaseUrl: pg.url, webhookSecret: WEBHOOK_SECRET, operatorToken: OPERATOR_TOKEN,
         alertSinkUrl: sink.url, heliusApiUrl: helius.url, heliusApiKey: HELIUS_API_KEY, heliusWebhookId: HELIUS_WEBHOOK_ID,
         turbo: { url: turbo.url, depositAddress: turbo.depositAddress }, x: { url: x.url, apiKey: x.apiKey }, arweaveTopUpLamports,
-        graduationAlertAfterSeconds, poolBackfillSeconds, ...fees, referralShareBps, feeChangeLeadSeconds, platform, solRoutes, webApiKey, apiVars: vars,
+        graduationAlertAfterSeconds, poolBackfillSeconds, ...fees, referralShareBps, feeChangeLeadSeconds, activeDaySeconds: opts.activeDaySeconds ?? 86_400, platform, solRoutes, webApiKey, apiVars: vars,
       },
       stop,
     };

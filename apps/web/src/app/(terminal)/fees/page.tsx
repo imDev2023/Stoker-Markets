@@ -6,6 +6,7 @@ import { getBurns, getPlatform } from "@/lib/api";
 import { BUDGET_ROW_LABELS, budgetLine } from "@/lib/budget";
 import { graduationFeeSol, pct } from "@/lib/fees";
 import { formatUtc } from "@/lib/format";
+import { ladderLine, poolBpsAt, TIER_NAMES } from "@/lib/ladder";
 import { JUPITER_REFERRAL, JUPITER_REFERRAL_FEE_BPS, JUPITER_REFERRAL_KEEP_BPS } from "@/lib/jupiterReferral";
 import styles from "./page.module.css";
 
@@ -19,9 +20,10 @@ type Row = { fee: string; amount: ReactNode; note?: ReactNode; pays: ReactNode; 
 /**
  * The Fees page (owner, 2026-10-30): the one place on the site that shows a fee figure. One table of every fee, each
  * with who pays it, when, in what asset and who receives it; every figure from `GET /v1/platform`, never a constant,
- * so a fee change shows here the moment the chain has it. Under it, the Budget Table (ADR 0019): how what the platform
- * keeps after the Creators' share is divided, the version in force and any announced for later. Everywhere else the
- * site says what a fee is for and links here.
+ * so a fee change shows here the moment the chain has it. Under it, the Creator Ladder (ADR 0020): the Creator's share
+ * of a coin's fees by the coin's tier, and the Budget Table (ADR 0019): how what the platform keeps after the Creators'
+ * share is divided; each as the version in force and any announced for later. Everywhere else the site says what a
+ * fee is for and links here.
  */
 export default async function FeesPage() {
   const [platform, burns] = await Promise.all([getPlatform(), getBurns().catch(() => null)]);
@@ -31,6 +33,12 @@ export default async function FeesPage() {
   const lpShare = (platform.raydiumFee.poolBps * platform.raydiumFee.poolLpShareBps) / 10_000;
   const referralToPlatform = (JUPITER_REFERRAL_FEE_BPS * (10_000 - JUPITER_REFERRAL_KEEP_BPS)) / 10_000;
   const shares = platform.budgetTable.inForce.shares;
+  const ladder = platform.creatorForward.ladder;
+  // What each tier is worth to a Creator: the first on either venue, the higher ones in the pool alone.
+  const tierWorth = (tier: (typeof ladder.inForce.tiers)[number]) =>
+    tier.tier === 1
+      ? `From the coin’s launch: ${pct(platform.creatorForward.curveBps)} of every trade on the curve, and ${pct(poolBpsAt(platform, tier.shareBps))} of every trade in the pool after it graduates.`
+      : `After ${tier.activeDays} Active Days: ${pct(poolBpsAt(platform, tier.shareBps))} of every trade in the pool.`;
   // A trader program's row has no share until the program is built (ADR 0019); the row says so rather than hiding.
   const program = (what: string, row: BudgetRow) => (shares[row] > 0 ? what : `${what} Not built yet, so nothing is set aside for it.`);
   const uses: Record<BudgetRow, string> = {
@@ -128,13 +136,13 @@ export default async function FeesPage() {
         <>
           The platform is every graduated pool&apos;s creator and collects it. Raydium keeps {pct(platform.poolCreatorFeeShareBps)} of the fee
           ({pct(raydiumKeeps)} of the trade) at collection; half of what arrives, {pct(platform.creatorForward.poolBps)} of the trade, is forwarded to the
-          coin&apos;s Creator as Creator Earnings.
+          coin&apos;s Creator as Creator Earnings, and more as the coin climbs the <a href="#creator-ladder">Creator Ladder</a>.
         </>
       ),
       pays: "The trader",
       when: "Every trade after the coin has graduated to its Raydium pool",
       asset: "The asset going into the pool: the Quote Asset on a buy, the coin on a sell",
-      receives: "The platform, half of what arrives forwarded to the Creator; Raydium keeps its share",
+      receives: "The platform, half or more of what arrives forwarded to the Creator; Raydium keeps its share",
     },
     {
       fee: "Pool trade fee",
@@ -221,7 +229,8 @@ export default async function FeesPage() {
       <p className={styles.lead}>
         Every fee a visitor can pay on Stoker, in one place: who pays it, when, in what asset and who receives it. Each figure is read from
         the chain through the API as this page is opened, so what you see is what a transaction pays now. Half of what the platform collects
-        on a coin&apos;s trades is its Creator&apos;s, and every payment is on the public <Link href="/revenue">Ledger</Link>.
+        on a coin&apos;s trades is its Creator&apos;s, more once the coin has graduated and keeps trading, and every payment is on the public{" "}
+        <Link href="/revenue">Ledger</Link>.
       </p>
       <p className={styles.dated}>
         Figures as of <time dateTime={now}>{formatUtc(now)}</time>. A change to the Platform Fee or Creator Fee is announced ahead under{" "}
@@ -258,11 +267,42 @@ export default async function FeesPage() {
         </table>
       </section>
 
+      <section id="creator-ladder" className={`card ${styles.card}`} aria-labelledby="ladder-title">
+        <h2 id="ladder-title" className={`t-h3 ${styles.cardTitle}`}>What a Creator earns: the Creator Ladder</h2>
+        <p className={styles.words}>
+          Every coin starts on the first tier: half of what the platform collects on its trades is its Creator&apos;s, on the curve and after
+          it graduates. A graduated coin then climbs by its Active Days, the days (UTC) on which its pool traded at least{" "}
+          {pct(ladder.inForce.activeDayFloorBps)} of the coin&apos;s own Graduation Target. A higher tier raises the Creator&apos;s share of the
+          pool creator fee collected from then on, and a tier, once reached, is never lost.
+        </p>
+        <ul className={`${styles.uses} ${styles.budget}`} aria-label="The Creator's share by tier">
+          {ladder.inForce.tiers.map((tier) => (
+            <li key={tier.tier} data-tier={tier.tier}>
+              <span>{TIER_NAMES[tier.tier]}</span>
+              <span className={styles.share}>{pct(tier.shareBps)}</span>
+              <span>{tierWorth(tier)}</span>
+            </li>
+          ))}
+        </ul>
+        {ladder.upcoming.map((next) => (
+          <p key={next.version} className={styles.upcoming} data-upcoming-ladder={next.version}>
+            From <time dateTime={next.effectiveAt}>{formatUtc(next.effectiveAt)}</time>: {ladderLine(next)}.
+            {next.note && <> {next.note}.</>} It applies to what is collected from then on, and a coin keeps every tier it has reached.
+          </p>
+        ))}
+        <p className={styles.note}>
+          A tier&apos;s share is of the pool creator fee that arrives, after Raydium&apos;s part; the Fee Key&apos;s part of a pool trade stays the
+          platform&apos;s at every tier. A coin&apos;s Active Days are counted and its tier recorded before each hourly collection, and both are shown
+          on its page; anyone can recount the days from its trades. A change to the ladder is announced at least a day ahead under{" "}
+          <Link href="/announcements">Announcements</Link>.
+        </p>
+      </section>
+
       <section className={`card ${styles.card}`} aria-labelledby="revenue-title">
         <h2 id="revenue-title" className={`t-h3 ${styles.cardTitle}`}>What the platform does with its share</h2>
         <p className={styles.words}>
-          Half of what the platform collects on each coin&apos;s trades is forwarded to that coin&apos;s Creator first, in the Quote Asset,
-          within about an hour of collection. The Fee Key&apos;s part of a pool trade, {pct(lpShare)} of the trade, is the platform&apos;s alone:
+          The Creator&apos;s share of what the platform collects on each coin&apos;s trades is forwarded to that coin&apos;s Creator first, in the
+          Quote Asset, within about an hour of collection. The Fee Key&apos;s part of a pool trade, {pct(lpShare)} of the trade, is the platform&apos;s alone:
           no Creator&apos;s share comes out of it. What is left is the platform&apos;s share, and one table divides all of it.
         </p>
         <ul className={`${styles.uses} ${styles.budget}`} aria-label="How the platform's share is divided">

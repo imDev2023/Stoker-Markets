@@ -7,13 +7,14 @@ import type { CreatorEarnings, CreatorForwardList, GraduationFee, QuoteRef } fro
 import { creatorForwards, curves, graduations, launches, launchMetadata, quoteAssets, type Db } from "@launchpad/db";
 import type { AppEnv } from "../env";
 import { committedForwards, creatorShares, creatorSharesByLaunch, withheldGraduationFees } from "../fees/creatorShares";
+import { coinTiers } from "../fees/ladder";
 import { toQuoteRef } from "../quotes/assets";
 
 /**
- * Creator Earnings (ADR 0009): what a Creator has earned from the trades on their Launches, half of what the platform
- * collected on them, per Quote Asset and per Launch, with what has been forwarded to their wallet, what a Graduation
- * Fee kept (ADR 0015) and what is still to come; and the public history of those Creator Forwards. There is nothing to
- * claim: the platform pays it all.
+ * Creator Earnings (ADR 0009): what a Creator has earned from the trades on their Launches, their share of what the
+ * platform collected on them, per Quote Asset and per Launch, with each Launch's place on the Creator Ladder (ADR 0020),
+ * what has been forwarded to their wallet, what a Graduation Fee kept (ADR 0015) and what is still to come; and the
+ * public history of those Creator Forwards. There is nothing to claim: the platform pays it all.
  */
 export const creatorEarningsRoutes = new Hono<AppEnv>();
 
@@ -73,6 +74,7 @@ creatorEarningsRoutes.get("/creators/:address/earnings", async (c) => {
     creatorSharesByLaunch(db, address),
   ]);
 
+  const tiers = await coinTiers(db, ownLaunches.map((l) => l.mint));
   // SOL first, then the other Quote Assets in a stable order.
   const quotes = new Map(ownLaunches.map((l) => [l.quote.mint, toQuoteRef(l.quote)]));
   const mints = [...quotes.keys()].sort((a, b) => (a === WSOL_MINT.toBase58() ? -1 : b === WSOL_MINT.toBase58() ? 1 : a.localeCompare(b)));
@@ -96,6 +98,7 @@ creatorEarningsRoutes.get("/creators/:address/earnings", async (c) => {
       status: l.graduated ? "graduated" : (l.status ?? "live"),
       curve: byLaunch.curve.get(l.mint) ?? "0",
       pool: byLaunch.pool.get(l.mint) ?? "0",
+      tier: tiers.get(l.mint)!,
       graduationFee: graduationFeeOf(l.graduation),
     })),
   };

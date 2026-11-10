@@ -2,6 +2,7 @@
 
 Status: accepted by the owner on 2026-10-08 (#85), implemented on the local chain.
 Supersedes ADR 0007.
+Amended by ADR 0020 (2026-11-10): the half below is the Creator Ladder's first tier, and a graduated coin's share of its pool creator fee climbs with its Active Days.
 
 ADR 0007 split the curve's 1.00% between a 0.75% Platform Fee and a 0.25% on-chain Creator Fee, and topped the Creator up to about 0.5% by forwarding a match of that fee out of the Platform Fee; after Graduation it forwarded half of the pool creator fee.
 StonkFun sets `fee_rate` 10000 and `creator_fee_rate` 0 and pays its creators about 0.5% off-chain (`research/onchain/README.md`).

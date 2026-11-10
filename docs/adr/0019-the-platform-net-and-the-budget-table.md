@@ -70,6 +70,9 @@ Once all three are live the table reads Burn 40%, Flywheel 5%, the trader progra
 
 ## The Creator ladder's tiers
 
+Superseded by ADR 0020 (owner, 2026-11-10): the ladder as built is 50% on the curve and after Graduation, 60% after 15 Active Days and 70% after 30, so Graduation alone no longer raises the share.
+The table below is the plan as it stood on 2026-11-09; the two ends of the ladder, and so the rows' worth under it, are unchanged.
+
 The ladder is built under #188; its tiers are recorded here because they set the size of the net.
 The owner asked about a floor of 25% and picked 50% (2026-11-09): most coins never leave the curve, the curve is where a Creator compares platforms, 50% is today's rule (ADR 0009) and StonkFun's, and a floor under it would have cut what Creators earn now.
 A coin's tier only ever climbs.

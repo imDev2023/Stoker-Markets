@@ -222,6 +222,11 @@ export const graduations = pgTable("graduations", {
   feePaidLamports: numeric("fee_paid_lamports", { precision: 40, scale: 0 }).notNull().default("0"),
   /** When the fee was withheld in full; null while any of it is still owed. */
   feeSettledAt: timestamp("fee_settled_at", { withTimezone: true }),
+  /**
+   * The coin's Active Days (ADR 0020) as the Fee Collector last counted them, before it collected: the days on which the
+   * pool traded at least the ladder's floor. Every page reads this figure; a coin on the top tier is no longer counted.
+   */
+  activeDays: integer("active_days").notNull().default(0),
 });
 
 /**
@@ -466,6 +471,58 @@ export const budgetTables = pgTable(
       sql`${t.burnBps} >= 0 and ${t.flywheelBps} >= 0 and ${t.rebatesBps} >= 0 and ${t.referralsBps} >= 0 and ${t.integratorsBps} >= 0 and ${t.treasuryBps} >= 0`,
     ),
   ],
+);
+
+/**
+ * The Creator Ladder (ADR 0020), one row per version: the share of a graduated coin's pool creator fee collections that
+ * is its Creator's, by the coin's Creator Tier. The first tier is the floor, half (ADR 0009), on the curve and after
+ * Graduation; a coin reaches the second and the top tier by its Active Days, the days on which its pool traded at
+ * least `activeDayFloorBps` of its Graduation Target. A version is announced first and takes effect later, and its
+ * shares apply to the pool fees collected while it is in force. Postgres itself checks that the ladder climbs.
+ */
+export const creatorLadders = pgTable(
+  "creator_ladders",
+  {
+    version: integer("version").primaryKey(),
+    /** The second tier: the Creator's share of a pool fee collection in basis points, and the Active Days that reach it. */
+    secondBps: integer("second_bps").notNull(),
+    secondActiveDays: integer("second_active_days").notNull(),
+    /** The top tier. */
+    topBps: integer("top_bps").notNull(),
+    topActiveDays: integer("top_active_days").notNull(),
+    /** The least a pool must trade in a day for the day to count, in basis points of the coin's own Graduation Target. */
+    activeDayFloorBps: integer("active_day_floor_bps").notNull(),
+    note: text("note"),
+    announcedAt: timestamp("announced_at", { withTimezone: true }).notNull().defaultNow(),
+    effectiveAt: timestamp("effective_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    check("creator_ladders_shares_climb", sql`${t.secondBps} > 5000 and ${t.topBps} > ${t.secondBps} and ${t.topBps} <= 10000`),
+    check("creator_ladders_days_climb", sql`${t.secondActiveDays} >= 1 and ${t.topActiveDays} > ${t.secondActiveDays}`),
+    check("creator_ladders_floor", sql`${t.activeDayFloorBps} >= 1 and ${t.activeDayFloorBps} <= 10000`),
+  ],
+);
+
+/**
+ * The Creator Tiers a graduated coin has reached above the first (ADR 0020): one row per coin and tier, written once by
+ * the Fee Collector when the coin's Active Days reach the tier under the ladder in force, and never changed or removed,
+ * so a coin's tier only ever climbs. The tier's share applies to the pool fees collected after `reachedSlot`.
+ */
+export const creatorTiers = pgTable(
+  "creator_tiers",
+  {
+    mint: text("mint").notNull(),
+    /** 2 for the second tier, 3 for the top. Every coin is on the first from its launch, without a row. */
+    tier: integer("tier").notNull(),
+    /** The coin's Active Days when the tier was recorded. */
+    activeDays: integer("active_days").notNull(),
+    /** The ladder version whose rule the coin met. */
+    ladderVersion: integer("ladder_version").notNull(),
+    /** The chain's confirmed slot when the tier was recorded: a pool fee collection in a later slot earns the tier's share. */
+    reachedSlot: bigint("reached_slot", { mode: "number" }).notNull(),
+    reachedAt: timestamp("reached_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.mint, t.tier] }), check("creator_tiers_tier", sql`${t.tier} in (2, 3)`)],
 );
 
 /** One Reward Round of one Reward Launch: its snapshot, the pot it pays out, and how far it has got. */

@@ -193,6 +193,14 @@
   overflow-wrap: anywhere;
 }
 
+/* A graduated coin's tier on the Creator Ladder and its climb: a quiet third line under the names. */
+.coinTier {
+  margin-top: 2px;
+  color: var(--ink-3);
+  font-size: var(--text-caption);
+  overflow-wrap: anywhere;
+}
+
 .coinEarned {
   flex: none;
   max-width: 55%;

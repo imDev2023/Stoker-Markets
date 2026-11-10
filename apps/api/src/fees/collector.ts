@@ -12,6 +12,7 @@ import { rewardPotLamports } from "../rewards/sales";
 import { reservedLamports } from "./budget";
 import { creatorMoney, unforwarded } from "./creatorShares";
 import { withholdGraduationFees, type Withheld } from "./graduationFee";
+import { recordCreatorTiers, type TierReached } from "./ladder";
 import { recordRevenue, revenueContext } from "./ledger";
 import { valuer } from "./value";
 
@@ -24,6 +25,8 @@ export type CollectorDeps = { db: Db; cfg: Config; operations: Keypair };
 type Sent = { purpose: string; subject: string; signature: string; outcome: "landed" | "failed" | "expired"; entries: number; error?: string };
 
 export type CollectorSummary = {
+  /** Creator Tiers recorded this run (ADR 0020), before anything was collected: the collections below already earn them. */
+  tiers: TierReached[];
   /** Transactions of earlier runs that were still unresolved, now settled. */
   settled: { signature: string; outcome: string; entries: number }[];
   sent: Sent[];
@@ -40,7 +43,7 @@ export type CollectorSummary = {
  * The Fee Collector, run by its Cron Trigger: claims every revenue stream into the operations wallet, then sweeps the
  * wallet down to its float into the treasury (ADR 0004). Every transaction it signs is written down before it is sent
  * and recorded on the Ledger once it lands, so a run that dies half way, or is retried, never records anything twice
- * and never loses anything it moved. Streams:
+ * and never loses anything it moved. Before it collects, it records every Creator Tier a coin has newly reached. Streams:
  * - the Platform Fee vault of every Quote Asset our Launches trade against;
  * - the creator fee of every pool our Launches graduated into, where our platform is the pool creator;
  * - the LP fees of every Fee Key the operations wallet holds, for pools that have traded since their last collection.
@@ -50,11 +53,14 @@ export async function collectFees({ db, cfg, operations }: CollectorDeps): Promi
   const connection = new Connection(cfg.rpcUrl, "confirmed");
   const ops = operations.publicKey;
   const ctx = revenueContext(cfg, ops);
-  const summary: CollectorSummary = { settled: [], sent: [], leftToGrow: 0, graduationFees: [], sweep: "nothing to sweep", problems: [] };
+  const summary: CollectorSummary = { tiers: [], settled: [], sent: [], leftToGrow: 0, graduationFees: [], sweep: "nothing to sweep", problems: [] };
 
   // Anything an earlier run sent but could not see land is settled first, and nothing new is sent for it until it is.
   const { settled, busy } = await settlePending(db, connection, ctx);
   summary.settled = settled;
+  // The Creator Ladder (ADR 0020): a coin whose Active Days have reached a tier is recorded on it now, so the pool fees
+  // collected below, which land in a later slot, are shared at the tier the coin has earned.
+  summary.tiers = await recordCreatorTiers(db, connection, cfg.activeDaySeconds);
   const worth = await valuer(db, cfg.collectMinLamports);
   const send = async (purpose: string, subject: string, instructions: TransactionInstruction[]) => {
     if (busy.has(subject)) return false;

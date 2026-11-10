@@ -5,11 +5,12 @@ import { alias } from "drizzle-orm/pg-core";
 import { and, asc, count, desc, eq, ilike, like, or, sql, type SQL } from "drizzle-orm";
 import { cpmmPdas, launchlabPdas, programsFor } from "@launchpad/chain";
 import {
-  LaunchListQuery, LINK_KINDS, SPARKLINE_POINTS, type Holder, type HolderKind, type HolderList, type LaunchLinks, type LaunchList, type LaunchQuoteList,
+  LaunchListQuery, LINK_KINDS, SPARKLINE_POINTS, type CoinCreatorTier, type Holder, type HolderKind, type HolderList, type LaunchLinks, type LaunchList, type LaunchQuoteList,
   type LaunchSummary, type MarketValue,
 } from "@launchpad/contract";
 import { curves, graduations, launches, launchMarkets, launchMetadata, quoteAssets, trades, type Db } from "@launchpad/db";
 import { operationsKey, type AppEnv, type Config } from "../env";
+import { coinTiers } from "../fees/ladder";
 import { toQuoteRef } from "../quotes/assets";
 import { graduationFeeOf } from "./creatorEarnings";
 import { curveProgress } from "./trades";
@@ -137,7 +138,7 @@ const num = (v: number | string | null) => (v === null ? null : Number(v));
 /** The day's price change as a fraction; null without a trade to measure from (see LaunchMarket.change24h). */
 const change24h = (price: number | null, ago: number | null) => (price === null || ago === null || ago <= 0 ? null : price / ago - 1);
 
-function toSummary(cfg: Config, r: Row): LaunchSummary {
+function toSummary(cfg: Config, r: Row, creatorTier: CoinCreatorTier | null = null): LaunchSummary {
   const l = r.launch;
   const m = r.metadata;
   const cap: MarketValue | null = r.capQuote === null ? null : { quote: num(r.capQuote)!, sol: num(r.capSol), usd: num(r.capUsd) };
@@ -161,6 +162,7 @@ function toSummary(cfg: Config, r: Row): LaunchSummary {
       graduatedAt: r.graduation.graduatedAt.toISOString(),
       price: r.graduation.price,
       fee: graduationFeeOf(r.graduation),
+      creatorTier,
     },
     rewardTax:
       l.rewardTaxBps === null
@@ -283,7 +285,10 @@ launchRoutes.get("/launches/quotes", async (c) => {
 launchRoutes.get("/launches/:mint", async (c) => {
   const [row] = await queryLaunches(c.get("db"), { mint: c.req.param("mint") });
   if (!row) return c.json({ error: "launch not found" }, 404);
-  return c.json(toSummary(c.get("cfg"), row));
+  const cfg = c.get("cfg");
+  // A graduated coin's place on the Creator Ladder (ADR 0020), which only this answer carries.
+  const tier = row.graduation ? (await coinTiers(c.get("db"), [row.launch.mint])).get(row.launch.mint)! : null;
+  return c.json(toSummary(cfg, row, tier));
 });
 
 /** How many of the largest token accounts the chain reports: getTokenLargestAccounts returns at most 20. */

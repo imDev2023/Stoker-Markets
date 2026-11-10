@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CoinCreatorTier } from "./ladder";
 
 /**
  * Trading a Launch's coin: quotes, prepared trade transactions, trade history, price candles and curve progress.
@@ -259,5 +260,10 @@ export const Graduation = z.object({
   price: z.number().nullable(),
   /** The Graduation Fee charged for it (ADR 0015); null for a coin graduated before the fee existed. */
   fee: GraduationFee.nullable(),
+  /**
+   * Where the coin stands on the Creator Ladder (ADR 0020): its tier, its Active Days and the next tier. On
+   * `GET /v1/launches/:mint` alone; null in a list, whose rows do not count a coin's days.
+   */
+  creatorTier: CoinCreatorTier.nullable(),
 });
 export type Graduation = z.infer<typeof Graduation>;

@@ -102,7 +102,7 @@ _Avoid_: Pair with anything, multi-quote
 **Platform Fee**:
 Our share of every trade on a Launch, collected by the platform.
 On the curve LaunchLab pays it into one vault per Quote Asset; after Graduation it is the CPMM pool's creator fee, since the platform is every graduated pool's creator, less the share of it Raydium keeps at collection (the config's `creator_fee_share_rate`, 5% on mainnet).
-Half of it is the Creator's, paid on as the Creator Forward (ADR 0009).
+Half of it is the Creator's, more of a graduated coin's by its Creator Tier, paid on as the Creator Forward (ADR 0009, ADR 0020).
 _Avoid_: Protocol fee (that is Raydium's cut)
 
 **Fee Key**:
@@ -115,13 +115,28 @@ The term stays because the chain, the fee-change flow and the announcements name
 _Avoid_: using it for what a Creator earns (that is Creator Earnings)
 
 **Creator Forward**:
-What the platform pays a Creator out of what it has collected on their Launch's trades, straight to the Creator's wallet in the Quote Asset: half of each curve trade's Platform Fee, and half of each pool creator fee collection after Graduation (ADR 0009).
+What the platform pays a Creator out of what it has collected on their Launch's trades, straight to the Creator's wallet in the Quote Asset: half of each curve trade's Platform Fee, and of each pool creator fee collection after Graduation the share of the coin's Creator Tier, half on the first (ADR 0009, ADR 0020).
 Also one such payment.
 _Avoid_: Creator Fee (that is LaunchLab's on-chain term), payout, rebate, revenue share, claim
 
 **Creator Earnings**:
 What a Creator's Launches have earned them, the sum of their Creator Forwards: earned, kept as Graduation Fees, sent and still to be sent, per Quote Asset and per Launch on their own page (`/creator`), which only the connected wallet sees and is offered once it has launched a coin; there is no public creator page (owner, 2026-10-08).
 _Avoid_: Creator Fee, claimable, rewards (those are for holders)
+
+**Creator Ladder**:
+The three Creator Tiers a coin climbs and the share of its pool creator fee collections each gives its Creator: half on the first tier, 60% on the second after 15 Active Days, 70% on the top after 30 (ADR 0020, owner 2026-11-10).
+It is versioned: a version is announced ahead like a fee change, and its shares apply only to what is collected while it is in force.
+_Avoid_: Loyalty program, levels, creator rewards (rewards are for holders)
+
+**Creator Tier**:
+A coin's place on the Creator Ladder: the first from its launch, on the curve and after Graduation, then the second and the top.
+It belongs to the coin, never to the Creator across their coins; it is recorded once by the Fee Collector when the coin's Active Days reach it, applies to the pool fees collected from then on, and never falls.
+_Avoid_: Level, rank, badge, a Creator's tier
+
+**Active Day**:
+A UTC day on which a graduated coin's pool traded at least 1% of the coin's own Graduation Target, in its Quote Asset, by the indexed trades.
+Active Days need not follow one another and their count only grows; it is what a coin climbs the Creator Ladder by.
+_Avoid_: Trading day, streak (a gap does not reset the count), staying power (the idea it measures)
 
 **Graduation Fee**:
 What the platform charges when a coin graduates, a set worth in SOL (0.015 SOL on mainnet, `GRADUATION_FEE_LAMPORTS`), withheld from the Creator's earnings on that coin in the coin's Quote Asset at the Quote Registry's price, from their next Creator Forwards until paid, never out of their wallet and never from the holders' Reward Tax; each withholding is a `graduation_fee` entry on the Ledger against the graduation (ADR 0015).
@@ -205,7 +220,7 @@ The header's "Curated" section lists them; none exists before the Platform Token
 **Platform Net**:
 What the platform keeps of its revenue: everything the Ledger records as collected (Platform Fee, pool creator fee, Fee Key) less the Creators' share of it, valued in SOL at the Quote Registry's latest prices (ADR 0019).
 Fee Key collections enter it whole, since no Creator's share comes out of them.
-_Avoid_: Profit, the platform's half (the Creator's share will not stay a half), revenue (that is before the Creators' share)
+_Avoid_: Profit, the platform's half (the Creator's share is more than half on a higher Creator Tier), revenue (that is before the Creators' share)
 
 **Budget Table**:
 The one table that divides the Platform Net between the Burn, the Flywheel, the trader programs (volume rebates, referrals on every pair, the integrator share) and the Treasury, each row a share in basis points and the six summing to 100% (ADR 0019).

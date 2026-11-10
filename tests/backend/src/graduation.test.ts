@@ -112,6 +112,8 @@ describe("Graduation", () => {
       // The Graduation Fee (ADR 0015) is fixed as the migration is indexed, and nothing of it is withheld until the
       // Fee Collector has collected something for the Creator.
       fee: { lamports: env().graduationFeeLamports, withheld: "0", paidLamports: "0", settledAt: null },
+      // On the Creator Ladder's first tier, like every coin from its launch, with no Active Day yet (ADR 0020).
+      creatorTier: { tier: 1, activeDays: 0, reachedAt: null, next: { tier: 2, activeDays: expect.any(Number) } },
     });
     expect(Date.parse(graduated.graduation!.graduatedAt)).toBeGreaterThanOrEqual(Date.parse(graduating.curve.completedAt!));
 

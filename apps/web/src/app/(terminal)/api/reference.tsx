@@ -40,7 +40,7 @@ export const SECTIONS: readonly Section[] = [
         endpoint: "GET /platform",
         text: (
           <>
-            The cluster, an RPC for browsers, the program and PlatformConfig addresses, the Graduation Target in lamports, and every fee as the chain has it now: the Platform Fee and Creator Fee on the curve (<C>platformFeeBps</C>, <C>creatorFeeBps</C>, the latter 0 on this platform), the pool&apos;s creator fee (<C>poolCreatorFeeBps</C>) with the share of it Raydium keeps at collection (<C>poolCreatorFeeShareBps</C>), Raydium&apos;s own fee on each venue (<C>raydiumFee</C>), the share of the pool trade fee its liquidity providers keep (<C>raydiumFee.poolLpShareBps</C>, which reaches the platform through the Fee Key), the referral share rate, <C>creatorForward</C>: the Creator&apos;s share of what the platform collects on their coin&apos;s trades (<C>shareBps</C>), also as basis points of curve and pool volume, with its minimum; the Graduation Fee in lamports (<C>graduationFeeLamports</C>, ADR 0015), and the route&apos;s slippage limit for buys paid with SOL (<C>solRouteToleranceBps</C>). The site&apos;s Fees page is drawn from this answer.
+            The cluster, an RPC for browsers, the program and PlatformConfig addresses, the Graduation Target in lamports, and every fee as the chain has it now: the Platform Fee and Creator Fee on the curve (<C>platformFeeBps</C>, <C>creatorFeeBps</C>, the latter 0 on this platform), the pool&apos;s creator fee (<C>poolCreatorFeeBps</C>) with the share of it Raydium keeps at collection (<C>poolCreatorFeeShareBps</C>), Raydium&apos;s own fee on each venue (<C>raydiumFee</C>), the share of the pool trade fee its liquidity providers keep (<C>raydiumFee.poolLpShareBps</C>, which reaches the platform through the Fee Key), the referral share rate, <C>creatorForward</C>: the Creator&apos;s share of what the platform collects on their coin&apos;s trades on the first tier (<C>shareBps</C>), also as basis points of curve and pool volume, with its minimum, and <C>ladder</C>, the Creator Ladder in force and any announced for later: three <C>tiers</C>, each with the Active Days that reach it and its share of a pool creator fee collection, and <C>activeDayFloorBps</C>, the part of a coin&apos;s Graduation Target its pool must trade in a UTC day for the day to count; the Graduation Fee in lamports (<C>graduationFeeLamports</C>, ADR 0015), and the route&apos;s slippage limit for buys paid with SOL (<C>solRouteToleranceBps</C>). The site&apos;s Fees page is drawn from this answer.
           </>
         ),
       },
@@ -73,7 +73,7 @@ export const SECTIONS: readonly Section[] = [
         endpoint: "GET /launches/:mint",
         text: (
           <>
-            One Launch: its <C>supply</C> in raw units (1 trillion coins at 6 decimals; a coin launched on the earlier 1 billion keeps it), curve progress, Graduation (with its <C>fee</C>, the Graduation Fee and how much of it has been withheld), Reward Tax (with its <C>payout</C> asset, <C>coin</C> or <C>quote</C>), market (<C>price</C>, <C>marketCap</C>, <C>volume24h</C>, <C>change24h</C> and <C>change5m</C>, the price change over the day and over five minutes as fractions, null until the first trade, and <C>holders</C>, the wallets whose indexed buys exceed their sells, a floor on the chain&apos;s count), Copy Protection (<C>protection.until</C>, and <C>copyOf</C> when the coin took an earlier coin&apos;s name, ticker or image).
+            One Launch: its <C>supply</C> in raw units (1 trillion coins at 6 decimals; a coin launched on the earlier 1 billion keeps it), curve progress, Graduation (with its <C>fee</C>, the Graduation Fee and how much of it has been withheld, and <C>creatorTier</C>, the coin&apos;s place on the Creator Ladder: its <C>tier</C>, its <C>activeDays</C>, when the tier was recorded and the <C>next</C> tier with the Active Days it takes; null in a list), Reward Tax (with its <C>payout</C> asset, <C>coin</C> or <C>quote</C>), market (<C>price</C>, <C>marketCap</C>, <C>volume24h</C>, <C>change24h</C> and <C>change5m</C>, the price change over the day and over five minutes as fractions, null until the first trade, and <C>holders</C>, the wallets whose indexed buys exceed their sells, a floor on the chain&apos;s count), Copy Protection (<C>protection.until</C>, and <C>copyOf</C> when the coin took an earlier coin&apos;s name, ticker or image).
           </>
         ),
       },
@@ -119,7 +119,7 @@ export const SECTIONS: readonly Section[] = [
         endpoint: ["GET /creators/:address/earnings", "GET /creators/:address/forwards"],
         text: (
           <>
-            Creator Earnings: per Quote Asset what the Creator&apos;s Launches earned (half of what the platform collected on their trades), what Graduation Fees kept of it (<C>withheld</C>), what was forwarded to their wallet and what is still pending; per Launch what its curve and pool earned and its <C>graduationFee</C> once it has graduated (the fee in lamports, what has been withheld toward it in the Quote Asset and its worth, and when it was settled); and every forward with its transaction. Nothing to claim.
+            Creator Earnings: per Quote Asset what the Creator&apos;s Launches earned (their share of what the platform collected on their trades: half, and more of a graduated coin&apos;s pool fees by its tier), what Graduation Fees kept of it (<C>withheld</C>), what was forwarded to their wallet and what is still pending; per Launch what its curve and pool earned, its <C>tier</C> on the Creator Ladder with its Active Days, and its <C>graduationFee</C> once it has graduated (the fee in lamports, what has been withheld toward it in the Quote Asset and its worth, and when it was settled); and every forward with its transaction. Nothing to claim.
           </>
         ),
       },
@@ -133,6 +133,14 @@ export const SECTIONS: readonly Section[] = [
         ),
       },
       { endpoint: "GET /burns", text: <>Burn and Flywheel: shares, rule, budgets, picks, every buy and burn.</> },
+      {
+        endpoint: "GET /creator-ladder",
+        text: (
+          <>
+            The Creator Ladder: every version with its three tiers (the Active Days that reach each and its share of a pool creator fee collection, in basis points), the floor of an Active Day and the time the version takes effect, and which is <C>inForce</C>. A coin&apos;s tier is recorded by the Fee Collector before it collects, a collection is shared at the tier the coin held when it landed under the version then in force, and a tier never falls: with the Ledger&apos;s <C>pool_fee</C> entries and each coin&apos;s <C>creatorTier</C>, enough to redo any Creator&apos;s share.
+          </>
+        ),
+      },
       {
         endpoint: "GET /budgets",
         text: (
@@ -288,6 +296,7 @@ export const SECTIONS: readonly Section[] = [
       },
       { endpoint: "POST /operator/rewards/rules", text: <>Announces a Reward Round rules change, effective no sooner than the announced lead ahead.</> },
       { endpoint: "PUT /operator/platform-token", text: <>Names the Platform Token the Burn buys.</> },
+      { endpoint: "POST /operator/creator-ladder", text: <>Announces the next version of the Creator Ladder: the second and the top tier&apos;s share and Active Days (both climbing from the first tier&apos;s half) and the floor of an Active Day, effective no sooner than a fee change&apos;s lead ahead and after every earlier version. A coin keeps every tier it has already reached.</> },
       { endpoint: "POST /operator/budget-table", text: <>Announces the next version of the Budget Table: every row&apos;s share (summing to 10000 basis points), effective no sooner than a fee change&apos;s lead ahead and after every earlier version.</> },
       {
         endpoint: ["GET /operator/notable-wallets", "POST /operator/notable-wallets", "DELETE /operator/notable-wallets/:wallet"],
