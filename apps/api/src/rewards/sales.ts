@@ -200,8 +200,10 @@ export async function settlePendingSales(db: Db, cfg: Config, connection: Connec
 }
 
 /**
- * The pot of a Quote Asset payout coin: what every landed sale brought in, less every payout of the coin's rounds that
- * was paid, is in flight or is still to be sent. A `returned` payout was never paid, so its amount stays in.
+ * The pot of a Quote Asset payout coin: what every landed sale brought in, less every payout of the coin's tax rounds
+ * that was paid, is in flight or is still to be sent. A `returned` payout was never paid, so its amount stays in. An
+ * earnings round of the same coin (ADR 0011) pays in the Quote Asset too, but out of the Creator's share, a pot of its
+ * own: its payouts never come out of this one.
  */
 export async function quotePot(db: Db, mint: string): Promise<bigint> {
   const [sold] = await db
@@ -212,7 +214,10 @@ export async function quotePot(db: Db, mint: string): Promise<bigint> {
     .select({ amount: sql<string>`coalesce(sum(${rewardPayouts.amount}), 0)::text` })
     .from(rewardPayouts)
     .innerJoin(rewardRounds, eq(rewardRounds.id, rewardPayouts.roundId))
-    .where(and(eq(rewardRounds.mint, mint), sql`${rewardRounds.payoutMint} <> ${rewardRounds.mint}`, inArray(rewardPayouts.status, ["paid", "sending", "unpaid"])));
+    .where(and(
+      eq(rewardRounds.mint, mint), eq(rewardRounds.source, "tax"), sql`${rewardRounds.payoutMint} <> ${rewardRounds.mint}`,
+      inArray(rewardPayouts.status, ["paid", "sending", "unpaid"]),
+    ));
   const pot = BigInt(sold!.proceeds) - BigInt(paid!.amount);
   return pot > 0n ? pot : 0n;
 }
@@ -244,7 +249,8 @@ export async function salesOf(db: Db, mint: string, limit = 10) {
 /**
  * SOL the Reward Sales brought in that holders have not been paid yet, across every Quote Asset payout coin paired with
  * SOL: the Fee Collector's sweep leaves it in the operations wallet. Pots in any other token are never swept, since the
- * sweep only moves a token's Ledger revenue.
+ * sweep only moves a token's Ledger revenue. Only tax rounds pay out of it: the SOL an earnings round pays (ADR 0011)
+ * is a Creator's share, which the sweep leaves behind on its own account until the Ledger shows it paid.
  */
 export async function rewardPotLamports(db: Db): Promise<bigint> {
   const [sold] = await db
@@ -256,7 +262,7 @@ export async function rewardPotLamports(db: Db): Promise<bigint> {
     .from(rewardPayouts)
     .innerJoin(rewardRounds, eq(rewardRounds.id, rewardPayouts.roundId))
     // Only what has landed has left the wallet: a payout still to be sent, or in flight, is SOL the sweep must leave too.
-    .where(and(eq(rewardRounds.payoutMint, WSOL), eq(rewardPayouts.status, "paid")));
+    .where(and(eq(rewardRounds.source, "tax"), eq(rewardRounds.payoutMint, WSOL), eq(rewardPayouts.status, "paid")));
   const pot = BigInt(sold!.proceeds) - BigInt(paid!.amount);
   return pot > 0n ? pot : 0n;
 }
