@@ -108,13 +108,14 @@ export function CoinFacts({ launch, platform, trust, renderedAt }: {
                       {tier.next ? `; ${tierProgress(tier)}.` : `, after ${tier.activeDays} Active Days.`}
                     </>
                   )}{" "}
-                  {ruleLine ?? "Sent to the Creator's wallet with nothing to claim."} <Link href="/fees#creator-ladder">Every fee, explained</Link>
+                  {`${ruleLine ?? "Sent to the Creator's wallet with nothing to claim."} `}<Link href="/fees#creator-ladder">Every fee, explained</Link>
                 </span>
               </dd>
             ) : (
               <dd data-earnings={launch.earningsDestination}>
                 Half of what the platform collects on this coin
-                <span>{ruleLine ?? "Sent to the Creator's wallet with nothing to claim, on the curve and after graduation."} <Link href="/fees">Every fee, explained</Link></span>
+                {/* The sentence and the space before the link are one string, so one text node: shaped apart, the link sits a fraction of a pixel off. */}
+                <span>{`${ruleLine ?? "Sent to the Creator's wallet with nothing to claim, on the curve and after graduation."} `}<Link href="/fees">Every fee, explained</Link></span>
               </dd>
             )}
           </div>
