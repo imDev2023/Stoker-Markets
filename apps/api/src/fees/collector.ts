@@ -1,10 +1,10 @@
 import { Connection, PublicKey, SendTransactionError, type Keypair, type TransactionInstruction } from "@solana/web3.js";
-import { and, eq, inArray, ne, or, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, ne, or, sql } from "drizzle-orm";
 import {
   feeKeyInstructions, findFeeKeys, platformFeeClaimInstructions, poolCreatorFeeInstructions, readPlatformFeeVaults, readPoolKeys,
   readTokenHoldings, signedTransaction, simulateFeeKeyCollection, sweepInstructions, WSOL_MINT, type FeeKey, type PoolKeys, type RevenueContext,
 } from "@launchpad/chain";
-import { feeKeys, graduations, jobTransactions, launches, ledgerEntries, trades, type Db } from "@launchpad/db";
+import { creatorBuybacks, feeKeys, graduations, jobTransactions, launchMarkets, launches, ledgerEntries, type Db } from "@launchpad/db";
 import type { Config } from "../env";
 import { fetchRawTransaction } from "../indexer";
 import { JobFailure } from "../jobs";
@@ -19,6 +19,14 @@ import { valuer } from "./value";
 const JOB = "fee-collector";
 const WSOL = WSOL_MINT.toBase58();
 
+/**
+ * How many locked positions one run looks at. A pool has the position its migration locked and one more for every
+ * liquidity addition (ADR 0011), and a look costs a simulation and, when there is something worth collecting, a
+ * transaction. The run takes the positions it has not looked at for longest, so however many there are, its work stays
+ * within a Cron Trigger's time and a Worker's subrequests, and every position has its turn.
+ */
+const FEE_KEY_POSITIONS_PER_RUN = 25;
+
 export type CollectorDeps = { db: Db; cfg: Config; operations: Keypair };
 
 /** One transaction the run sent, and what it did. */
@@ -32,6 +40,8 @@ export type CollectorSummary = {
   sent: Sent[];
   /** Fees found but left to grow, being worth less than the collection minimum. */
   leftToGrow: number;
+  /** Locked positions with something new to look at that this run did not reach; the next runs take them, the longest unseen first. */
+  positionsLeftForLater: number;
   /** Graduation Fees withheld this run (ADR 0015) out of what the collections above brought in for Creators, before the sweep. */
   graduationFees: Withheld[];
   sweep: "not configured" | "nothing to sweep" | "swept";
@@ -46,14 +56,17 @@ export type CollectorSummary = {
  * and never loses anything it moved. Before it collects, it records every Creator Tier a coin has newly reached. Streams:
  * - the Platform Fee vault of every Quote Asset our Launches trade against;
  * - the creator fee of every pool our Launches graduated into, where our platform is the pool creator;
- * - the LP fees of every Fee Key the operations wallet holds, for pools that have traded since their last collection.
+ * - the LP fees of the locked positions the operations wallet holds the Fee Keys of, a bounded number of them a run:
+ *   those whose pool has traded since the run last looked at them.
  * A failed transaction does not stop the others; the run then fails with its summary, for the operator.
  */
 export async function collectFees({ db, cfg, operations }: CollectorDeps): Promise<CollectorSummary> {
   const connection = new Connection(cfg.rpcUrl, "confirmed");
   const ops = operations.publicKey;
   const ctx = revenueContext(cfg, ops);
-  const summary: CollectorSummary = { tiers: [], settled: [], sent: [], leftToGrow: 0, graduationFees: [], sweep: "nothing to sweep", problems: [] };
+  const summary: CollectorSummary = {
+    tiers: [], settled: [], sent: [], leftToGrow: 0, positionsLeftForLater: 0, graduationFees: [], sweep: "nothing to sweep", problems: [],
+  };
 
   // Anything an earlier run sent but could not see land is settled first, and nothing new is sent for it until it is.
   const { settled, busy } = await settlePending(db, connection, ctx);
@@ -62,10 +75,12 @@ export async function collectFees({ db, cfg, operations }: CollectorDeps): Promi
   // collected below, which land in a later slot, are shared at the tier the coin has earned.
   summary.tiers = await recordCreatorTiers(db, connection, cfg.activeDaySeconds);
   const worth = await valuer(db, cfg.collectMinLamports);
+  // Null when an earlier transaction for the same subject may still land: nothing new is sent for it until then.
   const send = async (purpose: string, subject: string, instructions: TransactionInstruction[]) => {
-    if (busy.has(subject)) return false;
-    summary.sent.push(await sendAndRecord(db, connection, ctx, operations, { purpose, subject, instructions }));
-    return true;
+    if (busy.has(subject)) return null;
+    const sent = await sendAndRecord(db, connection, ctx, operations, { purpose, subject, instructions });
+    summary.sent.push(sent);
+    return sent;
   };
 
   // The Platform Fee: one vault per Quote Asset, shared by every Launch against it.
@@ -82,7 +97,7 @@ export async function collectFees({ db, cfg, operations }: CollectorDeps): Promi
     }));
   }
 
-  // After Graduation: each pool's creator fee, and its Fee Key's LP fees.
+  // After Graduation: each pool's creator fee, and the LP fees of its locked positions.
   const graduated = await db
     .select({ pool: graduations.pool, quoteMint: launches.quoteMint })
     .from(graduations)
@@ -99,30 +114,49 @@ export async function collectFees({ db, cfg, operations }: CollectorDeps): Promi
     await send("pool_fee", pool.address.toBase58(), poolCreatorFeeInstructions(cfg.cpmm, pool, ops));
   }
 
-  const keys = await feeKeysByPool(db, connection, cfg, ops, graduated.map((g) => g.pool));
-  const traded = await poolsTradedSinceLastFeeKeyCollection(db, [...keys.keys()]);
-  for (const pool of pools) {
-    const key = keys.get(pool.address.toBase58());
-    if (!key || !traded.has(pool.address.toBase58())) continue;
+  await findMigrationFeeKeys(db, connection, cfg, ops);
+  const due = await positionsToLookAt(db, FEE_KEY_POSITIONS_PER_RUN);
+  summary.positionsLeftForLater = due.waiting - due.positions.length;
+  const poolAt = new Map(pools.map((p) => [p.address.toBase58(), p]));
+  // The positions this run has seen through: what each had earned was collected, or is too little yet and left to grow.
+  const seen: string[] = [];
+  for (const position of due.positions) {
+    const pool = poolAt.get(position.pool);
+    if (!pool) {
+      summary.problems.push(`fee_key ${position.nftMint}: its pool ${position.pool} is not on the chain`);
+      continue;
+    }
+    const key: FeeKey = {
+      nftMint: new PublicKey(position.nftMint), nftAccount: new PublicKey(position.nftAccount), lockedLiquidity: new PublicKey(position.lockedLiquidity),
+      pool: pool.address,
+    };
     const amounts = await simulateFeeKeyCollection(connection, ctx.programs, pool, key, ops).catch((e: Error) => e);
     if (amounts instanceof Error) {
-      summary.problems.push(`fee_key ${pool.address.toBase58()}: ${amounts.message}`);
+      summary.problems.push(`fee_key ${position.nftMint} of pool ${position.pool}: ${amounts.message}`);
       continue;
     }
     const quote = quoteSide(pool, quoteOf);
     if (!worth(quote.mint, amounts[quote.index]!)) {
       if (amounts.some((a) => a > 0n)) summary.leftToGrow++;
+      seen.push(position.nftMint);
       continue;
     }
-    await send("fee_key", pool.address.toBase58(), feeKeyInstructions(ctx.programs, pool, key, ops));
+    // The subject is the position's own Fee Key, so a collection still in flight holds back that position alone and
+    // never the pool's other positions. The Ledger's entries still name the pool as their source.
+    const sent = await send("fee_key", position.nftMint, feeKeyInstructions(ctx.programs, pool, key, ops));
+    if (sent?.outcome === "landed") seen.push(position.nftMint);
   }
+  // A position whose look failed, or whose collection did not land, keeps its place: the next run looks at it again
+  // whether or not its pool trades in between. The time written is the one the positions were chosen at, so a trade
+  // indexed while the run was at work still counts as new.
+  if (seen.length) await db.update(feeKeys).set({ checkedAt: sql`${due.asOf}::timestamptz` }).where(inArray(feeKeys.nftMint, seen));
 
   // With the collections on the Ledger, what each graduated coin's Creator is owed is known, and the coin's Graduation
   // Fee (ADR 0015) comes out of it before the sweep, which then takes it along with the platform's own share.
   summary.graduationFees = await withholdGraduationFees(db, connection, ops);
 
   if (!cfg.treasury) summary.sweep = "not configured";
-  else if (await sweep(db, connection, cfg, cfg.treasury, operations, send)) summary.sweep = "swept";
+  else if (await sweep(db, connection, cfg, cfg.treasury, operations, async (...t) => (await send(...t)) !== null)) summary.sweep = "swept";
 
   const failed = [
     ...summary.sent.filter((s) => s.outcome !== "landed").map((f) => `${f.purpose} ${f.subject}: ${f.outcome}${f.error ? ` (${f.error})` : ""}`),
@@ -140,47 +174,61 @@ function quoteSide(pool: PoolKeys, quoteOf: Map<string, string>) {
 }
 
 /**
- * The Fee Keys of the given pools, from what the operations wallet holds. A Fee Key is looked up on-chain once, when a
- * graduated pool has none on record, and remembered.
+ * Puts on record the Fee Key Raydium's migration minted for each newly graduated pool, found on-chain among what the
+ * operations wallet holds: looked up when a graduated pool has no position on record but those our own liquidity
+ * additions opened, which are recorded as they land (ADR 0011), and remembered. Any other Fee Key the wallet holds and
+ * the records lack is found by the same look.
  */
-async function feeKeysByPool(db: Db, connection: Connection, cfg: Config, ops: PublicKey, pools: string[]) {
-  let known = await db.select().from(feeKeys);
-  if (pools.some((p) => !known.some((k) => k.pool === p))) {
-    const found = await findFeeKeys(connection, cfg.lock, ops, new Set(known.map((k) => k.nftMint)));
-    if (found.length) {
-      await db
-        .insert(feeKeys)
-        .values(found.map((k) => ({
-          nftMint: k.nftMint.toBase58(), nftAccount: k.nftAccount.toBase58(), lockedLiquidity: k.lockedLiquidity.toBase58(), pool: k.pool.toBase58(),
-        })))
-        .onConflictDoNothing();
-      known = await db.select().from(feeKeys);
-    }
-  }
-  return new Map(
-    known
-      .filter((k) => pools.includes(k.pool))
-      .map((k): [string, FeeKey] => [k.pool, {
-        nftMint: new PublicKey(k.nftMint), nftAccount: new PublicKey(k.nftAccount), lockedLiquidity: new PublicKey(k.lockedLiquidity), pool: new PublicKey(k.pool),
-      }]),
-  );
+async function findMigrationFeeKeys(db: Db, connection: Connection, cfg: Config, ops: PublicKey) {
+  const [missing] = await db
+    .select({ pool: graduations.pool })
+    .from(graduations)
+    .where(sql`not exists (
+      select 1 from ${feeKeys} where ${feeKeys.pool} = ${graduations.pool}
+        and ${feeKeys.nftMint} not in (select ${creatorBuybacks.feeKey} from ${creatorBuybacks} where ${isNotNull(creatorBuybacks.feeKey)}))`)
+    .limit(1);
+  if (!missing) return;
+  const known = await db.select({ nftMint: feeKeys.nftMint }).from(feeKeys);
+  const found = await findFeeKeys(connection, cfg.lock, ops, new Set(known.map((k) => k.nftMint)));
+  if (!found.length) return;
+  await db
+    .insert(feeKeys)
+    .values(found.map((k) => ({
+      nftMint: k.nftMint.toBase58(), nftAccount: k.nftAccount.toBase58(), lockedLiquidity: k.lockedLiquidity.toBase58(), pool: k.pool.toBase58(),
+    })))
+    .onConflictDoNothing();
 }
 
 /**
- * Pools whose Fee Key can have earned something: a locked LP earns only from swaps, so only pools with an indexed trade
- * after their latest Fee Key collection (or ever, before the first) are worth simulating.
+ * The locked positions worth a look, the ones not looked at for longest first and never looked at before those, up to
+ * `limit`, with how many are waiting in all. A locked position earns only from swaps, so one is worth a look once its
+ * pool has traded and, after that, whenever a trade of its coin has been indexed since the last look: `launch_markets`
+ * is touched by every trade the Indexer writes, so no pool's trades are searched. A position opened after its pool's
+ * last collection is new here like any other, and is looked at for itself rather than by what the pool's other
+ * positions did. `asOf` is the database's clock when they were chosen.
  */
-async function poolsTradedSinceLastFeeKeyCollection(db: Db, pools: string[]) {
-  if (!pools.length) return new Set<string>();
-  const rows = await db
-    .select({ pool: graduations.pool })
-    .from(graduations)
-    .where(and(
-      inArray(graduations.pool, pools),
-      sql`exists (select 1 from ${trades} where ${trades.mint} = ${graduations.mint} and ${trades.venue} = 'pool' and ${trades.slot} > coalesce(
-        (select max(${ledgerEntries.slot}) from ${ledgerEntries} where ${ledgerEntries.kind} = 'fee_key' and ${ledgerEntries.source} = ${graduations.pool}), 0))`,
-    ));
-  return new Set(rows.map((r) => r.pool));
+async function positionsToLookAt(db: Db, limit: number) {
+  const worthALook = and(
+    isNotNull(graduations.priceSlot),
+    sql`(${feeKeys.checkedAt} is null or ${launchMarkets.updatedAt} > ${feeKeys.checkedAt})`,
+  );
+  const [positions, [all]] = await Promise.all([
+    db
+      .select({ nftMint: feeKeys.nftMint, nftAccount: feeKeys.nftAccount, lockedLiquidity: feeKeys.lockedLiquidity, pool: feeKeys.pool })
+      .from(feeKeys)
+      .innerJoin(graduations, eq(graduations.pool, feeKeys.pool))
+      .innerJoin(launchMarkets, eq(launchMarkets.mint, graduations.mint))
+      .where(worthALook)
+      .orderBy(sql`${feeKeys.checkedAt} asc nulls first`, feeKeys.foundAt, feeKeys.nftMint)
+      .limit(limit),
+    db
+      .select({ waiting: sql<number>`count(*)::int`, asOf: sql<string>`now()::text` })
+      .from(feeKeys)
+      .innerJoin(graduations, eq(graduations.pool, feeKeys.pool))
+      .innerJoin(launchMarkets, eq(launchMarkets.mint, graduations.mint))
+      .where(worthALook),
+  ]);
+  return { positions, waiting: all!.waiting, asOf: all!.asOf };
 }
 
 /**

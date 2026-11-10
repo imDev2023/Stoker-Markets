@@ -160,8 +160,12 @@ const networkFees = async (signatures: string[]) => sum(await Promise.all(signat
 
 beforeAll(async () => {
   // Whatever earlier test files left to collect is collected, and the operations wallet swept, so each test here starts
-  // from empty vaults and a wallet below the sweep threshold.
-  await runCollector();
+  // from empty vaults and a wallet below the sweep threshold. A run looks at a bounded number of locked positions, so
+  // it is run until none is left for a later one.
+  for (;;) {
+    const run = await runCollector();
+    if ((run.summary as { positionsLeftForLater: number }).positionsLeftForLater === 0) break;
+  }
 });
 
 describe("the Platform Fee", () => {
@@ -256,11 +260,13 @@ describe("after Graduation", () => {
     const paid = await received(counted);
     const sol = await lamportsOf(ops());
     const coinsInTreasury = await tokensOf(treasury(), new PublicKey(coin.mint));
+    const position = await lockedLiquidity(coin.pool);
 
     const run = await runCollector();
     const sent = sentBy(run);
     const poolFee = sent.find((s) => s.purpose === "pool_fee" && s.subject === coin.pool.toBase58())!;
-    const feeKey = sent.find((s) => s.purpose === "fee_key" && s.subject === coin.pool.toBase58())!;
+    // A Fee Key collection is sent under the position's own Fee Key: a pool can have more than one locked position.
+    const feeKey = sent.find((s) => s.purpose === "fee_key" && s.subject === position.feeKey)!;
     expect(poolFee).toMatchObject({ outcome: "landed", entries: 1 });
     // The Fee Key pays out both of the pool's tokens: SOL and the coin.
     expect(feeKey).toMatchObject({ outcome: "landed", entries: 2 });
@@ -352,7 +358,8 @@ describe("after Graduation", () => {
     expect(fee).toBeLessThan(BigInt(env().collectMinLamports));
 
     const skipped = await runCollector();
-    expect(sentBy(skipped).filter((s) => s.subject === coin.pool.toBase58())).toEqual([]);
+    const { feeKey } = await lockedLiquidity(coin.pool);
+    expect(sentBy(skipped).filter((s) => [coin.pool.toBase58(), feeKey].includes(s.subject))).toEqual([]);
     expect((skipped.summary as { leftToGrow: number }).leftToGrow).toBeGreaterThan(0);
     expect(await quoteCreatorFee(coin.pool, WSOL_MINT)).toBe(fee);
 
@@ -530,5 +537,5 @@ async function lockedLiquidity(pool: PublicKey) {
   expect(accounts).toHaveLength(1);
   const s = lockCoder.accounts.decode("LockedCpLiquidityState", accounts[0]!.account.data) as { claimed_lp_amount: BN; fee_nft_mint: PublicKey };
   expect(accounts[0]!.pubkey.equals(lockPdas(lock).lockedLiquidity(s.fee_nft_mint))).toBe(true);
-  return { claimed: BigInt(s.claimed_lp_amount.toString()) };
+  return { claimed: BigInt(s.claimed_lp_amount.toString()), feeKey: s.fee_nft_mint.toBase58() };
 }
