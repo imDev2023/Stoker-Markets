@@ -19,14 +19,16 @@ import { payoutRef, roundSummary } from "./rewards";
  */
 export const creatorEarningsRoutes = new Hono<AppEnv>();
 
-function creatorParam(value: string) {
-  if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value)) throw new HTTPException(400, { message: "invalid creator address" });
+function addressParam(value: string, what: string) {
+  if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value)) throw new HTTPException(400, { message: `invalid ${what}` });
   try {
     return new PublicKey(value);
   } catch {
-    throw new HTTPException(400, { message: "invalid creator address" });
+    throw new HTTPException(400, { message: `invalid ${what}` });
   }
 }
+
+const creatorParam = (value: string) => addressParam(value, "creator address");
 
 /**
  * How to show amounts in each Quote Asset: from the Quote Registry, which lists every GlobalConfig a Launch can be made
@@ -171,7 +173,7 @@ const buybackOf = (b: typeof creatorBuybacks.$inferSelect): CreatorBuyback => ({
  * pot, and the rule's rounds or buybacks with their transactions, so anyone can check a rule was applied.
  */
 creatorEarningsRoutes.get("/launches/:mint/earnings", async (c) => {
-  const mint = creatorParam(c.req.param("mint")).toBase58();
+  const mint = addressParam(c.req.param("mint"), "mint").toBase58();
   const db = c.get("db");
   const cfg = c.get("cfg");
   const [row] = await db

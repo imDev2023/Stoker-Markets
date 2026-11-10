@@ -106,7 +106,8 @@ Half of it is the Creator's, more of a graduated coin's by its Creator Tier, pai
 _Avoid_: Protocol fee (that is Raydium's cut)
 
 **Fee Key**:
-The NFT Raydium mints at Graduation that entitles its holder to the trading fees earned by the pool's locked liquidity; the platform holds every one.
+The NFT Raydium mints when liquidity is locked in a pool, which entitles its holder to the trading fees that locked position earns; the platform holds every one.
+A pool has the one from its Graduation and one more for every liquidity addition a Creator's earnings paid for (ADR 0011).
 _Avoid_: LP NFT, position NFT
 
 **Creator Fee**:
@@ -117,11 +118,29 @@ _Avoid_: using it for what a Creator earns (that is Creator Earnings)
 **Creator Forward**:
 What the platform pays a Creator out of what it has collected on their Launch's trades, straight to the Creator's wallet in the Quote Asset: half of each curve trade's Platform Fee, and of each pool creator fee collection after Graduation the share of the coin's Creator Tier, half on the first (ADR 0009, ADR 0020).
 Also one such payment.
+Only the coins whose Creator Earnings Destination is the wallet are paid this way.
 _Avoid_: Creator Fee (that is LaunchLab's on-chain term), payout, rebate, revenue share, claim
 
 **Creator Earnings**:
-What a Creator's Launches have earned them, the sum of their Creator Forwards: earned, kept as Graduation Fees, sent and still to be sent, per Quote Asset and per Launch on their own page (`/creator`), which only the connected wallet sees and is offered once it has launched a coin; there is no public creator page (owner, 2026-10-08).
+What a Creator's Launches have earned them, their share of what the platform collected on those coins' trades: earned, kept as Graduation Fees, sent as Creator Forwards or applied by a coin's Earnings Rule, and still to come, per Quote Asset and per Launch on their own page (`/creator`), which only the connected wallet sees and is offered once it has launched a coin; there is no public creator page (owner, 2026-10-08).
 _Avoid_: Creator Fee, claimable, rewards (those are for holders)
+
+**Creator Earnings Destination**:
+Where a coin's Creator Earnings go, chosen on the launch form and fixed for the coin's life: the Creator's wallet (Creator Forwards), the coin's holders (Holder Dividends), a buyback that burns the coin, or a buyback that adds locked liquidity to its pool (ADR 0011).
+_Avoid_: Vault, template, fee mode
+
+**Earnings Rule**:
+A Creator Earnings Destination other than the wallet: holders, burn or liquidity.
+A coin with one has a pot of its own in its Quote Asset (what was collected for its Creator on it, less its Graduation Fee, less what the rule has applied), and the Creator Forward job applies the rule to it on its schedule, every action on the Ledger.
+_Avoid_: Vault, strategy, smart contract (no program enforces it)
+
+**Holder Dividend**:
+What a coin's holders are paid out of its Creator's earnings under the holders rule, pro rata in the Quote Asset, through a Reward Round of source `earnings`.
+_Avoid_: Holder Rewards (those are paid from Reward Tax), airdrop, staking reward
+
+**Creator Buyback**:
+One run of a coin's burn or liquidity rule: a single transaction that buys the coin in its own market with the pot and burns what it bought, or pairs it with the Quote Asset and adds it to the pool as liquidity locked for good.
+_Avoid_: Burn (on its own; that is the platform's, of the Platform Token), Flywheel
 
 **Creator Ladder**:
 The three Creator Tiers a coin climbs and the share of its pool creator fee collections each gives its Creator: half on the first tier, 60% on the second after 15 Active Days, 70% on the top after 30 (ADR 0020, owner 2026-11-10).
@@ -165,7 +184,7 @@ The scheduled job that claims every Platform Fee and Fee Key into the Operations
 _Avoid_: Fee cron, claimer
 
 **Ledger**:
-The append-only public record of every movement of platform revenue, each tied to its transaction signature; Creator Forwards, Burns, Flywheel buys and what permanent metadata costs are on it too.
+The append-only public record of every movement of platform revenue, each tied to its transaction signature; Creator Forwards, Holder Dividends, Creator Buybacks, Burns, Flywheel buys and what permanent metadata costs are on it too.
 _Avoid_: History, log, audit trail
 
 **Permanent Metadata**:
@@ -199,7 +218,8 @@ One bounded sale of collected Reward Tax into the coin's own market for the Quot
 _Avoid_: Dump, conversion, swap (on its own)
 
 **Reward Round**:
-One published cycle of collecting Reward Tax and paying Holder Rewards, with its snapshot, rules version and payout transactions public.
+One published cycle of paying a coin's holders, with its snapshot, rules version and payout transactions public: collected Reward Tax paid as Holder Rewards, or a coin's pot paid as Holder Dividends when its Creator's earnings go to its holders (ADR 0011).
+A round has one source, tax or earnings, and the two never share a pot.
 _Avoid_: Distribution, epoch, cycle
 
 **Region gate**:

@@ -117,6 +117,7 @@ The mainnet values are in the `env.production` block of `apps/api/wrangler.jsonc
 | `TREASURY_WALLET` | the Treasury address | required on mainnet |
 | `SWEEP_THRESHOLD_LAMPORTS`, `SWEEP_FLOAT_LAMPORTS`, `COLLECT_MIN_LAMPORTS` | `5000000000`, `1000000000`, `1000000` unless the owner decides otherwise (#14's open question) | float below threshold and above the rent a sweep may pay |
 | `CREATOR_FORWARD_MIN_LAMPORTS` | `10000000` (0.01 SOL): what a Creator must be owed in one Quote Asset, at the Quote Registry's price, before the Creator Forward pays it (ADR 0009) | the job runs hourly, right after the Fee Collector |
+| `LIQUIDITY_ADD_MIN_LAMPORTS` | `250000000` (0.25 SOL): what a coin's pot must be worth before its `liquidity` rule adds it to the pool (ADR 0011) | every addition opens a locked position of its own, whose rent the platform pays; a smaller pot waits |
 | `GRADUATION_FEE_LAMPORTS` | `15000000` (0.015 SOL, owner 2026-10-30, ADR 0015): withheld from the Creator's earnings on a coin once it graduates, in the coin's Quote Asset at the Quote Registry's price, by the Fee Collector and the Creator Forward | fixed on each graduation as it is indexed; `0` charges none; the database must carry migration `0022_graduation_fee` first |
 | `FEE_CHANGE_LEAD_SECONDS`, `REWARD_RULES_LEAD_SECONDS` | `86400` | the fee lead is refused under an hour on mainnet |
 | `FLYWHEEL_TOP_N`, `BURN_MIN_SPEND_LAMPORTS` | `10`, `10000000` (PRD) | the Burn's and the Flywheel's shares are rows of the Budget Table, section 14, never a setting |
