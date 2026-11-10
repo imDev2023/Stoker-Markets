@@ -416,7 +416,7 @@ export function decodeTransaction(raw: RawTransaction, programs: Pick<Programs, 
  * The `Program data:` payloads a program logged itself (Anchor's `emit!`), in order. Logs nest by invocation, so each
  * payload belongs to the program on top of the invocation stack when it was written.
  */
-function programDataLogs(logs: string[], programId: string) {
+export function programDataLogs(logs: string[], programId: string) {
   const stack: string[] = [];
   const out: string[] = [];
   for (const line of logs) {
