@@ -232,6 +232,10 @@ export async function simulateFeeKeyCollection(
     commitment: "confirmed",
     accounts: { encoding: "base64", addresses: recipients.map((r) => r.toBase58()) },
   });
+  // A position whose fees are not yet worth one unit of either of the pool's tokens: the pool refuses to withdraw
+  // nothing (its `ZeroTradingTokens`), which is not a fault but nothing to collect yet. A small position in a pool
+  // that has traded little since it was opened, a Creator's liquidity addition say, is in that state for a while.
+  if (sim.value.err && (sim.value.logs ?? []).some((l) => l.includes("ZeroTradingTokens"))) return [0n, 0n];
   if (sim.value.err) throw new Error(`simulating the Fee Key collection of pool ${pool.address.toBase58()} failed: ${JSON.stringify(sim.value.err)}\n${(sim.value.logs ?? []).join("\n")}`);
   const amount = (i: number, info: { data: Buffer; owner: PublicKey } | null) => (info ? unpackAccount(recipients[i]!, { ...info, lamports: 0, executable: false }, info.owner).amount : 0n);
   const after = sim.value.accounts ?? [];

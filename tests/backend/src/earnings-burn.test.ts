@@ -145,8 +145,12 @@ async function poolOpen(mint: string) {
  * Runs the Creator Forward job, which must send one buyback for the coin out of the `waiting` in its pot, and checks
  * what every landed buyback must show, whatever its venue; returns what it spent and burned.
  */
+/** How many holders the board counts for the coin, from its indexed trades. */
+const holdersOnBoard = async (mint: string) => (await getLaunch(mint)).launch!.market.holders;
+
 async function buyback(coin: { mint: string; quoteMint: PublicKey; venue: "curve" | "pool"; market: PublicKey; waiting: bigint; program?: PublicKey }) {
   const supply = await supplyOf(coin.mint, coin.program);
+  const holdersBefore = await holdersOnBoard(coin.mint);
   const ran = await forward(coin.mint);
   expect(ran.skipped).toEqual([]);
   expect(ran.buybacks).toEqual([{
@@ -169,6 +173,8 @@ async function buyback(coin: { mint: string; quoteMint: PublicKey; venue: "curve
   // The buy is a trade of the coin like anyone's, made by the operations wallet.
   const listed = (await trades(coin.mint)).find((t) => t.signature === sent!.signature);
   expect(listed).toMatchObject({ venue: coin.venue, trader: ops().toBase58(), side: "buy" });
+  // But the operations wallet holds nothing of it afterwards, so it is no holder on the board and no sniper.
+  expect(await holdersOnBoard(coin.mint)).toBe(holdersBefore);
   return { signature: sent!.signature, spent, burned, listed: listed! };
 }
 
