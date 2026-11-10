@@ -16,6 +16,11 @@ export function tierProgress(t: CoinCreatorTier) {
   return t.next ? `${Math.min(t.activeDays, t.next.activeDays)} of ${t.next.activeDays} Active Days to ${TOWARD[t.next.tier]}` : `${t.activeDays} Active Days`;
 }
 
+/** The climb at its shortest, for a row with little room: "4 of 15 Active Days", or the count alone on the top tier. */
+export function tierCount(t: CoinCreatorTier) {
+  return t.next ? `${Math.min(t.activeDays, t.next.activeDays)} of ${t.next.activeDays} Active Days` : `${t.activeDays} Active Days`;
+}
+
 /** What a pool trade pays the Creator on a tier, in basis points of the trade: the tier's share of the pool creator fee that arrives. */
 export function poolBpsAt(platform: PlatformInfo, shareBps: number) {
   return (platform.poolCreatorFeeBps * (10_000 - platform.poolCreatorFeeShareBps) * shareBps) / 100_000_000;

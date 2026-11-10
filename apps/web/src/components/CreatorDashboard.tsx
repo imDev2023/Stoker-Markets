@@ -7,7 +7,7 @@ import type { CreatorEarnings, CreatorEarningsAsset, CreatorForward, CurveStatus
 import { getCreatorEarnings, listCreatorForwards } from "@/lib/api";
 import { graduationFeeSol } from "@/lib/fees";
 import { explorerUrl, formatUnits, formatUtc, quoteTicker, SOL_DECIMALS } from "@/lib/format";
-import { TIER_NAMES, tierProgress } from "@/lib/ladder";
+import { TIER_NAMES, tierCount } from "@/lib/ladder";
 import { QuoteLogo } from "./QuoteLogo";
 import { WalletButton } from "./WalletButton";
 import styles from "./CreatorDashboard.module.css";
@@ -116,7 +116,7 @@ function Earnings({ earnings, forwards, platform }: { earnings: CreatorEarnings;
                       <span className={styles.coinName}>{l.name}</span>
                       {/* Its place on the Creator Ladder once it has graduated (ADR 0020): the tier in words, and the climb. */}
                       {l.status === "graduated" && (
-                        <span className={styles.coinTier} data-creator-tier={l.tier.tier}>{TIER_NAMES[l.tier.tier]}: {tierProgress(l.tier)}</span>
+                        <span className={styles.coinTier} data-creator-tier={l.tier.tier}>{TIER_NAMES[l.tier.tier]}: {tierCount(l.tier)}</span>
                       )}
                     </span>
                     <span className={styles.coinEarned}>
