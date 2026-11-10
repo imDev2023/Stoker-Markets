@@ -368,7 +368,7 @@ export const jobTransactions = pgTable("job_transactions", {
   job: text("job").notNull(),
   /** What the transaction does, such as a revenue kind. */
   purpose: text("purpose").notNull(),
-  /** The account it acts on: a fee vault, a pool, or the treasury. */
+  /** The account it acts on: a fee vault, a pool, a locked position's Fee Key, or the treasury. */
   subject: text("subject").notNull(),
   status: text("status", { enum: ["pending", "landed", "failed", "expired"] }).notNull().default("pending"),
   /** Past this block height an unconfirmed transaction can never land. */

@@ -306,3 +306,21 @@ curl -X POST https://api.stoker.markets/v1/operator/creator-ladder \
 ```
 
 `ACTIVE_DAY_SECONDS` exists for test stacks alone; the API refuses to start on mainnet with any length but a UTC day.
+
+## 16. Creator Earnings Destinations
+
+A Creator points their earnings on a coin at their wallet, the coin's holders, a buyback and burn, or liquidity, at launch and for good (ADR 0011).
+Migration `0027_earnings_destination` adds the choice to drafts and Launches (every existing coin pays the wallet), the source of a Reward Round, the `creator_buybacks` table, and lets a pool have many Fee Keys; apply it before the API that follows it.
+Nothing is set by an operator: the Creator Forward job applies every coin's rule on its hourly cron, right after the Fee Collector, and its job summary lists what it did under `rules` (`dividends`, `buybacks`, `belowMinimum`, `skipped`, `problems`).
+The Reward Engine pays the earnings rounds the job opens, on its ten-minute cron, beside the tax rounds.
+
+What the operations wallet pays for, out of its float, and never out of a Creator's share:
+
+- A liquidity addition opens a locked position of its own: about 0.0062 SOL of rent (the position's record, its Fee Key's mint and account), plus once per pool the wallet's LP account and once per coin the rule's own coin account, about 0.002 SOL each. The position's fees come back as `fee_key` revenue.
+- An earnings round paid in a token opens a holder's account of it when they have none, as a Quote Asset payout of Reward Tax already does.
+
+The Platform Lookup Table needs three more addresses for a liquidity addition (the CPMM and lock programs' authorities and the pools' CPMM config; on mainnet `GpMZbSM2GgvTKHJirzeGfMFoaZ8UR2X7F4v8vHTvxFbL`, `3f7GcQFG397GAaEnv51zR6tsTVihYRydnydDD1cXekxH` and `CRRS5ieQmBrZjWhcj99JuGrT5tyuWDaGAXLXLFjbAtjQ`).
+Nobody adds them by hand: the first run that needs them extends the table from the operations wallet, which is its authority, says so under `rules.skipped`, and adds the liquidity on a later run.
+
+To prove on the first mainnet addition (it is proven on the local chain's devnet binaries alone): the lock program takes `with_metadata: false`, and the largest addition, a Reward Launch's first one paired with SOL, is 1,226 of a transaction's 1,232 bytes, so it has no room for a priority fee instruction.
+If mainnet ever needs a priority fee to land these, that one case has to drop something first (the rule's account opened in a transaction of its own, say).
