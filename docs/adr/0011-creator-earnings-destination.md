@@ -60,6 +60,10 @@ Each landed payout transaction is one `holder_dividend` entry on the Ledger: the
 
 One transaction per run per coin: it buys an exact number of coins (what the pot buys at the current price, less a 1% slippage allowance) with the Quote Asset the wallet already holds for the coin, and burns exactly that number.
 On the curve that is LaunchLab's exact-out buy, with the Platform Fee like any trade; in the pool, the CPMM's exact-out swap.
+The coins never touch the operations wallet's own account of the coin, which also holds a Reward Launch's harvested tax and the platform's own coins waiting for the sweep.
+The buy delivers into an account that lives only inside the transaction, the burn empties it and it is closed again, which the token program refuses unless it is empty: the transaction burns exactly what the buy delivered, or does nothing at all.
+That also covers the one case where an exact buy is not exact: asked for more coins than the curve has left, LaunchLab delivers what is left instead of failing, and the transaction then fails whole.
+A Reward Launch's own tax on the buy is harvested to the mint in the same transaction, where the Reward Engine collects it for the holders like any other.
 No SOL route is involved, since the pot is already in the coin's Quote Asset.
 A curve buy leaves a Platform Fee in the vault, half of which is the Creator's again, so the rule compounds; what a run spends is bounded by the pot, never by the treasury or the liquidity.
 Nothing is bought while Raydium is moving the coin to its pool, or while the pool is paused or not open.
