@@ -35,6 +35,9 @@ An Active Day is a UTC day on which the indexed trades in a graduated coin's poo
 - Days need not follow one another, and the count only grows: a coin that goes quiet and comes back keeps the days it had.
 - A day counts as soon as its volume passes the floor, the current day included.
 - Only pool trades count, so the count starts at Graduation.
+- The Fee Collector counts them, every hour before it collects, and keeps each coin's count on its `graduations` row (`active_days`).
+  Every page reads that stored count: a coin's page asks for its coin every few seconds, and a count over all its pool trades would be paid on each read.
+- A coin on the top tier is no longer counted; its count stays the one that reached the tier.
 - Anyone can recount it from `GET /v1/launches/:mint/trades` or the day candles.
 
 Faking a day costs a day's floor in real trades and their fees, on thirty separate days for the top tier.
@@ -42,14 +45,14 @@ What the top tier buys is a larger share of fees that only exist if the coin rea
 
 ## A tier is recorded, once
 
-The Fee Collector, before it collects, counts every graduated coin's Active Days under the ladder in force and writes one `creator_tiers` row for each tier a coin has newly reached, with the chain's confirmed slot.
+The Fee Collector, before it collects, counts the Active Days of every graduated coin below the top tier under the ladder in force and writes one `creator_tiers` row for each tier a coin has newly reached, with the chain's confirmed slot.
 A pool creator fee collection is shared at the tier its coin held when it landed: the highest tier recorded in an earlier slot, the first without one.
 The collections of the same run land in later slots, so they already earn the new tier.
 
 - Nothing collected before a tier was recorded moves, so what a Creator has been paid never changes after the fact.
 - A row is never changed or removed, so a coin's tier only ever climbs, whatever a later version of the ladder asks of coins that have not reached it yet.
 - What a Creator is owed stays a sum anyone can redo: the Ledger's `pool_fee` entries, the published ladder versions and the coin's recorded tiers (`creatorTier` on `GET /v1/launches/:mint`).
-- A coin's tier can lag its Active Days by up to an hour, the Fee Collector's period; no fee is collected in between, so no share is lost.
+- A coin's count and tier follow its trades by up to an hour, the Fee Collector's period; no fee is collected in between, so no share is lost.
 
 A tier derived from the trades at every read was rejected: a trade indexed late would have moved a tier's date into the past and with it shares already paid.
 
@@ -89,6 +92,8 @@ Mainnet had no Launch when the ladder was written; the devnet rehearsal's three 
 - A count of holders held over a period: cheap to fake with dust wallets, and the indexed holder count comes from trades, so it misses transfers.
 - Days since Graduation with a total volume: exact from the Ledger alone, but a coin that did its volume in two days and died would still reach the top tier.
 - A tier per Creator across their coins: one success would carry any number of weak coins, and a wallet's rank can be farmed.
+- Counting a coin's days from its trades at every read: the coin page reads its coin every four seconds, and the cost would grow with every trade the coin ever had.
+- A daily volume table written with each trade: a second write on the indexing path for every pool trade, and a figure that could drift from the trades it sums.
 - The floor in SOL at the Quote Registry's price: there is no price history to value a past day with.
 - The ladder as constants in the code: a changed share would apply to everything ever collected, and nothing would enforce a lead time (the reasons ADR 0019 gives for the Budget Table).
 - A day's length as a rule: it is a setting, `ACTIVE_DAY_SECONDS`, that only a test stack may shorten; mainnet refuses any length but a UTC day.

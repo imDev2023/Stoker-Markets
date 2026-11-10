@@ -78,7 +78,10 @@ export type AnnounceCreatorLadder = z.infer<typeof AnnounceCreatorLadder>;
 export const CoinCreatorTier = z.object({
   /** The tier the coin holds: the highest it has been recorded on, which never falls. */
   tier: CreatorTierNumber,
-  /** The coin's Active Days so far, counted with the floor in force now; 0 before Graduation. */
+  /**
+   * The coin's Active Days as the Fee Collector last counted them, every hour before it collects, with the floor in
+   * force then; 0 before Graduation. On the top tier, the count that reached it: such a coin is no longer counted.
+   */
   activeDays: z.number().int().min(0),
   /** When the tier it holds was recorded; null on the first tier. */
   reachedAt: z.iso.datetime().nullable(),

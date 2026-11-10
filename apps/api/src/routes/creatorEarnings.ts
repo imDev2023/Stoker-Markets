@@ -74,7 +74,7 @@ creatorEarningsRoutes.get("/creators/:address/earnings", async (c) => {
     creatorSharesByLaunch(db, address),
   ]);
 
-  const tiers = await coinTiers(db, cfg.activeDaySeconds, ownLaunches.map((l) => l.mint));
+  const tiers = await coinTiers(db, ownLaunches.map((l) => l.mint));
   // SOL first, then the other Quote Assets in a stable order.
   const quotes = new Map(ownLaunches.map((l) => [l.quote.mint, toQuoteRef(l.quote)]));
   const mints = [...quotes.keys()].sort((a, b) => (a === WSOL_MINT.toBase58() ? -1 : b === WSOL_MINT.toBase58() ? 1 : a.localeCompare(b)));

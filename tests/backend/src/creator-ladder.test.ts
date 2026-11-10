@@ -2,6 +2,7 @@
 // on it, on the curve and after Graduation. A graduated coin climbs by its Active Days, the days on which its pool
 // traded at least a set part of its Graduation Target, and each pool fee collection is shared at the tier the coin held
 // when it landed: nothing collected earlier moves, and a tier never falls. The ladder is versioned and announced ahead.
+// The Fee Collector counts the days and records the tiers before it collects, and every page reads what it counted.
 // An Active Day lasts ten seconds on this stack (`harness.ts`), so a coin climbs while the test watches.
 import { afterAll, describe, expect, it } from "vitest";
 import { PublicKey } from "@solana/web3.js";
@@ -178,11 +179,13 @@ describe("a graduated coin", () => {
     // A day on which the pool traded less than the floor (here the coin's whole Graduation Target) is not an Active Day.
     const whole = (coin.target * 11n) / 10n;
     let day = await poolBuy(coin, coin.target / 20n, null);
+    expect((await collect()).filter((t) => t.mint === coin.mint)).toEqual([]);
     expect(await standing(coin.mint)).toMatchObject({ tier: 1, activeDays: 0, next: { tier: 2, activeDays: 2 } });
 
-    // One Active Day: still the first tier, so this collection is shared in half.
+    // One Active Day: still the first tier, so this collection is shared in half. The count is the Fee Collector's:
+    // indexing the trade alone moves nothing.
     day = await poolBuy(coin, whole, day);
-    expect((await standing(coin.mint)).activeDays).toBe(1);
+    expect((await standing(coin.mint)).activeDays).toBe(0);
     expect((await collect()).filter((t) => t.mint === coin.mint)).toEqual([]);
     expect(await standing(coin.mint)).toMatchObject({ tier: 1, activeDays: 1, reachedAt: null });
 
@@ -196,10 +199,10 @@ describe("a graduated coin", () => {
     expect((await collect()).filter((t) => t.mint === coin.mint)).toEqual([{ mint: coin.mint, tier: 3, activeDays: 3 }]);
     expect(await standing(coin.mint)).toMatchObject({ tier: 3, activeDays: 3, next: null });
 
-    // Three collections, each at the tier the coin held when it landed: nothing collected earlier moved.
+    // Four collections, each at the tier the coin held when it landed: nothing collected earlier moved.
     const fees = await poolFees(coin.mint);
-    expect(fees).toHaveLength(3);
-    const climbed = shareOf(fees[0]!, 5000) + shareOf(fees[1]!, 6000) + shareOf(fees[2]!, 7000);
+    expect(fees).toHaveLength(4);
+    const climbed = shareOf(fees[0]!, 5000) + shareOf(fees[1]!, 5000) + shareOf(fees[2]!, 6000) + shareOf(fees[3]!, 7000);
     let e = await earnings(coin.creator.publicKey);
     expect(e.launches).toMatchObject([{ mint: coin.mint, curve: coin.onCurve.toString(), pool: climbed.toString(), tier: { tier: 3, activeDays: 3, next: null } }]);
 
@@ -219,11 +222,12 @@ describe("a graduated coin", () => {
     expect((await published()).inForce).toMatchObject({ tiers: tiersOf(FIRST), activeDayFloorBps: 100 });
     await poolBuy(coin, whole, day);
     expect((await collect()).filter((t) => t.mint === coin.mint)).toEqual([]);
-    expect(await standing(coin.mint)).toMatchObject({ tier: 3, next: null });
+    // On the top tier a coin is no longer counted: its Active Days stay the three that reached it.
+    expect(await standing(coin.mint)).toMatchObject({ tier: 3, activeDays: 3, next: null });
     const after = await poolFees(coin.mint);
-    expect(after).toHaveLength(4);
+    expect(after).toHaveLength(5);
     e = await earnings(coin.creator.publicKey);
-    expect(e.launches[0]!.pool).toBe((climbed + shareOf(after[3]!, FIRST.topBps)).toString());
+    expect(e.launches[0]!.pool).toBe((climbed + shareOf(after[4]!, FIRST.topBps)).toString());
   });
 
   it("stays on the first tier on the curve, with no Active Days to count", async () => {

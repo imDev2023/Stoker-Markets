@@ -292,8 +292,8 @@ export default async function FeesPage() {
         ))}
         <p className={styles.note}>
           A tier&apos;s share is of the pool creator fee that arrives, after Raydium&apos;s part; the Fee Key&apos;s part of a pool trade stays the
-          platform&apos;s at every tier. A coin&apos;s tier is recorded before each hourly collection and shown on its page with its Active Days,
-          which anyone can recount from its trades. A change to the ladder is announced at least a day ahead under{" "}
+          platform&apos;s at every tier. A coin&apos;s Active Days are counted and its tier recorded before each hourly collection, and both are shown
+          on its page; anyone can recount the days from its trades. A change to the ladder is announced at least a day ahead under{" "}
           <Link href="/announcements">Announcements</Link>.
         </p>
       </section>

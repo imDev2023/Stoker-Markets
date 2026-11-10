@@ -1,5 +1,5 @@
 {
-  "id": "2dca38f9-54e3-490c-a2e1-dde6609b1136",
+  "id": "5e5c2e2f-f858-44d3-a0dc-011c49243f77",
   "prevId": "ade80371-51ce-4128-93a1-32e3ace2de14",
   "version": "7",
   "dialect": "postgresql",
@@ -1021,6 +1021,13 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
+        },
+        "active_days": {
+          "name": "active_days",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
         }
       },
       "indexes": {},

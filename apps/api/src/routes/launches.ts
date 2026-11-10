@@ -287,7 +287,7 @@ launchRoutes.get("/launches/:mint", async (c) => {
   if (!row) return c.json({ error: "launch not found" }, 404);
   const cfg = c.get("cfg");
   // A graduated coin's place on the Creator Ladder (ADR 0020), which only this answer carries.
-  const tier = row.graduation ? (await coinTiers(c.get("db"), cfg.activeDaySeconds, [row.launch.mint])).get(row.launch.mint)! : null;
+  const tier = row.graduation ? (await coinTiers(c.get("db"), [row.launch.mint])).get(row.launch.mint)! : null;
   return c.json(toSummary(cfg, row, tier));
 });
 

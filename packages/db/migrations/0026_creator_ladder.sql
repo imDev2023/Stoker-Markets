@@ -24,6 +24,8 @@ CREATE TABLE "creator_tiers" (
 	CONSTRAINT "creator_tiers_tier" CHECK ("creator_tiers"."tier" in (2, 3))
 );
 --> statement-breakpoint
+ALTER TABLE "graduations" ADD COLUMN "active_days" integer DEFAULT 0 NOT NULL;
+--> statement-breakpoint
 -- The first version (ADR 0020, owner 2026-11-10), in force from the first lamport: half on the curve and after
 -- Graduation, 60% once a coin has 15 Active Days, 70% once it has 30, a day counting when its pool traded at least 1%
 -- of the coin's Graduation Target. Nothing collected before this migration moves: a tier's share applies to the pool

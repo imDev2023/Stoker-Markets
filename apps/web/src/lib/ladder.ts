@@ -11,7 +11,7 @@ export const TIER_NAMES: Record<CreatorTierNumber, string> = { 1: "First tier", 
 /** A tier as the end of a sentence: "the second", "the top". */
 const TOWARD: Record<CreatorTierNumber, string> = { 1: "the first", 2: "the second", 3: "the top" };
 
-/** How far a coin is along its climb: "4 of 15 Active Days to the second", or its count alone on the top tier. */
+/** How far a coin is along its climb: "4 of 15 Active Days to the second", or, on the top tier, the count that reached it. */
 export function tierProgress(t: CoinCreatorTier) {
   return t.next ? `${Math.min(t.activeDays, t.next.activeDays)} of ${t.next.activeDays} Active Days to ${TOWARD[t.next.tier]}` : `${t.activeDays} Active Days`;
 }

@@ -222,6 +222,11 @@ export const graduations = pgTable("graduations", {
   feePaidLamports: numeric("fee_paid_lamports", { precision: 40, scale: 0 }).notNull().default("0"),
   /** When the fee was withheld in full; null while any of it is still owed. */
   feeSettledAt: timestamp("fee_settled_at", { withTimezone: true }),
+  /**
+   * The coin's Active Days (ADR 0020) as the Fee Collector last counted them, before it collected: the days on which the
+   * pool traded at least the ladder's floor. Every page reads this figure; a coin on the top tier is no longer counted.
+   */
+  activeDays: integer("active_days").notNull().default(0),
 });
 
 /**

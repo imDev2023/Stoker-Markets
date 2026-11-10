@@ -94,9 +94,15 @@ export function CoinFacts({ launch, platform, trust, renderedAt }: {
               <dd data-creator-tier={tier.tier}>
                 {tier.tier === 1 ? "Half of what the platform collects on this coin" : `${TIER_NAMES[tier.tier]} of the Creator Ladder: more than half of this coin’s pool fees`}
                 <span>
-                  {tier.tier === 1 ? `${TIER_NAMES[1]} of the Creator Ladder, ` : ""}{tierProgress(tier)}
-                  {tier.reachedAt && <>, reached <time dateTime={tier.reachedAt}>{formatUtc(tier.reachedAt)}</time></>}. Sent to the Creator&apos;s
-                  wallet with nothing to claim. <Link href="/fees#creator-ladder">Every fee, explained</Link>
+                  {tier.tier === 1 ? (
+                    `${TIER_NAMES[1]} of the Creator Ladder, ${tierProgress(tier)}.`
+                  ) : (
+                    <>
+                      Reached{tier.reachedAt && <> <time dateTime={tier.reachedAt}>{formatUtc(tier.reachedAt)}</time></>}
+                      {tier.next ? `; ${tierProgress(tier)}.` : `, after ${tier.activeDays} Active Days.`}
+                    </>
+                  )}{" "}
+                  Sent to the Creator&apos;s wallet with nothing to claim. <Link href="/fees#creator-ladder">Every fee, explained</Link>
                 </span>
               </dd>
             ) : (
