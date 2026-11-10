@@ -59,3 +59,5 @@ export {
   curveTradeIx, loadCurve, loadFeeRates, prepareTrade, tradeInstructions,
   type Curve, type CurveAccounts, type CurveStatus, type TradeRequest,
 } from "./trade";
+export { buyExactOutInstructions, curveBuyExactOutIx } from "./trade";
+export { quoteBuyExactOut } from "./curve";

@@ -3,7 +3,7 @@ import { createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAd
 import type BN from "bn.js";
 import { launchlabCoder } from "./coder";
 import type { CurveReserves, FeeRates, Side } from "./curve";
-import { tradeExactInIx } from "./instructions";
+import { buyExactOutIx, tradeExactInIx } from "./instructions";
 import { transferFeeOf, type TransferFee } from "./transferFee";
 import { steppedTransaction, tradeAccounts, type PreparedTrade } from "./wallet";
 
@@ -169,5 +169,48 @@ export function curveTradeIx(
     amountIn: t.amountIn,
     minAmountOut: t.minAmountOut,
     share: t.share ?? null,
+  });
+}
+
+/**
+ * The instructions of one buy of an exact number of coins on a curve, for a key the server holds: the buy takes no more
+ * than `maxAmountIn` of the Quote Asset from the trader's own account of it, or for SOL from a temporary wrapped-SOL
+ * account funded with that much, which gives back what the buy did not use when it closes. The coins arrive in
+ * `baseAccount`, which the caller opens, or in the trader's associated token account, opened here if it is missing.
+ */
+export async function buyExactOutInstructions(
+  connection: Connection,
+  r: { program: PublicKey; curve: CurveAccounts; trader: PublicKey; amountOut: BN; maxAmountIn: BN; baseAccount?: PublicKey },
+): Promise<TransactionInstruction[]> {
+  const accounts = await tradeAccounts(connection, {
+    ...r.curve, trader: r.trader, side: "buy", amountIn: r.maxAmountIn, ...(r.baseAccount ? { baseAccount: r.baseAccount } : {}),
+  });
+  return [
+    ...accounts.setup,
+    curveBuyExactOutIx(r.program, r.curve, { trader: r.trader, baseAccount: accounts.base, quoteAccount: accounts.quote, amountOut: r.amountOut, maxAmountIn: r.maxAmountIn }),
+    ...accounts.cleanup,
+  ];
+}
+
+/** A buy of exactly `amountOut` coins on a curve, from and to the given token accounts, for no more than `maxAmountIn`. */
+export function curveBuyExactOutIx(
+  program: PublicKey, c: CurveAccounts,
+  t: { trader: PublicKey; baseAccount: PublicKey; quoteAccount: PublicKey; amountOut: BN; maxAmountIn: BN },
+) {
+  return buyExactOutIx({
+    program,
+    trader: t.trader,
+    pool: c.pool,
+    globalConfig: c.globalConfig,
+    platformConfig: c.platformConfig,
+    creator: c.creator,
+    baseMint: c.baseMint,
+    quoteMint: c.quoteMint,
+    baseTokenProgram: c.baseTokenProgram,
+    quoteTokenProgram: c.quoteTokenProgram,
+    traderBaseAccount: t.baseAccount,
+    traderQuoteAccount: t.quoteAccount,
+    amountOut: t.amountOut,
+    maxAmountIn: t.maxAmountIn,
   });
 }
