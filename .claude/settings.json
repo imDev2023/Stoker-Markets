@@ -11,7 +11,8 @@
       "Bash(gh pr comment:*)",
       "Bash(gh pr close:*)",
       "Bash(gh pr merge:*)",
-      "Bash(gh pr ready:*)"
+      "Bash(gh pr ready:*)",
+      "Bash(git worktree remove:*)"
     ]
   }
 }
