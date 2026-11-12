@@ -71,10 +71,10 @@ export default async function RewardsPage() {
           <EmptyState bare title="The rules are set before the first Reward Launch">No rules are in force yet. They are announced here ahead of the first round.</EmptyState>
         )}
         <p className={styles.note}>
+          {/* One string either way, so the sentence stays one text node: split in two, the browser shapes each part on its own and the line moves by a fraction of a pixel. */}
           {weighed
-            ? "Each wallet's share is its holding over every eligible holding at the round's snapshot, each coin counted at its Diamond Hands weight."
-            : "Each wallet's share is its holding over every eligible holding at the round's snapshot."}{" "}
-          The curve&apos;s and pool&apos;s own accounts and the platform&apos;s operations wallet never count as holders.
+            ? "Each wallet's share is its holding over every eligible holding at the round's snapshot, each coin counted at its Diamond Hands weight. The curve's and pool's own accounts and the platform's operations wallet never count as holders."
+            : "Each wallet's share is its holding over every eligible holding at the round's snapshot. The curve's and pool's own accounts and the platform's operations wallet never count as holders."}
         </p>
         <p className={styles.note}>
           The platform&apos;s treasury does count. A pool pays part of its fees in the coin, those coins end up in the treasury, and
