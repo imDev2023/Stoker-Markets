@@ -36,10 +36,12 @@ const raw = z.string().regex(/^\d+$/, "must be a whole number of raw units");
  *   Quote Asset spent in the coin's own market, and the coins destroyed.
  * - `creator_liquidity`: a Creator's share spent on a buyback that adds locked liquidity (ADR 0011, #184), two entries
  *   of one transaction: the Quote Asset spent (the buy and the half paired with it), and the coins that went into the pool.
+ * - `rebate`: a trader's Volume Rebates paid in SOL (ADR 0021), from the operations wallet to the trader, one entry per
+ *   wallet a payment transaction paid; the spending of the Budget Table's `rebates` row.
  */
 export const LedgerKind = z.enum([
   "platform_fee", "pool_fee", "fee_key", "sweep", "creator_forward", "burn", "flywheel", "arweave_top_up", "metadata_upload", "reward_sale", "graduation_fee",
-  "holder_dividend", "creator_burn", "creator_liquidity",
+  "holder_dividend", "creator_burn", "creator_liquidity", "rebate",
 ]);
 export type LedgerKind = z.infer<typeof LedgerKind>;
 
@@ -137,7 +139,7 @@ export type Revenue = z.infer<typeof Revenue>;
 // ---------------------------------------------------------------------------------------------------------------------
 // Operator: scheduled job runs.
 
-export const JobName = z.enum(["quote-registry", "graduation-watch", "fee-collector", "creator-forward", "reward-tax-lock", "reward-rounds", "burn", "metadata-upload", "mentions"]);
+export const JobName = z.enum(["quote-registry", "graduation-watch", "fee-collector", "creator-forward", "reward-tax-lock", "reward-rounds", "burn", "metadata-upload", "mentions", "rebates"]);
 export type JobName = z.infer<typeof JobName>;
 
 export const JobRun = z.object({

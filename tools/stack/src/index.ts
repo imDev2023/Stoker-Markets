@@ -68,6 +68,10 @@ export type StackEnv = {
   feeChangeLeadSeconds: number;
   /** The Creator Ladder's Active Day in seconds (ADR 0020): a UTC day unless the stack was started with a shorter one. */
   activeDaySeconds: number;
+  /** The Rebate Week in seconds (ADR 0021): a UTC week unless the stack was started with a shorter one. */
+  rebateWeekSeconds: number;
+  /** What a wallet's waiting Volume Rebates must reach before they are paid, in lamports, as the API has it. */
+  rebateMinLamports: string;
   platform: LocalnetState;
   /** The Raydium CPMM pools of SOL the API routes buys paid with SOL through, standing in for Jupiter. */
   solRoutes: SolRoutes;
@@ -94,6 +98,11 @@ export type StackOptions = {
    * ever counts a second day. The backend suite shortens it to see a coin climb.
    */
   activeDaySeconds?: number;
+  /**
+   * The Rebate Week in seconds (ADR 0021); a UTC week unless set, as in production, so no week of a run ever ends. The
+   * backend suite shortens it to see a week settled and paid.
+   */
+  rebateWeekSeconds?: number;
   web?: boolean;
 };
 
@@ -220,6 +229,8 @@ export const FEE_COLLECTOR_CRON = "15 * * * *";
 export const REWARD_ROUNDS_CRON = "*/10 * * * *";
 export const BURN_CRON = "45 * * * *";
 export const OPERATOR_TOKEN = "test-operator-token";
+/** The stack's minimum payout of Volume Rebates (ADR 0021): 0.001 SOL, just above what an empty wallet must hold. */
+const REBATE_MIN_LAMPORTS = "1000000";
 
 /** A stand-in for the operator's chat webhook: keeps every JSON body posted to it and lists them on GET. */
 async function startAlertSink() {
@@ -422,6 +433,9 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       COUNTRY_HEADER: "x-test-country",
       SNIPE_WINDOW_SLOTS: String(opts.snipeWindowSlots ?? 40),
       ...(opts.activeDaySeconds ? { ACTIVE_DAY_SECONDS: String(opts.activeDaySeconds) } : {}),
+      ...(opts.rebateWeekSeconds ? { REBATE_WEEK_SECONDS: String(opts.rebateWeekSeconds) } : {}),
+      // Small, so a test trader's Volume Rebates reach a payment on a curve's worth of trading; never under an empty wallet's rent.
+      REBATE_MIN_LAMPORTS,
       // Three top Launches, so a test can see one picked and one left out.
       FLYWHEEL_TOP_N: "3",
       // Tiny, so the Flywheel buys on the little revenue a test run makes.
@@ -485,7 +499,8 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
         apiUrl, webUrl, rpcUrl: chain.rpcUrl, databaseUrl: pg.url, webhookSecret: WEBHOOK_SECRET, operatorToken: OPERATOR_TOKEN,
         alertSinkUrl: sink.url, heliusApiUrl: helius.url, heliusApiKey: HELIUS_API_KEY, heliusWebhookId: HELIUS_WEBHOOK_ID,
         turbo: { url: turbo.url, depositAddress: turbo.depositAddress }, x: { url: x.url, apiKey: x.apiKey }, arweaveTopUpLamports,
-        graduationAlertAfterSeconds, poolBackfillSeconds, ...fees, referralShareBps, feeChangeLeadSeconds, activeDaySeconds: opts.activeDaySeconds ?? 86_400, platform, solRoutes, webApiKey, apiVars: vars,
+        graduationAlertAfterSeconds, poolBackfillSeconds, ...fees, referralShareBps, feeChangeLeadSeconds, activeDaySeconds: opts.activeDaySeconds ?? 86_400,
+        rebateWeekSeconds: opts.rebateWeekSeconds ?? 7 * 86_400, rebateMinLamports: REBATE_MIN_LAMPORTS, platform, solRoutes, webApiKey, apiVars: vars,
       },
       stop,
     };

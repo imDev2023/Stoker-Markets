@@ -23,10 +23,11 @@ const KIND: Record<LedgerKind, string> = {
   holder_dividend: "Creator Earnings paid to holders",
   creator_burn: "Creator Earnings bought back and burned",
   creator_liquidity: "Creator Earnings added as liquidity",
+  rebate: "Volume Rebate paid to a trader",
 };
 
 /** Entries that move revenue out of the operations wallet rather than into it. */
-const OUT = new Set<LedgerKind>(["sweep", "creator_forward", "holder_dividend", "arweave_top_up", "metadata_upload"]);
+const OUT = new Set<LedgerKind>(["sweep", "creator_forward", "holder_dividend", "arweave_top_up", "metadata_upload", "rebate"]);
 
 /** A Creator's buyback (ADR 0011), which burns what it buys or adds it to the pool: two entries of one transaction. */
 const BUYBACK = new Set<LedgerKind>(["creator_burn", "creator_liquidity"]);
