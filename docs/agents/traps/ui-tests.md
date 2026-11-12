@@ -50,6 +50,12 @@ The text is the original's, one sentence a line.
 - The board's controls (search, Sort, the asset bar with every kind) render before the first coin: the owner opens the dev site on an empty database and judges a feature by that view (2026-10-07, when an empty-state branch hid all of them).
   `empty.spec.ts` pins the controls and the rail's kinds (on `/coins` since #90) and the landing's first-launch invitation on `/`; never put a control behind an empty state.
   The rail's assets are only those coins are paired with, so an empty board shows the kinds alone.
+- A Holding Day lasts three seconds on the UI stack (`global-setup.ts`, for `rewardsWeight.spec.ts`), so under a rules version with steps a Holding Lot reaches its next step within seconds or minutes, and a wallet's Diamond Hands on a coin's card (its weight, its rows) changes by itself between two page loads.
+  A flow that compares the card with `GET /v1/launches/:mint/holdings/:wallet` reads both again until they agree (`toPass`), and the card's four baselines are shot with one answer of the API held for the page (`page.route` with `route.fetch()` and `fulfill({ response, json })`, which keeps the real answer's CORS headers), read while the two lots counted differently.
+  Never shoot a weight straight off the running stack.
+- Only `rewardsWeight.spec.ts` may put a Reward Round rules version with steps in force on the UI stack: every other flow works its payouts out with each coin counted once, and the visual projects run before the flows and must never see the Diamond Hands card or block.
+  A rules change needs a minute's notice whatever the stack's lead time, so that file costs two waits of a minute, and its `afterAll` waits the plain version in even when a test failed.
+  The stack's treasury is an address with no key, so no test can connect as it: the card's line for the treasury is shown the API's answer with `flat` set.
 - The UI fixture records the disclaimer's acceptance before every page load (`DISCLAIMER_KEY` in `tests/ui/src/fixtures.ts`), so no test or baseline meets the welcome: a test of the welcome sets `test.use({ firstVisit: true })`, and a test of the launch or trade disclaimer calls `forgetDisclaimer(page)` after the load, or the dialog never comes.
   Escape closes a modal `<dialog>` by itself and Chromium may not let `cancel` prevent it, so anything the close must do (the welcome's acceptance) hangs on `close`, never on `cancel` alone.
 

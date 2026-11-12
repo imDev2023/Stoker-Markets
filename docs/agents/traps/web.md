@@ -13,6 +13,8 @@ The text is the original's, one sentence a line.
   To find such a thing, bisect against a kept stack: `startStack({ web: true })` from a throwaway `.mts` in `tests/ui` keeps a seeded stack up (the seed project run through a throwaway config with `LAUNCHPAD_STACK` from the stack's env), a Playwright script opens the page and prints the console in ten seconds, and `Runtime.consoleAPICalled` over a CDP session gives the owner stack (`<div> ... CoinPage`) that `page.on("console")` leaves out.
 - A server component that imports a constant from a `"use client"` module gets a client reference, not the value: the root layout read `SCHEME_COOKIE` from `SchemeToggle.tsx` and `cookies().get(<reference>)` was always undefined, so the toggle never held across a load (2026-10-13).
   Shared constants live in `src/lib/*`.
+- A sentence split into two JSX expressions is two text nodes, and the browser shapes each on its own: making the first half of the Rewards page's "Each wallet's share..." note conditional (`{weighed ? "..." : "..."}{" "}The curve's...`) moved about 100 pixels of that line in the four `rewards-empty.png` baselines, with every word unchanged (2026-11-12).
+  When part of a sentence a baseline shows becomes conditional, keep each whole sentence one string, so it stays one text node.
 - Test `next dev` runs rewrite `apps/web/next-env.d.ts` to point at their throwaway build folder; the web `typecheck` runs `next typegen` first, so ignore that file.
 - `next dev` names every file-based metadata image (`opengraph-image`) at `http://localhost:<port>` whatever the request's host or `metadataBase` (Next's development fallback; a production build resolves it against `metadataBase`), and a dynamic segment's image route carries a hash suffix (`/coin/<mint>/opengraph-image-1ta1z0`): a test fetches the path the page names on the stack's own address, never a URL it builds.
   Satori (`next/og`) lays text out only inside a box with a set width (a flex column that grows takes its content's width and the line runs off the card), and can't place a WebP picture, so a coin with one gets its monogram on the card.
@@ -36,6 +38,10 @@ The text is the original's, one sentence a line.
   With no bars the library prints its own "No data here" over the plot, which is why the chart waits for a coin's first trade.
   Cloudflare's static assets redirect `/charting_library/sameorigin.html` to `/charting_library/sameorigin` (307) and the library loads through it (checked with `opennextjs-cloudflare build` and `wrangler dev`, 2026-11-06).
   TradingView's datafeed checker (`.agents/skills/charting-library-datafeed/scripts/check-datafeed.mjs` in the library's repository) runs on `datafeed.ts` through a throwaway module that exports `createDatafeed(...).datafeed`, with `NEXT_PUBLIC_API_URL` set to a stack's API and `npx tsx` from `apps/web`.
+
+- The library asks the datafeed for marks on its own schedule, and an answer can arrive after the visitor changed what the marks show: a read sent with the trades on, answered after "Trades" was switched off and the marks cleared, drew the trades' rings again and left `data-marks` at 4 where the posts alone are 1 (a UI run under load, `visual-phone-dark`, 2026-11-12).
+  `getMarks` in `src/lib/datafeed.ts` answers such a read with nothing: it compares what the marks show and the wallet at the answer with what they were at the request.
+  Anything else that answers the library later than it was asked needs the same check.
 
 ## Content
 
