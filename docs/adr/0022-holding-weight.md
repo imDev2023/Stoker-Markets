@@ -70,7 +70,7 @@ A snapshot writes nothing to the lots: only a Holding Check does.
 - `GET /v1/launches/:mint/holdings/:wallet`: the wallet's lots of a coin as the latest Holding Check left them, each with its `since` and the weight it has under the rules in force, the wallet's Weighted Holding and its weight as one figure, and the check itself (time and slot).
   The treasury's lots are shown as they are, each at the weight of once, with `flat` set.
 - The Rewards page explains the rule under the name Diamond Hands with the steps in force or announced, and says the four things a holder must know: a sell takes the newest coins first, coins sent to another wallet start again there, balances are looked at once a day, and the treasury always counts once. It shows nothing of it while no version with steps is in force or announced.
-- A round's page shows each payout's weight once the round's version has steps; the coin page's rewards cards show the connected wallet's own.
+- A round's page shows each payout's weight once any payout of the round counts for more than once; the coin page's rewards cards show the connected wallet's own while the rules in force have steps.
 
 ## Considered Options
 
