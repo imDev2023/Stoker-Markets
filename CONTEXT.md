@@ -135,7 +135,7 @@ A coin with one has a pot of its own in its Quote Asset (what was collected for 
 _Avoid_: Vault, strategy, smart contract (no program enforces it)
 
 **Holder Dividend**:
-What a coin's holders are paid out of its Creator's earnings under the holders rule, pro rata in the Quote Asset, through a Reward Round of source `earnings`.
+What a coin's holders are paid out of its Creator's earnings under the holders rule, by their Weighted Holding in the Quote Asset, through a Reward Round of source `earnings`.
 _Avoid_: Holder Rewards (those are paid from Reward Tax), airdrop, staking reward
 
 **Creator Buyback**:

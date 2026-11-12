@@ -29,6 +29,8 @@ Both are fixed at launch, so no other coin ever needs its history.
 The wallets are the ones a round counts: owners on the ed25519 curve, never a program's vault and never the operations wallet.
 A wallet under the rules' minimum holding is recorded too: the minimum decides who is paid in a round, not whose coins age.
 A run checks a bounded number of coins and leaves the rest of the day's checks to its next runs, ten minutes apart.
+The bound is 25 coins a run (`HOLDING_CHECKS_PER_RUN`), so 3,600 a day; the coins never checked come first, then the ones unchecked for longest.
+A check's time, and so the `since` of the lots it opens, is the moment its run of the engine began, which is also the time a round opened in that run counts ages at.
 
 ## Holding Lots
 
@@ -63,9 +65,10 @@ A snapshot writes nothing to the lots: only a Holding Check does.
 
 ## What is published
 
-- `GET /v1/rewards/rules`: each version with its `holdingWeights`.
+- `GET /v1/rewards/rules`: each version with its `holdingWeights`, and `holdingDaySeconds`, the length of a Holding Day on the deployment.
 - Every payout carries `weightedHolding` beside `holding`, and a round its `weightedTotal`, so a payout can be recomputed from the round's own page. A round from before this ADR has no `weightedTotal`, and its payouts' weighted holdings are their holdings counted once.
 - `GET /v1/launches/:mint/holdings/:wallet`: the wallet's lots of a coin as the latest Holding Check left them, each with its `since` and the weight it has under the rules in force, the wallet's Weighted Holding and its weight as one figure, and the check itself (time and slot).
+  The treasury's lots are shown as they are, each at the weight of once, with `flat` set.
 - The Rewards page explains the rule under the name Diamond Hands with the steps in force or announced, and says the four things a holder must know: a sell takes the newest coins first, coins sent to another wallet start again there, balances are looked at once a day, and the treasury always counts once. It shows nothing of it while no version with steps is in force or announced.
 - A round's page shows each payout's weight once the round's version has steps; the coin page's rewards cards show the connected wallet's own.
 

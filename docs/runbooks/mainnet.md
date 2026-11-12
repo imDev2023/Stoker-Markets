@@ -348,3 +348,34 @@ curl -sS -X POST https://api.stoker.markets/v1/operator/budget-table \
 - Lowering `REBATE_MIN_LAMPORTS` pays out everything waiting above the new minimum on the next run; it can never be set under 890880, what an empty wallet must hold.
 - Ending the program is another announced version with the row back at 0.
   What the row was allotted and did not give stays in the operations wallet until a later version gives the row a share again.
+
+## 18. The Holding Weight (operator)
+
+In a Reward Round a coin kept longer counts for more (ADR 0022), under the name Diamond Hands on the site.
+Migration `0029_holding_weight` adds the lots, the checks and three columns, and counts every earlier payout's holding once, so apply it before the API that follows it.
+From that deploy on, every Reward Engine run begins with the Holding Checks due: once in a UTC day per coin that can have a round, at most 25 coins a run, the never-checked first.
+Nothing changes in any payout until a rules version with steps is in force, and the coins' ages run from each coin's first check, so the checks should run for at least the lead time before the first weighted round, which the lead time itself guarantees.
+
+Going live is one announced rules version with the owner's first weights (2026-11-12): a coin kept 7 days counts one and a half times, a coin kept 30 days twice.
+The version 2 the owner already owes before the first Reward Launch (section 6, the 1T shares of the minimum holding and the threshold) can carry the weights in the same announcement, which is what this command does.
+
+```sh
+curl -sS -X POST https://api.stoker.markets/v1/operator/rewards/rules \
+  -H "authorization: Bearer $(cat ~/.config/stoker/mainnet/operator-token)" -H "content-type: application/json" \
+  -d '{"minHolding":"10000000000000","roundThreshold":"100000000000000","holdingWeights":[{"afterDays":7,"weightBps":15000},{"afterDays":30,"weightBps":20000}],"effectiveAt":"<at least a day ahead>","note":"1T shares and the first Holding Weights"}'
+```
+
+- A version states all of its rules: `holdingWeights` is named every time, and the API refuses an announcement without it.
+  The empty list `[]` is the rule without a Holding Weight, so a later change of the minimum or the threshold must repeat the steps or it ends them.
+- The steps climb: each `afterDays` and each `weightBps` above the one before, at most six steps, none above 50000 (five times), and the first above 10000 (once).
+- `GET /v1/rewards/rules` shows the version in force and every one announced, each with its steps, and `holdingDaySeconds`, which is 86400 on mainnet.
+  `HOLDING_DAY_SECONDS` exists for test stacks alone; the API refuses to start on mainnet with any length but a UTC day.
+- To read a wallet's lots: `curl -sS https://api.stoker.markets/v1/launches/<mint>/holdings/<wallet>`.
+  It answers the coin's latest Holding Check (`check`, null for a coin that can have no round), the wallet's lots oldest first, each with its `since` and the weight its coins have now, `weightedHolding`, the wallet's `weightBps` as one figure, and `flat`, which is true for the treasury alone: its lots are shown and every coin of it counts once.
+  The lots are what the latest check left, not the wallet's balance now: what it bought since counts once in a round, and what it sold since comes off its newest lots.
+- To see what a past round weighed, read the round itself: `GET /v1/rewards/rounds/<id>` carries `weightedTotal` and each payout's `weightedHolding`, and a payout is `pot * weightedHolding / weightedTotal`, rounded down.
+- `GET /v1/operator/jobs?job=reward-rounds` shows each run's `holdingChecks`: the coins checked, the lots opened, reduced and removed, and `leftForLater`.
+  A run checks 25 coins, so 3,600 a day; if `leftForLater` never reaches 0 within a day, the coins unchecked for longest still come first, and the bound (`HOLDING_CHECKS_PER_RUN` in `apps/api/src/rewards/checks.ts`) is the thing to raise.
+- A check that fails is a problem of the run: the job fails and raises the `job_failed` alert, the other coins are still checked and every round is still paid.
+- Ending the weights is another announced version with `"holdingWeights":[]`.
+  The lots stay and keep aging, so a later version with steps finds the ages it needs.
