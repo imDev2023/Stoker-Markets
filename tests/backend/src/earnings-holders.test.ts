@@ -182,7 +182,8 @@ describe("a standard coin whose Creator Earnings go to its holders", () => {
     expect(paying.rounds).toEqual([{
       id: dividend!.round, mint, rulesVersion: rules.version, status: "paying", source: "earnings", snapshotSlot: expect.any(Number),
       payout: { asset: "quote", mint: WSOL, symbol: "SOL", decimals: 9 }, pot: share.toString(), sold: null, eligibleHolders: 8, distributable: distributable.toString(),
-      paid: "0", startedAt: expect.any(String), finishedAt: null,
+      // No Holding Weight is in force (ADR 0022), so every holding counts once: 10000 basis points.
+      weightedTotal: (sum([...holders.values()]) * 10_000n).toString(), paid: "0", startedAt: expect.any(String), finishedAt: null,
     }]);
     // The round is public before anything is paid, every payout pro rata to the holding at the snapshot.
     const snapshot = await roundDetail(dividend!.round);

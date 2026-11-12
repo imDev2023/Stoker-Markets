@@ -70,7 +70,10 @@ const held = (mint: string, wallet: Keypair) => tokenBalance(getAssociatedTokenA
 describe("Reward Rounds", () => {
   it("publishes the rules in force", async () => {
     const rules = RewardRulesPage.parse(await (await api("/v1/rewards/rules")).json());
-    expect(rules.inForce).toMatchObject({ version: 1 });
+    // The version's number is not asserted: `holding-weight.test.ts` announces versions of its own and ends on a plain
+    // one, with no Holding Weight (ADR 0022), which is what every payout this file works out by hand relies on.
+    expect(rules.inForce).toMatchObject({ holdingWeights: [] });
+    expect(rules.inForce!.version).toBeGreaterThanOrEqual(1);
     expect(BigInt(rules.inForce!.minHolding)).toBeGreaterThan(0n);
     expect(BigInt(rules.inForce!.roundThreshold)).toBeGreaterThan(0n);
   });
@@ -181,13 +184,13 @@ describe("Reward Rounds", () => {
     const soon = new Date(Date.now() + 1_000).toISOString();
     const tooSoon = await api("/v1/operator/rewards/rules", {
       method: "POST", headers: { ...operator(), "content-type": "application/json" },
-      body: JSON.stringify({ minHolding: "1", roundThreshold: "1", effectiveAt: soon, note: "too soon" }),
+      body: JSON.stringify({ minHolding: "1", roundThreshold: "1", holdingWeights: [], effectiveAt: soon, note: "too soon" }),
     });
     expect(tooSoon.status).toBe(422);
     const later = new Date(Date.now() + 3600_000).toISOString();
     const announced = await api("/v1/operator/rewards/rules", {
       method: "POST", headers: { ...operator(), "content-type": "application/json" },
-      body: JSON.stringify({ minHolding: "1", roundThreshold: "1", effectiveAt: later, note: "lower bar" }),
+      body: JSON.stringify({ minHolding: "1", roundThreshold: "1", holdingWeights: [], effectiveAt: later, note: "lower bar" }),
     });
     expect(announced.status).toBe(201);
     const rules = RewardRulesPage.parse(await (await api("/v1/rewards/rules")).json());
