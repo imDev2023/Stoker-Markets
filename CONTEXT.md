@@ -248,6 +248,17 @@ It is versioned: a version is announced ahead like a fee change, and its shares 
 A row is a budget; what a row has been allotted less what the Ledger shows it spent is what it has left, which the Sweep leaves in the Operations Wallet.
 _Avoid_: Revenue split, allocation, tokenomics
 
+**Volume Rebate**:
+What a trader earns back for one Rebate Week: their part of the pot the Budget Table's `rebates` row gives that week, split among the week's traders in proportion to the Platform Fees their trades paid, on the curve and in the pool, buys and sells (ADR 0021).
+It is never more than the row's own share of the fees the trader paid, the platform's own wallets earn none, and a trade made while the row has no share earns nothing.
+A wallet's Volume Rebates wait until together they reach the minimum payout, then are paid in SOL in one transfer, which the Ledger records as a `rebate`.
+_Avoid_: Cashback, fee discount (the fee is paid in full and part of it comes back later), trading reward, airdrop
+
+**Rebate Week**:
+The period Volume Rebates are counted over: a UTC week, Monday 00:00 to the next Monday.
+Its trades are settled together, once, after it has ended.
+_Avoid_: Epoch, season, round (a Reward Round is a different thing)
+
 **Burn**:
 Using the Burn's row of the Budget Table to buy the Platform Token on the market and destroy it, on a public schedule.
 _Avoid_: Buyback (on its own), revenue share, dividend

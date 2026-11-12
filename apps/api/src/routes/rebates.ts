@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { PublicKey } from "@solana/web3.js";
-import { desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type { RebatesPage, WalletRebates } from "@launchpad/contract";
 import { rebates, rebateWeeks } from "@launchpad/db";
 import { operationsKey, type AppEnv } from "../env";
@@ -18,18 +18,21 @@ rebateRoutes.get("/rebates", async (c) => {
   const db = c.get("db");
   const cfg = c.get("cfg");
   const now = new Date();
-  const [{ inForce, upcoming }, row, owed, current, weeks, paid] = [
+  const [{ inForce, upcoming }, row, owed, current, weeks] = [
     split(await budgetVersions(db), now),
     (await budgets(db, now)).rows.rebates,
     await rebatesOwed(db),
     await currentWeek(db, cfg, operationsKey(c.env).publicKey, now),
     await db.select().from(rebateWeeks).orderBy(desc(rebateWeeks.weekStart)).limit(PAGE),
-    await db
-      .select({ weekStart: rebates.weekStart, lamports: sql<string>`sum(${rebates.amount})::text` })
-      .from(rebates)
-      .where(eq(rebates.status, "paid"))
-      .groupBy(rebates.weekStart),
   ];
+  // How much of each listed week has reached its wallets.
+  const paid = weeks.length
+    ? await db
+        .select({ weekStart: rebates.weekStart, lamports: sql<string>`sum(${rebates.amount})::text` })
+        .from(rebates)
+        .where(and(eq(rebates.status, "paid"), inArray(rebates.weekStart, weeks.map((w) => w.weekStart))))
+        .groupBy(rebates.weekStart)
+    : [];
   const paidOf = new Map(paid.map((p) => [p.weekStart.getTime(), p.lamports]));
   const next = upcoming.find((t) => t.rebatesBps !== inForce.rebatesBps);
   const res: RebatesPage = {
