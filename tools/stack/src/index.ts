@@ -68,6 +68,8 @@ export type StackEnv = {
   feeChangeLeadSeconds: number;
   /** The Creator Ladder's Active Day in seconds (ADR 0020): a UTC day unless the stack was started with a shorter one. */
   activeDaySeconds: number;
+  /** The Holding Weight's Holding Day in seconds (ADR 0022): a UTC day unless the stack was started with a shorter one. */
+  holdingDaySeconds: number;
   /** The Rebate Week in seconds (ADR 0021): a UTC week unless the stack was started with a shorter one. */
   rebateWeekSeconds: number;
   /** What a wallet's waiting Volume Rebates must reach before they are paid, in lamports, as the API has it. */
@@ -98,6 +100,11 @@ export type StackOptions = {
    * ever counts a second day. The backend suite shortens it to see a coin climb.
    */
   activeDaySeconds?: number;
+  /**
+   * The Holding Weight's Holding Day in seconds (ADR 0022); a UTC day unless set, as in production, so a coin of a run
+   * is checked once and no Holding Lot ever reaches a step. The backend suite shortens it to see coins age.
+   */
+  holdingDaySeconds?: number;
   /**
    * The Rebate Week in seconds (ADR 0021); a UTC week unless set, as in production, so no week of a run ever ends. The
    * backend suite shortens it to see a week settled and paid.
@@ -433,6 +440,7 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
       COUNTRY_HEADER: "x-test-country",
       SNIPE_WINDOW_SLOTS: String(opts.snipeWindowSlots ?? 40),
       ...(opts.activeDaySeconds ? { ACTIVE_DAY_SECONDS: String(opts.activeDaySeconds) } : {}),
+      ...(opts.holdingDaySeconds ? { HOLDING_DAY_SECONDS: String(opts.holdingDaySeconds) } : {}),
       ...(opts.rebateWeekSeconds ? { REBATE_WEEK_SECONDS: String(opts.rebateWeekSeconds) } : {}),
       // Small, so a test trader's Volume Rebates reach a payment on a curve's worth of trading; never under an empty wallet's rent.
       REBATE_MIN_LAMPORTS,
@@ -500,6 +508,7 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
         alertSinkUrl: sink.url, heliusApiUrl: helius.url, heliusApiKey: HELIUS_API_KEY, heliusWebhookId: HELIUS_WEBHOOK_ID,
         turbo: { url: turbo.url, depositAddress: turbo.depositAddress }, x: { url: x.url, apiKey: x.apiKey }, arweaveTopUpLamports,
         graduationAlertAfterSeconds, poolBackfillSeconds, ...fees, referralShareBps, feeChangeLeadSeconds, activeDaySeconds: opts.activeDaySeconds ?? 86_400,
+        holdingDaySeconds: opts.holdingDaySeconds ?? 86_400,
         rebateWeekSeconds: opts.rebateWeekSeconds ?? 7 * 86_400, rebateMinLamports: REBATE_MIN_LAMPORTS, platform, solRoutes, webApiKey, apiVars: vars,
       },
       stop,

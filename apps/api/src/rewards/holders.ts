@@ -43,29 +43,26 @@ async function tokenProgramOf(connection: Connection, mint: PublicKey) {
 export type Holder = { wallet: string; amount: bigint };
 
 /**
- * The accounts that count as holders: wallets (owners on the ed25519 curve, so no program's vault) other than the
- * operations wallet, holding at least `minHolding`.
+ * What each wallet holds of a coin, from its accounts: wallets (owners on the ed25519 curve, so no program's vault)
+ * other than the operations wallet, with anything at all. These are the wallets a Holding Check records (ADR 0022),
+ * whatever they hold: the minimum holding decides who is paid in a round, not whose coins age.
  */
-export function eligibleHolders(accounts: CoinAccount[], operationsWallet: PublicKey, minHolding: bigint): Holder[] {
+export function walletBalances(accounts: CoinAccount[], operationsWallet: PublicKey): Map<string, bigint> {
   const byWallet = new Map<string, bigint>();
   for (const a of accounts) {
     if (a.amount === 0n || a.owner.equals(operationsWallet) || !PublicKey.isOnCurve(a.owner.toBytes())) continue;
     byWallet.set(a.owner.toBase58(), (byWallet.get(a.owner.toBase58()) ?? 0n) + a.amount);
   }
-  return [...byWallet]
-    .filter(([, amount]) => amount >= minHolding)
-    .map(([wallet, amount]) => ({ wallet, amount }))
-    .sort((a, b) => (a.amount === b.amount ? a.wallet.localeCompare(b.wallet) : a.amount > b.amount ? -1 : 1));
+  return byWallet;
 }
 
 /**
- * Each holder's share of a pot, pro rata to what they hold and rounded down, as a round's payouts are written. A share
- * that rounds to nothing is no payout at all, and what the rounding leaves stays in the pot for the next round.
+ * The accounts that count as holders in a round: wallets (owners on the ed25519 curve, so no program's vault) other
+ * than the operations wallet, holding at least `minHolding`.
  */
-export function proRataPayouts(holders: Holder[], pot: bigint) {
-  const total = holders.reduce((s, h) => s + h.amount, 0n);
-  if (total === 0n) return [];
-  return holders
-    .map((h) => ({ wallet: h.wallet, holding: h.amount.toString(), amount: ((pot * h.amount) / total).toString() }))
-    .filter((p) => p.amount !== "0");
+export function eligibleHolders(accounts: CoinAccount[], operationsWallet: PublicKey, minHolding: bigint): Holder[] {
+  return [...walletBalances(accounts, operationsWallet)]
+    .filter(([, amount]) => amount >= minHolding)
+    .map(([wallet, amount]) => ({ wallet, amount }))
+    .sort((a, b) => (a.amount === b.amount ? a.wallet.localeCompare(b.wallet) : a.amount > b.amount ? -1 : 1));
 }

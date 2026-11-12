@@ -1,6 +1,7 @@
 // The Reward Engine (#17, amended by #43 and ADR 0011): Reward Rounds that collect a Reward Launch's withheld Reward Tax
-// and pay it to holders pro rata in the Launch's Payout Asset: the coin itself, never sold, or its Quote Asset, bought
-// with the tax through bounded Reward Sales (ADR 0006). It also pays the rounds of the other source, `earnings`: a coin
+// and pay it to holders by their Weighted Holding (ADR 0022) in the Launch's Payout Asset: the coin itself, never sold,
+// or its Quote Asset, bought with the tax through bounded Reward Sales (ADR 0006). Every run begins with the Holding
+// Checks due (`checks.ts`), which keep the Holding Lots a round's snapshot weighs by. It also pays the rounds of the other source, `earnings`: a coin
 // whose Creator Earnings go to its holders has rounds the Creator Forward job opens (`fees/rules/holders.ts`), paid here
 // in the Quote Asset like any round, each landed payout transaction on the Ledger. A round is public from its snapshot
 // to its last payout, resumable at any point, and never pays a holder twice: every payout is written down before it is
@@ -16,12 +17,16 @@ import { launches, ledgerEntries, operatorAlerts, rewardPayouts, rewardRounds, r
 import type { Config } from "../env";
 import { fetchRawTransaction } from "../indexer";
 import { JobFailure } from "../jobs";
-import { eligibleHolders, proRataPayouts, readCoinAccounts } from "./holders";
+import { holdingDay, runHoldingChecks, type HoldingChecksSummary } from "./checks";
+import { readCoinAccounts } from "./holders";
+import { snapshotRound } from "./snapshot";
 import { quotePot, sellSlice, settlePendingSales, unassignedSales, type SaleReport } from "./sales";
 
 export type RewardEngineDeps = { db: Db; cfg: Config; operations: Keypair; now?: Date };
 
 export type RewardRoundsSummary = {
+  /** The Holding Checks this run made (ADR 0022), before any round opened, and how many it left to later runs. */
+  holdingChecks: HoldingChecksSummary;
   /** Coins whose withheld tax was harvested and withdrawn, with how much. */
   collected: { mint: string; amount: string }[];
   /** Reward Sales this run made, one slice per Quote Asset payout coin at most. */
@@ -69,7 +74,8 @@ export async function rulesInForce(db: Db, now = new Date()): Promise<RewardRule
 }
 
 /**
- * One run of the Reward Engine. Over every Reward Launch: settle payouts and sales in flight, harvest and withdraw
+ * One run of the Reward Engine. First the Holding Checks due (ADR 0022), a bounded number of them, so that a round
+ * opened in this run weighs by lots no older than today's. Then, over every Reward Launch: settle payouts and sales in flight, harvest and withdraw
  * withheld tax, sell one slice of it where the Payout Asset is the Quote Asset, open a round where enough has
  * collected (or been sold), and pay the open round. Then over every earnings round still paying (ADR 0011), of any
  * coin: settle its payouts in flight and pay it. At most `maxPayouts` payouts in all, so a run stays within a Cron
@@ -83,9 +89,15 @@ export async function runRewardRounds({ db, cfg, operations, now = new Date() }:
   const connection = new Connection(cfg.rpcUrl, "confirmed");
   const ops = operations.publicKey;
   const summary: RewardRoundsSummary = {
-    collected: [], sold: [], unsold: [], opened: [], paid: [], returned: [], finished: [],
+    holdingChecks: { day: holdingDay(now, cfg.holdingDaySeconds), checked: [], leftForLater: 0 }, collected: [], sold: [], unsold: [], opened: [], paid: [], returned: [], finished: [],
     settled: { landed: 0, expired: 0, sales: { landed: 0, failed: 0, expired: 0 } }, problems: [],
   };
+  // A check that fails, one coin's or all of them, is a problem of the run and never keeps a round from being paid.
+  try {
+    summary.holdingChecks = await runHoldingChecks(db, connection, ops, cfg.holdingDaySeconds, now, summary.problems);
+  } catch (e) {
+    summary.problems.push(`Holding Checks: ${(e as Error).message}`);
+  }
   const rules = await rulesInForce(db, now);
   const coins: Coin[] = (
     await db
@@ -132,7 +144,7 @@ export async function runRewardRounds({ db, cfg, operations, now = new Date() }:
           if (sale) summary.sold.push(sale);
           if (skipped) summary.unsold.push({ mint: coin.mint, reason: skipped });
         }
-        const opened = await openRound(db, connection, operations, coin, rules, now);
+        const opened = await openRound(db, cfg, connection, operations, coin, rules, now);
         if (opened) summary.opened.push({ mint: coin.mint, round: opened.id, holders: opened.holders, amount: opened.amount });
         [round] = await payingRounds(db, "tax", coin.mint);
       }
@@ -214,10 +226,11 @@ async function collectTax(connection: Connection, operations: Keypair, mint: Pub
 /**
  * Opens a tax round when enough tax has collected under the rules' threshold, in coins either way: for a coin payout the
  * operations wallet holds at least that much of the coin, for a Quote Asset payout at least that many coins were sold
- * since the last round. Snapshots every eligible holder and writes each one's pro-rata share of the pot (the collected
- * coins, or what the sales brought in and no tax round has paid), all in one transaction so a round is never half written.
+ * since the last round. Snapshots every eligible holder and writes each one's share of the pot (the collected coins, or
+ * what the sales brought in and no tax round has paid) by its Weighted Holding, all in one transaction so a round is
+ * never half written.
  */
-async function openRound(db: Db, connection: Connection, operations: Keypair, coin: Coin, rules: RewardRule, now: Date) {
+async function openRound(db: Db, cfg: Config, connection: Connection, operations: Keypair, coin: Coin, rules: RewardRule, now: Date) {
   const ops = operations.publicKey;
   const mint = new PublicKey(coin.mint);
   let pot: bigint;
@@ -235,16 +248,15 @@ async function openRound(db: Db, connection: Connection, operations: Keypair, co
     const [sale] = await db.select({ decimals: rewardSales.quoteDecimals }).from(rewardSales).where(and(eq(rewardSales.mint, coin.mint), eq(rewardSales.status, "landed"))).limit(1);
     payout = { mint: coin.quoteMint, decimals: sale!.decimals, sold: sales.coins.toString() };
   }
-  const slot = await connection.getSlot("confirmed");
-  const holders = eligibleHolders(await readCoinAccounts(connection, mint, TOKEN_2022_PROGRAM_ID), ops, BigInt(rules.minHolding));
-  if (holders.length === 0) return null;
+  const snapshot = await snapshotRound({ db, connection, cfg, operationsWallet: ops }, mint, TOKEN_2022_PROGRAM_ID, rules, pot, now);
+  if (snapshot.eligible === 0) return null;
   const id = crypto.randomUUID();
-  const payouts = proRataPayouts(holders, pot).map((p) => ({ roundId: id, ...p }));
-  const distributable = payouts.reduce((s, p) => s + BigInt(p.amount), 0n);
+  const payouts = snapshot.payouts.map((p) => ({ roundId: id, ...p }));
+  const { slot, distributable, weightedTotal } = snapshot;
   await db.transaction(async (tx) => {
     await tx.insert(rewardRounds).values({
       id, mint: coin.mint, rulesVersion: rules.version, status: "paying", source: "tax", snapshotSlot: slot, payoutMint: payout.mint, payoutDecimals: payout.decimals,
-      pot: pot.toString(), sold: payout.sold, eligibleHolders: payouts.length, distributable: distributable.toString(), startedAt: now,
+      pot: pot.toString(), sold: payout.sold, eligibleHolders: payouts.length, distributable: distributable.toString(), weightedTotal: weightedTotal.toString(), startedAt: now,
     });
     if (payouts.length) await tx.insert(rewardPayouts).values(payouts);
     // The sales this round pays out are its own from here; the next round counts from the next sale.
