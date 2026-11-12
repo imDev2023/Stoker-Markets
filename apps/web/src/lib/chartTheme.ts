@@ -4,7 +4,7 @@ import type { ChartWidget } from "./charting";
  * Advanced Charts in the site's own tokens (#126): the chart draws in an iframe of its own, so nothing in the page's CSS
  * reaches it. Each token is read from `<html>` and handed over three ways: the theme (light or dark, from `data-scheme`),
  * `overrides` for what the canvas draws, and the library's `--tv-color-*` custom properties for its toolbars and menus.
- * Read again whenever `data-scheme` or `data-theme` changes, as the old chart did (the trap in CLAUDE.md).
+ * Read again whenever `data-scheme` or `data-theme` changes, as the old chart did (the design phase's bullet in docs/agents/settled.md).
  */
 
 let probe: CanvasRenderingContext2D | null = null;

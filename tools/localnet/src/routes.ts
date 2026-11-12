@@ -121,7 +121,7 @@ export async function swapThroughSolRoute(connection: Connection, trader: Keypai
 /**
  * Seeds the SOL route pools and adds their accounts to the Platform Lookup Table, which already holds the LaunchLab
  * accounts a routed buy names. Resolves once the pools trade; `ready` resolves once the table's new entries are usable,
- * about 15 s later on the local validator (see CLAUDE.md's Traps), so a caller can start other work in between.
+ * about 15 s later on the local validator (see docs/agents/traps/chain.md), so a caller can start other work in between.
  */
 export async function createSolRoutes(connection: Connection): Promise<SolRoutes & { ready: Promise<unknown> }> {
   const { liquidity, operations } = localnetKeys();

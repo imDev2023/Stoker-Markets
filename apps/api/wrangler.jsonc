@@ -53,7 +53,7 @@
     "TURBO_PAYMENT_URL": "http://127.0.0.1:8797",
     "ARWEAVE_GATEWAY_URL": "http://127.0.0.1:8797",
     "ARWEAVE_TOP_UP_LAMPORTS": "50000000",
-    // From tools/localnet/.ledger/state.json after `pnpm localnet` (see CLAUDE.md); both are required.
+    // From tools/localnet/.ledger/state.json after `pnpm localnet` (see docs/agents/run-and-test.md); both are required.
     "PLATFORM_CONFIG": "",
     "PLATFORM_ADMIN": "",
     "PLATFORM_LOOKUP_TABLE": "",
@@ -159,7 +159,7 @@
       "routes": [{ "pattern": "api.stoker.markets", "custom_domain": true }],
       "vars": {
         "CLUSTER": "mainnet",
-        // What browsers use: a keyless endpoint that accepts a browser Origin (Solana's own answers 403 to one; CLAUDE.md).
+        // What browsers use: a keyless endpoint that accepts a browser Origin (Solana's own answers 403 to one; docs/agents/traps/deploy-ops.md).
         // publicnode for now (owner, 2026-10-14); Helius's Secure RPC URL, on a paid plan, if its limits are ever hit.
         "PUBLIC_RPC_URL": "https://solana-rpc.publicnode.com",
         "PUBLIC_API_URL": "https://api.stoker.markets",
