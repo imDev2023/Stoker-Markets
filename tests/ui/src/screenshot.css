@@ -63,6 +63,15 @@ time {
   vertical-align: bottom;
 }
 
+/* A wallet's Diamond Hands on a coin's rewards card says the day its coins were first seen inside a sentence ("... HAUL
+   first seen Nov 12, 2026"): a box of the day's width, set on the line's foot like the rebate's age above, so the
+   sentence stays on its line and its words on theirs. It follows the earnings card's rule for its own rows, which
+   would otherwise give this time a full date's width. */
+[data-hands] li time {
+  width: 13ch;
+  vertical-align: bottom;
+}
+
 /* The latest candle's prices depend on whether the seed trades straddled a minute, so they are masked; a fixed box keeps
    the mask the same size every run. */
 dl[aria-label$="candle"] .mono {

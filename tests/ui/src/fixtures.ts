@@ -8,7 +8,8 @@ import {
 } from "@solana/web3.js";
 import { createAssociatedTokenAccountIdempotentInstruction, createTransferInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import {
-  CoinEarnings, JobRun, LaunchList, PlatformInfo, PreparedAirdrop, PreparedLaunch, PreparedTrade, RebatesPage, WalletRebates, type BudgetShares, type TradeSide,
+  CoinEarnings, JobRun, LaunchList, PlatformInfo, PreparedAirdrop, PreparedLaunch, PreparedTrade, RebatesPage, RewardRoundDetail, RewardRuleVersion, RewardRulesPage,
+  WalletHolding, WalletRebates, type BudgetShares, type HoldingWeightStep, type TradeSide,
 } from "@launchpad/contract";
 import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
 import { swapThroughSolRoute } from "@launchpad/localnet/routes";
@@ -313,6 +314,36 @@ export async function runRewardRounds() {
   const res = await fetch(`${apiUrl}/v1/operator/jobs/reward-rounds`, { method: "POST", headers: { authorization: `Bearer ${operatorToken}` } });
   const body = (await res.json()) as { status: string; error?: string | null };
   if (!res.ok || body.status !== "succeeded") throw new Error(`the reward-rounds job failed: ${res.status} ${JSON.stringify(body)}`);
+}
+
+/** The Reward Round rules as the API publishes them (ADR 0006, ADR 0022): the version in force, the announced ones, the Holding Day's length. */
+export async function rewardRules() {
+  return RewardRulesPage.parse(await (await fetch(`${stackEnv().apiUrl}/v1/rewards/rules`)).json());
+}
+
+/**
+ * Operator: announces the next version of the Reward Round rules. A version states every rule, the Holding Weight's
+ * steps among them, the empty list included; it takes effect no sooner than a minute after it is announced.
+ */
+export async function announceRewardRules(rules: { minHolding: string; roundThreshold: string; holdingWeights: HoldingWeightStep[] }, effectiveAt: Date, note: string) {
+  const { apiUrl, operatorToken } = stackEnv();
+  const res = await fetch(`${apiUrl}/v1/operator/rewards/rules`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${operatorToken}`, "content-type": "application/json" },
+    body: JSON.stringify({ ...rules, effectiveAt: effectiveAt.toISOString(), note }),
+  });
+  if (!res.ok) throw new Error(`announcing the Reward Round rules failed: ${res.status} ${await res.text()}`);
+  return RewardRuleVersion.parse(await res.json());
+}
+
+/** One wallet's Holding Lots of a coin (ADR 0022), as the coin's latest Holding Check left them and as the rules in force weigh them now. */
+export async function walletHolding(mint: string, wallet: PublicKey) {
+  return WalletHolding.parse(await (await fetch(`${stackEnv().apiUrl}/v1/launches/${mint}/holdings/${wallet.toBase58()}`)).json());
+}
+
+/** One Reward Round with every payout, as the API answers any client. */
+export async function rewardRound(id: string) {
+  return RewardRoundDetail.parse(await (await fetch(`${stackEnv().apiUrl}/v1/rewards/rounds/${id}`)).json());
 }
 
 /** The chain's clock in milliseconds, which dates every trade and Ledger entry; it need not agree with the wall clock. */

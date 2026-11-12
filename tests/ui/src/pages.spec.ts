@@ -21,6 +21,10 @@ test("the API page is the whole reference, answered live, and the header and foo
   // Volume rebates (#196): both reads are in the reference, and the job among those the operator can run.
   await expect(page.getByRole("region", { name: "Reading, no key needed" })).toContainText("GET /rebates");
   await expect(page.getByRole("region", { name: "Reading, no key needed" })).toContainText("GET /wallets/:address/rebates");
+  // The Holding Weight (#199): a wallet's Holding Lots are a read of their own, and the rules, a round and a payout carry its fields.
+  await expect(page.getByRole("region", { name: "Reading, no key needed" })).toContainText("GET /launches/:mint/holdings/:wallet");
+  for (const field of ["holdingWeights", "holdingDaySeconds", "weightedHolding", "weightedTotal"])
+    await expect(page.getByRole("region", { name: "Reading, no key needed" }).getByText(field, { exact: true }).first()).toBeVisible();
   await expect(page.getByRole("region", { name: "The operator's endpoints" })).toContainText("settles every Rebate Week that has ended");
   await expect(page.getByRole("navigation", { name: "On this page" }).getByRole("link")).toHaveText(["Quickstart", ...sections]);
   await expectNoHorizontalOverflow(page);
