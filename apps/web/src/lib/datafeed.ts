@@ -300,6 +300,11 @@ export function createDatafeed(coin: Coin, live: Live) {
       ).then(
         (list) => {
           if (disposed) return;
+          // The visitor changed what the marks show, or connected another wallet, while this read was out: its answer is
+          // for the marks as they were, and the refresh that change started has asked again. Drawn, it would bring back
+          // the marks just cleared (the trades' rings after "Trades" was switched off, on a slow read).
+          const now = live.marks();
+          if (now.trades !== shown.trades || now.mentions !== shown.mentions || live.wallet() !== wallet) return onData([]);
           const { marks, targets } = toChartMarks(list, shown, {
             symbol: coin.symbol, quote: coin.quote, quoteDecimals: coin.quoteDecimals,
             unit: series.currency === "usd" ? "USD" : coin.quote, perQuote: usd, look: chartLook(),
