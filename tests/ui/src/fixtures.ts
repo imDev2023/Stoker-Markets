@@ -7,7 +7,9 @@ import {
   Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, VersionedTransaction, sendAndConfirmTransaction,
 } from "@solana/web3.js";
 import { createAssociatedTokenAccountIdempotentInstruction, createTransferInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { CoinEarnings, LaunchList, PreparedAirdrop, PreparedLaunch, PreparedTrade, type TradeSide } from "@launchpad/contract";
+import {
+  CoinEarnings, JobRun, LaunchList, PlatformInfo, PreparedAirdrop, PreparedLaunch, PreparedTrade, RebatesPage, WalletRebates, type BudgetShares, type TradeSide,
+} from "@launchpad/contract";
 import { LOCAL_QUOTES, migrateCurve, mintLocalQuote } from "@launchpad/localnet";
 import { swapThroughSolRoute } from "@launchpad/localnet/routes";
 import { FEE_COLLECTOR_CRON, type StackEnv } from "@launchpad/stack";
@@ -313,6 +315,46 @@ export async function runRewardRounds() {
   if (!res.ok || body.status !== "succeeded") throw new Error(`the reward-rounds job failed: ${res.status} ${JSON.stringify(body)}`);
 }
 
+/** The chain's clock in milliseconds, which dates every trade and Ledger entry; it need not agree with the wall clock. */
+export async function chainTime() {
+  const conn = connection();
+  const time = await conn.getBlockTime(await conn.getSlot("confirmed"));
+  return (time ?? Math.floor(Date.now() / 1000)) * 1000;
+}
+
+/** The Budget Table's shares in force (ADR 0019), as `GET /v1/platform` publishes them. */
+export async function budgetShares() {
+  return PlatformInfo.parse(await (await fetch(`${stackEnv().apiUrl}/v1/platform`)).json()).budgetTable.inForce.shares;
+}
+
+/** Operator: announces the next version of the Budget Table, to take effect at `effectiveAt`. */
+export async function announceBudgetTable(shares: BudgetShares, effectiveAt: Date, note: string) {
+  const { apiUrl, operatorToken } = stackEnv();
+  const res = await fetch(`${apiUrl}/v1/operator/budget-table`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${operatorToken}`, "content-type": "application/json" },
+    body: JSON.stringify({ shares, effectiveAt: effectiveAt.toISOString(), note }),
+  });
+  if (!res.ok) throw new Error(`announcing the Budget Table failed: ${res.status} ${await res.text()}`);
+}
+
+/** Volume rebates (ADR 0021) as the API answers any client: the program with its settled Rebate Weeks, and one wallet's rebates. */
+export async function rebatesPage() {
+  return RebatesPage.parse(await (await fetch(`${stackEnv().apiUrl}/v1/rebates`)).json());
+}
+
+export async function walletRebates(wallet: PublicKey) {
+  return WalletRebates.parse(await (await fetch(`${stackEnv().apiUrl}/v1/wallets/${wallet.toBase58()}/rebates`)).json());
+}
+
+/** Runs the rebates job once, as the operator would: settles every Rebate Week that has ended and pays what reaches the minimum. */
+export async function runRebates() {
+  const { apiUrl, operatorToken } = stackEnv();
+  const res = await fetch(`${apiUrl}/v1/operator/jobs/rebates`, { method: "POST", headers: { authorization: `Bearer ${operatorToken}` } });
+  const run = JobRun.parse(await res.json());
+  if (!res.ok || run.status !== "succeeded") throw new Error(`the rebates job failed: ${res.status} ${JSON.stringify(run)}`);
+}
+
 export const solBalance = async (owner: PublicKey) => BigInt(await connection().getBalance(owner, "confirmed"));
 
 /** Raw lamports as the site writes them: whole SOL with thousands separators, then every decimal that isn't a trailing zero. */
@@ -397,7 +439,10 @@ export const test = base.extend<{
   firstVisit: boolean;
   /** The light-or-dark choice the browser carries as the site's cookie: the project's `colorScheme` by default, or none. */
   scheme: "light" | "dark" | "none" | "project";
-  /** TradingView's widget script, served empty: the asset page's market chart never loads live data into a baseline. */
+  /**
+   * TradingView's widget script, served empty: the asset page's market chart never loads live data into a baseline. And
+   * Google Analytics, which the coin chart's library asks for now and then: no test waits on a third party's address.
+   */
   thirdParty: void;
 }>({
   // eslint-disable-next-line no-empty-pattern
@@ -420,6 +465,10 @@ export const test = base.extend<{
       // with live data. Served an empty module, the web component is never defined, the frame keeps its loading line,
       // and the console stays quiet (an aborted request would log a failed load).
       await page.route(/^https:\/\/[a-z.]*tradingview(-widget)?\.com\//, (route) => route.fulfill({ status: 200, contentType: "text/javascript", body: "" }));
+      // The coin chart's library (#126) asks Google Analytics for its script on one chart load in fifty (its own
+      // `Math.random() <= .02`), from the chart's frame. A run that meets a slow resolver at that moment logs a failed
+      // load and fails whichever test drew the chart (two full runs in a row, 2026-11-12). Served empty, like the widget.
+      await page.route(/^https?:\/\/www\.google-analytics\.com\//, (route) => route.fulfill({ status: 200, contentType: "text/javascript", body: "" }));
       await use();
     },
     { auto: true },

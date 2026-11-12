@@ -112,6 +112,29 @@ test("the assets page lists every Quote Asset before the first coin", async ({ p
   await expect(page).toHaveScreenshot("assets-empty.png", { fullPage: true });
 });
 
+// Volume rebates (#196) before their first share: what the owner sees on a new database. One plain card says the
+// program has not begun, with neither a wallet's panel nor a list of weeks, which would have nothing behind them.
+test("the rewards page says Volume Rebates begin once their share is announced", async ({ page }) => {
+  await page.goto("/rewards");
+  await expect(page.getByRole("heading", { level: 1, name: "Holder rewards" })).toBeVisible();
+  const rebates = page.getByRole("region", { name: "Volume rebates", exact: true });
+  await expect(rebates.getByRole("heading", { level: 2, name: "Volume rebates" })).toBeVisible();
+  await expect(rebates).toContainText("A Volume Rebate gives a trader back part of the Platform Fees their trades paid.");
+  await expect(rebates.locator("[data-rebates]")).toHaveAttribute("data-rebates", "idle");
+  await expect(rebates.getByText("Rebates begin once their share is announced")).toBeVisible();
+  await expect(rebates.getByText(/^Volume rebates are not running yet: the Budget Table sets no share aside for them\./)).toBeVisible();
+  await expect(rebates.getByRole("region", { name: "Your rebates" })).toHaveCount(0);
+  await expect(rebates.getByRole("region", { name: "Settled weeks" })).toHaveCount(0);
+  await expect(rebates.getByRole("button", { name: "Connect wallet" })).toHaveCount(0);
+  // In words alone: the share and every figure are the Fees page's, which the section links to.
+  await expect(rebates).not.toContainText("%");
+  await expect(rebates.getByRole("link", { name: "Fees page" })).toHaveAttribute("href", "/fees#volume-rebates");
+  await expectNoHorizontalOverflow(page);
+  await expectHydrated(page);
+  // The rules' dates are the stack's start, a clock like any other.
+  await expect(page).toHaveScreenshot("rewards-empty.png", { fullPage: true, mask: [page.locator("time")] });
+});
+
 test("the revenue page before anything is collected", async ({ page }) => {
   await page.goto("/revenue");
   await expect(page.getByText(/^No revenue collected yet\./)).toBeVisible();
