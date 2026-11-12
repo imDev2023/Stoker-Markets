@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { BUDGET_ROWS, REWARD_TAX_RATES, TRADER_PROGRAMS_MAX_BPS, type BudgetRow } from "@launchpad/contract";
-import { getBurns, getPlatform } from "@/lib/api";
+import { getBurns, getPlatform, getRebates } from "@/lib/api";
 import { BUDGET_ROW_LABELS, budgetLine } from "@/lib/budget";
 import { graduationFeeSol, pct } from "@/lib/fees";
-import { formatUtc } from "@/lib/format";
+import { formatDuration, formatUnits, formatUtc, SOL_DECIMALS } from "@/lib/format";
 import { ladderLine, poolBpsAt, TIER_NAMES } from "@/lib/ladder";
+import { isUtcWeek } from "@/lib/rebates";
 import { JUPITER_REFERRAL, JUPITER_REFERRAL_FEE_BPS, JUPITER_REFERRAL_KEEP_BPS } from "@/lib/jupiterReferral";
 import styles from "./page.module.css";
 
@@ -22,11 +23,12 @@ type Row = { fee: string; amount: ReactNode; note?: ReactNode; pays: ReactNode; 
  * with who pays it, when, in what asset and who receives it; every figure from `GET /v1/platform`, never a constant,
  * so a fee change shows here the moment the chain has it. Under it, the Creator Ladder (ADR 0020): the Creator's share
  * of a coin's fees by the coin's tier, and the Budget Table (ADR 0019): how what the platform keeps after the Creators'
- * share is divided; each as the version in force and any announced for later. Everywhere else the site says what a
- * fee is for and links here.
+ * share is divided; each as the version in force and any announced for later. The Volume Rebates' figures (ADR 0021)
+ * are here too, from `GET /v1/rebates`: how long a Rebate Week is, the limit on a rebate and the minimum payout.
+ * Everywhere else the site says what a fee is for and links here.
  */
 export default async function FeesPage() {
-  const [platform, burns] = await Promise.all([getPlatform(), getBurns().catch(() => null)]);
+  const [platform, burns, rebates] = await Promise.all([getPlatform(), getBurns().catch(() => null), getRebates().catch(() => null)]);
   const now = new Date().toISOString();
   const graduationFee = graduationFeeSol(platform);
   const raydiumKeeps = (platform.poolCreatorFeeBps * platform.poolCreatorFeeShareBps) / 10_000;
@@ -41,10 +43,12 @@ export default async function FeesPage() {
       : `After ${tier.activeDays} Active Days: ${pct(poolBpsAt(platform, tier.shareBps))} of every trade in the pool.`;
   // A trader program's row has no share until the program is built (ADR 0019); the row says so rather than hiding.
   const program = (what: string, row: BudgetRow) => (shares[row] > 0 ? what : `${what} Not built yet, so nothing is set aside for it.`);
+  // Volume Rebates are built (ADR 0021) and wait for their first share: until one is in force no trade earns one.
+  const rebatesUse = "Paid back to traders in SOL after each Rebate Week, in proportion to the Platform Fees their trades paid.";
   const uses: Record<BudgetRow, string> = {
     burn: "Buys the Platform Token on the market and burns it, on a public schedule.",
     flywheel: `Buys the ${burns ? `${burns.shares.flywheelTopN} ` : ""}graduated coins with the most trading volume and burns them.`,
-    rebates: program("Paid back to traders by their volume.", "rebates"),
+    rebates: shares.rebates > 0 ? rebatesUse : `${rebatesUse} Nothing is set aside yet: no trade earns a rebate until a share is announced.`,
     referrals: program("A referrer’s share on any pair, paid by the platform rather than by the trade.", "referrals"),
     integrators: program("For the apps and bots that bring trades through the API.", "integrators"),
     treasury: "The rest leaves the operations wallet for the treasury every hour; every move is on the Ledger with its transaction.",
@@ -324,6 +328,20 @@ export default async function FeesPage() {
             {next.note && <> {next.note}.</>} It applies to what is collected from then on, never to what came before.
           </p>
         ))}
+        {/* The Volume Rebates' own figures, each read from the API as the page is opened: the week, the limit and the minimum. */}
+        <p id="volume-rebates" className={styles.words} data-rebates-terms>
+          A Volume Rebate is counted over a Rebate Week
+          {rebates && (isUtcWeek(rebates.program.weekSeconds)
+            ? ", a UTC week from Monday 00:00 to the next Monday"
+            : `, which lasts ${formatDuration(rebates.program.weekSeconds * 1000)} on this deployment`)}
+          . Once the week has ended, what the Volume rebates row has left is split among the week&apos;s traders in proportion to the
+          Platform Fees their trades paid, on a curve or in a pool, buys and sells alike. A rebate is paid in SOL and is never more than
+          the row&apos;s own share of the fees the trader paid{shares.rebates > 0 && ` (${pct(shares.rebates)} of them now)`}; a trade made
+          while the row has no share earns none. A wallet&apos;s rebates are sent in one transfer once together they reach{" "}
+          {rebates ? `${formatUnits(rebates.program.minPayoutLamports, SOL_DECIMALS)} SOL` : "the minimum payout"}, each payment a{" "}
+          <code>rebate</code> entry on the Ledger. Where the program stands, week by week, is on the{" "}
+          <Link href="/rewards#volume-rebates">Rewards page</Link>.
+        </p>
         <p className={styles.note}>
           The shares always sum to 100%, and a share applies only to what is collected while it is in force. A change to this table is
           announced at least a day ahead under <Link href="/announcements">Announcements</Link>. Once the trader programs start they take{" "}

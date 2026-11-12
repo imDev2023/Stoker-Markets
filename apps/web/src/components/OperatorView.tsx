@@ -16,8 +16,9 @@ import styles from "./OperatorView.module.css";
 
 const TOKEN_KEY = "launchpad-operator-token";
 const REFRESH_MS = 10_000;
-// The Creator Forward also applies every coin's earnings rule (ADR 0011), so it is run by hand like the collector it follows.
-const JOBS = ["quote-registry", "fee-collector", "creator-forward", "reward-rounds", "burn", "metadata-upload"] as const;
+// The Creator Forward also applies every coin's earnings rule (ADR 0011), so it is run by hand like the collector it follows;
+// so are the Volume Rebates (ADR 0021), which settle a Rebate Week that has ended and pay what has reached the minimum.
+const JOBS = ["quote-registry", "fee-collector", "creator-forward", "rebates", "reward-rounds", "burn", "metadata-upload"] as const;
 
 type Loaded = { overview: OperatorOverview; alerts: OperatorAlert[]; announcements: FeeAnnouncement[]; keys: ApiKeyInfo[] };
 

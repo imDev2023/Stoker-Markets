@@ -2,7 +2,7 @@ import {
   API_KEY_HEADER, AirdropStatus, ApiError, ApiKeyList, BudgetsPage, BurnsPage, CandleList, CoinEarnings, CoinRewards, CopyCheck, CreatorEarnings, CreatorForwardList, CreatorLadderPage, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
   HolderList, LaunchTrust, IssuedApiKey, MarkList, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PlatformStats, PreparedAirdrop,
   PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAsset, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, TradeList,
-  Region, RegionGatesView, TradeQuote, WalletRewards,
+  RebatesPage, Region, RegionGatesView, TradeQuote, WalletRebates, WalletRewards,
   type AnnounceFeeChange, type CandleInterval, type MarkQuery, type CreateApiKey, type CurveStatus, type LaunchField, type LaunchSort, type PrepareTradeRequest,
   type QuoteCategory, type QuoteIssuer, type RegionGates, type TradeQuoteQuery,
 } from "@launchpad/contract";
@@ -237,6 +237,18 @@ export async function getWalletRewards(wallet: string): Promise<WalletRewards | 
   return read(res, WalletRewards);
 }
 
+/** Volume rebates (ADR 0021): the program as it stands and the settled Rebate Weeks, the latest first. */
+export async function getRebates() {
+  return read(await apiFetch(`${API_URL}/v1/rebates`, { cache: "no-store" }), RebatesPage);
+}
+
+/** A wallet's Volume Rebates, week by week, and what this week's trades would earn it; null if the address isn't a valid wallet address. */
+export async function getWalletRebates(wallet: string): Promise<WalletRebates | null> {
+  const res = await apiFetch(`${API_URL}/v1/wallets/${encodeURIComponent(wallet)}/rebates`, { cache: "no-store" });
+  if (res.status === 400) return null;
+  return read(res, WalletRebates);
+}
+
 /** Tells the API about a confirmed launch, trade or claim so it shows up without waiting for the webhook. */
 export async function reportTransaction(signature: string) {
   await apiFetch(`${API_URL}/v1/transactions/${signature}`, { method: "POST" }).catch(() => undefined);
@@ -304,7 +316,7 @@ export async function revokeApiKey(token: string, id: string) {
   if (!res.ok) throw new ApiRequestError(res.status === 401 ? "unauthorized" : `revoking the key failed (${res.status})`, res.status);
 }
 
-export async function runOperatorJob(token: string, job: "quote-registry" | "fee-collector" | "creator-forward" | "reward-rounds" | "burn" | "metadata-upload") {
+export async function runOperatorJob(token: string, job: "quote-registry" | "fee-collector" | "creator-forward" | "rebates" | "reward-rounds" | "burn" | "metadata-upload") {
   const res = await apiFetch(`${API_URL}/v1/operator/jobs/${job}`, operator(token, {}));
   const body: unknown = await res.json().catch(() => null);
   if (!res.ok && res.status === 401) throw new ApiRequestError("unauthorized", 401);

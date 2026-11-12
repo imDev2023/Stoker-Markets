@@ -21,6 +21,7 @@
 .lead a,
 .dated a,
 .note a,
+.words a,
 .feeNote a {
   color: var(--accent);
 }
@@ -166,7 +167,7 @@
   color: var(--ink);
 }
 
-/* A row without a share yet (a trader program not built): present, and quieter than the rows that spend. */
+/* A row without a share yet (a trader program not built, or waiting for its first share): present, and quieter than the rows that spend. */
 .budget li.idle > :first-child,
 .budget li.idle .share {
   color: var(--ink-3);
@@ -178,6 +179,12 @@
   font-size: var(--text-ui);
   color: var(--ink-2);
   text-wrap: pretty;
+}
+
+/* A Ledger kind named in running text, a step under the words around it as the fee notes set theirs. */
+.words code {
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
 }
 
 /* A version announced for later: the next division and its date, set off from the one in force. */

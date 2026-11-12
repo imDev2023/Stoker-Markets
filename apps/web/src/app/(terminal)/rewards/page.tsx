@@ -2,20 +2,23 @@ import type { Metadata } from "next";
 import { pageMeta } from "@/lib/meta";
 import Link from "next/link";
 import { REWARD_SALE_MAX_RESERVE_BPS, REWARD_SALE_SLIPPAGE_BPS } from "@launchpad/contract";
-import { getRewardRules } from "@/lib/api";
+import { getPlatform, getRebates, getRewardRules } from "@/lib/api";
 import { COIN_DECIMALS, formatUnits, formatUtc } from "@/lib/format";
 import { WalletLookup } from "@/components/WalletLookup";
 import styles from "./page.module.css";
 import { EmptyState } from "@/components/EmptyState";
+import { VolumeRebates } from "@/components/VolumeRebates";
 
 export const metadata: Metadata = pageMeta({
   path: "/rewards",
   title: "Holder rewards",
-  description: "How Reward Rounds pay a coin's holders, from a Reward Launch's tax or from its Creator's earnings, the rules in force, and where any wallet's rewards are.",
+  description:
+    "How Reward Rounds pay a coin's holders, from a Reward Launch's tax or from its Creator's earnings, the rules in force, where any wallet's rewards are, and how Volume Rebates pay traders back part of the fees their trades paid.",
 });
 
 export default async function RewardsPage() {
-  const rules = await getRewardRules();
+  // Holder rewards are the page; the Volume rebates under them say so themselves when their own read fails.
+  const [rules, platform, rebates] = await Promise.all([getRewardRules(), getPlatform(), getRebates().catch(() => null)]);
   const coins = (raw: string) => formatUnits(raw, COIN_DECIMALS, 0);
   return (
     <div className={`shell ${styles.page}`}>
@@ -92,6 +95,8 @@ export default async function RewardsPage() {
           <p className={styles.note}>A change is announced at least a day before it applies, so it never surprises a holder.</p>
         </section>
       )}
+
+      <VolumeRebates rebates={rebates} explorer={{ cluster: platform.cluster, rpcUrl: platform.rpcUrl }} />
     </div>
   );
 }
