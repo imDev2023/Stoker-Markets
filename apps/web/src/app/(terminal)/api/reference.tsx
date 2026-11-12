@@ -111,7 +111,15 @@ export const SECTIONS: readonly Section[] = [
         endpoint: ["GET /launches/:mint/rewards", "GET /rewards/rules", "GET /rewards/rounds/:id", "GET /wallets/:address/rewards"],
         text: (
           <>
-            Holder Rewards: the Payout Asset, tax waiting, the pot, the rules in force and announced, every round, a wallet&apos;s payouts; for a Quote Asset payout also the Reward Sales (<C>sales</C>: the bounds, totals, and the latest sales with their transactions). Amounts of a pot or payout are in the round&apos;s <C>payout</C> asset. A round carries its <C>source</C>: <C>tax</C>, a Reward Launch&apos;s Reward Tax, or <C>earnings</C>, a Creator&apos;s earnings paid to their coin&apos;s holders in its Quote Asset. <C>/launches/:mint/rewards</C> lists a Reward Launch&apos;s tax rounds only; <C>/rewards/rounds/:id</C> answers any round, a standard coin&apos;s earnings round included, and each of a wallet&apos;s payouts names its round&apos;s <C>source</C>.
+            Holder Rewards: the Payout Asset, tax waiting, the pot, the rules in force and announced, every round, a wallet&apos;s payouts; for a Quote Asset payout also the Reward Sales (<C>sales</C>: the bounds, totals, and the latest sales with their transactions). Amounts of a pot or payout are in the round&apos;s <C>payout</C> asset. A round carries its <C>source</C>: <C>tax</C>, a Reward Launch&apos;s Reward Tax, or <C>earnings</C>, a Creator&apos;s earnings paid to their coin&apos;s holders in its Quote Asset. <C>/launches/:mint/rewards</C> lists a Reward Launch&apos;s tax rounds only; <C>/rewards/rounds/:id</C> answers any round, a standard coin&apos;s earnings round included, and each of a wallet&apos;s payouts names its round&apos;s <C>source</C>. The Holding Weight: each rules version carries its <C>holdingWeights</C>, the steps shortest first (<C>afterDays</C> and <C>weightBps</C>, 10000 being once; empty when every coin counts once), and the rules answer <C>holdingDaySeconds</C>, the length of the day a step counts (86400 on every public deployment). Every payout carries <C>weightedHolding</C> beside its <C>holding</C> (raw units times basis points), and a round its <C>weightedTotal</C>, so a payout is <C>pot * weightedHolding / weightedTotal</C>, rounded down; <C>weightedTotal</C> is null for a round from before the Holding Weight, whose payouts are pro rata of their holdings.
+          </>
+        ),
+      },
+      {
+        endpoint: "GET /launches/:mint/holdings/:wallet",
+        text: (
+          <>
+            One wallet&apos;s Holding Lots of a coin, as the coin&apos;s latest Holding Check left them (<C>check</C>, with its <C>checkedAt</C> and <C>slot</C>; null for a coin that can have no Reward Round, which is never checked): <C>lots</C>, oldest first, each an <C>amount</C>, the <C>since</C> its coins&apos; age runs from and the <C>weightBps</C> they count for now under the rules in force (<C>rulesVersion</C>); what they add up to (<C>held</C>), the wallet&apos;s <C>weightedHolding</C> and its weight as one figure (<C>weightBps</C>, 10000 with no lots). Balances are read once in a Holding Day, so coins bought since the last check are in no lot yet and count once. <C>flat</C> is true for the treasury, whose coins always count once. The lots are as they are now, never as they were at a past round, whose own page carries the result.
           </>
         ),
       },
@@ -310,7 +318,7 @@ export const SECTIONS: readonly Section[] = [
           </>
         ),
       },
-      { endpoint: "POST /operator/rewards/rules", text: <>Announces a Reward Round rules change, effective no sooner than the announced lead ahead.</> },
+      { endpoint: "POST /operator/rewards/rules", text: <>Announces the next version of the Reward Round rules, effective no sooner than the announced lead ahead (never under a minute). A version states every rule: <C>minHolding</C>, <C>roundThreshold</C> and <C>holdingWeights</C>, the Holding Weight&apos;s steps (at most six, each after more days and heavier than the one before, none above five times), named every time, the empty list included.</> },
       { endpoint: "PUT /operator/platform-token", text: <>Names the Platform Token the Burn buys.</> },
       { endpoint: "POST /operator/creator-ladder", text: <>Announces the next version of the Creator Ladder: the second and the top tier&apos;s share and Active Days (both climbing from the first tier&apos;s half) and the floor of an Active Day, effective no sooner than a fee change&apos;s lead ahead and after every earlier version. A coin keeps every tier it has already reached.</> },
       { endpoint: "POST /operator/budget-table", text: <>Announces the next version of the Budget Table: every row&apos;s share (summing to 10000 basis points), effective no sooner than a fee change&apos;s lead ahead and after every earlier version.</> },

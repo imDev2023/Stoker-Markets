@@ -1,0 +1,107 @@
+/*
+  The connected wallet's own Diamond Hands, a block inside a coin's rewards card: parted from the card's facts by a
+  hairline, its figures in the card's own grammar (a label over its value), then its coins a row per weight.
+*/
+.hands {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* A column is wide enough for a balance of a 1 trillion coin with its ticker on one line, so on a phone the facts stack. */
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.facts dt {
+  font-size: var(--text-label);
+  color: var(--ink-3);
+}
+
+.facts dd {
+  margin: 2px 0 0;
+  font-size: var(--text-ui);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.note {
+  margin: 0;
+  max-width: 88ch;
+  font-size: var(--text-ui);
+  color: var(--ink-3);
+  text-wrap: pretty;
+}
+
+.note a {
+  color: var(--ink-2);
+}
+
+.note a:hover {
+  color: var(--accent);
+}
+
+/* The wallet's coins, a row per weight: how many and since when on the left, what each counts for on the right. */
+.rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rows li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 16px;
+  align-items: baseline;
+  padding: 10px 0;
+  font-size: var(--text-ui);
+}
+
+.rows li + li {
+  border-top: 1px solid var(--line);
+}
+
+.rows li:first-child {
+  padding-top: 0;
+}
+
+.rows li:last-child {
+  padding-bottom: 0;
+}
+
+/* A day is never broken across two lines. */
+.rows time {
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.weight {
+  text-align: right;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* On a phone a row's sentence takes the whole width and what its coins count for goes under it, as the card's own rows do. */
+@media (max-width: 560px) {
+  .rows li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .weight {
+    text-align: left;
+  }
+}

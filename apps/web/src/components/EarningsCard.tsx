@@ -3,6 +3,7 @@ import type { CoinEarnings, CreatorBuyback, PlatformInfo } from "@launchpad/cont
 import { DESTINATION_TAGS, type EarningsRule } from "@/lib/earnings";
 import { COIN_DECIMALS, explorerUrl, formatUnits, formatUtc, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { Address } from "./Address";
+import { DiamondHands } from "./DiamondHands";
 import styles from "./EarningsCard.module.css";
 
 /** The rule's list, named for a screen reader. */
@@ -20,9 +21,11 @@ const NOT_YET: Record<EarningsRule, string> = {
  * the rule does, who applies it (the platform's job, every action on the public Ledger: accountable, not trustless),
  * what has been collected for it and what waits for its next run, and every round it paid or buyback it made, each
  * with its transaction; until the rule has run, one line says what it is waiting for, as the Holder rewards card
- * does. A coin that pays its Creator's wallet has no rule and no card.
+ * does. A coin that pays its Creator's wallet has no rule and no card. `weighted` says the Reward Round rules in force
+ * weigh coins by how long they were kept (the Holding Weight, ADR 0022): a coin that pays its holders then shows a
+ * connected wallet its own Diamond Hands, since its rounds are split by them.
  */
-export function EarningsCard({ earnings, symbol, platform }: { earnings: CoinEarnings; symbol: string; platform: PlatformInfo }) {
+export function EarningsCard({ earnings, symbol, platform, weighted = false }: { earnings: CoinEarnings; symbol: string; platform: PlatformInfo; weighted?: boolean }) {
   const rule = earnings.destination;
   if (rule === "wallet") return null;
   const quote = quoteTicker(earnings.quote);
@@ -160,6 +163,7 @@ export function EarningsCard({ earnings, symbol, platform }: { earnings: CoinEar
               : NOT_YET[rule]}
         </p>
       )}
+      {rule === "holders" && weighted && <DiamondHands mint={earnings.mint} symbol={symbol} />}
       {rule === "holders" && (
         <p className={styles.note}>
           <Link href="/rewards">The rules, and where your rewards are</Link>

@@ -4,9 +4,11 @@ import Link from "next/link";
 import { REWARD_SALE_MAX_RESERVE_BPS, REWARD_SALE_SLIPPAGE_BPS } from "@launchpad/contract";
 import { getPlatform, getRebates, getRewardRules } from "@/lib/api";
 import { COIN_DECIMALS, formatUnits, formatUtc } from "@/lib/format";
+import { diamondHands, stepsLine } from "@/lib/holding";
 import { WalletLookup } from "@/components/WalletLookup";
 import styles from "./page.module.css";
 import { EmptyState } from "@/components/EmptyState";
+import { DiamondHandsRules } from "@/components/DiamondHandsRules";
 import { VolumeRebates } from "@/components/VolumeRebates";
 
 export const metadata: Metadata = pageMeta({
@@ -20,6 +22,12 @@ export default async function RewardsPage() {
   // Holder rewards are the page; the Volume rebates under them say so themselves when their own read fails.
   const [rules, platform, rebates] = await Promise.all([getRewardRules(), getPlatform(), getRebates().catch(() => null)]);
   const coins = (raw: string) => formatUnits(raw, COIN_DECIMALS, 0);
+  // Diamond Hands (the Holding Weight, ADR 0022): while the rules in force have steps a wallet's share is by its coins
+  // as weighed, and an announced version that changes the steps says so in its line. With no steps in force or
+  // announced, nothing on the page mentions it.
+  const hands = diamondHands(rules);
+  const weighed = hands?.inForce != null;
+  const changing = new Set(hands?.changes.map((r) => r.version));
   return (
     <div className={`shell ${styles.page}`}>
       <h1 className={`t-h1 ${styles.title}`}>Holder rewards</h1>
@@ -63,8 +71,10 @@ export default async function RewardsPage() {
           <EmptyState bare title="The rules are set before the first Reward Launch">No rules are in force yet. They are announced here ahead of the first round.</EmptyState>
         )}
         <p className={styles.note}>
-          Each wallet&apos;s share is its holding over every eligible holding at the round&apos;s snapshot. The curve&apos;s and pool&apos;s own
-          accounts and the platform&apos;s operations wallet never count as holders.
+          {weighed
+            ? "Each wallet's share is its holding over every eligible holding at the round's snapshot, each coin counted at its Diamond Hands weight."
+            : "Each wallet's share is its holding over every eligible holding at the round's snapshot."}{" "}
+          The curve&apos;s and pool&apos;s own accounts and the platform&apos;s operations wallet never count as holders.
         </p>
         <p className={styles.note}>
           The platform&apos;s treasury does count. A pool pays part of its fees in the coin, those coins end up in the treasury, and
@@ -87,6 +97,8 @@ export default async function RewardsPage() {
                 <span>
                   Version {r.version}{r.note ? `: ${r.note}` : ""}. Minimum holding <span className="mono">{coins(r.minHolding)}</span>, round from{" "}
                   <span className="mono">{coins(r.roundThreshold)}</span> collected.
+                  {changing.has(r.version) &&
+                    (r.holdingWeights.length > 0 ? ` Diamond Hands: ${stepsLine(r.holdingWeights)}.` : " Diamond Hands ends: every coin counts once.")}
                 </span>
                 <span className={styles.when}>From <time dateTime={r.effectiveAt}>{formatUtc(r.effectiveAt)}</time></span>
               </li>
@@ -95,6 +107,8 @@ export default async function RewardsPage() {
           <p className={styles.note}>A change is announced at least a day before it applies, so it never surprises a holder.</p>
         </section>
       )}
+
+      <DiamondHandsRules rules={rules} />
 
       <VolumeRebates rebates={rebates} explorer={{ cluster: platform.cluster, rpcUrl: platform.rpcUrl }} />
     </div>
