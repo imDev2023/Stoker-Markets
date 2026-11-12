@@ -204,6 +204,13 @@
       "when": 1794453270886,
       "tag": "0028_rebates",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1794482414659,
+      "tag": "0029_holding_weight",
+      "breakpoints": true
     }
   ]
 }
