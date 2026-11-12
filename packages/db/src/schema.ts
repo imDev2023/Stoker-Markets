@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { bigint, boolean, check, doublePrecision, index, integer, jsonb, numeric, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
-import type { QuoteLabel } from "@launchpad/contract";
+import type { HoldingWeightStep, QuoteLabel } from "@launchpad/contract";
 
 /** One row per Launch on our platform, written by the Indexer from the launch transaction. */
 export const launches = pgTable(
@@ -440,6 +440,11 @@ export const rewardRules = pgTable("reward_rules", {
   minHolding: numeric("min_holding", { precision: 40, scale: 0 }).notNull(),
   /** A round runs once at least this much tax has collected, raw units of the coin. */
   roundThreshold: numeric("round_threshold", { precision: 40, scale: 0 }).notNull(),
+  /**
+   * The Holding Weight's steps (ADR 0022), shortest first: a coin whose Holding Lot is `afterDays` Holding Days old
+   * counts `weightBps` in a round. Empty, as in every version from before the ADR, when every coin counts once.
+   */
+  holdingWeights: jsonb("holding_weights").$type<HoldingWeightStep[]>().notNull().default([]),
   note: text("note"),
   announcedAt: timestamp("announced_at", { withTimezone: true }).notNull().defaultNow(),
   effectiveAt: timestamp("effective_at", { withTimezone: true }).notNull(),
@@ -611,6 +616,11 @@ export const rewardRounds = pgTable(
     eligibleHolders: integer("eligible_holders").notNull(),
     /** What the payouts add up to; rounding leaves the pot's last units for the next round. */
     distributable: numeric("distributable", { precision: 40, scale: 0 }).notNull(),
+    /**
+     * The Weighted Holdings of every wallet in the snapshot added up (ADR 0022), raw units times basis points: what a
+     * payout's own Weighted Holding is a share of. Null for a round from before the Holding Weight.
+     */
+    weightedTotal: numeric("weighted_total", { precision: 40, scale: 0 }),
     paid: numeric("paid", { precision: 40, scale: 0 }).notNull().default("0"),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
     finishedAt: timestamp("finished_at", { withTimezone: true }),
@@ -629,6 +639,11 @@ export const rewardPayouts = pgTable(
     wallet: text("wallet").notNull(),
     /** What the wallet held at the snapshot, raw units. */
     holding: numeric("holding", { precision: 40, scale: 0 }).notNull(),
+    /**
+     * The wallet's Weighted Holding at the snapshot (ADR 0022): each coin counted at its Holding Weight, raw units
+     * times basis points. A payout from before the Holding Weight has its holding counted once.
+     */
+    weightedHolding: numeric("weighted_holding", { precision: 40, scale: 0 }).notNull(),
     amount: numeric("amount", { precision: 40, scale: 0 }).notNull(),
     /**
      * `returned`: a SOL payout under the rent-exempt minimum to a wallet holding no SOL, which no transaction can land;
@@ -641,6 +656,45 @@ export const rewardPayouts = pgTable(
     paidAt: timestamp("paid_at", { withTimezone: true }),
   },
   (t) => [primaryKey({ columns: [t.roundId, t.wallet] }), index("reward_payouts_wallet_idx").on(t.wallet)],
+);
+
+/**
+ * Holding Lots (ADR 0022): an amount of a coin a wallet was first seen holding at one Holding Check, with that check's
+ * time, which is where the coins' age runs from. Only a Holding Check writes here: it opens a lot for what a wallet
+ * holds beyond its lots, and reduces the newest lots first, removing the empty ones, when it holds less. Lots are never
+ * merged, so a later rules version can add a longer step and find the ages it needs.
+ */
+export const holdingLots = pgTable(
+  "holding_lots",
+  {
+    mint: text("mint").notNull(),
+    wallet: text("wallet").notNull(),
+    /** The time of the Holding Check that opened the lot. */
+    since: timestamp("since", { withTimezone: true }).notNull(),
+    /** Raw units of the coin, above zero: a lot with nothing left is removed. */
+    amount: numeric("amount", { precision: 40, scale: 0 }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.mint, t.wallet, t.since] })],
+);
+
+/**
+ * Holding Checks (ADR 0022): one row per coin per Holding Day on which the Reward Engine read the coin's accounts and
+ * brought its Holding Lots in step with them, written in the same transaction as the lots it changed, so a day is
+ * checked once or not at all.
+ */
+export const holdingChecks = pgTable(
+  "holding_checks",
+  {
+    mint: text("mint").notNull(),
+    /** The Holding Day, counted from the epoch: `floor(unix seconds / HOLDING_DAY_SECONDS)`. */
+    day: integer("day").notNull(),
+    /** The slot the accounts were read at. */
+    slot: bigint("slot", { mode: "number" }).notNull(),
+    checkedAt: timestamp("checked_at", { withTimezone: true }).notNull(),
+    /** How many wallets held the coin, whatever they held. */
+    wallets: integer("wallets").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.mint, t.day] })],
 );
 
 /**

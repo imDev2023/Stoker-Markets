@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAirdrop, getCoinEarnings, getCoinRewards, getHolders, getLaunch, getPlatform, getQuoteAsset, getTrust, listTrades } from "@/lib/api";
+import { getAirdrop, getCoinEarnings, getCoinRewards, getHolders, getLaunch, getPlatform, getQuoteAsset, getRewardRules, getTrust, listTrades } from "@/lib/api";
 import { explorerUrl, isSol, quoteTicker } from "@/lib/format";
 import { breadcrumbList, clip, pageMeta } from "@/lib/meta";
 import { siteOrigin } from "@/lib/origin";
@@ -55,11 +55,15 @@ export default async function CoinPage({ params, searchParams }: Props) {
   // What only some coins have, read together: a Reward Launch's rewards; the Creator's earnings where they go to a rule
   // rather than the wallet (ADR 0011); and the Quote Asset, whose card wants its price and liquidity and whose labels
   // are shown for any asset but SOL (#11). A read that fails leaves its card out, never the page.
-  const [rewards, earnings, quoteAsset] = await Promise.all([
+  // A coin whose Creator's earnings go to its holders also reads the Reward Round rules, which say whether its rounds
+  // weigh coins by how long they were kept (ADR 0022); a Reward Launch's rewards carry the rules themselves.
+  const [rewards, earnings, quoteAsset, rules] = await Promise.all([
     launch.rewardTax ? getCoinRewards(mint).catch(() => null) : null,
     launch.earningsDestination !== "wallet" ? getCoinEarnings(mint).catch(() => null) : null,
     getQuoteAsset(launch.quote.mint).catch(() => null),
+    launch.earningsDestination === "holders" ? getRewardRules().catch(() => null) : null,
   ]);
+  const weighted = (rules?.inForce?.holdingWeights.length ?? 0) > 0;
   // An Airdrop still being paid sits under the title row, where its Creator sends it (the market component draws it); a finished one joins the cards below.
   const airdropDone = airdrop?.recipients.every((r) => r.status === "paid") ?? false;
   const quote = quoteTicker(launch.quote);
@@ -102,7 +106,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
             </section>
           )}
           {rewards && <div className={styles.wide}><RewardsCard rewards={rewards} symbol={launch.symbol} platform={platform} /></div>}
-          {earnings && <div className={styles.wide}><EarningsCard earnings={earnings} symbol={launch.symbol} platform={platform} /></div>}
+          {earnings && <div className={styles.wide}><EarningsCard earnings={earnings} symbol={launch.symbol} platform={platform} weighted={weighted} /></div>}
           {airdropDone && airdrop && <div className={styles.wide}><AirdropCard initial={airdrop} symbol={launch.symbol} platform={platform} /></div>}
         </section>
       ) : null}

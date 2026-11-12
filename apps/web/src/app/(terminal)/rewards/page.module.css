@@ -219,6 +219,80 @@
   align-self: flex-start;
 }
 
+/*
+  Diamond Hands' steps: how long a coin has been kept and what it then counts for, two short columns that stay a table
+  at any width and never stretch across the card.
+*/
+.steps {
+  width: 100%;
+  max-width: 440px;
+  margin-bottom: 6px;
+  border-collapse: collapse;
+  font-size: var(--text-ui);
+}
+
+.steps thead th {
+  padding: 0 12px 8px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-3);
+  font-size: var(--text-label);
+  font-weight: 500;
+  text-align: left;
+}
+
+.steps tbody th,
+.steps td {
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 400;
+}
+
+.steps td {
+  font-weight: 500;
+}
+
+.steps tbody tr + tr > * {
+  border-top: 1px solid var(--line);
+}
+
+.steps tbody tr:last-child > * {
+  padding-bottom: 0;
+}
+
+.steps tr > :first-child {
+  padding-left: 0;
+}
+
+.steps tr > :last-child {
+  padding-right: 0;
+}
+
+/* An announced change to the steps: when it applies, then what it brings. */
+.change {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.changeWhen {
+  margin: 0;
+  font-size: var(--text-ui);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* The few things a holder must know, one short line each. */
+.points {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0 0 0 18px;
+  font-size: var(--text-ui);
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
 /* A second program on the page (Volume rebates, under Holder rewards): a title and a lead of its own, then its panels. */
 .program {
   display: flex;

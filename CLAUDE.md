@@ -18,15 +18,15 @@ This repository is the fallback: it still deploys the live mainnet API and the d
 
 ### The frontier (2026-11-12)
 
-- **Next unit:** loyalty weighting in Reward Rounds (#199), one unit per session.
-  The small units after it are #186, #183 and #185, and #184's other half (the Burn's and the Flywheel's budgets pointed at liquidity) is open.
-- **Done on the rewards roadmap:** #187 (Budget Table), #188 (Creator Ladder), #113 with #184's Creator half (Creator Earnings Destinations), #196 (volume rebates).
-- **Devnet rehearsal** (`devnet.stoker.markets`, `api-devnet.stoker.markets`, and the apex with a devnet notice): its database is through `0026` and both Workers run `main` as of 62bfb75, so it is behind by #193 and #198.
-  It takes migrations `0027` and `0028`, then the API, then the web: the owner's one line in #193's last comment, repeated on #198.
+- **Next unit:** Row-Level Security on every table (#201), after Supabase's advisor flagged both databases; the Data API is off in both projects since 2026-11-12.
+  Then the small units of the rewards roadmap, one per session: #186, #183 and #185; #184's other half (the Burn's and the Flywheel's budgets pointed at liquidity) is open.
+- **Done on the rewards roadmap:** #187 (Budget Table), #188 (Creator Ladder), #113 with #184's Creator half (Creator Earnings Destinations), #196 (volume rebates), #199 (Holding Weight).
+- **Devnet rehearsal** (`devnet.stoker.markets`, `api-devnet.stoker.markets`, and the apex with a devnet notice): its database is through `0026` and both Workers run `main` as of 62bfb75, so it is behind by #193, #198 and #199.
+  It takes migrations `0027`, `0028` and `0029`, then the API, then the web: the owner's one line in #193's last comment, repeated on #198 and #199.
   After every merge the rehearsal is redeployed from `main`, the database first when `packages/db` changed, and the record goes on the issue.
-- **Mainnet:** `stoker-api` is live on `api.stoker.markets` on its build from before these merges; its database is through `0020` and takes `0021` to `0028` at go-live.
+- **Mainnet:** `stoker-api` is live on `api.stoker.markets` on its build from before these merges; its database is through `0020` and takes `0021` to `0029` at go-live.
   Go-live is #23: the checklist is `docs/runbooks/mainnet.md` section 12, and #23's latest comment says which item is open.
-- **The owner still owes:** the devnet redeploy line above; on #23, item 9 (Always Use HTTPS), step 5b's backup disk, Helius Developer, then items 8, 10 and 12 at go-live; a Budget Table version with a share for `rebates` before the rebates pay anything (runbook section 17); the Reward Rounds' version 2 before the first Reward Launch (runbook section 6); answers on #159; closing #128 and #129; and three calls each on #193 and #198 that are theirs to overrule (`docs/agents/settled.md`).
+- **The owner still owes:** the devnet redeploy line above; on #23, item 9 (Always Use HTTPS), step 5b's backup disk, Helius Developer, then items 8, 10 and 12 at go-live; a Budget Table version with a share for `rebates` before the rebates pay anything (runbook section 17); the Reward Rounds' version 2 before the first Reward Launch (runbook section 6), and with it or after it the first Holding Weights (section 18); answers on #159; closing #128 and #129; and three calls each on #193, #198 and #199 that are theirs to overrule (`docs/agents/settled.md`).
 - **Open PRs on 2026-11-12:** #168 (`sign-in`) and #132 (`design-research`: merge its `docs/design/research/` or close it).
   Check `gh pr list` before starting work, since cloud sessions also push here, and push every working branch.
 - **Site work** (phase 6, #137, and anything in the Playground's design) belongs in new-stoker unless the owner says otherwise.
@@ -107,6 +107,7 @@ Rewards and budgets:
 - Rewards (owner, 2026-11-09, #187): nothing is paid in STOKER to Creators; every new program is a row of the Budget Table; Airdrop Mode (#49) is parked.
 - The Budget Table (ADR 0019, #187): six rows of the Platform Net, version 1 at 60 / 5 / 0 / 0 / 0 / 35; versions are announced ahead and never edited; trader programs take 2000 bps together at most.
 - Volume rebates (ADR 0021, #196): every trade earns by the Platform Fee it paid, in UTC weeks, paid in SOL from 0.01 SOL.
+- Holding Weight (ADR 0022, #199), shown as Diamond Hands: in every Reward Round a coin kept longer counts for more, coin by coin, by announced steps; a sell takes the newest coins first; the treasury counts once.
 - Reward Rounds and the Burn's budgets: ADR 0006; a budget is a share of the net revenue less what earlier burns spent.
 - The Payout Asset (#43): a Reward Launch pays in the coin or in its Quote Asset, fixed at launch; a run sells 0.5% of the reserve at most.
 - The treasury is an eligible holder in Reward Rounds (owner, 2026-10-04).

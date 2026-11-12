@@ -4,18 +4,20 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { WSOL_MINT } from "@launchpad/chain";
 import {
-  AnnounceRewardRules, REWARD_RULES_LEAD_SECONDS_MIN, REWARD_SALE_MAX_RESERVE_BPS, REWARD_SALE_SLIPPAGE_BPS, type CoinRewards, type RewardPayoutAssetRef,
-  type RewardRoundDetail, type RewardRoundSummary, type RewardRulesPage, type RewardRuleVersion, type WalletRewards,
+  AnnounceRewardRules, HOLDING_WEIGHT_ONCE_BPS, REWARD_RULES_LEAD_SECONDS_MIN, REWARD_SALE_MAX_RESERVE_BPS, REWARD_SALE_SLIPPAGE_BPS, type CoinRewards,
+  type RewardPayoutAssetRef, type RewardRoundDetail, type RewardRoundSummary, type RewardRulesPage, type RewardRuleVersion, type WalletHolding, type WalletRewards,
 } from "@launchpad/contract";
 import { launches, quoteAssets, rewardPayouts, rewardRounds, rewardRules, type Db } from "@launchpad/db";
 import { operationsKey, type AppEnv } from "../env";
-import { publishedRules, taxWaiting } from "../rewards/engine";
+import { latestCheck, lotsOf } from "../rewards/checks";
+import { publishedRules, rulesInForce, taxWaiting } from "../rewards/engine";
+import { lotWeightBps } from "../rewards/weights";
 import { quotePot, salesOf } from "../rewards/sales";
 
 /**
  * Reward Rounds, public: the rules every round follows (in force and announced), each Reward Launch's rounds and the tax
- * waiting for the next one, one round with every payout, and a wallet's own Holder Rewards, so "where are my rewards?"
- * answers itself.
+ * waiting for the next one, one round with every payout, a wallet's own Holder Rewards, so "where are my rewards?"
+ * answers itself, and a wallet's Holding Lots of a coin, which are what its next round weighs it by (ADR 0022).
  */
 export const rewardRoutes = new Hono<AppEnv>();
 
@@ -23,6 +25,7 @@ const ruleVersion = (r: typeof rewardRules.$inferSelect): RewardRuleVersion => (
   version: r.version,
   minHolding: r.minHolding,
   roundThreshold: r.roundThreshold,
+  holdingWeights: r.holdingWeights,
   note: r.note,
   announcedAt: r.announcedAt.toISOString(),
   effectiveAt: r.effectiveAt.toISOString(),
@@ -46,6 +49,7 @@ export const roundSummary = (r: typeof rewardRounds.$inferSelect, payout: Reward
   sold: r.sold,
   eligibleHolders: r.eligibleHolders,
   distributable: r.distributable,
+  weightedTotal: r.weightedTotal,
   paid: r.paid,
   startedAt: r.startedAt.toISOString(),
   finishedAt: r.finishedAt?.toISOString() ?? null,
@@ -62,7 +66,7 @@ function address(value: string, what: string) {
 
 rewardRoutes.get("/rewards/rules", async (c) => {
   const { inForce, upcoming } = await publishedRules(c.get("db"));
-  const res: RewardRulesPage = { inForce: inForce ? ruleVersion(inForce) : null, upcoming: upcoming.map(ruleVersion) };
+  const res: RewardRulesPage = { inForce: inForce ? ruleVersion(inForce) : null, upcoming: upcoming.map(ruleVersion), holdingDaySeconds: c.get("cfg").holdingDaySeconds };
   return c.json(res);
 });
 
@@ -137,7 +141,10 @@ rewardRoutes.get("/rewards/rounds/:id", async (c) => {
   const payouts = await db.select().from(rewardPayouts).where(eq(rewardPayouts.roundId, id)).orderBy(desc(rewardPayouts.amount), asc(rewardPayouts.wallet));
   const res: RewardRoundDetail = {
     ...roundSummary(round, payoutRef(row.launch, round.payoutMint, round.payoutDecimals, row.quoteSymbol)),
-    payouts: payouts.map((p) => ({ wallet: p.wallet, holding: p.holding, amount: p.amount, status: p.status, signature: p.status === "paid" ? p.signature : null, paidAt: p.paidAt?.toISOString() ?? null })),
+    payouts: payouts.map((p) => ({
+      wallet: p.wallet, holding: p.holding, weightedHolding: p.weightedHolding, amount: p.amount, status: p.status, signature: p.status === "paid" ? p.signature : null,
+      paidAt: p.paidAt?.toISOString() ?? null,
+    })),
   };
   return c.json(res);
 });
@@ -166,6 +173,7 @@ rewardRoutes.get("/wallets/:address/rewards", async (c) => {
       payout: payoutRef({ mint: r.round.mint, symbol: r.symbol, decimals: r.decimals }, r.round.payoutMint, r.round.payoutDecimals, r.quoteSymbol),
       source: r.round.source,
       holding: r.payout.holding,
+      weightedHolding: r.payout.weightedHolding,
       amount: r.payout.amount,
       status: r.payout.status,
       signature: r.payout.status === "paid" ? r.payout.signature : null,
@@ -178,8 +186,44 @@ rewardRoutes.get("/wallets/:address/rewards", async (c) => {
 });
 
 /**
+ * A wallet's Holding Lots of a coin (ADR 0022), as the coin's latest Holding Check left them, each with the weight its
+ * coins have now under the rules in force, and what they add up to. A coin that can have no round is never checked,
+ * and a wallet the last check saw nothing in has no lots: both answer with none. The treasury's lots are shown as they
+ * are, and each counts once.
+ */
+rewardRoutes.get("/launches/:mint/holdings/:wallet", async (c) => {
+  const mint = address(c.req.param("mint"), "mint").toBase58();
+  const wallet = address(c.req.param("wallet"), "wallet address").toBase58();
+  const db = c.get("db");
+  const cfg = c.get("cfg");
+  const [launch] = await db.select({ mint: launches.mint }).from(launches).where(eq(launches.mint, mint)).limit(1);
+  if (!launch) return c.json({ error: "not found" }, 404);
+  const now = new Date();
+  const [rules, check, byWallet] = await Promise.all([rulesInForce(db, now), latestCheck(db, mint), lotsOf(db, mint, wallet)]);
+  const flat = cfg.treasury?.toBase58() === wallet;
+  const lots = (byWallet.get(wallet) ?? []).map((l) => ({
+    amount: l.amount, since: l.since, weightBps: flat ? HOLDING_WEIGHT_ONCE_BPS : lotWeightBps(rules.holdingWeights, l.since, now, cfg.holdingDaySeconds),
+  }));
+  const held = lots.reduce((s, l) => s + l.amount, 0n);
+  const weighted = lots.reduce((s, l) => s + l.amount * BigInt(l.weightBps), 0n);
+  const res: WalletHolding = {
+    mint,
+    wallet,
+    check: check && { checkedAt: check.checkedAt.toISOString(), slot: check.slot },
+    held: held.toString(),
+    lots: lots.map((l) => ({ amount: l.amount.toString(), since: l.since.toISOString(), weightBps: l.weightBps })),
+    weightedHolding: weighted.toString(),
+    weightBps: held === 0n ? HOLDING_WEIGHT_ONCE_BPS : Number(weighted / held),
+    flat,
+    rulesVersion: rules.version,
+  };
+  return c.json(res);
+});
+
+/**
  * Operator: announces the next rules version. It takes effect no sooner than the lead time after the announcement, so
- * holders always see a change coming; a round opened before then follows the rules in force at its snapshot.
+ * holders always see a change coming; a round opened before then follows the rules in force at its snapshot. A version
+ * states all of its rules, the Holding Weight's steps among them (ADR 0022): the empty list is said, never left out.
  */
 export const operatorRewardRoutes = new Hono<AppEnv>();
 
@@ -196,7 +240,10 @@ operatorRewardRoutes.post("/rewards/rules", async (c) => {
   const [latest] = await db.select({ version: sql<number>`coalesce(max(${rewardRules.version}), 0)::int` }).from(rewardRules);
   const [row] = await db
     .insert(rewardRules)
-    .values({ version: latest!.version + 1, minHolding: body.data.minHolding, roundThreshold: body.data.roundThreshold, note: body.data.note ?? null, announcedAt: now, effectiveAt })
+    .values({
+      version: latest!.version + 1, minHolding: body.data.minHolding, roundThreshold: body.data.roundThreshold, holdingWeights: body.data.holdingWeights,
+      note: body.data.note ?? null, announcedAt: now, effectiveAt,
+    })
     .returning();
   return c.json(ruleVersion(row!), 201);
 });

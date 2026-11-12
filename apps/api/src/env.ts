@@ -71,6 +71,12 @@ export type Bindings = {
    */
   ACTIVE_DAY_SECONDS?: string;
   /**
+   * The Holding Weight (ADR 0022): how long a Holding Day is, in seconds, counted from the epoch; a UTC day unless set.
+   * A coin's Holding Check happens once in each, and a step's `afterDays` counts them. Only a test stack sets it, to
+   * see coins age in seconds; mainnet refuses any other length.
+   */
+  HOLDING_DAY_SECONDS?: string;
+  /**
    * Volume rebates (ADR 0021): how long a Rebate Week is, in seconds, counted from the epoch's first Monday; a UTC week
    * unless set. Only a test stack sets it, to see a week end in seconds; mainnet refuses any other length.
    */
@@ -212,6 +218,8 @@ export type Config = {
   copyProtectionSeconds: number;
   /** The length of an Active Day in seconds (ADR 0020): 86,400, a UTC day, everywhere but a test stack. */
   activeDaySeconds: number;
+  /** The length of a Holding Day in seconds (ADR 0022): 86,400, a UTC day, everywhere but a test stack. */
+  holdingDaySeconds: number;
   /** The length of a Rebate Week in seconds (ADR 0021): 604,800, a UTC week from Monday, everywhere but a test stack. */
   rebateWeekSeconds: number;
   /** What a wallet's waiting Volume Rebates must reach before they are paid, in lamports. */
@@ -302,6 +310,8 @@ export const SNIPE_WINDOW_DEFAULT_SLOTS = 5;
 const FEE_CHANGE_LEAD_DEFAULT_SECONDS = 24 * 60 * 60;
 /** An Active Day is a UTC day (ADR 0020). */
 export const ACTIVE_DAY_DEFAULT_SECONDS = 86_400;
+/** A Holding Day is a UTC day (ADR 0022). */
+export const HOLDING_DAY_DEFAULT_SECONDS = 86_400;
 /** A Rebate Week is a UTC week, Monday to Monday (ADR 0021). */
 export const REBATE_WEEK_DEFAULT_SECONDS = 7 * 86_400;
 /** 0.01 SOL (owner, 2026-11-12), the Creator Forward's own minimum. */
@@ -360,6 +370,8 @@ function refuseLocalOnlySettingsOnMainnet(env: Bindings) {
   if (env.COUNTRY_HEADER) throw new Error("COUNTRY_HEADER lets a request name its own country, which is for tests; on mainnet the region gate reads Cloudflare's reading alone");
   if (env.ACTIVE_DAY_SECONDS && seconds(env.ACTIVE_DAY_SECONDS, "ACTIVE_DAY_SECONDS") !== ACTIVE_DAY_DEFAULT_SECONDS)
     throw new Error(`ACTIVE_DAY_SECONDS shortens the Creator Ladder's day for tests; on mainnet an Active Day is a UTC day (${ACTIVE_DAY_DEFAULT_SECONDS} seconds), so leave it unset`);
+  if (env.HOLDING_DAY_SECONDS && seconds(env.HOLDING_DAY_SECONDS, "HOLDING_DAY_SECONDS") !== HOLDING_DAY_DEFAULT_SECONDS)
+    throw new Error(`HOLDING_DAY_SECONDS shortens the Holding Weight's day for tests; on mainnet a Holding Day is a UTC day (${HOLDING_DAY_DEFAULT_SECONDS} seconds), so leave it unset`);
   if (env.REBATE_WEEK_SECONDS && seconds(env.REBATE_WEEK_SECONDS, "REBATE_WEEK_SECONDS") !== REBATE_WEEK_DEFAULT_SECONDS)
     throw new Error(`REBATE_WEEK_SECONDS shortens the Rebate Week for tests; on mainnet it is a UTC week (${REBATE_WEEK_DEFAULT_SECONDS} seconds), so leave it unset`);
   if (env.FEE_CHANGE_LEAD_SECONDS && seconds(env.FEE_CHANGE_LEAD_SECONDS, "FEE_CHANGE_LEAD_SECONDS") < FEE_CHANGE_LEAD_MAINNET_MIN_SECONDS)
@@ -414,6 +426,7 @@ export function config(env: Bindings): Config {
     copyProtectionSeconds: env.COPY_PROTECTION_SECONDS ? seconds(env.COPY_PROTECTION_SECONDS, "COPY_PROTECTION_SECONDS") : COPY_PROTECTION_DEFAULT_SECONDS,
     snipeWindowSlots: env.SNIPE_WINDOW_SLOTS ? slots(env.SNIPE_WINDOW_SLOTS, "SNIPE_WINDOW_SLOTS") : SNIPE_WINDOW_DEFAULT_SLOTS,
     activeDaySeconds: env.ACTIVE_DAY_SECONDS ? seconds(env.ACTIVE_DAY_SECONDS, "ACTIVE_DAY_SECONDS") : ACTIVE_DAY_DEFAULT_SECONDS,
+    holdingDaySeconds: env.HOLDING_DAY_SECONDS ? seconds(env.HOLDING_DAY_SECONDS, "HOLDING_DAY_SECONDS") : HOLDING_DAY_DEFAULT_SECONDS,
     rebateWeekSeconds: env.REBATE_WEEK_SECONDS ? seconds(env.REBATE_WEEK_SECONDS, "REBATE_WEEK_SECONDS") : REBATE_WEEK_DEFAULT_SECONDS,
     rebateMinLamports: rebateMinLamports(env.REBATE_MIN_LAMPORTS),
     alertWebhookUrl: env.ALERT_WEBHOOK_URL ? new URL(env.ALERT_WEBHOOK_URL).toString() : null,

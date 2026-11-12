@@ -1,12 +1,15 @@
 import Link from "next/link";
 import type { CoinRewards, PlatformInfo } from "@launchpad/contract";
 import { COIN_DECIMALS, explorerUrl, formatUnits, formatUtc } from "@/lib/format";
+import { DiamondHands } from "./DiamondHands";
 import styles from "./RewardsCard.module.css";
 
 /**
  * A Reward Launch's Holder Rewards: its Reward Tax, what is waiting for the next Reward Round, the rules that decide
  * who is paid, and every round so far, each public down to its payout transactions. A coin that pays in its Quote
  * Asset also shows its Reward Sales: the bounds they keep to, what has been sold and for how much, and each sale.
+ * While the rules in force weigh coins by how long they were kept (the Holding Weight, ADR 0022), a connected wallet
+ * sees its own Diamond Hands under the rounds; without steps in force, or without a wallet, the card is as it was.
  */
 export function RewardsCard({ rewards, symbol, platform }: { rewards: CoinRewards; symbol: string; platform: PlatformInfo }) {
   const coins = (raw: string) => formatUnits(raw, COIN_DECIMALS, 0);
@@ -106,6 +109,7 @@ export function RewardsCard({ rewards, symbol, platform }: { rewards: CoinReward
           ))}
         </ul>
       )}
+      {rules && rules.holdingWeights.length > 0 && <DiamondHands mint={rewards.mint} symbol={symbol} />}
       <p className={styles.note}>
         <Link href="/rewards">The rules, and where your rewards are</Link>
       </p>

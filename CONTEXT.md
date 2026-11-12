@@ -135,7 +135,7 @@ A coin with one has a pot of its own in its Quote Asset (what was collected for 
 _Avoid_: Vault, strategy, smart contract (no program enforces it)
 
 **Holder Dividend**:
-What a coin's holders are paid out of its Creator's earnings under the holders rule, pro rata in the Quote Asset, through a Reward Round of source `earnings`.
+What a coin's holders are paid out of its Creator's earnings under the holders rule, by their Weighted Holding in the Quote Asset, through a Reward Round of source `earnings`.
 _Avoid_: Holder Rewards (those are paid from Reward Tax), airdrop, staking reward
 
 **Creator Buyback**:
@@ -206,7 +206,7 @@ The percentage withheld from every transfer of a Reward Launch's coin, in that s
 _Avoid_: Transfer fee (the chain's mechanism), tax
 
 **Holder Reward**:
-A holder's pro-rata share of collected Reward Tax, paid in the Launch's Payout Asset.
+A holder's share of collected Reward Tax, by their Weighted Holding at the round's snapshot, paid in the Launch's Payout Asset.
 _Avoid_: Dividend, yield, airdrop, reflection
 
 **Payout Asset**:
@@ -221,6 +221,25 @@ _Avoid_: Dump, conversion, swap (on its own)
 One published cycle of paying a coin's holders, with its snapshot, rules version and payout transactions public: collected Reward Tax paid as Holder Rewards, or a coin's pot paid as Holder Dividends when its Creator's earnings go to its holders (ADR 0011).
 A round has one source, tax or earnings, and the two never share a pot.
 _Avoid_: Distribution, epoch, cycle
+
+**Holding Weight**:
+What a coin counts for in a Reward Round by how long its wallet has kept it: once when new, then the weight of the rules' step its Holding Lot has reached (ADR 0022, owner 2026-11-12).
+The steps are part of the Reward Round rules, announced ahead like any change of them; holders see the rule under the name Diamond Hands.
+_Avoid_: Loyalty program, multiplier tier, level, boost, staking (nothing is locked)
+
+**Holding Lot**:
+An amount of a coin a wallet was first seen holding at one Holding Check, with that check's time, which is where the coins' age runs from.
+A sell takes a wallet's newest lots first, coins that arrive from another wallet are a new lot, and the treasury's lots never weigh more than once.
+_Avoid_: Stake, deposit, tranche, vesting
+
+**Holding Check**:
+The Reward Engine's once-a-day reading of every wallet's balance of a coin that can have a Reward Round, which brings the coin's Holding Lots in step with what each wallet holds.
+What happens between two checks is not seen.
+_Avoid_: Snapshot (that is a Reward Round's own reading), scan, sync
+
+**Weighted Holding**:
+A wallet's balance at a Reward Round's snapshot with each coin counted at its Holding Weight; a round's pot is split in proportion to it.
+_Avoid_: Score, points, shares
 
 **Region gate**:
 The table that removes a feature from the visitors of one country once someone has asked for its removal there (owner, 2026-10-29: nothing is withheld upfront, every feature works everywhere and the disclosure does its job): the API reads the visitor's country from Cloudflare and answers which features are withheld there; the web hides a withheld feature. The table starts empty (ADR 0014).

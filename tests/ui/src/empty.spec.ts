@@ -117,6 +117,9 @@ test("the assets page lists every Quote Asset before the first coin", async ({ p
 test("the rewards page says Volume Rebates begin once their share is announced", async ({ page }) => {
   await page.goto("/rewards");
   await expect(page.getByRole("heading", { level: 1, name: "Holder rewards" })).toBeVisible();
+  // Diamond Hands (#199) has no section, and no word on the page, until a rules version with steps is announced.
+  await expect(page.getByRole("region", { name: "Diamond Hands" })).toHaveCount(0);
+  await expect(page.getByRole("main")).not.toContainText("Diamond Hands");
   const rebates = page.getByRole("region", { name: "Volume rebates", exact: true });
   await expect(rebates.getByRole("heading", { level: 2, name: "Volume rebates" })).toBeVisible();
   await expect(rebates).toContainText("A Volume Rebate gives a trader back part of the Platform Fees their trades paid.");

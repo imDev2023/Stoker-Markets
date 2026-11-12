@@ -2,7 +2,7 @@ import {
   API_KEY_HEADER, AirdropStatus, ApiError, ApiKeyList, BudgetsPage, BurnsPage, CandleList, CoinEarnings, CoinRewards, CopyCheck, CreatorEarnings, CreatorForwardList, CreatorLadderPage, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
   HolderList, LaunchTrust, IssuedApiKey, MarkList, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PlatformStats, PreparedAirdrop,
   PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAsset, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, TradeList,
-  RebatesPage, Region, RegionGatesView, TradeQuote, WalletRebates, WalletRewards,
+  RebatesPage, Region, RegionGatesView, TradeQuote, WalletHolding, WalletRebates, WalletRewards,
   type AnnounceFeeChange, type CandleInterval, type MarkQuery, type CreateApiKey, type CurveStatus, type LaunchField, type LaunchSort, type PrepareTradeRequest,
   type QuoteCategory, type QuoteIssuer, type RegionGates, type TradeQuoteQuery,
 } from "@launchpad/contract";
@@ -235,6 +235,16 @@ export async function getWalletRewards(wallet: string): Promise<WalletRewards | 
   const res = await apiFetch(`${API_URL}/v1/wallets/${encodeURIComponent(wallet)}/rewards`, { cache: "no-store" });
   if (res.status === 400) return null;
   return read(res, WalletRewards);
+}
+
+/**
+ * A wallet's Holding Lots of a coin (ADR 0022) as the coin's latest Holding Check left them, each at the weight it has
+ * now under the rules in force; null when the coin or the wallet's address is not one the API knows.
+ */
+export async function getWalletHolding(mint: string, wallet: string): Promise<WalletHolding | null> {
+  const res = await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/holdings/${encodeURIComponent(wallet)}`, { cache: "no-store" });
+  if (res.status === 400 || res.status === 404) return null;
+  return read(res, WalletHolding);
 }
 
 /** Volume rebates (ADR 0021): the program as it stands and the settled Rebate Weeks, the latest first. */

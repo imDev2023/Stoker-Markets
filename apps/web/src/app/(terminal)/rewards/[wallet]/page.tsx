@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPlatform, getWalletRewards } from "@/lib/api";
 import { explorerUrl, formatUnits, formatUtc, shortAddress } from "@/lib/format";
+import { countedMore, payoutWeightBps, weightMultiple } from "@/lib/holding";
 import styles from "../page.module.css";
 import { Address } from "@/components/Address";
 import { EmptyState } from "@/components/EmptyState";
@@ -48,6 +49,8 @@ export default async function WalletRewardsPage({ params }: Props) {
                     {r.source === "earnings" ? "Creator's earnings, round of " : "round of "}
                     <time dateTime={r.roundStartedAt}>{formatUtc(r.roundStartedAt)}</time>
                   </Link>
+                  {/* Diamond Hands (ADR 0022): said only where the wallet's coins counted for more than once in the round. */}
+                  {countedMore(r) && <> · your coins counted <span data-weight>{weightMultiple(payoutWeightBps(r))}</span></>}
                   {r.status === "paid" && r.signature ? (
                     <>
                       {" "}·{" "}

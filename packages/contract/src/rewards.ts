@@ -38,6 +38,40 @@ export const RewardPayoutAssetRef = z.object({
 });
 export type RewardPayoutAssetRef = z.infer<typeof RewardPayoutAssetRef>;
 
+/** What a coin counts for in a Reward Round until its Holding Lot has reached a step: once, in basis points. */
+export const HOLDING_WEIGHT_ONCE_BPS = 10_000;
+/** The most a step of the Holding Weight may count a coin for: five times (ADR 0022). */
+export const HOLDING_WEIGHT_MAX_BPS = 50_000;
+/** The most steps one rules version may carry. */
+export const HOLDING_WEIGHT_STEPS_MAX = 6;
+
+/**
+ * One step of the Holding Weight (ADR 0022): a coin whose Holding Lot is at least `afterDays` Holding Days old counts
+ * `weightBps` in a Reward Round, 15000 being one and a half times. A coin counts once until its lot reaches the first step.
+ */
+export const HoldingWeightStep = z.object({
+  afterDays: z.number().int().min(1).max(3650),
+  weightBps: z.number().int().gt(HOLDING_WEIGHT_ONCE_BPS).max(HOLDING_WEIGHT_MAX_BPS),
+});
+export type HoldingWeightStep = z.infer<typeof HoldingWeightStep>;
+
+/**
+ * A rules version's steps, shortest first: each step longer and heavier than the one before, at most
+ * `HOLDING_WEIGHT_STEPS_MAX` of them. The empty list is the rule without a Holding Weight: every coin counts once.
+ */
+export const HoldingWeights = z
+  .array(HoldingWeightStep)
+  .max(HOLDING_WEIGHT_STEPS_MAX)
+  .superRefine((steps, ctx) => {
+    steps.forEach((step, i) => {
+      const before = steps[i - 1];
+      if (!before) return;
+      if (step.afterDays <= before.afterDays) ctx.addIssue({ code: "custom", path: [i, "afterDays"], message: "each step must come after more days than the one before" });
+      if (step.weightBps <= before.weightBps) ctx.addIssue({ code: "custom", path: [i, "weightBps"], message: "each step must weigh more than the one before" });
+    });
+  });
+export type HoldingWeights = z.infer<typeof HoldingWeights>;
+
 /** One published version of the rules every Reward Round follows. */
 export const RewardRuleVersion = z.object({
   version: z.number().int(),
@@ -45,6 +79,8 @@ export const RewardRuleVersion = z.object({
   minHolding: raw,
   /** A round runs once at least this much tax has collected, raw units of the coin. */
   roundThreshold: raw,
+  /** The Holding Weight's steps, shortest first; empty when every coin counts once (ADR 0022). */
+  holdingWeights: HoldingWeights,
   note: z.string().nullable(),
   announcedAt: z.iso.datetime(),
   /** From when rounds follow this version; a round follows the version in force at its snapshot. */
@@ -52,13 +88,25 @@ export const RewardRuleVersion = z.object({
 });
 export type RewardRuleVersion = z.infer<typeof RewardRuleVersion>;
 
-export const RewardRulesPage = z.object({ inForce: RewardRuleVersion.nullable(), upcoming: z.array(RewardRuleVersion) });
+export const RewardRulesPage = z.object({
+  inForce: RewardRuleVersion.nullable(),
+  upcoming: z.array(RewardRuleVersion),
+  /**
+   * How long a Holding Day is on this deployment, in seconds: a step's `afterDays` counts these, and a coin's Holding
+   * Check happens once in each. 86,400, a UTC day, everywhere but a test stack.
+   */
+  holdingDaySeconds: z.number().int(),
+});
 export type RewardRulesPage = z.infer<typeof RewardRulesPage>;
 
-/** Operator: the next rules version, effective at least the lead time after now. */
+/**
+ * Operator: the next rules version, effective at least the lead time after now. A version states all of its rules, so
+ * `holdingWeights` is named every time, the empty list included: no version drops the weights by leaving them out.
+ */
 export const AnnounceRewardRules = z.object({
   minHolding: raw,
   roundThreshold: raw,
+  holdingWeights: HoldingWeights,
   effectiveAt: z.iso.datetime(),
   note: z.string().trim().max(200).optional(),
 });
@@ -87,6 +135,12 @@ export const RewardRoundSummary = z.object({
   eligibleHolders: z.number().int(),
   /** What the payouts add up to (rounding leaves the pot's last units for the next round). */
   distributable: raw,
+  /**
+   * The Weighted Holdings of every wallet in the snapshot added up, raw units of the coin times basis points: a payout
+   * is `pot * weightedHolding / weightedTotal`, rounded down. Null for a round from before the Holding Weight (ADR
+   * 0022), whose payouts are pro rata of their holdings.
+   */
+  weightedTotal: raw.nullable(),
   /** What has been paid so far. */
   paid: raw,
   startedAt: z.iso.datetime(),
@@ -105,6 +159,11 @@ export const RewardPayout = z.object({
   wallet: base58,
   /** What the wallet held at the snapshot. */
   holding: raw,
+  /**
+   * The wallet's Weighted Holding at the snapshot (ADR 0022): each coin it held counted at its Holding Weight, raw
+   * units times basis points, so a holding of 5 counted once is "50000".
+   */
+  weightedHolding: raw,
   amount: raw,
   status: RewardPayoutStatus,
   /** The transaction that paid it; null until it has. */
@@ -185,3 +244,36 @@ export const WalletRewards = z.object({
   ),
 });
 export type WalletRewards = z.infer<typeof WalletRewards>;
+
+/**
+ * One wallet's Holding Lots of one coin (ADR 0022), as the coin's latest Holding Check left them: what a Reward Round
+ * opened now would weigh, before whatever the wallet has bought or sold since that check. The lots are published as
+ * they are now, never as they were at a past round; a round's own page carries the result.
+ */
+export const WalletHolding = z.object({
+  mint: base58,
+  wallet: base58,
+  /** The coin's latest Holding Check; null for a coin never checked, which is every coin that can have no Reward Round. */
+  check: z.object({ checkedAt: z.iso.datetime(), slot: z.number().int() }).nullable(),
+  /** What the lots add up to: what the wallet held at that check, raw units of the coin. */
+  held: raw,
+  /** The lots, oldest first. */
+  lots: z.array(
+    z.object({
+      amount: raw,
+      /** The time of the Holding Check that first saw these coins in the wallet, where their age runs from. */
+      since: z.iso.datetime(),
+      /** What each of these coins counts for now, under the rules in force: 10000 is once. */
+      weightBps: z.number().int(),
+    }),
+  ),
+  /** The lots, each counted at its weight: raw units times basis points. */
+  weightedHolding: raw,
+  /** The wallet's weight as one figure: `weightedHolding / held`, rounded down; 10000 when it holds nothing. */
+  weightBps: z.number().int(),
+  /** Whether every coin of this wallet always counts once, whatever its lots: true for the treasury. */
+  flat: z.boolean(),
+  /** The rules version the lots were weighed under: the one in force now. */
+  rulesVersion: z.number().int(),
+});
+export type WalletHolding = z.infer<typeof WalletHolding>;

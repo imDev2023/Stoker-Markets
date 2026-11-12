@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLaunch, getPlatform, getRewardRound } from "@/lib/api";
 import { COIN_DECIMALS, explorerUrl, formatUnits, formatUtc, shortAddress } from "@/lib/format";
+import { countedMore, DIAMOND_HANDS_HREF, payoutWeightBps, weightMultiple } from "@/lib/holding";
 import styles from "../../page.module.css";
 import { Address } from "@/components/Address";
 
@@ -18,6 +19,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
  * One Reward Round, of either source (ADR 0011): a Reward Launch's collected Reward Tax, in the coin or in its Quote
  * Asset, or the Creator's earnings on a coin whose Creator pointed them at its holders, always in the Quote Asset. The
  * snapshot, the rules and the payouts read the same; the pot says where it came from.
+ *
+ * Once any payout of the round counted for more than once (the Holding Weight, ADR 0022), every payout shows what its
+ * holding counted for and a line under the list says how a payout is worked out. A round where every coin counted
+ * once, which is every round from before the rule and every round under rules without steps, reads as it always has.
  */
 export default async function RewardRoundPage({ params }: Props) {
   const { id } = await params;
@@ -29,6 +34,7 @@ export default async function RewardRoundPage({ params }: Props) {
   // Holdings are in the coin; the pot and every payout in the round's Payout Asset.
   const amount = (raw: string) => formatUnits(raw, round.payout.decimals, Math.min(round.payout.decimals, 4));
   const paid = (raw: string) => `${amount(raw)} ${round.payout.symbol}`;
+  const weighed = round.payouts.some(countedMore);
   return (
     <div className={`shell ${styles.page}`}>
       <h1 className={`t-h1 ${styles.title}`}>
@@ -99,6 +105,7 @@ export default async function RewardRoundPage({ params }: Props) {
               <span>
                 <Address value={p.wallet} href={`/rewards/${p.wallet}`} /> held{" "}
                 <span className="mono">{coins(p.holding)}</span>
+                {weighed && <>, counted <span data-weight>{weightMultiple(payoutWeightBps(p))}</span></>}
                 {p.status === "paid" && p.signature ? (
                   <>
                     {" "}·{" "}
@@ -114,6 +121,13 @@ export default async function RewardRoundPage({ params }: Props) {
             </li>
           ))}
         </ul>
+        {weighed && (
+          <p className={styles.note} data-weighing>
+            A payout is its wallet&apos;s share of the pot by Weighted Holding: the coins it held at the snapshot, each counted at its
+            Diamond Hands weight, over every paid wallet&apos;s coins counted the same way. The figure beside a holding is that wallet&apos;s
+            weight across all its coins. <Link href={DIAMOND_HANDS_HREF}>How Diamond Hands works</Link>
+          </p>
+        )}
       </section>
       <Link href="/rewards" className={`button button-ghost ${styles.back}`}>Rules and lookup</Link>
     </div>
