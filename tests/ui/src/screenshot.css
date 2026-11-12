@@ -55,6 +55,14 @@ time {
   width: 26ch;
 }
 
+/* A paid Volume Rebate's age sits in its status ("Paid 4s ago", then the payment's transaction): at the default 100% the
+   time takes a line of its own and pushes the transaction under it, which is not how the row reads. Set on the line's
+   foot, so the box, whose own baseline is its lower edge, does not lift the words beside it off their label's line. */
+[data-rebate-status] time {
+  width: 7ch;
+  vertical-align: bottom;
+}
+
 /* The latest candle's prices depend on whether the seed trades straddled a minute, so they are masked; a fixed box keeps
    the mask the same size every run. */
 dl[aria-label$="candle"] .mono {

@@ -18,6 +18,10 @@ test("the API page is the whole reference, answered live, and the header and foo
   // Every section of the reference, each reachable from the contents.
   const sections = ["Reading, no key needed", "Preparing transactions", "Sign, send, report", "Referrals", "API keys and limits", "Errors", "The operator's endpoints"];
   for (const name of sections) await expect(page.getByRole("region", { name })).toBeVisible();
+  // Volume rebates (#196): both reads are in the reference, and the job among those the operator can run.
+  await expect(page.getByRole("region", { name: "Reading, no key needed" })).toContainText("GET /rebates");
+  await expect(page.getByRole("region", { name: "Reading, no key needed" })).toContainText("GET /wallets/:address/rebates");
+  await expect(page.getByRole("region", { name: "The operator's endpoints" })).toContainText("settles every Rebate Week that has ended");
   await expect(page.getByRole("navigation", { name: "On this page" }).getByRole("link")).toHaveText(["Quickstart", ...sections]);
   await expectNoHorizontalOverflow(page);
 });
@@ -130,8 +134,22 @@ test("the Fees page lists every fee from the platform facts, and the landing's f
   for (const [name, row] of [["The Burn", "burn"], ["The Flywheel", "flywheel"], ["Volume rebates", "rebates"], ["Referrals on every pair", "referrals"], ["Integrator share", "integrators"], ["Treasury", "treasury"]] as const)
     await expect(budget.filter({ hasText: name })).toContainText(`${shares[row]! / 100}%`);
   expect(Object.values(shares).reduce((sum, bps) => sum + bps, 0)).toBe(10_000);
-  await expect(budget.filter({ hasText: "Volume rebates" })).toContainText("Not built yet");
+  // Volume Rebates are built (#196, ADR 0021) and wait for their first share: the row says what it pays and that nothing
+  // is set aside yet, where the two programs still to come say they are not built.
+  await expect(budget.filter({ hasText: "Volume rebates" })).toContainText("Paid back to traders in SOL after each Rebate Week, in proportion to the Platform Fees their trades paid.");
+  await expect(budget.filter({ hasText: "Volume rebates" })).toContainText("Nothing is set aside yet: no trade earns a rebate until a share is announced.");
+  await expect(budget.filter({ hasText: "Volume rebates" })).not.toContainText("Not built yet");
+  await expect(budget.filter({ hasText: "Referrals on every pair" })).toContainText("Not built yet");
   const card = page.getByRole("region", { name: "What the platform does with its share" });
+  // The rebates' own figures belong here and are the API's: the week (a minute on this stack, `global-setup.ts`; a UTC
+  // week anywhere else), the limit on a rebate and the minimum payout.
+  const rebates = (await (await fetch(`${stack.apiUrl}/v1/rebates`)).json()) as { program: { weekSeconds: number; minPayoutLamports: string } };
+  expect(rebates.program.weekSeconds).toBe(60);
+  const terms = card.locator("[data-rebates-terms]");
+  await expect(terms).toContainText("A Volume Rebate is counted over a Rebate Week, which lasts 1 minute on this deployment.");
+  await expect(terms).toContainText("A rebate is paid in SOL and is never more than the row's own share of the fees the trader paid; a trade made while the row has no share earns none.");
+  await expect(terms).toContainText(`once together they reach ${Number(rebates.program.minPayoutLamports) / 1e9} SOL`);
+  await expect(terms.getByRole("link", { name: "Rewards page" })).toHaveAttribute("href", "/rewards#volume-rebates");
   await expect(card).toContainText("The Fee Key's part of a pool trade");
   await expect(card).toContainText("is the platform's alone");
   await expect(card.getByRole("link", { name: "Announcements" })).toHaveAttribute("href", "/announcements");

@@ -23,10 +23,11 @@ const KIND: Record<LedgerKind, string> = {
   holder_dividend: "Creator Earnings paid to holders",
   creator_burn: "Creator Earnings bought back and burned",
   creator_liquidity: "Creator Earnings added as liquidity",
+  rebate: "Volume Rebate paid to a trader",
 };
 
 /** Entries that move revenue out of the operations wallet rather than into it. */
-const OUT = new Set<LedgerKind>(["sweep", "creator_forward", "holder_dividend", "arweave_top_up", "metadata_upload"]);
+const OUT = new Set<LedgerKind>(["sweep", "creator_forward", "holder_dividend", "arweave_top_up", "metadata_upload", "rebate"]);
 
 /** A Creator's buyback (ADR 0011), which burns what it buys or adds it to the pool: two entries of one transaction. */
 const BUYBACK = new Set<LedgerKind>(["creator_burn", "creator_liquidity"]);
@@ -49,8 +50,9 @@ const isOut = (e: LedgerEntry) => OUT.has(e.kind) || (e.kind === "reward_sale" &
 /** Where an entry's money came from, in words: every curve pools its Platform Fee in one vault per Quote Asset. */
 function origin(e: LedgerEntry, platform: PlatformInfo) {
   if (e.kind === "sweep") return "From the operations wallet";
-  // A Creator's page is their own; the wallet a forward reached is public on the explorer.
-  if (e.kind === "creator_forward")
+  // A Creator's page is their own; the wallet a forward reached is public on the explorer. So is the trader's a Volume
+  // Rebate was paid to (ADR 0021): one entry per wallet a payment paid.
+  if (e.kind === "creator_forward" || e.kind === "rebate")
     return <>To <Address value={e.destination} platform={platform} /></>;
   if (e.kind === "arweave_top_up") return "SOL to ArDrive Turbo";
   if (e.kind === "metadata_upload")

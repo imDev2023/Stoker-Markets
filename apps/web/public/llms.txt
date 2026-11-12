@@ -10,6 +10,7 @@ This file states what the project is and what can be checked. It makes no claim 
 - The site builds each transaction and the user's own wallet signs it. No key leaves the wallet.
 - Fees are read from the chain, never a constant. Half of what the platform collects on a coin's trades is forwarded to that coin's Creator, and every collection, sweep, payment and burn is a public Ledger entry (`/v1/revenue`, the Stats page).
 - A Creator fixes at launch where their share of a coin goes: their wallet, the coin's holders, a buyback that burns the coin, or liquidity locked in its pool. The platform's scheduled job applies it, not an on-chain program; each coin's choice is on `/v1/launches/:mint`, and every round and buyback on `/v1/launches/:mint/earnings` and the Ledger.
+- Volume Rebates: the Budget Table (`/v1/platform`, `budgetTable`) can set a share of what the platform keeps aside for traders. After each UTC week it is split among that week's traders in proportion to the Platform Fees their trades paid and paid in SOL; while the share is 0 no trade earns one. The program's state and every settled week are on `/v1/rebates`, a wallet's rebates on `/v1/wallets/:address/rebates`, and every payment is a Ledger entry.
 - Liquidity is locked at graduation. The platform earns from it through Raydium's Fee Key, not by holding it.
 - Copy Protection: for a window after a coin launches, nobody else may launch a coin with its name, ticker or image; afterwards a copy is labeled as one.
 - Quote Risk Labels: what an asset's issuer can do (freeze wallets, tax transfers) is shown on every pair.
@@ -20,6 +21,6 @@ This file states what the project is and what can be checked. It makes no claim 
 
 - `/coins`: the board, every coin as the pair it trades as
 - `/assets`: every Quote Asset, grouped by kind and issuer
-- `/rewards`: Holder Rewards
+- `/rewards`: Holder Rewards and Volume Rebates
 - `/revenue`: the Ledger
 - `/api`: the API reference

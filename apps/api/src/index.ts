@@ -42,10 +42,12 @@ import { operatorJobRoutes, revenueRoutes } from "./routes/revenue";
 import { operatorRewardRoutes, rewardRoutes } from "./routes/rewards";
 import { budgetRoutes, operatorBudgetRoutes } from "./routes/budget";
 import { ladderRoutes, operatorLadderRoutes } from "./routes/ladder";
+import { rebateRoutes } from "./routes/rebates";
 import { burnRoutes, operatorBurnRoutes } from "./routes/burns";
 import { announcementRoutes, operatorFeeRoutes, operatorViewRoutes, platformFees } from "./routes/operator";
 import { runBurns } from "./burn/engine";
 import { runRewardRounds } from "./rewards/engine";
+import { runRebates } from "./rebates/engine";
 import { tradeRoutes } from "./routes/trades";
 import { trustRoutes } from "./routes/trust";
 import { markRoutes, operatorMarkRoutes } from "./routes/marks";
@@ -248,6 +250,7 @@ app.route("/v1", rewardRoutes);
 app.route("/v1", burnRoutes);
 app.route("/v1", budgetRoutes);
 app.route("/v1", ladderRoutes);
+app.route("/v1", rebateRoutes);
 app.route("/v1", announcementRoutes);
 app.route("/v1", keyRoutes);
 app.route("/v1", regionRoutes);
@@ -321,6 +324,13 @@ app.post("/v1/operator/jobs/fee-collector", (c) =>
 app.post("/v1/operator/jobs/creator-forward", (c) =>
   manualJob(c, "creator-forward", () => forwardCreatorShares({ db: c.get("db"), cfg: c.get("cfg"), operations: operationsKey(c.env) })),
 );
+
+/** Volume rebates (ADR 0021); `maxWallets` caps the wallets one run pays, which tests use to cut a run short. */
+app.post("/v1/operator/jobs/rebates", (c) => {
+  const maxWallets = Number(c.req.query("maxWallets") ?? 400);
+  if (!Number.isInteger(maxWallets) || maxWallets < 1) return c.json({ error: "maxWallets must be a whole number above zero" }, 400);
+  return manualJob(c, "rebates", () => runRebates({ db: c.get("db"), cfg: c.get("cfg"), operations: operationsKey(c.env) }, maxWallets));
+});
 
 app.post("/v1/operator/jobs/metadata-upload", (c) => manualJob(c, "metadata-upload", () => uploadMetadata(uploadDeps(c.env, c.get("db")))));
 
@@ -424,6 +434,8 @@ export default {
       if (run(CRONS.feeCollector)) {
         await job(runJob(db, "fee-collector", () => collectFees({ db, cfg: config(env), operations: operationsKey(env) }), { exclusive: true }));
         await job(runJob(db, "creator-forward", () => forwardCreatorShares({ db, cfg: config(env), operations: operationsKey(env) }), { exclusive: true }));
+        // Then the traders' share (ADR 0021): a Rebate Week that has ended is settled on what was just collected, and paid.
+        await job(runJob(db, "rebates", () => runRebates({ db, cfg: config(env), operations: operationsKey(env) }), { exclusive: true }));
       }
       // The Burn and Flywheel, on the hour's revenue, half an hour after the Fee Collector has claimed it.
       if (run(CRONS.burn)) {

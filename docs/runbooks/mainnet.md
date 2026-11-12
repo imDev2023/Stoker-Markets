@@ -324,3 +324,27 @@ Nobody adds them by hand: the first run that needs them extends the table from t
 
 To prove on the first mainnet addition (it is proven on the local chain's devnet binaries alone): the lock program takes `with_metadata: false`, and the largest addition, a Reward Launch's first one paired with SOL, is 1,226 of a transaction's 1,232 bytes, so it has no room for a priority fee instruction.
 If mainnet ever needs a priority fee to land these, that one case has to drop something first (the rule's account opened in a transaction of its own, say).
+
+## 17. Volume rebates (operator)
+
+Traders earn back part of the Platform Fees their trading paid (ADR 0021): the Budget Table's `rebates` row, split each Rebate Week (Monday 00:00 UTC to the next Monday) among the week's traders by the fees they paid, and paid in SOL once a wallet's rebates reach `REBATE_MIN_LAMPORTS` (0.01 SOL on mainnet, `apps/api/wrangler.jsonc`).
+Migration `0028_rebates` adds its two tables, so apply it before the API that follows it.
+The job `rebates` runs every hour after the Fee Collector and the Creator Forward, and does nothing while the row's share is 0.
+
+Going live is one announced Budget Table version, section 14's command, with the share the owner picked on 2026-11-12: 10% from the Burn.
+
+```sh
+curl -sS -X POST https://api.stoker.markets/v1/operator/budget-table \
+  -H "authorization: Bearer $(cat ~/.config/stoker/mainnet/operator-token)" -H "content-type: application/json" \
+  -d '{"shares":{"burn":5000,"flywheel":500,"rebates":1000,"referrals":0,"integrators":0,"treasury":3500},"effectiveAt":"<a Monday 00:00 UTC, at least a day ahead>","note":"volume rebates go live"}'
+```
+
+- Pick a Monday 00:00 UTC for `effectiveAt`, so the first Rebate Week is a whole one: a trade earns only from the moment the row has a share.
+- `GET /v1/rebates` shows the program, the week being traded and every settled week; `GET /v1/ledger?kind=rebate` every payment; the Rewards page shows both, and a connected wallet's own rebates.
+- A week is settled at the first run after it ends, Monday 00:15 UTC.
+  `POST /v1/operator/jobs/rebates` runs the job by hand.
+- The job fails, and raises the `job_failed` alert, when the operations wallet holds too little SOL for a payment: the row is counted in SOL at the latest prices, while revenue in other Quote Assets is not SOL in the wallet.
+  The rebates wait; send SOL to the operations wallet or let the next collections cover them.
+- Lowering `REBATE_MIN_LAMPORTS` pays out everything waiting above the new minimum on the next run; it can never be set under 890880, what an empty wallet must hold.
+- Ending the program is another announced version with the row back at 0.
+  What the row was allotted and did not give stays in the operations wallet until a later version gives the row a share again.

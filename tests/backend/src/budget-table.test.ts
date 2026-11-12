@@ -1,6 +1,9 @@
 // The Budget Table (#187, ADR 0019): what the platform keeps after the Creators' share is divided by one versioned
 // table whose shares sum to 100%. A version is announced ahead like a fee change, and its shares apply only to what
 // is collected while it is in force, so every row's allotment can be redone from the Ledger and the versions alone.
+// `rebates.test.ts` announces versions too, and may run before this file: a version is never withdrawn and a row keeps
+// what it was allotted, so this file counts from the table and the `rebates` row as it finds them. Both files leave
+// the first table's shares in force, and neither ever moves the Burn's or the Flywheel's share.
 import { describe, expect, it } from "vitest";
 import { PublicKey } from "@solana/web3.js";
 import { BUDGET_ROWS, BudgetsPage, BudgetTableVersion, BurnsPage, PlatformInfo, SPENDING_ROWS, type BudgetRow, type BudgetShares } from "@launchpad/contract";
@@ -54,12 +57,14 @@ async function collectRevenue() {
 describe("the Budget Table", () => {
   it("publishes the version in force: six rows summing to 100%, the trader programs waiting at nothing", async () => {
     const table = await published();
-    expect(table.inForce).toMatchObject({ version: 1, shares: FIRST });
+    expect(table.inForce).toMatchObject({ shares: FIRST });
     expect(table.upcoming).toEqual([]);
     expect(BUDGET_ROWS.reduce((sum, row) => sum + table.inForce.shares[row], 0)).toBe(10_000);
     const page = await budgets();
-    expect(page.inForce).toBe(1);
-    expect(page.versions).toEqual([table.inForce]);
+    expect(page.inForce).toBe(table.inForce.version);
+    expect(page.versions[0]).toMatchObject({ version: 1, shares: FIRST });
+    expect(page.versions.at(-1)).toEqual(table.inForce);
+    expect(page.versions.map((v) => v.version)).toEqual(page.versions.map((_, i) => i + 1));
     expect(page.rows.map((r) => r.row)).toEqual([...BUDGET_ROWS]);
     // The Burn's page reads its two shares from the same table.
     const burns = BurnsPage.parse(await (await api("/v1/burns")).json());
@@ -68,13 +73,16 @@ describe("the Budget Table", () => {
   });
 
   it("divides the whole net: each row its share, the treasury what the others leave, and only spending rows hold anything back", async () => {
+    const before = await budgets();
     await collectRevenue();
     const page = await budgets();
     const net = BigInt(page.netLamports);
-    expect(net).toBeGreaterThan(0n);
+    expect(net).toBeGreaterThan(BigInt(before.netLamports));
     for (const row of SPENDING_ROWS) {
       const r = rowOf(page, row);
-      expect(BigInt(r.allottedLamports)).toBe(share(net, FIRST[row]));
+      // A row whose share never changed has its share of the whole net. The `rebates` row has none in this table: it
+      // holds what an earlier version allotted it, if one did, and this collection adds nothing to it.
+      expect(BigInt(r.allottedLamports)).toBe(row === "rebates" ? BigInt(rowOf(before, row).allottedLamports) : share(net, FIRST[row]));
       expect(BigInt(r.availableLamports!)).toBe(BigInt(r.allottedLamports) - BigInt(r.spentLamports!));
     }
     const toRows = SPENDING_ROWS.reduce((sum, row) => sum + BigInt(rowOf(page, row).allottedLamports), 0n);
@@ -85,6 +93,7 @@ describe("the Budget Table", () => {
 
   it("refuses a table that does not sum to 100%, one that gives the trader programs more than a fifth, and one without its lead time", async () => {
     const later = new Date(Date.now() + 3600_000);
+    const written = (await budgets()).versions.length;
     const short = await announce({ ...FIRST, treasury: 3400 }, later);
     expect(short.status).toBe(400);
     expect(JSON.stringify(await short.json())).toMatch(/sum to 10000/);
@@ -98,14 +107,18 @@ describe("the Budget Table", () => {
     expect(tooSoon.status).toBe(422);
     expect((await api("/v1/operator/budget-table", { method: "POST", body: "{}" })).status).toBe(401);
     // Nothing was written by any of them.
-    expect((await budgets()).versions).toHaveLength(1);
+    expect((await budgets()).versions).toHaveLength(written);
   });
 
   it("applies a new version only to what is collected after it takes effect, and a row keeps what it was allotted", async () => {
     await runCollector();
     const before = await budgets();
     const netBefore = BigInt(before.netLamports);
-    expect(rowOf(before, "rebates").allottedLamports).toBe("0");
+    // What the row holds already, if `rebates.test.ts` ran first, and the versions there are.
+    const held = BigInt(rowOf(before, "rebates").allottedLamports);
+    const spent = BigInt(rowOf(before, "rebates").spentLamports!);
+    const n = before.versions.length;
+    expect(before.inForce).toBe(n);
 
     // Volume rebates go live with 10%. (The owner's plan takes a program's share from the Burn; here it comes from the
     // treasury, so the other files' Burn and Flywheel figures stand whenever they run.)
@@ -114,31 +127,34 @@ describe("the Budget Table", () => {
     const announced = await announce(withRebates, from, "volume rebates go live");
     expect(announced.status).toBe(201);
     const second = BudgetTableVersion.parse(await announced.json());
-    expect(second).toMatchObject({ version: 2, shares: withRebates, note: "volume rebates go live", effectiveAt: from.toISOString() });
+    expect(second).toMatchObject({ version: n + 1, shares: withRebates, note: "volume rebates go live", effectiveAt: from.toISOString() });
     // Announced, not yet in force: the table everyone reads still divides the old way, and shows what is coming.
-    expect(await published()).toMatchObject({ inForce: { version: 1 }, upcoming: [second] });
-    expect((await budgets()).versions.map((v) => v.version)).toEqual([1, 2]);
+    expect(await published()).toMatchObject({ inForce: { version: n }, upcoming: [second] });
+    expect((await budgets()).versions.map((v) => v.version)).toEqual(Array.from({ length: n + 1 }, (_, i) => i + 1));
     // The versions are one line in time: the next can't take effect before this one.
     const earlier = await announce(FIRST, new Date(from.getTime() - 500));
     expect(earlier.status).toBe(422);
     expect(JSON.stringify(await earlier.json())).toMatch(/must take effect after/);
 
     await inForce(from);
-    expect(await published()).toMatchObject({ inForce: { version: 2, shares: withRebates }, upcoming: [] });
+    expect(await published()).toMatchObject({ inForce: { version: n + 1, shares: withRebates }, upcoming: [] });
     // Taking effect moves nothing by itself: the rebates' row is owed no part of what was collected before it existed.
     const atStart = await budgets();
-    expect(atStart.inForce).toBe(2);
+    expect(atStart.inForce).toBe(n + 1);
     expect(atStart.netLamports).toBe(before.netLamports);
-    expect(rowOf(atStart, "rebates")).toMatchObject({ shareBps: 1000, allottedLamports: "0", availableLamports: "0" });
+    expect(rowOf(atStart, "rebates")).toMatchObject({ shareBps: 1000, allottedLamports: held.toString(), availableLamports: (held - spent).toString() });
     expect(rowOf(atStart, "treasury").allottedLamports).toBe(rowOf(before, "treasury").allottedLamports);
 
     await collectRevenue();
     const during = await budgets();
     const collected = BigInt(during.netLamports) - netBefore;
     expect(collected).toBeGreaterThan(0n);
-    // A tenth of what was collected under the version, and nothing of what came before it.
-    const rebates = share(collected, 1000);
-    expect(rowOf(during, "rebates")).toMatchObject({ allottedLamports: rebates.toString(), spentLamports: "0", availableLamports: rebates.toString() });
+    // A tenth of what was collected under the version, and nothing of what came before it. The allotment is rounded
+    // down once, over every version, so with an earlier one behind it the tenth can land a lamport higher.
+    const rebates = BigInt(rowOf(during, "rebates").allottedLamports);
+    expect([share(collected, 1000), share(collected, 1000) + 1n]).toContain(rebates - held);
+    if (held === 0n) expect(rebates).toBe(share(collected, 1000));
+    expect(rowOf(during, "rebates")).toMatchObject({ spentLamports: spent.toString(), availableLamports: (rebates - spent).toString() });
     // A row whose share did not change has its share of the whole net, as before the table had versions.
     expect(BigInt(rowOf(during, "burn").allottedLamports)).toBe(share(BigInt(during.netLamports), FIRST.burn));
     expect(BigInt(rowOf(during, "flywheel").allottedLamports)).toBe(share(BigInt(during.netLamports), FIRST.flywheel));
@@ -153,9 +169,9 @@ describe("the Budget Table", () => {
     await inForce(back);
     await collectRevenue();
     const after = await budgets();
-    expect(after.inForce).toBe(3);
+    expect(after.inForce).toBe(n + 2);
     expect(BigInt(after.netLamports)).toBeGreaterThan(BigInt(during.netLamports));
-    expect(rowOf(after, "rebates")).toMatchObject({ shareBps: 0, allottedLamports: rebates.toString(), availableLamports: rebates.toString() });
+    expect(rowOf(after, "rebates")).toMatchObject({ shareBps: 0, allottedLamports: rebates.toString(), availableLamports: (rebates - spent).toString() });
     expect(BigInt(rowOf(after, "burn").allottedLamports)).toBe(share(BigInt(after.netLamports), FIRST.burn));
     expect(after.rows.reduce((sum, r) => sum + BigInt(r.allottedLamports), 0n)).toBe(BigInt(after.netLamports));
   }, 180_000);

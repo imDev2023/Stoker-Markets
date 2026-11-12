@@ -335,7 +335,7 @@ export const ledgerEntries = pgTable(
     signature: text("signature").notNull(),
     /** Position among the movements in the transaction. */
     eventIndex: integer("event_index").notNull(),
-    /** platform_fee, pool_fee, fee_key, sweep, creator_forward, burn, flywheel, arweave_top_up, metadata_upload, reward_sale, graduation_fee, holder_dividend, creator_burn or creator_liquidity so far. */
+    /** platform_fee, pool_fee, fee_key, sweep, creator_forward, burn, flywheel, arweave_top_up, metadata_upload, reward_sale, graduation_fee, holder_dividend, creator_burn, creator_liquidity or rebate so far. */
     kind: text("kind").notNull(),
     /** What moved: a Quote Asset or a coin; SOL as the wrapped-SOL mint. */
     assetMint: text("asset_mint").notNull(),
@@ -531,6 +531,55 @@ export const creatorTiers = pgTable(
     reachedAt: timestamp("reached_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.mint, t.tier] }), check("creator_tiers_tier", sql`${t.tier} in (2, 3)`)],
+);
+
+/**
+ * Rebate Weeks (ADR 0021): one row per week of the volume rebates that has been settled, written once with every
+ * Volume Rebate it gave. The week's pot is what the Budget Table's `rebates` row had left when the week was settled,
+ * less the rebates of earlier weeks still to be paid, and never more than `capBps` of the fees the week's trades paid;
+ * it is split among the traders in proportion to those fees. Everything is in lamports.
+ */
+export const rebateWeeks = pgTable("rebate_weeks", {
+  /** The week's start: a Monday 00:00 UTC everywhere but a test stack, which shortens the week. */
+  weekStart: timestamp("week_start", { withTimezone: true }).primaryKey(),
+  weekEnd: timestamp("week_end", { withTimezone: true }).notNull(),
+  /** The largest share the `rebates` row had in force during the week, in basis points: the most of the fees a rebate may be. */
+  capBps: integer("cap_bps").notNull(),
+  /** What the row had left at the settlement, less the rebates of earlier weeks not yet paid. */
+  budget: numeric("budget", { precision: 40, scale: 0 }).notNull(),
+  /** The Platform Fees the week's earning trades paid, valued in SOL at the Quote Registry's prices at the settlement. */
+  fees: numeric("fees", { precision: 40, scale: 0 }).notNull(),
+  /** What the week splits: the budget, or the cap's share of the fees where that is less. */
+  pot: numeric("pot", { precision: 40, scale: 0 }).notNull(),
+  /** The wallets given a rebate. */
+  traders: integer("traders").notNull(),
+  /** What the rebates add up to; rounding leaves the pot's last lamports in the row. */
+  credited: numeric("credited", { precision: 40, scale: 0 }).notNull(),
+  settledAt: timestamp("settled_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Volume Rebates (ADR 0021): one trader's rebate for one Rebate Week, written with the week. It waits until the
+ * wallet's waiting rebates together reach the minimum payout, then they are paid in one SOL transfer: marked `sending`
+ * with the transaction's signature before it goes out, so a run that dies never lets the next one pay them twice, and
+ * `paid` once it has landed and is on the Ledger. A transaction that fails or expires puts its rebates back to waiting.
+ */
+export const rebates = pgTable(
+  "rebates",
+  {
+    weekStart: timestamp("week_start", { withTimezone: true }).notNull(),
+    wallet: text("wallet").notNull(),
+    /** The Platform Fees the wallet's trades paid in the week, valued in SOL like the week's total, in lamports. */
+    fees: numeric("fees", { precision: 40, scale: 0 }).notNull(),
+    /** The rebate, in lamports. */
+    amount: numeric("amount", { precision: 40, scale: 0 }).notNull(),
+    status: text("status", { enum: ["waiting", "sending", "paid"] }).notNull().default("waiting"),
+    signature: text("signature"),
+    /** Past this block height the transaction handed out for this rebate can never land. */
+    sendableUntil: bigint("sendable_until", { mode: "number" }),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+  },
+  (t) => [primaryKey({ columns: [t.weekStart, t.wallet] }), index("rebates_wallet_idx").on(t.wallet), index("rebates_status_idx").on(t.status)],
 );
 
 /** One Reward Round of one Reward Launch: its snapshot, the pot it pays out, and how far it has got. */

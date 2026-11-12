@@ -18,6 +18,7 @@ export * from "./rewards";
 export * from "./burns";
 export * from "./budget";
 export * from "./ladder";
+export * from "./rebates";
 export * from "./apiKeys";
 export * from "./operator";
 export * from "./region";

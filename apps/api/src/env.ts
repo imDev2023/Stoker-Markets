@@ -70,6 +70,16 @@ export type Bindings = {
    * Only a test stack sets it, to see a coin climb in seconds; mainnet refuses any other length.
    */
   ACTIVE_DAY_SECONDS?: string;
+  /**
+   * Volume rebates (ADR 0021): how long a Rebate Week is, in seconds, counted from the epoch's first Monday; a UTC week
+   * unless set. Only a test stack sets it, to see a week end in seconds; mainnet refuses any other length.
+   */
+  REBATE_WEEK_SECONDS?: string;
+  /**
+   * Volume rebates: what a wallet's waiting rebates must reach, in lamports, before they are paid; 0.01 SOL unless set.
+   * Never under what an empty wallet must hold to exist, so that a payment can always land.
+   */
+  REBATE_MIN_LAMPORTS?: string;
   /** Bundle Radar (#41, ADR 0013): a buy in the launch's slot or this many after it is a snipe; 5 unless set (about two seconds). */
   SNIPE_WINDOW_SLOTS?: string;
   /** The Authorization header value Helius sends with every webhook delivery. */
@@ -202,6 +212,10 @@ export type Config = {
   copyProtectionSeconds: number;
   /** The length of an Active Day in seconds (ADR 0020): 86,400, a UTC day, everywhere but a test stack. */
   activeDaySeconds: number;
+  /** The length of a Rebate Week in seconds (ADR 0021): 604,800, a UTC week from Monday, everywhere but a test stack. */
+  rebateWeekSeconds: number;
+  /** What a wallet's waiting Volume Rebates must reach before they are paid, in lamports. */
+  rebateMinLamports: bigint;
   /** Bundle Radar's Snipe Window after a launch, in slots after the launch's own. */
   snipeWindowSlots: number;
   rewardRulesLeadSeconds: number;
@@ -288,6 +302,12 @@ export const SNIPE_WINDOW_DEFAULT_SLOTS = 5;
 const FEE_CHANGE_LEAD_DEFAULT_SECONDS = 24 * 60 * 60;
 /** An Active Day is a UTC day (ADR 0020). */
 export const ACTIVE_DAY_DEFAULT_SECONDS = 86_400;
+/** A Rebate Week is a UTC week, Monday to Monday (ADR 0021). */
+export const REBATE_WEEK_DEFAULT_SECONDS = 7 * 86_400;
+/** 0.01 SOL (owner, 2026-11-12), the Creator Forward's own minimum. */
+const REBATE_MIN_DEFAULT_LAMPORTS = 10_000_000n;
+/** What an account with no data must hold to exist: a transfer of less to an empty wallet can never land. */
+export const EMPTY_ACCOUNT_RENT_LAMPORTS = 890_880n;
 /** Curve rule writes per Quote Registry refresh; a first run over mainnet's hundreds of Quote Assets completes over a few runs. */
 const QUOTE_RULE_WRITES_DEFAULT = 120;
 /** On mainnet a fee change to every live curve is announced at least this long ahead, whatever the setting says. */
@@ -340,6 +360,8 @@ function refuseLocalOnlySettingsOnMainnet(env: Bindings) {
   if (env.COUNTRY_HEADER) throw new Error("COUNTRY_HEADER lets a request name its own country, which is for tests; on mainnet the region gate reads Cloudflare's reading alone");
   if (env.ACTIVE_DAY_SECONDS && seconds(env.ACTIVE_DAY_SECONDS, "ACTIVE_DAY_SECONDS") !== ACTIVE_DAY_DEFAULT_SECONDS)
     throw new Error(`ACTIVE_DAY_SECONDS shortens the Creator Ladder's day for tests; on mainnet an Active Day is a UTC day (${ACTIVE_DAY_DEFAULT_SECONDS} seconds), so leave it unset`);
+  if (env.REBATE_WEEK_SECONDS && seconds(env.REBATE_WEEK_SECONDS, "REBATE_WEEK_SECONDS") !== REBATE_WEEK_DEFAULT_SECONDS)
+    throw new Error(`REBATE_WEEK_SECONDS shortens the Rebate Week for tests; on mainnet it is a UTC week (${REBATE_WEEK_DEFAULT_SECONDS} seconds), so leave it unset`);
   if (env.FEE_CHANGE_LEAD_SECONDS && seconds(env.FEE_CHANGE_LEAD_SECONDS, "FEE_CHANGE_LEAD_SECONDS") < FEE_CHANGE_LEAD_MAINNET_MIN_SECONDS)
     throw new Error(`FEE_CHANGE_LEAD_SECONDS must be at least ${FEE_CHANGE_LEAD_MAINNET_MIN_SECONDS} on mainnet: a fee change hits every live curve at once`);
 }
@@ -392,6 +414,8 @@ export function config(env: Bindings): Config {
     copyProtectionSeconds: env.COPY_PROTECTION_SECONDS ? seconds(env.COPY_PROTECTION_SECONDS, "COPY_PROTECTION_SECONDS") : COPY_PROTECTION_DEFAULT_SECONDS,
     snipeWindowSlots: env.SNIPE_WINDOW_SLOTS ? slots(env.SNIPE_WINDOW_SLOTS, "SNIPE_WINDOW_SLOTS") : SNIPE_WINDOW_DEFAULT_SLOTS,
     activeDaySeconds: env.ACTIVE_DAY_SECONDS ? seconds(env.ACTIVE_DAY_SECONDS, "ACTIVE_DAY_SECONDS") : ACTIVE_DAY_DEFAULT_SECONDS,
+    rebateWeekSeconds: env.REBATE_WEEK_SECONDS ? seconds(env.REBATE_WEEK_SECONDS, "REBATE_WEEK_SECONDS") : REBATE_WEEK_DEFAULT_SECONDS,
+    rebateMinLamports: rebateMinLamports(env.REBATE_MIN_LAMPORTS),
     alertWebhookUrl: env.ALERT_WEBHOOK_URL ? new URL(env.ALERT_WEBHOOK_URL).toString() : null,
     countryHeader: env.COUNTRY_HEADER ? env.COUNTRY_HEADER.toLowerCase() : null,
     helius: heliusConfig(env),
@@ -432,6 +456,13 @@ function heliusConfig(env: Bindings): HeliusConfig | null {
   if (!apiKey && !webhookId) return null;
   if (!apiKey || !webhookId) throw new Error("HELIUS_API_KEY and HELIUS_WEBHOOK_ID go together: set both to keep the webhook's addresses current, or neither");
   return { apiUrl: (env.HELIUS_API_URL || HELIUS_API_URL).replace(/\/$/, ""), apiKey, webhookId };
+}
+
+function rebateMinLamports(raw: string | undefined) {
+  const min = raw ? lamports(raw, "REBATE_MIN_LAMPORTS") : REBATE_MIN_DEFAULT_LAMPORTS;
+  if (min < EMPTY_ACCOUNT_RENT_LAMPORTS)
+    throw new Error(`REBATE_MIN_LAMPORTS must be at least ${EMPTY_ACCOUNT_RENT_LAMPORTS}: a smaller payment to an empty wallet can never land`);
+  return min;
 }
 
 function lamports(raw: string, name: string) {

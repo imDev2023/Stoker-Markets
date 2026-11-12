@@ -7,6 +7,7 @@ import {
   type SpendingRow,
 } from "@launchpad/contract";
 import { budgetTables, ledgerEntries, type Db } from "@launchpad/db";
+import { rebatesOwed } from "../rebates/owed";
 import { creatorMoney } from "./creatorShares";
 import { lamportsWorth, quotePrices, type QuotePrice } from "./value";
 
@@ -16,10 +17,11 @@ const WSOL = WSOL_MINT.toBase58();
 export const REVENUE_KINDS = ["platform_fee", "pool_fee", "fee_key"] as const;
 
 /**
- * The Ledger kind each row's spending is recorded under, in SOL. A trader program names its own here when it is
- * built; until then its row has spent nothing (and has no share to spend).
+ * The Ledger kind each row's spending is recorded under, in SOL: the Burn's and the Flywheel's buys, and the volume
+ * rebates' payments (ADR 0021). A trader program names its own here when it is built; until then its row has spent
+ * nothing (and has no share to spend).
  */
-const SPENT_KIND: Partial<Record<SpendingRow, string>> = { burn: "burn", flywheel: "flywheel" };
+const SPENT_KIND: Partial<Record<SpendingRow, string>> = { burn: "burn", flywheel: "flywheel", rebates: "rebate" };
 
 export type BudgetTable = typeof budgetTables.$inferSelect;
 
@@ -140,10 +142,14 @@ export async function budgets(db: Db, now = new Date()): Promise<Budgets> {
   return { revenueLamports: net, inForce, rows, treasury: { shareBps: shares.treasury, allotted: net > toRows ? net - toRows : 0n } };
 }
 
-/** SOL the Fee Collector's sweep must leave in the operations wallet: what every row but the treasury has not spent yet. */
+/**
+ * SOL the Fee Collector's sweep must leave in the operations wallet: what every row but the treasury has not spent
+ * yet. The Volume Rebates already given and not paid (ADR 0021) are part of what their row has left; should falling
+ * prices ever value the row under them, they stay behind all the same, being owed in lamports.
+ */
 export async function reservedLamports(db: Db) {
-  const b = await budgets(db);
-  return SPENDING_ROWS.reduce((sum, row) => sum + b.rows[row].available, 0n);
+  const [b, owed] = [await budgets(db), await rebatesOwed(db)];
+  return SPENDING_ROWS.reduce((sum, row) => sum + (row === "rebates" && owed > b.rows[row].available ? owed : b.rows[row].available), 0n);
 }
 
 /** `GET /v1/budgets`: the net, every version, and each row's allotment, spending and remainder. */
