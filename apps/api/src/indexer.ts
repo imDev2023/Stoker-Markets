@@ -141,11 +141,12 @@ export async function indexAccountHistory(
 const time = (blockTime: number | null) => new Date((blockTime ?? Math.floor(Date.now() / 1000)) * 1000);
 
 async function indexLaunch(db: Db, cfg: Config, e: LaunchCreated) {
-  // A Reward Launch's Payout Asset (ADR 0006, #43) and where the Creator's earnings go (ADR 0011, #113) are the
-  // Creator's choices at prepare time, kept with the draft; a coin launched on our PlatformConfig without our API has no
-  // draft, pays its Holder Rewards in the coin, as every Reward Launch did before, and its earnings to the Creator's wallet.
+  // A Reward Launch's Payout Asset (ADR 0006, #43) and Reward Burn (#183), and where the Creator's earnings go (ADR 0011,
+  // #113) are the Creator's choices at prepare time, kept with the draft; a coin launched on our PlatformConfig without
+  // our API has no draft, pays its Holder Rewards in the coin, as every Reward Launch did before, burns none of them, and
+  // pays its earnings to the Creator's wallet.
   const [draft] = await db
-    .select({ rewardPayout: launchDrafts.rewardPayout, earningsDestination: launchDrafts.earningsDestination })
+    .select({ rewardPayout: launchDrafts.rewardPayout, rewardBurnBps: launchDrafts.rewardBurnBps, earningsDestination: launchDrafts.earningsDestination })
     .from(launchDrafts)
     .where(eq(launchDrafts.mint, e.baseMint.toBase58()))
     .limit(1);
@@ -176,6 +177,7 @@ async function indexLaunch(db: Db, cfg: Config, e: LaunchCreated) {
       graduationTarget: e.graduationTargetRaw.toString(),
       rewardTaxBps: e.rewardTaxBps,
       rewardPayout: e.rewardTaxBps === null ? null : (draft?.rewardPayout ?? "coin"),
+      rewardBurnBps: e.rewardTaxBps === null ? null : (draft?.rewardBurnBps ?? 0),
       earningsDestination: draft?.earningsDestination ?? "wallet",
       createdSignature: e.signature,
       createdSlot: e.slot,
