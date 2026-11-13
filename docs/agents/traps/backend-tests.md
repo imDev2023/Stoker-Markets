@@ -30,6 +30,10 @@ The text is the original's, one sentence a line.
 - A Reward Launch with a Quote Asset payout and tax still to sell sells a slice and pays a round on every Reward Engine run, to whoever holds it (the treasury counts once it holds swept coins), and each sale on a curve leaves a Platform Fee in its Quote Asset's vault that may be too small to claim: a test that caps a run's payouts or expects an empty vault must allow for both (`reward-rounds.test.ts` "resumes", `fee-collector.test.ts` `dust`).
 - The Burn's two-step buy leaves the surplus Quote Asset of its swap in the operations wallet (outside the Ledger), so `fee-collector.test.ts` subtracts `surplusOf(USDC)` before asserting the wallet's balance; a test that assumes the wallet holds only what Creators are owed fails whenever `burn.test.ts` ran first.
 
+- The stack's database belongs to a plain role (`launchpad_stack`, neither a superuser nor exempt from Row-Level Security, #201), which runs the migrations and is the role the API connects as, as on the hosted databases; `databaseUrl` is that role.
+  A test that needs more (a role of its own, as `row-security.test.ts` makes one with every privilege on the tables and sees it read nothing) uses `databaseAdminUrl`, the server's superuser on the same database, and drops whatever it made on the server, since a role outlives the stack's database wherever `STACK_DATABASE_URL` names the server.
+  `STACK_DATABASE_URL`'s user must be a superuser (CI's and the Mac's private server's `test` is), since it makes the role and gives it the database.
+
 ## What a test must set up
 
 - The Snipe Window is 40 slots on the backend stack (`startStack`'s `snipeWindowSlots`; a buy inside it, then one after a wait of about 16 s, `trust.test.ts`) and 100,000 on the UI stack (`global-setup.ts`), so every seeded trade is a snipe and the coin baselines never depend on how long the seed took; the card prints whatever window the API reports ("the launch's first 100,000 slots (about 11 hours)" in the shots).

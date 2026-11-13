@@ -7,6 +7,8 @@ The text is the original's, one sentence a line.
 - `packages/chain` - LaunchLab and CPMM PDAs, instruction builders from the IDLs (Anchor coder), launch, curve and pool trades (transfer-fee aware, `transferFee.ts`; referral share fee), migration, decoder.
   Server-only.
 - `packages/db` - Drizzle schema and migrations (`pnpm --filter @launchpad/db generate`).
+  Every table is declared with `.enableRLS()` (Row-Level Security with no policy, #201: the API is the tables' owner, any other role reads nothing); `src/migrate.ts`'s `runMigrations` applies the migrations and then refuses a database where a `public` table lacks it (`tablesWithoutRowSecurity`).
+- `scripts` - the lint's own checks: `claude-md-size.mjs` (`CLAUDE.md` under 20,000 bytes) and `row-security.mjs` (every table of the latest migration snapshot has Row-Level Security; a snapshot's path as its argument checks that one).
 - `packages/contract` - zod API contract shared by the API and every client.
 - `packages/arweave` - ANS-104 data items signed with ed25519 (the id is known at signing) and ArDrive Turbo's few HTTP endpoints (upload, price, balance, SOL top-up).
   Used by the API and by the stand-in in `tools/stack`.
@@ -33,9 +35,11 @@ The text is the original's, one sentence a line.
 - `tools/stack` - starts Postgres, local chain, API (and optionally web) for tests, plus an alert sink standing in for the operator's chat webhook, a stand-in for twitterapi.io (`src/x.ts`: the advanced search with its shapes and a 429 on request, the authors' pictures, and `POST /stand-in/posts` for a test's posts; the mentions job on every stack searches it, never the real API), a stand-in for Helius's webhook API (`GET`/`PUT /v0/webhooks/:id`), and a stand-in for ArDrive Turbo and the Arweave gateway (`src/turbo.ts`: upload, price, balance, SOL top-up credited from the local chain, and `GET /<id>`; `GET /stand-in/items` lists what it holds for tests).
   `STACK_LOG_DIR` streams each process's output to files.
   A killed run never reaches `stop`, so a start first removes the `launchpad-test-pg-*` containers (or `launchpad_test_*` databases) of runs whose process is dead.
+  Each stack's database belongs to the plain role `launchpad_stack`, which runs the migrations and is the role the API connects as (`databaseUrl`), so Row-Level Security is met as on the hosted databases; `databaseAdminUrl` is the server's superuser on the same database (#201).
 - `tools/mainnet` - the go-live scripts the runbook names: `platform-config.ts` builds the unsigned PlatformConfig creation for the cold admin key and decodes one to check it; `lookup-table.ts` creates or extends the Platform Lookup Table from a list of quote mints.
   `jupiter-route.ts` simulates Jupiter's swap of SOL into a Quote Asset on mainnet.
   Read-only on secrets; proven against the local chain in `tests/backend/src/mainnet-tools.test.ts`.
 - `tests/backend` - black-box tests: only HTTP API and chain, never internals.
+  The one file that opens the database is `row-security.test.ts` (#201), and it reads the catalogue and counts rows as two roles, never the API's data.
 - `tests/ui` - Playwright browser E2E on the full stack with a Wallet Standard test wallet (`src/wallet.ts`: the key stays in Node, tests approve or decline each signature), plus pixel baselines at 1440 and 390, light and dark.
   `src/rewardsWeight.spec.ts` is Diamond Hands in the flows (#199): it announces a rules version with steps, shoots the Rewards page's card and a coin's card in the four looks (`screenshots/darwin/flows/diamond-hands-*`), and puts the plain rules back in its `afterAll`; the UI stack's Holding Day is three seconds for it (`src/global-setup.ts`).

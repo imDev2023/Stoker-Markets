@@ -23,7 +23,10 @@ export type StackEnv = {
   apiUrl: string;
   webUrl: string | null;
   rpcUrl: string;
+  /** The stack's database as its owner, the plain role the API connects as. */
   databaseUrl: string;
+  /** The same database as the server's superuser, for a test that needs a role of its own (`row-security.test.ts`). */
+  databaseAdminUrl: string;
   webhookSecret: string;
   /** Bearer token for the API's operator endpoints. */
   operatorToken: string;
@@ -137,10 +140,6 @@ async function waitFor(what: string, check: () => Promise<boolean>, timeoutMs: n
   }
 }
 
-/**
- * A throwaway database: with `STACK_DATABASE_URL` (a Postgres server the caller may create databases on, for machines
- * without docker), a fresh database on that server; otherwise a Postgres container.
- */
 /** Whether something answers on a local port: how a build folder left by a run that was killed is told from a live run's. */
 function listening(port: number) {
   return new Promise<boolean>((resolve) => {
@@ -153,7 +152,42 @@ function listening(port: number) {
   });
 }
 
-async function startPostgres(): Promise<{ url: string; stop: () => Promise<void> }> {
+/**
+ * The role every stack's database belongs to and its API connects as: a plain one, as on the hosted databases, where
+ * the API is the tables' owner and nothing more. A superuser passes Row-Level Security whatever the tables say, so a
+ * suite run as one would prove nothing about it (#201).
+ */
+const DATABASE_OWNER = { name: "launchpad_stack", password: "stack" };
+
+/** A fresh database owned by `DATABASE_OWNER` on a server whose user is a superuser; returns the owner's URL and the superuser's. */
+async function createOwnedDatabase(serverUrl: string, name: string) {
+  const admin = postgres(serverUrl, { max: 1, onnotice: () => {} });
+  try {
+    // A role belongs to the server and stacks start side by side on one, so the role another stack made first is this one.
+    await admin.unsafe(
+      `do $$ begin
+         create role ${DATABASE_OWNER.name} login password '${DATABASE_OWNER.password}' nosuperuser nobypassrls nocreatedb nocreaterole;
+       exception when duplicate_object or unique_violation then null;
+       end $$`,
+    );
+    await admin.unsafe(`create database "${name}" owner ${DATABASE_OWNER.name}`);
+  } finally {
+    await admin.end();
+  }
+  const adminUrl = new URL(serverUrl);
+  adminUrl.pathname = `/${name}`;
+  const url = new URL(adminUrl);
+  url.username = DATABASE_OWNER.name;
+  url.password = DATABASE_OWNER.password;
+  return { url: url.toString(), adminUrl: adminUrl.toString() };
+}
+
+/**
+ * A throwaway database: with `STACK_DATABASE_URL` (a Postgres server whose user is a superuser, for machines without
+ * docker), a fresh database on that server; otherwise a Postgres container. `url` is the database's owner, which the
+ * migrations and the API use; `adminUrl` is the server's superuser on the same database.
+ */
+async function startPostgres(): Promise<{ url: string; adminUrl: string; stop: () => Promise<void> }> {
   const server = process.env.STACK_DATABASE_URL;
   if (server) {
     const admin = postgres(server, { max: 1, onnotice: () => {} });
@@ -162,13 +196,10 @@ async function startPostgres(): Promise<{ url: string; stop: () => Promise<void>
       const pid = Number(datname.split("_")[2]);
       if (pid && !alive(pid)) await admin.unsafe(`drop database if exists "${datname}" with (force)`).catch(() => undefined);
     }
-    const name = `launchpad_test_${process.pid}_${Date.now()}`;
-    await admin.unsafe(`create database "${name}"`);
     await admin.end();
-    const url = new URL(server);
-    url.pathname = `/${name}`;
+    const name = `launchpad_test_${process.pid}_${Date.now()}`;
     return {
-      url: url.toString(),
+      ...(await createOwnedDatabase(server, name)),
       stop: async () => {
         const drop = postgres(server, { max: 1, onnotice: () => {} });
         await drop.unsafe(`drop database if exists "${name}" with (force)`).catch(() => undefined);
@@ -187,13 +218,18 @@ async function startPostgres(): Promise<{ url: string; stop: () => Promise<void>
     "run", "-d", "--rm", "--name", name, "-e", "POSTGRES_USER=test", "-e", "POSTGRES_PASSWORD=test", "-e", "POSTGRES_DB=test",
     "-p", "127.0.0.1::5432", "postgres:17-alpine",
   ]);
-  const port = execFileSync("docker", ["port", name, "5432/tcp"]).toString().trim().split(":").pop();
-  const url = `postgres://test:test@127.0.0.1:${port}/test`;
-  await waitFor("postgres", async () => {
-    execFileSync("docker", ["exec", name, "pg_isready", "-U", "test", "-h", "127.0.0.1"], { stdio: "ignore" });
-    return true;
-  }, 60_000);
-  return { url, stop: async () => void execFileSync("docker", ["rm", "-f", name], { stdio: "ignore" }) };
+  const stop = async () => void execFileSync("docker", ["rm", "-f", name], { stdio: "ignore" });
+  try {
+    const port = execFileSync("docker", ["port", name, "5432/tcp"]).toString().trim().split(":").pop();
+    await waitFor("postgres", async () => {
+      execFileSync("docker", ["exec", name, "pg_isready", "-U", "test", "-h", "127.0.0.1"], { stdio: "ignore" });
+      return true;
+    }, 60_000);
+    return { ...(await createOwnedDatabase(`postgres://test:test@127.0.0.1:${port}/test`, "launchpad")), stop };
+  } catch (e) {
+    await stop().catch(() => undefined);
+    throw e;
+  }
 }
 
 /** Whether a process with this pid is running on this machine (one we may not signal counts as running). */
@@ -504,7 +540,7 @@ export async function startStack(opts: StackOptions = {}): Promise<{ env: StackE
     await solRoutesReady;
     return {
       env: {
-        apiUrl, webUrl, rpcUrl: chain.rpcUrl, databaseUrl: pg.url, webhookSecret: WEBHOOK_SECRET, operatorToken: OPERATOR_TOKEN,
+        apiUrl, webUrl, rpcUrl: chain.rpcUrl, databaseUrl: pg.url, databaseAdminUrl: pg.adminUrl, webhookSecret: WEBHOOK_SECRET, operatorToken: OPERATOR_TOKEN,
         alertSinkUrl: sink.url, heliusApiUrl: helius.url, heliusApiKey: HELIUS_API_KEY, heliusWebhookId: HELIUS_WEBHOOK_ID,
         turbo: { url: turbo.url, depositAddress: turbo.depositAddress }, x: { url: x.url, apiKey: x.apiKey }, arweaveTopUpLamports,
         graduationAlertAfterSeconds, poolBackfillSeconds, ...fees, referralShareBps, feeChangeLeadSeconds, activeDaySeconds: opts.activeDaySeconds ?? 86_400,
