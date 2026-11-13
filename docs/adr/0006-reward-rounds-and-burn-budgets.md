@@ -1,6 +1,6 @@
 # Reward Rounds pay in the coin or the Quote Asset from the operations wallet; Burn and Flywheel budgets come from the Ledger
 
-Status: implemented on the local chain (#17, #18); amended on 2026-10-03 by the owner's decision in #43 (the Payout Asset, below).
+Status: implemented on the local chain (#17, #18); amended on 2026-10-03 by the owner's decision in #43 (the Payout Asset, below), and on 2026-11-13 by #183 (the Reward Burn, below).
 
 A Reward Launch's coin is a Token-2022 mint whose transfer fee is the Reward Tax.
 LaunchLab's own authority holds the fee-config authority until Graduation, and the migration hands it to the PlatformConfig's fee-extension authority, our operations wallet, which gives it up for good in the next minute (the `reward-tax-lock` job), so nobody can ever change a coin's tax.
@@ -72,3 +72,34 @@ Round pages show every amount in the Payout Asset, and the rewards page explains
 - The sales pay trading fees, so holders of a Quote Asset payout receive less than the tax's face value, and the Creator and the platform earn from the sales as from any trade.
 - A Reward Launch paired with a taxed Quote Asset loses that asset's transfer fee twice: on the sale's proceeds and again on each payout.
 - A Quote Asset payout's first round waits for the sales to reach the threshold, which on a coin with little tax takes several runs.
+
+## Amendment (2026-11-13, #183): the Reward Burn
+
+From the owner's read of an outside critique of StonkFun's reward bot (point 2): a Quote Asset payout makes the Reward Engine the biggest standing seller of its coin, and the cheapest answer is to burn part of the tax instead of selling all of it.
+A Reward Launch therefore fixes one more choice at launch, beside the Payout Asset and as unchangeable as the tax itself: the Reward Burn, the share of every harvested Reward Tax burned instead of paid out, none, a tenth, a quarter or half (`REWARD_BURN_SHARES`: 0, 1000, 2500 or 5000 basis points).
+It is kept with the launch draft (`reward_burn_bps`), copied to the Launch by the Indexer, rebuilt unchanged by a retry and never updated; a Reward Launch made on our PlatformConfig without our API burns nothing, and a burn without a Reward Tax is refused at prepare.
+
+### How a harvest is burned
+
+The engine harvests the withheld tax to the mint as before, reads what the mint holds, and withdraws it to the operations wallet's account of the coin in a transaction that also burns the Reward Burn's share of what it read, rounded down.
+The withdrawal and the burn land together or not at all, so the wallet never holds the burned share and nothing harvested is ever counted twice.
+Tax harvested to the mint by anyone else between the read and the withdrawal goes to the holders whole.
+The transaction is written to `job_transactions` before it is sent and settled by its signature: a run that dies leaves it for the next one, which records what landed, and while it may still land the coin's tax is not collected again.
+
+Everything after the burn is unchanged and sees only what is left: a coin payout's round pays the kept share, and a Quote Asset payout's Reward Sales sell only the kept share, so the standing sell pressure falls by the burned share.
+
+### The Ledger
+
+Each landed burn is one `reward_burn` entry on the withdrawal's signature: the coins destroyed, from the operations wallet to the burn address (the system program's address), under the coin.
+It is the holders' tax, so it is never revenue (revenue kinds are named positively), never a spending of any row of the Budget Table, and never one of the Burn's or the Flywheel's entries, which buy the Platform Token or a top Launch with the platform's own revenue.
+
+### What holders are told
+
+The launch form offers the steps beside the Reward Tax, and the launch summary, the coin's facts and its Holder Rewards card say the share in words ("a quarter of every reward"), the card with what has been burned so far and each burn's transaction.
+The steps as percentages are on `/fees` with the other figures (owner, 2026-10-30).
+
+### Consequences of the second amendment
+
+- Holders of a coin with a Reward Burn receive less than the tax's face value by the burned share; the burned coins shrink the supply, which every holder keeps a larger share of.
+- A Quote Asset payout with a Reward Burn sells less into its own chart, and its rounds take longer to reach the threshold, which counts coins sold.
+- The burn costs one instruction in a transaction the engine sent anyway: no extra network fee.

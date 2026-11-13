@@ -110,6 +110,7 @@ Rewards and budgets:
 - Holding Weight (ADR 0022, #199), shown as Diamond Hands: in every Reward Round a coin kept longer counts for more, coin by coin, by announced steps; a sell takes the newest coins first; the treasury counts once.
 - Reward Rounds and the Burn's budgets: ADR 0006; a budget is a share of the net revenue less what earlier burns spent.
 - The Payout Asset (#43): a Reward Launch pays in the coin or in its Quote Asset, fixed at launch; a run sells 0.5% of the reserve at most.
+- The Reward Burn (#183, ADR 0006): a Reward Launch burns none, a tenth, a quarter or half of every harvested tax, fixed at launch, in the withdrawal's own transaction; a `reward_burn` entry, never revenue.
 - The treasury is an eligible holder in Reward Rounds (owner, 2026-10-04).
 
 Platform, keys and policy:
