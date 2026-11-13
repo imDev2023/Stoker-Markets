@@ -218,6 +218,16 @@ export const CoinRewards = z.object({
       recent: z.array(RewardSale),
     })
     .nullable(),
+  /**
+   * The Reward Burn (#183): the share of every harvest burned before anything is sold or paid, fixed at launch, what every
+   * harvest has burned so far as the Ledger records it, and the latest burns, newest first. `bps` 0 burns nothing.
+   */
+  burn: z.object({
+    bps: z.number().int(),
+    /** Coins burned by every Reward Burn so far, raw units. */
+    burned: raw,
+    recent: z.array(z.object({ signature: z.string(), coins: raw, time: z.iso.datetime() })),
+  }),
   rules: RewardRuleVersion.nullable(),
   rounds: z.array(RewardRoundSummary),
 });

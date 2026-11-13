@@ -37,6 +37,15 @@ export const RewardPayoutAsset = z.enum(["coin", "quote"]);
 export type RewardPayoutAsset = z.infer<typeof RewardPayoutAsset>;
 
 /**
+ * The Reward Burn (#183, ADR 0006 amended): the share of every Reward Tax the Reward Engine collects that it burns
+ * instead of paying out, in basis points of the harvest, chosen on the launch form and fixed for the coin's life like
+ * the Payout Asset. 0 is no burn, as every Reward Launch before it; the form offers these steps and nothing else.
+ */
+export const REWARD_BURN_SHARES = [0, 1000, 2500, 5000] as const;
+export const RewardBurnBps = z.union([z.literal(0), z.literal(1000), z.literal(2500), z.literal(5000)]);
+export type RewardBurnBps = z.infer<typeof RewardBurnBps>;
+
+/**
  * Where a Creator's earnings on a coin go (ADR 0011, #113, #184), chosen on the launch form and fixed for the coin's life:
  * - `wallet`: to the Creator's wallet, as Creator Forwards (ADR 0009);
  * - `holders`: to the coin's holders, pro rata in the Quote Asset, through Reward Rounds;
@@ -63,6 +72,11 @@ export const LaunchModeFields = z.object({
   rewardTax: rewardTaxField,
   /** A Reward Launch's Payout Asset; `coin` unless set. Refused without `rewardTax`. */
   rewardPayout: z.union([RewardPayoutAsset, z.literal("")]).optional().transform((v) => v || undefined),
+  /** A Reward Launch's Reward Burn in basis points of every harvest (0, 1000, 2500 or 5000); 0 unless set. Refused without `rewardTax`. */
+  rewardBurn: z
+    .union([z.enum(["0", "1000", "2500", "5000"]), z.literal("")])
+    .optional()
+    .transform((v) => (v ? (Number(v) as RewardBurnBps) : undefined)),
   /** Where the Creator's earnings on the coin go, for good; `wallet` unless set. Any coin may choose any of them. */
   earningsDestination: z.union([CreatorEarningsDestination, z.literal("")]).optional().transform((v) => v || undefined),
   /** Quote Asset the Creator spends on a first buy inside the launch transaction, raw units. */
@@ -92,6 +106,8 @@ export const RewardTax = z.object({
   bps: z.number().int(),
   /** What the tax is paid out in, fixed at launch. */
   payout: RewardPayoutAsset,
+  /** The Reward Burn: the share of every harvested tax burned before anything is sold or paid, basis points, fixed at launch; 0 for none. */
+  burnBps: z.number().int(),
   /** The transaction in which the platform gave the tax authority up after Graduation; null until then. */
   locked: z.object({ signature: z.string(), at: z.iso.datetime() }).nullable(),
 });
@@ -99,8 +115,8 @@ export type RewardTax = z.infer<typeof RewardTax>;
 
 /** What a launch with these modes will do, fixed when it is prepared. */
 export const LaunchModesSummary = z.object({
-  /** The Reward Tax the coin carries and what it is paid out in, or null for a standard coin. */
-  rewardTax: z.object({ bps: z.number().int(), payout: RewardPayoutAsset }).nullable(),
+  /** The Reward Tax the coin carries, what it is paid out in and the share of it burned, or null for a standard coin. */
+  rewardTax: z.object({ bps: z.number().int(), payout: RewardPayoutAsset, burnBps: RewardBurnBps }).nullable(),
   /** Where the Creator's earnings on the coin go, for good. */
   earningsDestination: CreatorEarningsDestination,
   /** The first buy, exact: it is the curve's first trade and lands in the launch transaction. Null without one. */
