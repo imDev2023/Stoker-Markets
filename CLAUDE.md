@@ -18,7 +18,9 @@ This repository is the fallback: it still deploys the live mainnet API and the d
 
 ### The frontier (2026-11-13)
 
-- **Next unit:** the small units of the rewards roadmap, one per session: #186, #183 and #185; #184's other half (the Burn's and the Flywheel's budgets pointed at liquidity) is open.
+- **Running (owner, 2026-11-13):** #183 and #184's open half (the Burn's and the Flywheel's budgets pointed at liquidity) side by side, in the relay's lanes `reward-burn` and `budget-liquidity`; each ticket's comment of that day says what the other owns, and each PR waits for the owner.
+- **Next unit:** #186, on its own, once both have landed (its comment of 2026-11-13).
+  #185 (`/updates`) is built in new-stoker as imDev2023/new-stoker#53 and is closed here.
 - **Row-Level Security (#201)** is built and merged (migration `0030`, the lint check, the stack's plain owner role); the issue stays open until devnet has taken it and Supabase's advisor shows neither finding on both projects.
 - **Done on the rewards roadmap:** #187 (Budget Table), #188 (Creator Ladder), #113 with #184's Creator half (Creator Earnings Destinations), #196 (volume rebates), #199 (Holding Weight).
 - **Devnet rehearsal** (`devnet.stoker.markets`, `api-devnet.stoker.markets`, and the apex with a devnet notice): its database is through `0026` and both Workers run `main` as of 62bfb75, so it is behind by #193, #198, #199 and #201.
@@ -26,7 +28,7 @@ This repository is the fallback: it still deploys the live mainnet API and the d
   After every merge the rehearsal is redeployed from `main`, the database first when `packages/db` changed, and the record goes on the issue.
 - **Mainnet:** `stoker-api` is live on `api.stoker.markets` on its build from before these merges; its database is through `0020` and takes `0021` to `0030` at go-live.
   Go-live is #23: the checklist is `docs/runbooks/mainnet.md` section 12, and #23's latest comment says which item is open.
-- **The owner still owes:** the devnet redeploy line above; on #23, item 9 (Always Use HTTPS), step 5b's backup disk, Helius Developer, then items 8, 10 and 12 at go-live; a Budget Table version with a share for `rebates` before the rebates pay anything (runbook section 17); the Reward Rounds' version 2 before the first Reward Launch (runbook section 6), and with it or after it the first Holding Weights (section 18); answers on #159; closing #128 and #129; three calls each on #193, #198 and #199 that are theirs to overrule (`docs/agents/settled.md`); and on #201, Supabase's advisor read again on both projects once devnet has `0030` (mainnet's tables by the block on the issue, or at go-live).
+- **The owner still owes:** the devnet redeploy line above; the review and merge of the two lanes' PRs; on #23, item 9 (Always Use HTTPS), step 5b's backup disk, Helius Developer, then items 8, 10 and 12 at go-live; a Budget Table version with a share for `rebates` before the rebates pay anything (runbook section 17); the Reward Rounds' version 2 before the first Reward Launch (runbook section 6), and with it or after it the first Holding Weights (section 18); answers on #159; closing #128 and #129; three calls each on #193, #198 and #199 that are theirs to overrule (`docs/agents/settled.md`); and on #201, Supabase's advisor read again on both projects once devnet has `0030` (mainnet's tables by the block on the issue, or at go-live).
 - **Open PRs on 2026-11-13:** #168 (`sign-in`) and #132 (`design-research`: merge its `docs/design/research/` or close it).
   Check `gh pr list` before starting work, since cloud sessions also push here, and push every working branch.
 - **Site work** (phase 6, #137, and anything in the Playground's design) belongs in new-stoker unless the owner says otherwise.
