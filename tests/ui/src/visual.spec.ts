@@ -683,7 +683,7 @@ test("stats page", async ({ page, stack }) => {
   await expect(page.getByRole("region", { name: "STOKER market" })).toContainText("STOKER has not launched yet");
   await expect(page.getByRole("region", { name: "Key figures" }).getByRole("term")).toHaveCount(5);
   // Protocol-owned liquidity (#184) is its own figure; on the seeded stack both budgets burn, so it says so in words.
-  const pol = page.getByRole("region", { name: "Key figures" }).locator("dl > div").filter({ has: page.getByRole("term", { name: "Protocol-owned liquidity" }) });
+  const pol = page.getByRole("region", { name: "Key figures" }).locator("dl > div").filter({ has: page.locator("dt", { hasText: "Protocol-owned liquidity" }) });
   await expect(pol).toContainText("None yet: the Burn and the Flywheel burn what they buy.");
   await expect(page.getByRole("region", { name: "Run the numbers" }).getByRole("textbox")).toHaveCount(2);
   // The page shows what the API's Ledger says, asset by asset, and every entry links to its transaction.
