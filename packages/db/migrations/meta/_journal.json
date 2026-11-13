@@ -211,6 +211,13 @@
       "when": 1794482414659,
       "tag": "0029_holding_weight",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1794548202585,
+      "tag": "0030_row_level_security",
+      "breakpoints": true
     }
   ]
 }

@@ -98,6 +98,10 @@ The text is the original's, one sentence a line.
   The launch form's "Holder rewards, Coming soon" card of 2026-10-30 is gone since #113 was built (2026-11-10): it is the "Your holders" choice of the form's Creator earnings section.
 - Chart marks (#160, ADR 0018, owner 2026-11-09): the trade marks alone are live; the mentions (posts on X found through twitterapi.io, a paid search) stay built but off, since `TWITTERAPI_API_KEY` is left unset on every Worker, and are switched on only if the community asks for them.
   Never set that key from a session, never remove the mentions code, and never replace the search with another paid source without the owner's word.
+- Row-Level Security (#201, 2026-11-13): every table has it, with no policy and never forced, since migration `0030`.
+  The API reaches Postgres through Hyperdrive as the tables' owner, whom it does not apply to, so nothing of ours changed; every other role reads and writes nothing, which is what closes Supabase's Data API over the same schema whether its dashboard switch is off (it is, in both projects, since 2026-11-12) or ever on again.
+  A new table is declared with `.enableRLS()`; the lint (`scripts/row-security.mjs`) and `runMigrations` both refuse one without it.
+  A policy is a decision to open a table to another role and none is planned: the site and every client read through the API alone.
 
 ## Positioning
 

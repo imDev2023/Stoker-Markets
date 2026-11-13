@@ -65,7 +65,7 @@ export const launches = pgTable(
     index("launches_name_key_idx").on(t.nameKey),
     index("launches_symbol_key_idx").on(t.symbolKey),
   ],
-);
+).enableRLS();
 
 /**
  * Each Launch's latest price wherever it trades, for the board's market caps: the curve's starting price when the Launch
@@ -80,7 +80,7 @@ export const launchMarkets = pgTable("launch_markets", {
   /** Null until the first trade. */
   lastTradeAt: timestamp("last_trade_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}).enableRLS();
 
 /** Launch metadata we host (name, description, links, image), keyed by the id in the metadata URI. */
 export const launchMetadata = pgTable("launch_metadata", {
@@ -101,7 +101,7 @@ export const launchMetadata = pgTable("launch_metadata", {
   /** The image's perceptual hash (Copy Protection, #120), computed at prepare time; null when the picture can't be hashed. */
   imageHash: text("image_hash"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}).enableRLS();
 
 /**
  * One row per trade of a Launch's coin: on its curve (from LaunchLab's TradeEvent) and, after Graduation, in its CPMM
@@ -143,7 +143,7 @@ export const trades = pgTable(
     // The board's trending sort sums the last day's trades.
     index("trades_block_time_idx").on(t.blockTime),
   ],
-);
+).enableRLS();
 
 /** The latest indexed state of each Launch's curve: what it has raised toward its Graduation Target, and its price. */
 export const curves = pgTable("curves", {
@@ -159,7 +159,7 @@ export const curves = pgTable("curves", {
   /** When the buy that sold the curve out landed: from then on the Launch waits for Raydium to migrate it. */
   completedAt: timestamp("completed_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}).enableRLS();
 
 /**
  * The Quote Registry: one row per Quote Asset (a quote mint with a LaunchLab GlobalConfig), rewritten by the scheduled refresh.
@@ -198,7 +198,7 @@ export const quoteAssets = pgTable("quote_assets", {
   labelsSlot: bigint("labels_slot", { mode: "number" }),
   labelsCheckedAt: timestamp("labels_checked_at", { withTimezone: true }),
   refreshedAt: timestamp("refreshed_at", { withTimezone: true }).notNull(),
-});
+}).enableRLS();
 
 /** One row per graduated Launch: Raydium's migration of its curve into a CPMM pool, and the pool's latest price. */
 export const graduations = pgTable("graduations", {
@@ -233,7 +233,7 @@ export const graduations = pgTable("graduations", {
    * pool traded at least the ladder's floor. Every page reads this figure; a coin on the top tier is no longer counted.
    */
   activeDays: integer("active_days").notNull().default(0),
-});
+}).enableRLS();
 
 /**
  * Something the operator must act on, raised once per subject and resolved when the cause goes away, such as a Launch
@@ -252,7 +252,7 @@ export const operatorAlerts = pgTable(
     resolvedAt: timestamp("resolved_at", { withTimezone: true }),
   },
   (t) => [primaryKey({ columns: [t.kind, t.subject] })],
-);
+).enableRLS();
 
 /**
  * What a Creator asked for when a launch was prepared, kept so a retry rebuilds the same launch for the same coin
@@ -285,7 +285,7 @@ export const launchDrafts = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("launch_drafts_creator_idx").on(t.creator)],
-);
+).enableRLS();
 
 /**
  * Mint keys the operator chose for a Creator's next launch (a ground vanity address, #75), one used per draft in the order
@@ -300,7 +300,7 @@ export const chosenMintKeys = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("chosen_mint_keys_creator_idx").on(t.creator)],
-);
+).enableRLS();
 
 /** One row per wallet an airdrop pays: what it gets, and whether it has been paid. */
 export const airdropRecipients = pgTable(
@@ -321,7 +321,7 @@ export const airdropRecipients = pgTable(
     paidAt: timestamp("paid_at", { withTimezone: true }),
   },
   (t) => [primaryKey({ columns: [t.mint, t.wallet] })],
-);
+).enableRLS();
 
 /**
  * The Ledger: the append-only public record of platform revenue, one row per movement in a confirmed transaction, such as
@@ -357,7 +357,7 @@ export const ledgerEntries = pgTable(
     index("ledger_entries_slot_idx").on(t.slot),
     index("ledger_entries_kind_source_idx").on(t.kind, t.source),
   ],
-);
+).enableRLS();
 
 /**
  * Every transaction a scheduled job signs, written before it is sent: a job that dies between sending and recording finds
@@ -376,7 +376,7 @@ export const jobTransactions = pgTable("job_transactions", {
   error: text("error"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   resolvedAt: timestamp("resolved_at", { withTimezone: true }),
-});
+}).enableRLS();
 
 /**
  * The Creator Forward (ADR 0009): one row per payment of a Creator's share of platform revenue in one Quote Asset,
@@ -404,7 +404,7 @@ export const creatorForwards = pgTable(
     settledAt: timestamp("settled_at", { withTimezone: true }),
   },
   (t) => [index("creator_forwards_creator_idx").on(t.creator, t.assetMint), index("creator_forwards_status_idx").on(t.status)],
-);
+).enableRLS();
 
 /** One row per run of a scheduled job: when it ran, how it ended, and what it did, for the operator. */
 export const jobRuns = pgTable(
@@ -420,14 +420,14 @@ export const jobRuns = pgTable(
     error: text("error"),
   },
   (t) => [index("job_runs_job_started_idx").on(t.job, t.startedAt)],
-);
+).enableRLS();
 
 /** A lease on a job, so two runs of it (a Cron Trigger and a manual one) never overlap. It lapses if its holder dies. */
 export const jobLocks = pgTable("job_locks", {
   job: text("job").primaryKey(),
   runId: text("run_id").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-});
+}).enableRLS();
 
 /**
  * The published rules Reward Rounds follow, one row per version: who counts as a holder and when a round runs. A
@@ -448,7 +448,7 @@ export const rewardRules = pgTable("reward_rules", {
   note: text("note"),
   announcedAt: timestamp("announced_at", { withTimezone: true }).notNull().defaultNow(),
   effectiveAt: timestamp("effective_at", { withTimezone: true }).notNull(),
-});
+}).enableRLS();
 
 /**
  * The Budget Table (ADR 0019), one row per version: how the Platform Net (the Ledger's revenue less the Creators'
@@ -484,7 +484,7 @@ export const budgetTables = pgTable(
       sql`${t.burnBps} >= 0 and ${t.flywheelBps} >= 0 and ${t.rebatesBps} >= 0 and ${t.referralsBps} >= 0 and ${t.integratorsBps} >= 0 and ${t.treasuryBps} >= 0`,
     ),
   ],
-);
+).enableRLS();
 
 /**
  * The Creator Ladder (ADR 0020), one row per version: the share of a graduated coin's pool creator fee collections that
@@ -514,7 +514,7 @@ export const creatorLadders = pgTable(
     check("creator_ladders_days_climb", sql`${t.secondActiveDays} >= 1 and ${t.topActiveDays} > ${t.secondActiveDays}`),
     check("creator_ladders_floor", sql`${t.activeDayFloorBps} >= 1 and ${t.activeDayFloorBps} <= 10000`),
   ],
-);
+).enableRLS();
 
 /**
  * The Creator Tiers a graduated coin has reached above the first (ADR 0020): one row per coin and tier, written once by
@@ -536,7 +536,7 @@ export const creatorTiers = pgTable(
     reachedAt: timestamp("reached_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.mint, t.tier] }), check("creator_tiers_tier", sql`${t.tier} in (2, 3)`)],
-);
+).enableRLS();
 
 /**
  * Rebate Weeks (ADR 0021): one row per week of the volume rebates that has been settled, written once with every
@@ -561,7 +561,7 @@ export const rebateWeeks = pgTable("rebate_weeks", {
   /** What the rebates add up to; rounding leaves the pot's last lamports in the row. */
   credited: numeric("credited", { precision: 40, scale: 0 }).notNull(),
   settledAt: timestamp("settled_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}).enableRLS();
 
 /**
  * Volume Rebates (ADR 0021): one trader's rebate for one Rebate Week, written with the week. It waits until the
@@ -585,7 +585,7 @@ export const rebates = pgTable(
     paidAt: timestamp("paid_at", { withTimezone: true }),
   },
   (t) => [primaryKey({ columns: [t.weekStart, t.wallet] }), index("rebates_wallet_idx").on(t.wallet), index("rebates_status_idx").on(t.status)],
-);
+).enableRLS();
 
 /** One Reward Round of one Reward Launch: its snapshot, the pot it pays out, and how far it has got. */
 export const rewardRounds = pgTable(
@@ -626,7 +626,7 @@ export const rewardRounds = pgTable(
     finishedAt: timestamp("finished_at", { withTimezone: true }),
   },
   (t) => [index("reward_rounds_mint_started_idx").on(t.mint, t.startedAt), index("reward_rounds_source_status_idx").on(t.source, t.status)],
-);
+).enableRLS();
 
 /**
  * One holder's payout in one round. Written with the round, so the snapshot is complete before anything is paid; marked
@@ -656,7 +656,7 @@ export const rewardPayouts = pgTable(
     paidAt: timestamp("paid_at", { withTimezone: true }),
   },
   (t) => [primaryKey({ columns: [t.roundId, t.wallet] }), index("reward_payouts_wallet_idx").on(t.wallet)],
-);
+).enableRLS();
 
 /**
  * Holding Lots (ADR 0022): an amount of a coin a wallet was first seen holding at one Holding Check, with that check's
@@ -675,7 +675,7 @@ export const holdingLots = pgTable(
     amount: numeric("amount", { precision: 40, scale: 0 }).notNull(),
   },
   (t) => [primaryKey({ columns: [t.mint, t.wallet, t.since] })],
-);
+).enableRLS();
 
 /**
  * Holding Checks (ADR 0022): one row per coin per Holding Day on which the Reward Engine read the coin's accounts and
@@ -695,7 +695,7 @@ export const holdingChecks = pgTable(
     wallets: integer("wallets").notNull(),
   },
   (t) => [primaryKey({ columns: [t.mint, t.day] })],
-);
+).enableRLS();
 
 /**
  * Reward Sales (ADR 0006, #43): one row per sale of a Quote Asset payout Reward Launch's collected tax into the coin's
@@ -728,7 +728,7 @@ export const rewardSales = pgTable(
     settledAt: timestamp("settled_at", { withTimezone: true }),
   },
   (t) => [index("reward_sales_mint_idx").on(t.mint, t.status), index("reward_sales_round_idx").on(t.roundId)],
-);
+).enableRLS();
 
 /**
  * Creator Buybacks (ADR 0011, #113, #184): one row per run of a coin's `burn` or `liquidity` rule, the buyback its
@@ -776,7 +776,7 @@ export const creatorBuybacks = pgTable(
     settledAt: timestamp("settled_at", { withTimezone: true }),
   },
   (t) => [index("creator_buybacks_mint_idx").on(t.mint, t.status)],
-);
+).enableRLS();
 
 /** An integrator's API key (#21): only its hash is kept; the key itself is shown once, when issued. */
 export const apiKeys = pgTable("api_keys", {
@@ -786,7 +786,7 @@ export const apiKeys = pgTable("api_keys", {
   rateLimitPerMinute: integer("rate_limit_per_minute").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
-});
+}).enableRLS();
 
 /** Requests per key per minute, which the rate limit is checked against and the key's own usage view shows. */
 export const apiKeyUsage = pgTable(
@@ -797,7 +797,7 @@ export const apiKeyUsage = pgTable(
     count: integer("count").notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.keyId, t.minute] })],
-);
+).enableRLS();
 
 /**
  * A Platform Fee or Creator Fee change the operator announced (#22): public from the moment it is announced, preparable
@@ -816,14 +816,14 @@ export const feeAnnouncements = pgTable(
     appliedAt: timestamp("applied_at", { withTimezone: true }),
   },
   (t) => [index("fee_announcements_effective_idx").on(t.effectiveAt)],
-);
+).enableRLS();
 
 /** Settings the operator sets at run time, such as the Platform Token once it has launched. */
 export const platformSettings = pgTable("platform_settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}).enableRLS();
 
 /**
  * The Fee Keys the operations wallet holds: the NFT of each locked liquidity position in a graduated coin's pool, with
@@ -846,7 +846,7 @@ export const feeKeys = pgTable(
     checkedAt: timestamp("checked_at", { withTimezone: true }),
   },
   (t) => [index("fee_keys_pool_idx").on(t.pool), index("fee_keys_checked_at_idx").on(t.checkedAt)],
-);
+).enableRLS();
 
 
 /**
@@ -876,7 +876,7 @@ export const metadataUploads = pgTable(
     uploadedAt: timestamp("uploaded_at", { withTimezone: true }),
   },
   (t) => [primaryKey({ columns: [t.mint, t.item] }), index("metadata_uploads_status_idx").on(t.status)],
-);
+).enableRLS();
 
 /**
  * SOL the operations wallet sent to Turbo for upload credits, one row per transfer, written before the transfer is sent
@@ -892,7 +892,7 @@ export const arweaveTopUps = pgTable("arweave_top_ups", {
   error: text("error"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   settledAt: timestamp("settled_at", { withTimezone: true }),
-});
+}).enableRLS();
 
 /**
  * Posts on X that name a coin (#160): its mint address, its ticker as a cashtag or its page's link, found by the mentions
@@ -917,13 +917,13 @@ export const coinMentions = pgTable(
     foundAt: timestamp("found_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.mint, t.tweetId] }), index("coin_mentions_mint_posted_idx").on(t.mint, t.postedAt)],
-);
+).enableRLS();
 
 /** Where the mentions job's search for each coin last reached: the next search asks only for posts since then. */
 export const mentionPolls = pgTable("mention_polls", {
   mint: text("mint").primaryKey(),
   polledAt: timestamp("polled_at", { withTimezone: true }).notNull(),
-});
+}).enableRLS();
 
 /**
  * Wallets the operator has named after their owner's X account (#160, the way other terminals list known traders): a
@@ -937,4 +937,4 @@ export const notableWallets = pgTable("notable_wallets", {
   /** Whether a picture is cached in the bucket (`notable-avatars/<wallet>`), which the API serves. */
   avatar: boolean("avatar").notNull().default(false),
   addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}).enableRLS();

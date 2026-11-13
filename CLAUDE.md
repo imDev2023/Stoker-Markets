@@ -16,18 +16,18 @@ This repository is the fallback: it still deploys the live mainnet API and the d
 7. `docs/agents/` - this file's long form, read on demand: `code-map.md`, `run-and-test.md`, `settled.md`, `history.md` and `traps/`.
    Read the file the Traps index below names before the work it covers; none of them is loaded for you.
 
-### The frontier (2026-11-12)
+### The frontier (2026-11-13)
 
-- **Next unit:** Row-Level Security on every table (#201), after Supabase's advisor flagged both databases; the Data API is off in both projects since 2026-11-12.
-  Then the small units of the rewards roadmap, one per session: #186, #183 and #185; #184's other half (the Burn's and the Flywheel's budgets pointed at liquidity) is open.
+- **Next unit:** the small units of the rewards roadmap, one per session: #186, #183 and #185; #184's other half (the Burn's and the Flywheel's budgets pointed at liquidity) is open.
+- **Row-Level Security (#201)** is built and merged (migration `0030`, the lint check, the stack's plain owner role); the issue stays open until devnet has taken it and Supabase's advisor shows neither finding on both projects.
 - **Done on the rewards roadmap:** #187 (Budget Table), #188 (Creator Ladder), #113 with #184's Creator half (Creator Earnings Destinations), #196 (volume rebates), #199 (Holding Weight).
-- **Devnet rehearsal** (`devnet.stoker.markets`, `api-devnet.stoker.markets`, and the apex with a devnet notice): its database is through `0026` and both Workers run `main` as of 62bfb75, so it is behind by #193, #198 and #199.
-  It takes migrations `0027`, `0028` and `0029`, then the API, then the web: the owner's one line in #193's last comment, repeated on #198 and #199.
+- **Devnet rehearsal** (`devnet.stoker.markets`, `api-devnet.stoker.markets`, and the apex with a devnet notice): its database is through `0026` and both Workers run `main` as of 62bfb75, so it is behind by #193, #198, #199 and #201.
+  It takes migrations `0027` to `0030`, then the API, then the web: the owner's one line in #193's last comment, repeated on #198, #199 and #201.
   After every merge the rehearsal is redeployed from `main`, the database first when `packages/db` changed, and the record goes on the issue.
-- **Mainnet:** `stoker-api` is live on `api.stoker.markets` on its build from before these merges; its database is through `0020` and takes `0021` to `0029` at go-live.
+- **Mainnet:** `stoker-api` is live on `api.stoker.markets` on its build from before these merges; its database is through `0020` and takes `0021` to `0030` at go-live.
   Go-live is #23: the checklist is `docs/runbooks/mainnet.md` section 12, and #23's latest comment says which item is open.
-- **The owner still owes:** the devnet redeploy line above; on #23, item 9 (Always Use HTTPS), step 5b's backup disk, Helius Developer, then items 8, 10 and 12 at go-live; a Budget Table version with a share for `rebates` before the rebates pay anything (runbook section 17); the Reward Rounds' version 2 before the first Reward Launch (runbook section 6), and with it or after it the first Holding Weights (section 18); answers on #159; closing #128 and #129; and three calls each on #193, #198 and #199 that are theirs to overrule (`docs/agents/settled.md`).
-- **Open PRs on 2026-11-12:** #168 (`sign-in`) and #132 (`design-research`: merge its `docs/design/research/` or close it).
+- **The owner still owes:** the devnet redeploy line above; on #23, item 9 (Always Use HTTPS), step 5b's backup disk, Helius Developer, then items 8, 10 and 12 at go-live; a Budget Table version with a share for `rebates` before the rebates pay anything (runbook section 17); the Reward Rounds' version 2 before the first Reward Launch (runbook section 6), and with it or after it the first Holding Weights (section 18); answers on #159; closing #128 and #129; three calls each on #193, #198 and #199 that are theirs to overrule (`docs/agents/settled.md`); and on #201, Supabase's advisor read again on both projects once devnet has `0030` (mainnet's tables by the block on the issue, or at go-live).
+- **Open PRs on 2026-11-13:** #203 (`hook-trap`, another session's), #168 (`sign-in`) and #132 (`design-research`: merge its `docs/design/research/` or close it).
   Check `gh pr list` before starting work, since cloud sessions also push here, and push every working branch.
 - **Site work** (phase 6, #137, and anything in the Playground's design) belongs in new-stoker unless the owner says otherwise.
 
@@ -118,6 +118,7 @@ Platform, keys and policy:
 - The region gate (ADR 0014): nothing is withheld upfront; a feature leaves one country only by an operator's row, on request.
 - The disclaimer: US, UK, Canada and sanctioned countries (`EXCLUDED_REGIONS`); the first visit's welcome blocks nothing.
 - Chart marks (ADR 0018, #160): the trade marks are live; the mentions stay built but off.
+- Row-Level Security (#201): on every table with no policy, never forced; the API is the tables' owner; a new table takes `.enableRLS()`.
 
 Positioning:
 
@@ -143,7 +144,7 @@ Each file under `docs/agents/traps/` holds what went wrong before; read the one 
 - `ui-tests.md` - before changing anything a baseline shows, adding a spec, or debugging a shot or a flow.
 - `web.md` - before `apps/web`: server and client components, the header, CSS containers, TradingView, share images.
 - `dev-stacks.md` - before starting a dev stack or a suite from a worktree, or reading a run that failed with timeouts or HTTP 500.
-- `deploy-ops.md` - before a deploy, a secret, a cron, a database, the rehearsal, an RPC endpoint or the domain's email.
+- `deploy-ops.md` - before a deploy, a secret, a cron, a database or a new table, the rehearsal, an RPC endpoint or the domain's email.
 - `shell-tools.md` - before a shell or perl one-liner, `agent-browser`, an artifact page, or merging a stacked branch.
 - `research-legal.md` - before any research on StonkFun or a competitor.
 

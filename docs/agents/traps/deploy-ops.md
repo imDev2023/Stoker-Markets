@@ -1,6 +1,6 @@
 # Traps: deploys, Cloudflare, the databases, devnet and mainnet
 
-Read before a deploy, a secret, a cron, a database, the devnet rehearsal, an RPC endpoint or the domain's email.
+Read before a deploy, a secret, a cron, a database (a new table included), the devnet rehearsal, an RPC endpoint or the domain's email.
 Moved out of `CLAUDE.md` on 2026-11-12 so it is read on demand; `CLAUDE.md` keeps the index.
 The text is the original's, one sentence a line.
 
@@ -27,6 +27,16 @@ The text is the original's, one sentence a line.
 - Mainnet Postgres is Supabase `stoker-mainnet` (ref `fzhdksjedbgompsxryvz`, London), migrated, with Hyperdrive `01fb2d350e084d64b496759343705c51` in `env.production` (runbook section 4).
   Supabase as the Hyperdrive origin: the direct host (`db.<ref>.supabase.co`) works for Hyperdrive but is IPv6-only, so run migrations from a Mac through the session pooler (`aws-0-<region>.pooler.supabase.com`, user `postgres.<ref>`).
 - `https://api.mainnet-beta.solana.com` answers 403 to any request with a browser `Origin`, so it cannot be `PUBLIC_RPC_URL`; the API also refuses a URL with `?api-key=` even when the key is domain-restricted, so the browser endpoint must be keyless (runbook section 5): `https://solana-rpc.publicnode.com` (owner, 2026-10-14; it answered a browser `Origin` with 200 and CORS `*`), and Helius's Secure RPC URL (paid plans, 5 requests a second per IP) if its limits are ever hit.
+
+## The databases
+
+- Supabase switches a Data API (PostgREST) on for every new project, over the `public` schema, behind an anon key that is designed to be public: on 2026-11-08 its advisor flagged both databases (`rls_disabled_in_public`, `sensitive_columns_exposed`), and a request with a project's anon key was answered for our tables on both, although the API only ever reaches Postgres through Hyperdrive (#201).
+  Two closures, neither resting on the other: the Data API is off in both projects (owner, 2026-11-12; `/rest/v1/` answers 503), and every table has Row-Level Security with no policy (migration `0030`), so a role that is not the tables' owner reads and writes nothing even with every privilege granted.
+  A new table is declared with `.enableRLS()` in `packages/db/src/schema.ts`; `pnpm lint` fails without it (`scripts/row-security.mjs` reads the latest snapshot), and `runMigrations` throws at the end on a database where any `public` table lacks it, which also catches a table made by hand-written SQL.
+  A new database on any host gets both (runbook section 4), and its Hyperdrive must connect as the role that ran the migrations: to any other role every read answers empty without an error, and only a write fails.
+- Never `FORCE ROW LEVEL SECURITY` and never a policy by habit: forcing applies it to the owner, so the API would read nothing, and a policy opens a table to a role that has no business there (`row-security.test.ts` asserts neither exists).
+  A superuser passes Row-Level Security whatever the tables say, so the test stack's database belongs to a plain role (`launchpad_stack` in `tools/stack`), or a suite run would prove nothing about it.
+  Supabase's `service_role` key passes it too, by design: it is a secret we never use, and it only matters if the Data API is ever on again.
 
 ## Email
 
