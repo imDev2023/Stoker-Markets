@@ -22,6 +22,8 @@ export function launchlabPdas(program: PublicKey) {
     platformFeeVaultAuthority: find([seed("platform_fee_vault_auth_seed")], program),
     /** Every trade names it, though our platform pays no Creator Fee into it (ADR 0009). */
     creatorFeeVault: (creator: PublicKey, quoteMint: PublicKey) => find([creator.toBuffer(), quoteMint.toBuffer()], program),
+    /** One wallet's share of a curve's locked coins and what it has claimed of it; a Creator Lock has the Creator's alone. */
+    vestingRecord: (pool: PublicKey, beneficiary: PublicKey) => find([seed("pool_vesting"), pool.toBuffer(), beneficiary.toBuffer()], program),
   };
 }
 

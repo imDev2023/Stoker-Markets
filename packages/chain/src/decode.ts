@@ -3,7 +3,7 @@ import bs58 from "bs58";
 import BN from "bn.js";
 import { cpmmCoder, launchlabCoder } from "./coder";
 import type { CurveReserves, Side, TradeFees } from "./curve";
-import { isOurSupplyAndSale, LAUNCH_SHAPE, REWARD_TAX_BPS } from "./shape";
+import { isOurLockedShape, isOurSupplyAndSale, LAUNCH_SHAPE, REWARD_TAX_BPS, type CreatorLock } from "./shape";
 import type { Programs } from "./programs";
 import type { CurveStatus } from "./trade";
 
@@ -59,10 +59,17 @@ export type LaunchCreated = {
   graduationTargetRaw: BN;
   /**
    * Whether the launch has the shape our curve rules pin on-chain (LAUNCH_SHAPE, or the supply and sale of an earlier
-   * shape, EARLIER_LAUNCH_SHAPES; no vesting; an SPL coin, or a Token-2022 coin with a Reward Tax at one of our rates).
-   * A launch against a GlobalConfig our rules don't cover yet can have any shape (ADR 0005).
+   * shape, EARLIER_LAUNCH_SHAPES; an SPL coin, or a Token-2022 coin with a Reward Tax at one of our rates), with no
+   * vesting or with a Creator Lock we accept: the lock taken out of the current shape's sale, within our limits
+   * (`isOurLockedShape`, ADR 0023). A launch against a GlobalConfig our rules don't cover yet can have any shape (ADR
+   * 0005), and so can a lock's sale and size where a rule admits one, since a rule cannot hold the two to one sum.
    */
   standardShape: boolean;
+  /**
+   * The coins the launch locked and their schedule, whatever they are; null when it locked none. The launch only sets
+   * them aside: who they are for is the `create_vesting_account` that follows (the Creator, in a launch we built).
+   */
+  lock: CreatorLock | null;
   /** The Reward Tax of a Reward Launch, in basis points; null for a standard coin. */
   rewardTaxBps: number | null;
   /** The coin's token program: SPL Token, or Token-2022 for a Reward Launch. */
@@ -372,6 +379,11 @@ export function decodeTransaction(raw: RawTransaction, programs: Pick<Programs, 
       const curve = data.curve_param.Constant?.data;
       if (!curve) continue; // our platform only allows the constant-product curve
       const vesting = data.vesting_param;
+      // A cliff or an unlock time past what a JavaScript number holds is nobody's schedule; it reads as the longest one.
+      const seconds = (n: BN) => (n.bitLength() > 53 ? Number.MAX_SAFE_INTEGER : n.toNumber());
+      const lock: CreatorLock | null = vesting.total_locked_amount.isZero()
+        ? null
+        : { lockedAmount: vesting.total_locked_amount, cliffSeconds: seconds(vesting.cliff_period), unlockSeconds: seconds(vesting.unlock_period) };
       const token2022 = decoded.name === "initialize_with_token_2022";
       const taxBps = token2022 ? (data.transfer_fee_extension_param?.transfer_fee_basis_points ?? 0) : 0;
       // A Reward Launch: a Token-2022 coin taxed at one of our rates; a Token-2022 coin without one, or at another rate, is off-shape.
@@ -379,9 +391,10 @@ export function decodeTransaction(raw: RawTransaction, programs: Pick<Programs, 
       const standardShape =
         (!token2022 || rewardShape) &&
         data.base_mint_param.decimals === LAUNCH_SHAPE.decimals &&
-        isOurSupplyAndSale(curve.supply, curve.total_base_sell) &&
+        (lock
+          ? isOurLockedShape(curve.supply, curve.total_base_sell, lock)
+          : isOurSupplyAndSale(curve.supply, curve.total_base_sell) && vesting.cliff_period.isZero() && vesting.unlock_period.isZero()) &&
         curve.migrate_type === LAUNCH_SHAPE.migrateType &&
-        vesting.total_locked_amount.isZero() && vesting.cliff_period.isZero() && vesting.unlock_period.isZero() &&
         // The original `initialize` has no fee-on argument, so only the rest of its shape is checked.
         (!data.amm_fee_on || LAUNCH_SHAPE.ammFeeOn in data.amm_fee_on);
       events.push({
@@ -404,6 +417,7 @@ export function decodeTransaction(raw: RawTransaction, programs: Pick<Programs, 
         totalBaseSell: curve.total_base_sell,
         graduationTargetRaw: curve.total_quote_fund_raising,
         standardShape,
+        lock,
         rewardTaxBps: rewardShape ? taxBps : null,
         baseTokenProgram: new PublicKey(token2022 ? "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb" : "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
       });

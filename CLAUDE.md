@@ -19,7 +19,8 @@ This repository is the fallback: it still deploys the live mainnet API and the d
 ### The frontier (2026-11-13)
 
 - **Running (owner, 2026-11-13):** #183 and #184's open half (the Burn's and the Flywheel's budgets pointed at liquidity) side by side, in the relay's lanes `reward-burn` and `budget-liquidity`; each ticket's comment of that day says what the other owns, and each PR waits for the owner.
-- **Next unit:** #186, on its own, once both have landed (its comment of 2026-11-13).
+- **Next unit:** #186's second half, on its own, once both have landed: the launch form's lock, the coin page's mark and claim, the Indexer's listing and the Quote Registry's ranged rules (the list is in ADR 0023 and the issue's last comment).
+  Its chain half is built (branch `creator-lock`, `packages/chain` alone): nothing in the API or the web reaches a lock yet.
   #185 (`/updates`) is built in new-stoker as imDev2023/new-stoker#53 and is closed here.
 - **Row-Level Security (#201)** is built and merged (migration `0030`, the lint check, the stack's plain owner role); the issue stays open until devnet has taken it and Supabase's advisor shows neither finding on both projects.
 - **Done on the rewards roadmap:** #187 (Budget Table), #188 (Creator Ladder), #113 with #184's Creator half (Creator Earnings Destinations), #196 (volume rebates), #199 (Holding Weight).
@@ -89,6 +90,7 @@ Chain and launches:
 - Slippage: LaunchLab checks `minimum_amount_out` against what reaches the wallet after the transfer fee, so quote from the wallet-side figure (6004 otherwise).
 - A Reward Launch (#16) is `initialize_with_token_2022` with a transfer fee of 1% to 5%, locked after Graduation; rule group 0 is standard coins, group 1 Reward Launches.
 - The launch shape (#166, ADR 0005): every new coin is 1 trillion at 6 decimals with 79.31% sold; 1B coins keep their own shape.
+- The Creator Lock (ADR 0023, #186): LaunchLab holds up to a fifth of the supply for the Creator, out of the curve's sale, for at least seven days after Graduation; the rule carries ranges and the Indexer holds the shape.
 - Copy Protection (ADR 0012): for seven days nobody else may launch a coin's name, ticker or image; afterwards a label names the original.
 - Referral share fee (#21): capped by the GlobalConfig; every fee shown comes from the chain (`GET /v1/platform`), never a constant.
 - Only Raydium's migrate wallet graduates a pool, and its crank does so within seconds.

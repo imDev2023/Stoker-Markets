@@ -5,11 +5,14 @@ export {
   EARLIER_LAUNCH_SHAPES, LAUNCH_SHAPE, RATE_DENOMINATOR, REWARD_TAX_BPS, RULE_GROUP, RuleField, RuleOp, closedLaunchConstraints, graduationBandOf,
   isOurSupplyAndSale, pinsLaunchShape, rewardLaunchConstraints,
   sameConstraints, standardLaunchConstraints,
-  type GraduationBand, type RewardTaxBps, type RuleConstraint,
+  CREATOR_LOCK, creatorLockCapBps, creatorLockProblem, isOurLockedShape, maxLockBpsOf, saleWithLock, supplyShare,
+  type CreatorLock, type GraduationBand, type LaunchRuleOptions, type RewardTaxBps, type RuleConstraint,
 } from "./shape";
+export { prepareCreatorLockClaim, readCreatorLock, unlockedAmount, unlockEndsAt, type CreatorLockState } from "./creatorLock";
 export { listGlobalConfigs, readCurveRuleGroups, readCurveRules, readQuoteMints, type GlobalConfigInfo, type MintControls, type QuoteMintInfo } from "./quotes";
 export {
   createPlatformConfigIx, updatePlatformConfigIx, createCurveRuleIx, updateCurveRuleIx, initializeV2Ix, initializeWithToken2022Ix,
+  claimVestedTokenIx, createVestingAccountIx,
   type InitializeParams, type PlatformSettings, type PlatformConfigUpdate, type PlatformConfigInfo,
 } from "./instructions";
 export { readFeeVaults, type FeeVault } from "./vaults";
