@@ -107,7 +107,7 @@ _Avoid_: Protocol fee (that is Raydium's cut)
 
 **Fee Key**:
 The NFT Raydium mints when liquidity is locked in a pool, which entitles its holder to the trading fees that locked position earns; the platform holds every one.
-A pool has the one from its Graduation and one more for every liquidity addition a Creator's earnings paid for (ADR 0011).
+A pool has the one from its Graduation and one more for every liquidity addition a Creator's earnings or the Burn's or the Flywheel's budget paid for (ADR 0011, #184).
 _Avoid_: LP NFT, position NFT
 
 **Creator Fee**:
@@ -279,9 +279,14 @@ Its trades are settled together, once, after it has ended.
 _Avoid_: Epoch, season, round (a Reward Round is a different thing)
 
 **Burn**:
-Using the Burn's row of the Budget Table to buy the Platform Token on the market and destroy it, on a public schedule.
+Using the Burn's row of the Budget Table to buy the Platform Token on the market and destroy it, on a public schedule; or, when the operator points it at liquidity, to add what it buys to the Platform Token's pool as Protocol-Owned Liquidity instead (#184).
 _Avoid_: Buyback (on its own), revenue share, dividend
 
 **Flywheel**:
-Using the Flywheel's row of the Budget Table to buy the top Launches by an announced rule and burn them.
+Using the Flywheel's row of the Budget Table to buy the top Launches by an announced rule and burn them, or add them to their pools as Protocol-Owned Liquidity when the operator points it there.
 _Avoid_: Top-10 buyback, support buys
+
+**Protocol-Owned Liquidity**:
+Liquidity the Burn's or the Flywheel's budget added to a graduated coin's own pool and locked for good, the platform holding each position's Fee Key and collecting its fees as revenue (#184, ADR 0006 amended); shown on the Stats page as its own figure.
+A Creator's additions under the Liquidity destination are the Creator's earnings, not this.
+_Avoid_: POL (in copy), LP, treasury liquidity
