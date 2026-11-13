@@ -17,6 +17,8 @@ The text is the original's, one sentence a line.
   Force pushes are blocked for agents here, so merge main in rather than rebasing a pushed branch.
 - Actions was off from 2026-10-07 (the owner's GitHub account flagged "ineligible for transactions", GitHub Support ticket #4832216) and runs again since 2026-11-05 at the latest (`sign-in`, `dark-default`, #173): CI's `check` (lint and typecheck) and `backend` jobs run on every push, and the UI suite never runs there (darwin baselines), so wait for CI on a PR's head and still run the suite its change touches locally, saying so in the PR.
   The repository is public since 2026-10-07; StonkFun's saved pages and social material are in the private `imDev2023/Stoker-Markets-research` and must never come back.
+- The SessionStart hook (`.claude/hooks/ff-main.sh`) reads the checkout from `CLAUDE_PROJECT_DIR` and exits silently without it, so run by hand as `bash .claude/hooks/ff-main.sh` it does nothing and looks like "already up to date" (2026-11-12, a check that proved nothing).
+  Test it as a session start runs it: `CLAUDE_PROJECT_DIR="$PWD" bash .claude/hooks/ff-main.sh`, which then says what it fast-forwarded or why it could not.
 
 ## The browser and artifacts
 
