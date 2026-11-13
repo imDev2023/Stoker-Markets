@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { CoinRewards, PlatformInfo } from "@launchpad/contract";
 import { COIN_DECIMALS, explorerUrl, formatUnits, formatUtc } from "@/lib/format";
+import { burnShareTitle } from "@/lib/rewardBurn";
 import { DiamondHands } from "./DiamondHands";
 import styles from "./RewardsCard.module.css";
 
@@ -10,10 +11,13 @@ import styles from "./RewardsCard.module.css";
  * Asset also shows its Reward Sales: the bounds they keep to, what has been sold and for how much, and each sale.
  * While the rules in force weigh coins by how long they were kept (the Holding Weight, ADR 0022), a connected wallet
  * sees its own Diamond Hands under the rounds; without steps in force, or without a wallet, the card is as it was.
+ * A coin with a Reward Burn (#183) says the share in words, what it has burned so far, and each burn with its
+ * transaction; a coin without one reads as it always has.
  */
 export function RewardsCard({ rewards, symbol, platform }: { rewards: CoinRewards; symbol: string; platform: PlatformInfo }) {
   const coins = (raw: string) => formatUnits(raw, COIN_DECIMALS, 0);
-  const { payout, sales } = rewards;
+  const { payout, sales, burn } = rewards;
+  const burnShare = burnShareTitle(burn.bps);
   const paid = (raw: string) => `${formatUnits(raw, payout.decimals, Math.min(payout.decimals, 4))} ${payout.symbol}`;
   const rules = rewards.rules;
   const rate = rewards.rewardTaxBps / 100;
@@ -35,6 +39,12 @@ export function RewardsCard({ rewards, symbol, platform }: { rewards: CoinReward
           <>
             Every transfer of {symbol} withholds {rate}% for its holders. Each Reward Round collects it and pays it out in {symbol} itself,
             never sold, to every wallet holding at least the minimum.
+          </>
+        )}
+        {burnShare && (
+          <>
+            {" "}
+            {burnShare} of every reward is burned when it is collected, before {sales ? "anything is sold" : "anything is paid"}, fixed at launch.
           </>
         )}
       </p>
@@ -60,6 +70,12 @@ export function RewardsCard({ rewards, symbol, platform }: { rewards: CoinReward
           <div>
             <dt>Waiting for the next round</dt>
             <dd><span className="mono">{coins(rewards.waiting.total)}</span> {symbol}</dd>
+          </div>
+        )}
+        {burnShare && (
+          <div>
+            <dt>Burned so far</dt>
+            <dd><span className="mono">{coins(burn.burned)}</span> {symbol}</dd>
           </div>
         )}
         {rules && (
@@ -105,6 +121,20 @@ export function RewardsCard({ rewards, symbol, platform }: { rewards: CoinReward
                 <time dateTime={s.time}>{formatUtc(s.time)}</time>
               </span>
               <span className={`mono ${styles.amount}`}>{s.proceeds === null ? "Landing…" : paid(s.proceeds)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {burn.recent.length > 0 && (
+        <ul className={styles.rounds} aria-label="Reward Burns">
+          {burn.recent.map((b) => (
+            <li key={b.signature}>
+              <span>
+                <a href={explorerUrl("tx", b.signature, platform)} target="_blank" rel="noreferrer">
+                  Burned <span className="mono">{coins(b.coins)}</span> {symbol}
+                </a>{" "}
+                <time dateTime={b.time}>{formatUtc(b.time)}</time>
+              </span>
             </li>
           ))}
         </ul>

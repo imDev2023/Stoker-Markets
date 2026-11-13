@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  AIRDROP_MAX_RECIPIENTS, EARNINGS_DESTINATIONS, REWARD_SALE_MAX_RESERVE_BPS, REWARD_TAX_RATES,
-  type CreatorEarningsDestination, type RewardPayoutAsset, type RewardTaxBps, type TradeQuote,
+  AIRDROP_MAX_RECIPIENTS, EARNINGS_DESTINATIONS, REWARD_BURN_SHARES, REWARD_SALE_MAX_RESERVE_BPS, REWARD_TAX_RATES,
+  type CreatorEarningsDestination, type RewardBurnBps, type RewardPayoutAsset, type RewardTaxBps, type TradeQuote,
 } from "@launchpad/contract";
 import { getLaunchPermissions, getLaunchQuote } from "@/lib/api";
 import { parseAirdropList } from "@/lib/airdrop";
 import { DESTINATION_NAMES, destinationChoiceLine } from "@/lib/earnings";
+import { burnShareTitle } from "@/lib/rewardBurn";
 import { COIN_DECIMALS, COIN_SUPPLY, formatUnits, parseUnits } from "@/lib/format";
 import { OptionRow } from "./OptionRow";
 import styles from "./LaunchOptions.module.css";
@@ -35,6 +36,8 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
   const [rewardTax, setRewardTax] = useState<RewardTaxBps | null>(null);
   // What a Reward Launch pays its holders in: the coin itself, or the Quote Asset bought with the tax (ADR 0006).
   const [rewardPayout, setRewardPayout] = useState<RewardPayoutAsset>("coin");
+  // The share of every harvested tax burned instead of paid out (the Reward Burn, #183): none unless the Creator picks one.
+  const [rewardBurn, setRewardBurn] = useState<RewardBurnBps>(0);
   // Where the Creator's earnings on the coin go, for good (ADR 0011): their wallet unless they point them elsewhere.
   const [earningsDestination, setEarningsDestination] = useState<CreatorEarningsDestination>("wallet");
   const [firstBuyText, setFirstBuyText] = useState("");
@@ -103,7 +106,7 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
 
   return {
     quote,
-    rewardTax, setRewardTax, rewardPayout, setRewardPayout, earningsDestination, setEarningsDestination,
+    rewardTax, setRewardTax, rewardPayout, setRewardPayout, rewardBurn, setRewardBurn, earningsDestination, setEarningsDestination,
     firstBuyText, setFirstBuyText, firstBuyInvalid, firstBuyQuote, firstBuyProblem,
     airdropAllowed, airdropOn, setAirdropOn, airdropText, setAirdropText, airdrop, airdropProblem, airdropMissing, bought,
     /** What stops the launch from being prepared, if anything. */
@@ -111,7 +114,7 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
     /** The form fields these options add to the prepare request. */
     fields(): [string, string][] {
       const out: [string, string][] = [];
-      if (rewardTax !== null) out.push(["rewardTax", String(rewardTax)], ["rewardPayout", rewardPayout]);
+      if (rewardTax !== null) out.push(["rewardTax", String(rewardTax)], ["rewardPayout", rewardPayout], ["rewardBurn", String(rewardBurn)]);
       // The wallet is what the API takes a launch without the field to mean.
       if (earningsDestination !== "wallet") out.push(["earningsDestination", earningsDestination]);
       if (firstBuy !== null) out.push(["firstBuy", firstBuy.toString()]);
@@ -126,8 +129,8 @@ export type LaunchOptionsState = ReturnType<typeof useLaunchOptions>;
 
 /**
  * The launch type on the launch form (#172, after new-stoker's launch page): three rows, a standard coin, a Reward Launch
- * paid in the coin and one paid in the Quote Asset; a Reward Launch then asks its Reward Tax. All of it is fixed at
- * launch. `labelId` names the section's heading, which the form renders above. Paying holders out of the Creator's
+ * paid in the coin and one paid in the Quote Asset; a Reward Launch then asks its Reward Tax and its Reward Burn (#183),
+ * the share of every harvest burned instead of paid out. All of it is fixed at launch. `labelId` names the section's heading, which the form renders above. Paying holders out of the Creator's
  * earnings, once announced here as a fourth type, is a choice of `EarningsChoice` below (ADR 0011).
  */
 export function LaunchType({ options: o, coin, labelId }: { options: LaunchOptionsState; coin: string; labelId: string }) {
@@ -170,6 +173,27 @@ export function LaunchType({ options: o, coin, labelId }: { options: LaunchOptio
                 The tax is sold for {quoteLabel} in small slices, at most {REWARD_SALE_MAX_RESERVE_BPS / 100}% of the coins in the market
                 per run, and holders are paid in {quoteLabel}. Fixed at launch, like the rate.
               </>
+            )}
+          </p>
+        </div>
+      )}
+      {reward && (
+        <div className={styles.rates} role="group" aria-label="Reward Burn">
+          <span className={styles.ratesLabel} aria-hidden>Burned</span>
+          <div className={`segmented ${styles.segmented}`}>
+            {REWARD_BURN_SHARES.map((bps) => (
+              <button key={bps} type="button" aria-pressed={o.rewardBurn === bps} onClick={() => o.setRewardBurn(bps)}>
+                {bps === 0 ? "None" : `${bps / 100}%`}
+              </button>
+            ))}
+          </div>
+          <p className={styles.hint}>
+            {o.rewardBurn === 0 ? (
+              <>Burn a share of every reward instead of paying it out, to take {coinLabel} out of circulation. Fixed at launch.</>
+            ) : o.rewardPayout === "coin" ? (
+              <>{burnShareTitle(o.rewardBurn)} of every reward is burned before holders are paid the rest. Fixed at launch.</>
+            ) : (
+              <>{burnShareTitle(o.rewardBurn)} of every reward is burned before the rest is sold. Fixed at launch.</>
             )}
           </p>
         </div>

@@ -34,7 +34,8 @@ export default async function RewardsPage() {
       <p className={styles.lead}>
         A Reward Launch&apos;s coin withholds its Reward Tax on every transfer. Reward Rounds collect it and pay it to holders pro rata
         in the asset its Creator fixed at launch: the coin itself, never sold, or the coin&apos;s Quote Asset, bought with the tax in
-        small, published sales. Every round&apos;s snapshot, rules, sales and payout transactions are public.
+        small, published sales. A Creator can also have a share of every collected tax burned instead, fixed at launch. Every
+        round&apos;s snapshot, rules, sales, burns and payout transactions are public.
       </p>
       <p className={styles.lead}>
         A coin can also pay its holders from its Creator&apos;s earnings: a Creator can point their share of what the platform collects

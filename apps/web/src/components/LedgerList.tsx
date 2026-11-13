@@ -24,6 +24,7 @@ const KIND: Record<LedgerKind, string> = {
   creator_burn: "Creator Earnings bought back and burned",
   creator_liquidity: "Creator Earnings added as liquidity",
   rebate: "Volume Rebate paid to a trader",
+  reward_burn: "Reward Tax burned",
 };
 
 /** Entries that move revenue out of the operations wallet rather than into it. */
@@ -37,9 +38,10 @@ const inItsCoin = (e: LedgerEntry) => e.launch?.mint === e.asset.mint;
 
 /**
  * A buyback's second entry: the coins it burned or added to the pool. They were bought and gone in the one
- * transaction, so they are a count beside the money spent, neither revenue in nor revenue out.
+ * transaction, so they are a count beside the money spent, neither revenue in nor revenue out. So is a Reward Burn
+ * (#183): the holders' tax a coin burns instead of paying out, which was never revenue.
  */
-const isCoinCount = (e: LedgerEntry) => BUYBACK.has(e.kind) && inItsCoin(e);
+const isCoinCount = (e: LedgerEntry) => (BUYBACK.has(e.kind) && inItsCoin(e)) || e.kind === "reward_burn";
 
 /**
  * A Reward Sale is two entries: the coins that left the wallet, and the Quote Asset that came in (the holders' pot, not
@@ -74,6 +76,8 @@ function origin(e: LedgerEntry, platform: PlatformInfo) {
       ? <>Added to the pool of <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link>, locked for good</>
       : <>Spent buying <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link> and pairing it, into its pool</>;
   }
+  if (e.kind === "reward_burn")
+    return e.launch ? <>Burned from the holders&apos; tax of <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link>, not paid out</> : "Burned from a coin's Reward Tax";
   if (e.kind === "burn" || e.kind === "flywheel")
     return e.launch ? <>Bought and burned <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link></> : "Bought and burned";
   if (e.launch) return <>From <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link></>;
