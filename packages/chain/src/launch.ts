@@ -6,9 +6,9 @@ import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import BN from "bn.js";
 import { initialCurveReserves, quoteTrade, type CurveReserves, type FeeRates, type TradeQuote } from "./curve";
 import type { TransferFee } from "./transferFee";
-import { initializeV2Ix, initializeWithToken2022Ix } from "./instructions";
+import { createVestingAccountIx, initializeV2Ix, initializeWithToken2022Ix } from "./instructions";
 import { launchlabPdas } from "./pda";
-import { LAUNCH_SHAPE } from "./shape";
+import { creatorLockProblem, LAUNCH_SHAPE, saleWithLock, type CreatorLock } from "./shape";
 import { loadFeeRates, tradeInstructions } from "./trade";
 
 /** The Quote Asset a Launch is paired with, and the Graduation Target our curve rule pins for it. */
@@ -39,6 +39,11 @@ export type LaunchRequest = LaunchPairing & {
   lookupTable: AddressLookupTableAccount;
   /** A Reward Launch's Reward Tax in basis points (100, 200, 300, 400 or 500); null for a standard Launch. */
   rewardTaxBps?: number | null;
+  /**
+   * A Creator Lock (ADR 0023): coins the curve keeps back from its sale for the Creator, claimable from Graduation on by
+   * the lock's schedule. The launch transaction gives the Creator's wallet all of them, so none can go to anyone else.
+   */
+  lock?: CreatorLock | null;
 };
 
 /** A Reward Tax is never capped: the maximum fee is set above the whole supply, so the rate is the whole story. */
@@ -65,12 +70,14 @@ const FIRST_BUY_COMPUTE_UNITS = 200_000;
  * trade and lands in the launch transaction, so nothing can move the price first.
  */
 export async function quoteFirstBuy(
-  connection: Connection, r: Pick<LaunchRequest, "globalConfig" | "platformConfig" | "graduationTargetRaw">, amountIn: BN,
+  connection: Connection, r: Pick<LaunchRequest, "globalConfig" | "platformConfig" | "graduationTargetRaw" | "lock">, amountIn: BN,
   transfer: { quote?: TransferFee | null; base?: TransferFee | null } = {},
 ): Promise<FirstBuyQuote> {
   const { rates, migrateFee } = await loadFeeRates(connection, r.globalConfig, r.platformConfig);
+  // A Creator Lock's coins come out of the sale, so the same raise buys fewer coins and the curve starts higher.
+  const lockedAmount = r.lock?.lockedAmount ?? new BN(0);
   const start = initialCurveReserves({
-    supply: LAUNCH_SHAPE.supply, totalBaseSell: LAUNCH_SHAPE.totalBaseSell, fundRaising: r.graduationTargetRaw, migrateFee,
+    supply: LAUNCH_SHAPE.supply, totalBaseSell: saleWithLock(lockedAmount), fundRaising: r.graduationTargetRaw, lockedAmount, migrateFee,
   });
   return { start, rates, quote: quoteTrade(start, rates, "buy", amountIn, transfer) };
 }
@@ -89,6 +96,9 @@ export async function prepareLaunch(connection: Connection, r: LaunchRequest, mi
   const pool = launchlabPdas(r.program).pool(mint.publicKey, r.quoteMint);
   const firstBuy = r.firstBuy ?? null;
   if (firstBuy && (firstBuy.side !== "buy" || firstBuyTakesCurve(firstBuy))) throw new Error("a first buy must be a buy that leaves coins on the curve");
+  const lock = r.lock ?? null;
+  const problem = lock && creatorLockProblem(lock);
+  if (problem) throw new Error(problem);
   const params = {
     program: r.program,
     payer: r.creator,
@@ -102,11 +112,14 @@ export async function prepareLaunch(connection: Connection, r: LaunchRequest, mi
     symbol: r.symbol,
     uri: r.uri,
     graduationTargetRaw: r.graduationTargetRaw,
+    lock,
   };
   const rewardTaxBps = r.rewardTaxBps ?? null;
   const instructions = [
     ComputeBudgetProgram.setComputeUnitLimit({ units: LAUNCH_COMPUTE_UNITS + (firstBuy ? FIRST_BUY_COMPUTE_UNITS : 0) }),
     rewardTaxBps ? initializeWithToken2022Ix({ ...params, rewardTaxBps, maximumFee: REWARD_TAX_MAXIMUM_FEE }) : initializeV2Ix(params),
+    // The whole lock to the Creator, in the transaction that makes it: a share given later could go to any wallet.
+    ...(lock ? [createVestingAccountIx({ program: r.program, creator: r.creator, beneficiary: r.creator, pool, shareAmount: lock.lockedAmount })] : []),
   ];
   if (firstBuy) {
     instructions.push(...(await tradeInstructions(connection, {

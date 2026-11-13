@@ -70,6 +70,13 @@ async function indexTransaction(db: Db, cfg: Config, tx: RawTransaction, result:
         console.warn("ignoring a launch outside our launch shape", e.signature);
         continue;
       }
+      // A coin with a Creator Lock is on-shape (ADR 0023) but stays unlisted until the pages, the holder counts and the
+      // Reward Rounds know the lock, which is the second half of #186. No curve rule of ours admits one before then, so
+      // only a GlobalConfig newer than the last refresh could bring one.
+      if (e.lock) {
+        console.warn("ignoring a launch with a Creator Lock, which is not listed yet", e.signature);
+        continue;
+      }
       result.launched += await indexLaunch(db, cfg, e);
     } else if (e.kind === "trade") result.traded += await indexTrade(db, e);
     else {
@@ -183,7 +190,9 @@ async function indexLaunch(db: Db, cfg: Config, e: LaunchCreated) {
     })
     .onConflictDoNothing()
     .returning({ mint: launches.mint });
-  const start = initialCurveReserves({ supply: e.supply, totalBaseSell: e.totalBaseSell, fundRaising: e.graduationTargetRaw });
+  const start = initialCurveReserves({
+    supply: e.supply, totalBaseSell: e.totalBaseSell, fundRaising: e.graduationTargetRaw, ...(e.lock ? { lockedAmount: e.lock.lockedAmount } : {}),
+  });
   await openMarket(db, e.baseMint.toBase58(), curvePrice(start, e.decimals, e.quoteDecimals), e.slot);
   return inserted.length;
 }

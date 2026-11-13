@@ -19,6 +19,12 @@ The text is the original's, one sentence a line.
 - A curve's coins sit in `launchlabPdas.vault(pool, mint)`, owned by the LaunchLab vault authority PDA, not in an associated token account; after Graduation the CPMM authority PDA owns the pool's.
 - A Quote Asset with no curve rule account is unrestricted even with `restrict_curve_param` on, so the Quote Registry refresh (`/__scheduled`, run once by `tools/stack` at startup) gives every GlobalConfig a rule, a closed one when unpriced (ADR 0005).
   The dev API needs `OPERATIONS_KEY` (the operations key as a JSON byte array, `tools/localnet/.keys/operations.json`) in `apps/api/.dev.vars` and one `curl localhost:8791/__scheduled` before anything can launch.
+- LaunchLab's vesting, behind the Creator Lock (ADR 0023, proven on the local chain 2026-11-13): a curve rule holds ten groups at most (6027 on the eleventh), each about 0.0017 SOL of rent, and compares a field with a constant, so no rule can say that the sale and the lock add up.
+  A launch that locks nothing must have a cliff and an unlock time of 0 (2501 `RequireEqViolated` otherwise), so one group cannot both admit a lock and demand a least lock time.
+  The clock starts at the buy that sells the curve out (`start_time` is that block's time plus the cliff, and the migration leaves it alone), a claim needs the migration (6015), and coins the creator gave to no wallet stay in the vault for ever: the program takes a share until the cliff ends and never after.
+  After Graduation LaunchLab's own vault still holds the locked coins, owned by its authority, so anything that counts holders must go on leaving that vault out.
+  The local chain's GlobalConfigs are devnet's loose ones; mainnet's want at least 15% of the supply in the pool and, on SOL's, at least 20% sold and at most 80% locked, so a limit that mainnet enforces is checked by arithmetic (`creatorLockCapBps`), never by a launch failing locally.
+  A script that starts a local chain and stops it keeps running on web3.js's websocket retries: end it with `process.exit(0)`, and never pipe a long run through `tail`, which shows nothing until it ends.
 
 ## Transactions and web3.js
 

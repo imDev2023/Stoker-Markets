@@ -5,6 +5,7 @@ Moved out of `CLAUDE.md` on 2026-11-12 so it is read on demand; `CLAUDE.md` keep
 The text is the original's, one sentence a line.
 
 - `packages/chain` - LaunchLab and CPMM PDAs, instruction builders from the IDLs (Anchor coder), launch, curve and pool trades (transfer-fee aware, `transferFee.ts`; referral share fee), migration, decoder.
+  The Creator Lock (ADR 0023): its limits and the rule constraints that admit one in `shape.ts`, the reader, the unlock arithmetic and the claim in `creatorLock.ts`, proven by `tests/backend/src/creator-lock.test.ts`; nothing in `apps/api` or `apps/web` uses it yet.
   Server-only.
 - `packages/db` - Drizzle schema and migrations (`pnpm --filter @launchpad/db generate`).
   Every table is declared with `.enableRLS()` (Row-Level Security with no policy, #201: the API is the tables' owner, any other role reads nothing); `src/migrate.ts`'s `runMigrations` applies the migrations and then refuses a database where a `public` table lacks it (`tablesWithoutRowSecurity`).

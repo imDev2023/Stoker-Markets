@@ -24,7 +24,13 @@ _Avoid_: Bonding target, market cap target, fund raising
 
 **Launch Shape**:
 What every new Launch's coin and curve are, pinned on-chain by our curve rules: a supply of 1 trillion coins at 6 decimals, 793.1 billion of them sold on the curve, the rest moving to the pool at Graduation, with no vesting (since #166; coins launched before it keep the 1 billion shape, 793.1 million sold).
+A coin with a Creator Lock sells that many fewer coins on the curve; its supply and the pool's share are the same.
 _Avoid_: Tokenomics, curve settings
+
+**Creator Lock**:
+Coins a Launch sets aside for its Creator, taken out of what the curve sells: the chain holds them from launch, nothing unlocks until the cliff has passed after Graduation, and the Creator's own wallet claims what has unlocked (ADR 0023, #186).
+At most a fifth of the supply, lasting at least seven days after Graduation, all of it the Creator's and fixed at launch.
+_Avoid_: Vesting (LaunchLab's word for the mechanism), team allocation, dev supply, locked liquidity (that is the pool's, behind a Fee Key)
 
 **Quote Asset**:
 The existing token a Launch is priced and traded against, such as SOL, a community token or a tokenized stock.
