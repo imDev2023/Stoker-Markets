@@ -36,12 +36,17 @@ const raw = z.string().regex(/^\d+$/, "must be a whole number of raw units");
  *   Quote Asset spent in the coin's own market, and the coins destroyed.
  * - `creator_liquidity`: a Creator's share spent on a buyback that adds locked liquidity (ADR 0011, #184), two entries
  *   of one transaction: the Quote Asset spent (the buy and the half paired with it), and the coins that went into the pool.
+ * - `burn_liquidity`: the Burn's budget spent on protocol-owned liquidity instead of a burn (#184), two entries of one
+ *   transaction: the SOL that went into the Platform Token's pool (the buy and the half paired with it), and the coins
+ *   that went in with it, to the locked position whose Fee Key the operations wallet holds.
+ * - `flywheel_liquidity`: the same for a top Launch the Flywheel rule picked.
  * - `rebate`: a trader's Volume Rebates paid in SOL (ADR 0021), from the operations wallet to the trader, one entry per
  *   wallet a payment transaction paid; the spending of the Budget Table's `rebates` row.
  */
 export const LedgerKind = z.enum([
   "platform_fee", "pool_fee", "fee_key", "sweep", "creator_forward", "burn", "flywheel", "arweave_top_up", "metadata_upload", "reward_sale", "graduation_fee",
   "holder_dividend", "creator_burn", "creator_liquidity", "rebate",
+  "burn_liquidity", "flywheel_liquidity",
 ]);
 export type LedgerKind = z.infer<typeof LedgerKind>;
 

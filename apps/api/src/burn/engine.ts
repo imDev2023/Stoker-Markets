@@ -1,7 +1,8 @@
 // Burn and Flywheel (#18): on a public schedule, the Burn's row of the Budget Table (ADR 0019; 60% of the Platform Net
 // in its first version) buys the Platform Token and burns it, and the Flywheel's row (5%) buys the top Launches by the
 // published rule and burns them. Budgets come from the Ledger, so every SOL spent is accounted for against revenue
-// already recorded, and every buy and burn goes on the Ledger with its transaction.
+// already recorded, and every buy and burn goes on the Ledger with its transaction. The operator can point either
+// budget at locked liquidity in the coin's own pool instead of a burn (#184, `./liquidity`).
 import { Connection, PublicKey, type Keypair, type TransactionInstruction } from "@solana/web3.js";
 import {
   createAssociatedTokenAccountIdempotentInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, getAssociatedTokenAddressSync,
@@ -18,6 +19,7 @@ import { JobFailure } from "../jobs";
 import type { SolRoutes } from "../solRoutes";
 import { budgets, type Budgets, type RowBudget } from "../fees/budget";
 import { recordBurn } from "./decode";
+import { addLiquidity, budgetDestinations, landed, type Destinations } from "./liquidity";
 
 export type BurnDeps = { db: Db; cfg: Config; operations: Keypair; routes: SolRoutes | null };
 
@@ -35,12 +37,19 @@ export function budgetsView(b: Budgets): BudgetsView {
 
 export type BurnSummary = {
   platformToken: string | null;
+  /** Where each budget's buys went this run. */
+  destinations: Destinations;
   budgets: BudgetsView;
   /** The Platform Token burn this run, if any. */
   burned: { signature: string; lamports: string; amount: string } | null;
-  /** The Flywheel buys and burns this run, one per coin. */
-  flywheel: { mint: string; signature: string; lamports: string; amount: string }[];
-  /** Coins the Flywheel rule picked but could not buy: no SOL route (paired with something else), or too little budget. */
+  /** The Platform Token added to its pool as locked liquidity this run, if any: `amount` is the coins that went in. */
+  added: { signature: string; lamports: string; amount: string; position: string; feeKey: string } | null;
+  /** The Flywheel buys this run, one per coin: burned, or added to the coin's pool where the Flywheel points at liquidity. */
+  flywheel: { mint: string; signature: string; lamports: string; amount: string; destination: "burn" | "liquidity" }[];
+  /**
+   * Coins a budget would have bought but could not: no SOL route (paired with something else), too little budget, or,
+   * for liquidity, a pool that cannot take an addition this run.
+   */
   skipped: { mint: string; reason: string }[];
   problems: string[];
 };
@@ -48,7 +57,6 @@ export type BurnSummary = {
 export const PLATFORM_TOKEN_SETTING = "platform_token_mint";
 /** How much worse than quoted a buy may fill before it fails and nothing is spent. */
 const SLIPPAGE_BPS = 100;
-const POLL_MS = 400;
 
 /** The Platform Token, once the operator has named it: Launch #1, fair-launched on our own platform. */
 export async function platformToken(db: Db): Promise<PublicKey | null> {
@@ -80,31 +88,47 @@ export async function flywheelPicks(db: Db, n: number) {
 export async function runBurns({ db, cfg, operations, routes }: BurnDeps): Promise<BurnSummary> {
   const connection = new Connection(cfg.rpcUrl, "confirmed");
   const token = await platformToken(db);
-  const before = await budgets(db);
-  const summary: BurnSummary = { platformToken: token?.toBase58() ?? null, budgets: budgetsView(before), burned: null, flywheel: [], skipped: [], problems: [] };
-  // Below the minimum a buy isn't worth its network fee; the budget waits.
-  const minSpend = cfg.burnMinSpendLamports;
-  if (token && before.rows.burn.available >= minSpend) {
+  const [before, destinations] = await Promise.all([budgets(db), budgetDestinations(db)]);
+  const summary: BurnSummary = {
+    platformToken: token?.toBase58() ?? null, destinations, budgets: budgetsView(before), burned: null, added: null, flywheel: [], skipped: [], problems: [],
+  };
+  // Below the minimum a buy isn't worth its network fee, and an addition, a position of its own with its rent and its
+  // collections, not worth keeping; the budget waits and grows.
+  const minSpend = (budget: keyof Destinations) =>
+    destinations[budget] === "liquidity" && cfg.liquidityAddMinLamports > cfg.burnMinSpendLamports ? cfg.liquidityAddMinLamports : cfg.burnMinSpendLamports;
+  if (token && before.rows.burn.available >= minSpend("burn")) {
     try {
-      const done = await buyAndBurn(db, cfg, connection, operations, routes, token, before.rows.burn.available, "burn");
-      summary.burned = done ?? null;
-      if (!done) summary.skipped.push({ mint: token.toBase58(), reason: "no SOL route to the Platform Token" });
+      if (destinations.burn === "liquidity") {
+        const done = await addLiquidity(db, cfg, connection, operations, token, before.rows.burn.available, "burn");
+        if ("skipped" in done) summary.skipped.push({ mint: token.toBase58(), reason: done.skipped });
+        else summary.added = done;
+      } else {
+        const done = await buyAndBurn(db, cfg, connection, operations, routes, token, before.rows.burn.available, "burn");
+        summary.burned = done ?? null;
+        if (!done) summary.skipped.push({ mint: token.toBase58(), reason: "no SOL route to the Platform Token" });
+      }
     } catch (e) {
       summary.problems.push(`burn: ${(e as Error).message}`);
     }
   }
   const picks = await flywheelPicks(db, cfg.flywheelTopN);
-  if (picks.length && before.rows.flywheel.available >= minSpend) {
+  if (picks.length && before.rows.flywheel.available >= minSpend("flywheel")) {
     const each = before.rows.flywheel.available / BigInt(picks.length);
     for (const pick of picks) {
-      if (each < minSpend) {
+      if (each < minSpend("flywheel")) {
         summary.skipped.push({ mint: pick.mint, reason: "the Flywheel budget is too small to split this far" });
         continue;
       }
       try {
-        const done = await buyAndBurn(db, cfg, connection, operations, routes, new PublicKey(pick.mint), each, "flywheel");
-        if (done) summary.flywheel.push({ mint: pick.mint, ...done });
-        else summary.skipped.push({ mint: pick.mint, reason: `no SOL route to ${pick.symbol}` });
+        if (destinations.flywheel === "liquidity") {
+          const done = await addLiquidity(db, cfg, connection, operations, new PublicKey(pick.mint), each, "flywheel");
+          if ("skipped" in done) summary.skipped.push({ mint: pick.mint, reason: `${pick.symbol}: ${done.skipped}` });
+          else summary.flywheel.push({ mint: pick.mint, signature: done.signature, lamports: done.lamports, amount: done.amount, destination: "liquidity" });
+        } else {
+          const done = await buyAndBurn(db, cfg, connection, operations, routes, new PublicKey(pick.mint), each, "flywheel");
+          if (done) summary.flywheel.push({ mint: pick.mint, ...done, destination: "burn" });
+          else summary.skipped.push({ mint: pick.mint, reason: `no SOL route to ${pick.symbol}` });
+        }
       } catch (e) {
         summary.problems.push(`flywheel ${pick.symbol}: ${(e as Error).message}`);
       }
@@ -144,13 +168,7 @@ async function buyAndBurn(
   ];
   const tx = await signedTransaction(connection, operations, instructions, s.lookupTables.length ? await lookupTables(connection, s.lookupTables) : []);
   await connection.sendRawTransaction(tx.serialized, { preflightCommitment: "confirmed" });
-  for (;;) {
-    const { value: [status] } = await connection.getSignatureStatuses([tx.signature]);
-    if (status?.err) throw new Error(`${kind} of ${mint.toBase58()} failed on-chain: ${JSON.stringify(status.err)}`);
-    if (status?.confirmationStatus === "confirmed" || status?.confirmationStatus === "finalized") break;
-    if ((await connection.getBlockHeight("confirmed")) > tx.lastValidBlockHeight) throw new Error(`${kind} of ${mint.toBase58()} expired unlanded`);
-    await new Promise((r) => setTimeout(r, POLL_MS));
-  }
+  await landed(connection, tx, `${kind} of ${mint.toBase58()}`);
   const recorded = await recordBurn(db, cfg, tx.signature, kind, mint, ops);
   return { signature: tx.signature, lamports: recorded.lamports.toString(), amount: recorded.amount.toString() };
 }

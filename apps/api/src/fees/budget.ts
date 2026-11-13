@@ -17,11 +17,13 @@ const WSOL = WSOL_MINT.toBase58();
 export const REVENUE_KINDS = ["platform_fee", "pool_fee", "fee_key"] as const;
 
 /**
- * The Ledger kind each row's spending is recorded under, in SOL: the Burn's and the Flywheel's buys, and the volume
- * rebates' payments (ADR 0021). A trader program names its own here when it is built; until then its row has spent
- * nothing (and has no share to spend).
+ * The Ledger kinds each row's spending is recorded under, in SOL: the Burn's and the Flywheel's buys, whether they burn
+ * what they buy or add it to its pool as locked liquidity (#184), and the volume rebates' payments (ADR 0021). A trader
+ * program names its own here when it is built; until then its row has spent nothing (and has no share to spend).
  */
-const SPENT_KIND: Partial<Record<SpendingRow, string>> = { burn: "burn", flywheel: "flywheel", rebates: "rebate" };
+const SPENT_KINDS: Partial<Record<SpendingRow, readonly string[]>> = {
+  burn: ["burn", "burn_liquidity"], flywheel: ["flywheel", "flywheel_liquidity"], rebates: ["rebate"],
+};
 
 export type BudgetTable = typeof budgetTables.$inferSelect;
 
@@ -124,7 +126,7 @@ export async function budgets(db: Db, now = new Date()): Promise<Budgets> {
     });
     return weighted > 0n ? weighted / BigInt(BUDGET_TOTAL_BPS) : 0n;
   };
-  const kinds = Object.values(SPENT_KIND);
+  const kinds = Object.values(SPENT_KINDS).flat();
   const spentRows = await db
     .select({ kind: ledgerEntries.kind, lamports: sql<string>`coalesce(sum(${ledgerEntries.amount}), 0)::text` })
     .from(ledgerEntries)
@@ -133,9 +135,8 @@ export async function budgets(db: Db, now = new Date()): Promise<Budgets> {
   const spentOf = new Map(spentRows.map((r) => [r.kind, BigInt(r.lamports)]));
   const shares = sharesOf(inForce);
   const rows = Object.fromEntries(SPENDING_ROWS.map((row): [SpendingRow, RowBudget] => {
-    const kind = SPENT_KIND[row];
     const total = allotted(row);
-    const spent = (kind && spentOf.get(kind)) || 0n;
+    const spent = (SPENT_KINDS[row] ?? []).reduce((sum, kind) => sum + (spentOf.get(kind) ?? 0n), 0n);
     return [row, { shareBps: shares[row], allotted: total, spent, available: total > spent ? total - spent : 0n }];
   })) as Record<SpendingRow, RowBudget>;
   const toRows = SPENDING_ROWS.reduce((sum, row) => sum + rows[row].allotted, 0n);

@@ -28,7 +28,9 @@ import type { BuybackOutcome, BuybackPlan, RuleDeps, Skipped } from "./types";
  * wallet's associated account of the coin, which holds a Reward Launch's harvested tax and the coins fee collections
  * bring in for the sweep.
  */
-export async function planLiquidityAdd({ cfg, operations, connection }: RuleDeps, pot: RulePot, amount: bigint): Promise<BuybackPlan | Skipped> {
+export async function planLiquidityAdd(
+  { cfg, operations, connection }: Pick<RuleDeps, "cfg" | "operations" | "connection">, pot: Pick<RulePot, "mint" | "curve">, amount: bigint,
+): Promise<BuybackPlan | Skipped> {
   const owner = operations.publicKey;
   const coin = new PublicKey(pot.mint);
   const market = await graduatedPool(connection, cfg, new PublicKey(pot.curve));
