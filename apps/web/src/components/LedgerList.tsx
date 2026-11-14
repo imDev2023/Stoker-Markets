@@ -24,14 +24,19 @@ const KIND: Record<LedgerKind, string> = {
   creator_burn: "Creator Earnings bought back and burned",
   creator_liquidity: "Creator Earnings added as liquidity",
   rebate: "Volume Rebate paid to a trader",
+  burn_liquidity: "Burn added as locked liquidity",
+  flywheel_liquidity: "Flywheel added as locked liquidity",
   reward_burn: "Reward Tax burned",
 };
 
 /** Entries that move revenue out of the operations wallet rather than into it. */
 const OUT = new Set<LedgerKind>(["sweep", "creator_forward", "holder_dividend", "arweave_top_up", "metadata_upload", "rebate"]);
 
-/** A Creator's buyback (ADR 0011), which burns what it buys or adds it to the pool: two entries of one transaction. */
-const BUYBACK = new Set<LedgerKind>(["creator_burn", "creator_liquidity"]);
+/**
+ * A buyback that names its coin on both entries: a Creator's (ADR 0011), which burns what it buys or adds it to the
+ * pool, and the Burn's or the Flywheel's addition to a pool (#184). Two entries of one transaction.
+ */
+const BUYBACK = new Set<LedgerKind>(["creator_burn", "creator_liquidity", "burn_liquidity", "flywheel_liquidity"]);
 
 /** An entry in the coin it names rather than in a Quote Asset: the coins a Reward Sale sold, or a buyback burned or added. */
 const inItsCoin = (e: LedgerEntry) => e.launch?.mint === e.asset.mint;
@@ -71,6 +76,13 @@ function origin(e: LedgerEntry, platform: PlatformInfo) {
       : <>Spent buying <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link> in its own market</>;
   }
   if (e.kind === "creator_liquidity") {
+    if (!e.launch) return "Added to a pool, locked";
+    return inItsCoin(e)
+      ? <>Added to the pool of <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link>, locked for good</>
+      : <>Spent buying <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link> and pairing it, into its pool</>;
+  }
+  // The platform's own budgets pointed at protocol-owned liquidity (#184): the SOL out, then the coins into the position.
+  if (e.kind === "burn_liquidity" || e.kind === "flywheel_liquidity") {
     if (!e.launch) return "Added to a pool, locked";
     return inItsCoin(e)
       ? <>Added to the pool of <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link>, locked for good</>

@@ -47,6 +47,8 @@ export function StatsDashboard({ platform, quotes, revenue, burns, ledger, token
   const daily = burned ? dailyBurns(burned.events).map((d) => ({ day: d.day, sol: Number(d.lamports) / 1e9 })) : [];
   const marketCapSol = token?.launch.market.marketCap?.sol ?? null;
   const swept = revenue?.totals.filter((t) => t.swept !== "0") ?? [];
+  const liquidity = burns?.liquidity ?? null;
+  const toLiquidity = burns ? (["burn", "flywheel"] as const).filter((b) => burns.destinations[b] === "liquidity") : [];
 
   return (
     <article className={`shell ${styles.page}`}>
@@ -106,10 +108,38 @@ export function StatsDashboard({ platform, quotes, revenue, burns, ledger, token
             {burns ? (
               <>
                 <dd className={`t-figure-xl ${styles.value}`}>{burns.shares.burnBps / 100}%</dd>
-                <dd className={styles.sub}>Of the platform&apos;s own revenue, net of the Creators&apos; half; {burns.shares.flywheelBps / 100}% more buys and burns the top {burns.shares.flywheelTopN} graduated coins.</dd>
+                <dd className={styles.sub}>
+                  Of the platform&apos;s own revenue, net of the Creators&apos; half
+                  {burns.destinations.burn === "liquidity" ? <>, added to {symbol}&apos;s pool as locked liquidity</> : ""};{" "}
+                  {burns.shares.flywheelBps / 100}% more{" "}
+                  {burns.destinations.flywheel === "liquidity"
+                    ? <>buys the top {burns.shares.flywheelTopN} graduated coins and adds them to their pools.</>
+                    : <>buys and burns the top {burns.shares.flywheelTopN} graduated coins.</>}
+                </dd>
               </>
             ) : (
               <dd className={styles.sub}>Not available right now.</dd>
+            )}
+          </div>
+          {/* Protocol-owned liquidity (#184): what the Burn and the Flywheel added to pools instead of burning, its own figure. */}
+          <div className={`card card-raised ${styles.tile}`}>
+            <dt>Protocol-owned liquidity</dt>
+            {liquidity && liquidity.count > 0 ? (
+              <>
+                <dd className={`t-figure-xl ${styles.value}`}>{formatSol(Number(liquidity.lamports) / 1e9)}</dd>
+                <dd className={styles.sub}>
+                  Added to {liquidity.pools} {liquidity.pools === 1 ? "pool" : "pools"} over {liquidity.count} {liquidity.count === 1 ? "addition" : "additions"},
+                  locked for good; the platform collects its trading fees as revenue.
+                </dd>
+              </>
+            ) : (
+              <dd className={styles.sub}>
+                {!burns
+                  ? "Not available right now."
+                  : toLiquidity.length === 0
+                    ? "None yet: the Burn and the Flywheel burn what they buy. Either can add it to the coin's own pool as locked liquidity instead."
+                    : `None yet: the ${toLiquidity.map((b) => (b === "burn" ? "Burn" : "Flywheel")).join(" and the ")} ${toLiquidity.length === 1 ? "adds" : "add"} what ${toLiquidity.length === 1 ? "it buys" : "they buy"} to the coin's own pool as locked liquidity from the next run.`}
+              </dd>
             )}
           </div>
         </dl>

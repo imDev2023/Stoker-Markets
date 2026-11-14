@@ -113,4 +113,4 @@ The share waits instead.
 - **A row per run in `creator_forwards`**, as the first draft had it.
 A forward is one payment to one wallet per Creator and asset; a round has many payouts and a buyback has a budget before it has an amount, so each keeps its own rows.
 - PonsVault's Staking (unneeded: holder snapshots pay by balance), Lottery (no fair randomness without a program), Fee Share to an X handle, Vault Seats, and a creator tax (ADR 0009 settled 0% on-chain).
-- #184's other half, the Burn's and the Flywheel's budgets pointed at liquidity by an operator setting, is its own unit.
+- #184's other half, the Burn's and the Flywheel's budgets pointed at liquidity by an operator setting, is its own unit: built on 2026-11-13 as ADR 0006's amendment of that date, with the same transaction and the coin's same account for what a deposit leaves.

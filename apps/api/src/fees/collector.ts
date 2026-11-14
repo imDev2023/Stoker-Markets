@@ -7,6 +7,7 @@ import {
 import { creatorBuybacks, feeKeys, graduations, jobTransactions, launchMarkets, launches, ledgerEntries, type Db } from "@launchpad/db";
 import type { Config } from "../env";
 import { fetchRawTransaction } from "../indexer";
+import { LIQUIDITY_KIND } from "../burn/liquidity";
 import { JobFailure } from "../jobs";
 import { rewardPotLamports } from "../rewards/sales";
 import { reservedLamports, REVENUE_KINDS } from "./budget";
@@ -183,9 +184,14 @@ async function findMigrationFeeKeys(db: Db, connection: Connection, cfg: Config,
   const [missing] = await db
     .select({ pool: graduations.pool })
     .from(graduations)
+    // Our own additions are a Creator's buybacks (ADR 0011) and the Burn's and the Flywheel's (#184), whose locked
+    // position is the destination of the coins' entry on the Ledger.
     .where(sql`not exists (
       select 1 from ${feeKeys} where ${feeKeys.pool} = ${graduations.pool}
-        and ${feeKeys.nftMint} not in (select ${creatorBuybacks.feeKey} from ${creatorBuybacks} where ${isNotNull(creatorBuybacks.feeKey)}))`)
+        and ${feeKeys.nftMint} not in (select ${creatorBuybacks.feeKey} from ${creatorBuybacks} where ${isNotNull(creatorBuybacks.feeKey)})
+        and ${feeKeys.lockedLiquidity} not in (
+          select ${ledgerEntries.destination} from ${ledgerEntries}
+          where ${inArray(ledgerEntries.kind, Object.values(LIQUIDITY_KIND))} and ${ledgerEntries.eventIndex} = 1))`)
     .limit(1);
   if (!missing) return;
   const known = await db.select({ nftMint: feeKeys.nftMint }).from(feeKeys);

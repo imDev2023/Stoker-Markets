@@ -103,3 +103,24 @@ The steps as percentages are on `/fees` with the other figures (owner, 2026-10-3
 - Holders of a coin with a Reward Burn receive less than the tax's face value by the burned share; the burned coins shrink the supply, which every holder keeps a larger share of.
 - A Quote Asset payout with a Reward Burn sells less into its own chart, and its rounds take longer to reach the threshold, which counts coins sold.
 - The burn costs one instruction in a transaction the engine sent anyway: no extra network fee.
+
+## Amendment (2026-11-13, #184): a budget's buys can go to locked liquidity
+
+From Stross's article on StonkFun (point 3), a burn gives a thin market the deflation that buy-side liquidity would give it, and liquidity also deepens the market and earns fees.
+So the Burn's and the Flywheel's budgets each have a destination, an operator setting: `burn` (everything above, and the default) or `liquidity`.
+The operator changes it with `PUT /v1/operator/budget-destinations`, kept as two `platform_settings` rows, and the run after the change follows it.
+A destination says where a budget's buys go, never how big the budget is: the shares stay the Budget Table's, announced ahead (ADR 0019).
+
+Pointed at `liquidity`, a run adds what the budget buys to the coin's own graduated pool in one transaction, the one a Creator's `liquidity` destination sends (ADR 0011): it buys the coin in the pool with about half of the SOL, deposits what it bought with the matching SOL for an exact number of LP tokens, and locks them for good with Raydium's lock program, which opens a position of its own and mints its Fee Key to the operations wallet.
+The Fee Collector collects that position's fees as `fee_key` revenue, never shared, which enters the Platform Net whole.
+An addition is only made once its budget is worth `LIQUIDITY_ADD_MIN_LAMPORTS` as well as the Burn's own minimum, since each one is a position with its own rent and its own collections; a smaller budget waits and grows.
+Coins a deposit could not take stay in the rule's account of that coin, the one a Creator's additions to the same pool use, and go into the coin's next addition, whoever pays for it.
+
+A landed addition is two Ledger entries, kind `burn_liquidity` or `flywheel_liquidity`: the SOL that went into the pool (what its SOL vault gained, the buy and the half paired with it), and the coins that went in, with the locked position as their destination.
+The first is the budget's spending, counted against its row beside its burns; the position's rent and the network fee are the platform's, as for a Creator's addition.
+The Fee Key is put on record as the addition lands, and the Fee Collector's search for the Fee Key a migration minted leaves these positions out, as it does a Creator's.
+`GET /v1/burns` carries the destinations and the protocol-owned liquidity added so far (`liquidity`: the SOL, the additions, the pools and the latest additions with their positions and Fee Keys), and the Stats page shows it as its own figure beside the burns.
+
+Liquidity is added only to a pool paired with SOL: a coin paired with another Quote Asset is skipped and its share waits, as a coin without a SOL route is.
+The Burn's two-step buy does not carry over, because the route's swap and the addition, which alone takes up to 1,226 of a transaction's 1,232 bytes, do not fit one transaction, and in two the Quote Asset between them would sit in the operations wallet outside every budget.
+The Platform Token is paired with SOL (the runbook, section 10), so only the Flywheel's picks paired with something else wait.
