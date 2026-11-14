@@ -1,6 +1,7 @@
 // Burn and Flywheel (#18): 60% of revenue buys the Platform Token and burns it, 5% buys the top graduated coins by the
 // published rule and burns them, every buy and burn on the Ledger. Budgets come from the Ledger's revenue entries, so
 // the shares are exact and reproducible from indexed data.
+import postgres from "postgres";
 import { describe, expect, it } from "vitest";
 import { PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync, getMint, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
@@ -222,6 +223,103 @@ describe("Burn and Flywheel", () => {
     expect(await connection().getAccountInfo(getAssociatedTokenAddressSync(mint, ops, false, TOKEN_PROGRAM_ID), "confirmed")).toBeNull();
     // The pool took no more USDC than the least the swap could deliver, so the wallet's own USDC is never spent.
     expect(await tokenBalance(getAssociatedTokenAddressSync(USDC, ops, false, TOKEN_PROGRAM_ID))).toBeGreaterThanOrEqual(usdcHeld);
+  });
+
+  // #184: the operator points either budget at protocol-owned liquidity; nothing is burned, and each addition is a locked
+  // position in the coin's own pool whose Fee Key the operations wallet holds. Last but one in this file, since the tests
+  // above assert the Burn's spending from zero, and the destinations go back to burn however this ends.
+  it("adds to the Platform Token's pool as locked liquidity once the operator points the Burn there, and the Flywheel's picks too", { timeout: 180_000 }, async () => {
+    const destinations = (body: unknown, headers: Record<string, string> = operator()) =>
+      api("/v1/operator/budget-destinations", { method: "PUT", headers, body: JSON.stringify(body) });
+    expect((await destinations({ burn: "liquidity" }, { "content-type": "application/json" })).status).toBe(401);
+    expect((await destinations({ burn: "lp" })).status).toBe(400);
+    expect((await destinations({})).status).toBe(400);
+    expect((await destinations({ burn: "liquidity", treasury: "liquidity" })).status).toBe(400);
+    expect((await burns()).destinations).toEqual({ burn: "burn", flywheel: "burn" });
+    try {
+      // The budget first, so no Fee Collector run comes between the Platform Token's Graduation and its first addition:
+      // the run after it must still find the Fee Key Raydium's migration minted for the pool, beside the addition's own.
+      const funder = await fundedWallet(20);
+      for (let i = 0; i < 6 && BigInt((await burns()).budgets.burn.available) < SOL(0.02); i++) {
+        const coin = await launchedCoin();
+        await deliverWebhook([(await trade(funder, coin.mint, "buy", SOL(1.2))).signature]);
+        await runJob("fee-collector");
+      }
+      const token = await graduatedCoin("POL");
+      expect((await api("/v1/operator/platform-token", { method: "PUT", headers: operator(), body: JSON.stringify({ mint: token.mint }) })).status).toBe(200);
+      const set = await destinations({ burn: "liquidity", flywheel: "liquidity" });
+      expect(set.status).toBe(200);
+      expect(await set.json()).toEqual({ destinations: { burn: "liquidity", flywheel: "liquidity" } });
+      const page = await burns();
+      expect(page.destinations).toEqual({ burn: "liquidity", flywheel: "liquidity" });
+      expect(page.rule).toMatch(/locked/);
+
+      const before = await burns();
+      const budget = BigInt(before.budgets.burn.available);
+      expect(budget).toBeGreaterThanOrEqual(SOL(0.012));
+      const supply = await supplyOf(token.mint);
+
+      const run = await runJob("burn");
+      const summary = run.summary as {
+        destinations: { burn: string; flywheel: string };
+        burned: unknown;
+        added: { signature: string; lamports: string; amount: string; position: string; feeKey: string } | null;
+        flywheel: { mint: string; amount: string; destination: string }[];
+        skipped: { mint: string; reason: string }[];
+        problems: string[];
+      };
+      expect(summary.problems).toEqual([]);
+      expect(summary.destinations).toEqual({ burn: "liquidity", flywheel: "liquidity" });
+      expect(summary.burned).toBeNull();
+      expect(summary.added, JSON.stringify(summary.skipped)).not.toBeNull();
+      const added = summary.added!;
+      // Every Flywheel buy went into its coin's pool too; a pick paired with another Quote Asset waits for a route.
+      expect(summary.flywheel.every((f) => f.destination === "liquidity")).toBe(true);
+      for (const k of summary.skipped) expect(k.reason).not.toBe("");
+
+      // Nothing burned: every coin bought went into the pool, beside the SOL paired with it.
+      expect(await supplyOf(token.mint)).toBe(supply);
+      expect(BigInt(added.amount)).toBeGreaterThan(0n);
+      // The budget paid for it, never more than it had, nearly all of it (the buy's 1% allowance and the deposit's slack stay).
+      const spent = BigInt(added.lamports);
+      expect(spent).toBeLessThanOrEqual(budget);
+      expect(spent).toBeGreaterThan((budget * 95n) / 100n);
+      const after = await burns();
+      expect(BigInt(after.budgets.burn.spent) - BigInt(before.budgets.burn.spent)).toBe(spent);
+      expect(after.events.some((e) => e.signature === added.signature)).toBe(false);
+
+      // The position is locked in Raydium's lock program and its Fee Key is in the operations wallet.
+      const ops = new PublicKey(env().platform.operationsWallet);
+      expect(await connection().getAccountInfo(new PublicKey(added.position), "confirmed")).not.toBeNull();
+      expect(await tokenBalance(getAssociatedTokenAddressSync(new PublicKey(added.feeKey), ops, true))).toBe(1n);
+
+      // Protocol-owned liquidity, on the Stats page's read and on the Ledger.
+      const shown = after.liquidity.additions.find((a) => a.signature === added.signature);
+      expect(shown).toMatchObject({ kind: "burn", lamports: added.lamports, amount: added.amount, position: added.position, feeKey: added.feeKey });
+      expect(shown!.coin.mint).toBe(token.mint);
+      expect(after.liquidity.count).toBe(1 + summary.flywheel.length);
+      expect(BigInt(after.liquidity.lamports)).toBe(spent + summary.flywheel.reduce((sum, f) => sum + BigInt(after.liquidity.additions.find((a) => a.coin.mint === f.mint && a.kind === "flywheel")!.lamports), 0n));
+      const ledger = LedgerPage.parse(await (await api("/v1/ledger?kind=burn_liquidity")).json()).entries.filter((e) => e.signature === added.signature);
+      expect(ledger.map((e) => [e.index, e.asset.mint, e.amount, e.destination]).sort()).toEqual(
+        [[0, "So11111111111111111111111111111111111111112", added.lamports, ledger.find((e) => e.index === 0)!.destination], [1, token.mint, added.amount, added.position]].sort(),
+      );
+
+      // The Fee Key is on record for the Fee Collector (the page's `feeKey` above is read from that record), and the
+      // Fee Collector's next run still finds the position Raydium's migration locked in the same pool.
+      const pool = ledger.find((e) => e.index === 0)!.destination;
+      await runJob("fee-collector");
+      const db = postgres(env().databaseUrl, { max: 1, onnotice: () => {} });
+      try {
+        const keys = await db<{ nft_mint: string }[]>`select nft_mint from fee_keys where pool = ${pool}`;
+        expect(keys.map((k) => k.nft_mint)).toContain(added.feeKey);
+        // The migration's, the Burn's addition's, and the Flywheel's where it picked the same coin this run.
+        expect(keys).toHaveLength(2 + summary.flywheel.filter((f) => f.mint === token.mint).length);
+      } finally {
+        await db.end();
+      }
+    } finally {
+      expect((await destinations({ burn: "burn", flywheel: "burn" })).status).toBe(200);
+    }
   });
 
   it("runs on its Cron Trigger too, and the Fee Collector's sweep leaves the unspent budgets behind", async () => {

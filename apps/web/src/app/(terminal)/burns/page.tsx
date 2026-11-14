@@ -23,6 +23,8 @@ export default async function BurnsPage() {
   const sol = (lamports: string) => formatUnits(lamports, SOL_DECIMALS, 4);
   const burnShare = spentShare(burns.budgets.burn.spent, burns.budgets.burn.available);
   const flywheelShare = spentShare(burns.budgets.flywheel.spent, burns.budgets.flywheel.available);
+  // Once the Burn has added liquidity or points there (#184), what it spent did not all burn the Platform Token.
+  const burnAdds = burns.destinations.burn === "liquidity" || burns.liquidity.additions.some((a) => a.kind === "burn");
   return (
     <div className={`shell ${styles.page}`}>
       <h1 className={`t-h1 ${styles.title}`}>Burn and Flywheel</h1>
@@ -37,7 +39,7 @@ export default async function BurnsPage() {
             <dd><span className="mono">{sol(burns.budgets.revenueLamports)}</span> SOL</dd>
           </div>
           <div>
-            <dt>Burned the Platform Token with</dt>
+            <dt>{burnAdds ? "The Burn spent" : "Burned the Platform Token with"}</dt>
             <dd>
               <span className="mono">{sol(burns.budgets.burn.spent)}</span> SOL, <span className="mono">{sol(burns.budgets.burn.available)}</span> waiting
               <span className={styles.bar} aria-hidden>{burnShare > 0 && <span style={{ width: `${burnShare}%` }} />}</span>
@@ -105,6 +107,24 @@ export default async function BurnsPage() {
           </ul>
         )}
       </section>
+      {burns.liquidity.additions.length > 0 && (
+        <section className={`card ${styles.card}`} aria-labelledby="added-title">
+          <h2 id="added-title" className={`t-h3 ${styles.cardTitle}`}>Every addition to liquidity</h2>
+          <ul className={styles.list}>
+            {burns.liquidity.additions.map((a) => (
+              <li key={a.signature}>
+                <span>
+                  {a.kind === "burn" ? "The Burn added the Platform Token" : `The Flywheel added ${a.coin.symbol ?? quoteTicker(a.coin)}`} with{" "}
+                  <span className="mono">{sol(a.lamports)}</span> SOL ·{" "}
+                  <a href={explorerUrl("tx", a.signature, platform)} target="_blank" rel="noreferrer">{formatUtc(a.time)}</a>
+                </span>
+                <span className={`mono ${styles.amount}`}>{formatUnits(a.amount, a.coin.decimals, 0)} {a.coin.symbol ?? ""}</span>
+              </li>
+            ))}
+          </ul>
+          <p className={styles.note}>Each addition is a position locked for good in the coin&apos;s own pool; the platform holds its Fee Key and collects its trading fees as revenue.</p>
+        </section>
+      )}
       <Link href="/revenue" className={`button button-ghost ${styles.back}`}>The full Ledger</Link>
     </div>
   );
