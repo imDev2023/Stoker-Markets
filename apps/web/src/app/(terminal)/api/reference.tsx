@@ -56,7 +56,7 @@ export const SECTIONS: readonly Section[] = [
         endpoint: ["GET /quotes", "GET /quotes/:mint"],
         text: (
           <>
-            The Quote Registry: every Quote Asset with its <C>category</C> and, for a tokenized stock, its <C>issuer</C> (from the mint&apos;s address and authorities and the token list&apos;s tags, never a name), its price, Graduation Target, whether it can be launched against, whether a referral share fee applies on it, its <C>liquidityUsd</C> from the token list (null when the list doesn&apos;t know the mint; SOL comes first, then what can be launched against, the deepest markets first), and its Quote Risk Labels (<C>labels</C>: <C>kind</C>, <C>severity</C>, <C>title</C>, <C>detail</C>, <C>source</C>; null until the Quote Registry refresh has checked the mint, an empty list when there is nothing to flag). Labels come from the mint&apos;s authorities and Token-2022 extensions and from the token list; they inform and never block. Its <C>market</C> is the market behind it as TradingView names it (<C>symbol</C>, <C>venue</C>, <C>ticker</C>: the stock or fund a tokenized stock tracks, from its issuer and ticker, or a coin&apos;s own market, from its mint; null when none is known), which the asset&apos;s page charts.
+            The Quote Registry: every Quote Asset with its <C>category</C> and, for a tokenized stock, its <C>issuer</C> (from the mint&apos;s address and authorities and the token list&apos;s tags, never a name), its price, Graduation Target, whether it can be launched against, whether a referral share fee applies on it, <C>creatorLockCapBps</C>, the largest Creator Lock a launch paired with it may have in basis points of the supply (2000, a fifth, where Raydium&apos;s GlobalConfig leaves room, less where it doesn&apos;t, 0 where none is allowed), its <C>liquidityUsd</C> from the token list (null when the list doesn&apos;t know the mint; SOL comes first, then what can be launched against, the deepest markets first), and its Quote Risk Labels (<C>labels</C>: <C>kind</C>, <C>severity</C>, <C>title</C>, <C>detail</C>, <C>source</C>; null until the Quote Registry refresh has checked the mint, an empty list when there is nothing to flag). Labels come from the mint&apos;s authorities and Token-2022 extensions and from the token list; they inform and never block. Its <C>market</C> is the market behind it as TradingView names it (<C>symbol</C>, <C>venue</C>, <C>ticker</C>: the stock or fund a tokenized stock tracks, from its issuer and ticker, or a coin&apos;s own market, from its mint; null when none is known), which the asset&apos;s page charts.
           </>
         ),
       },
@@ -73,7 +73,7 @@ export const SECTIONS: readonly Section[] = [
         endpoint: "GET /launches/:mint",
         text: (
           <>
-            One Launch: its <C>supply</C> in raw units (1 trillion coins at 6 decimals; a coin launched on the earlier 1 billion keeps it), curve progress, Graduation (with its <C>fee</C>, the Graduation Fee and how much of it has been withheld, and <C>creatorTier</C>, the coin&apos;s place on the Creator Ladder: its <C>tier</C>, its <C>activeDays</C>, when the tier was recorded and the <C>next</C> tier with the Active Days it takes; null in a list), Reward Tax (with its <C>payout</C> asset, <C>coin</C> or <C>quote</C>), <C>earningsDestination</C> (where its Creator&apos;s earnings go, fixed at launch: <C>wallet</C>, <C>holders</C>, <C>burn</C> or <C>liquidity</C>; a coin launched without this API pays the wallet), market (<C>price</C>, <C>marketCap</C>, <C>volume24h</C>, <C>change24h</C> and <C>change5m</C>, the price change over the day and over five minutes as fractions, null until the first trade, and <C>holders</C>, the wallets whose indexed buys exceed their sells (never the platform&apos;s operations wallet, which burns or locks what it buys for a Creator), a floor on the chain&apos;s count), Copy Protection (<C>protection.until</C>, and <C>copyOf</C> when the coin took an earlier coin&apos;s name, ticker or image).
+            One Launch: its <C>supply</C> in raw units (1 trillion coins at 6 decimals; a coin launched on the earlier 1 billion keeps it), curve progress, Graduation (with its <C>fee</C>, the Graduation Fee and how much of it has been withheld, and <C>creatorTier</C>, the coin&apos;s place on the Creator Ladder: its <C>tier</C>, its <C>activeDays</C>, when the tier was recorded and the <C>next</C> tier with the Active Days it takes; null in a list), Reward Tax (with its <C>payout</C> asset, <C>coin</C> or <C>quote</C>), <C>earningsDestination</C> (where its Creator&apos;s earnings go, fixed at launch: <C>wallet</C>, <C>holders</C>, <C>burn</C> or <C>liquidity</C>; a coin launched without this API pays the wallet), <C>creatorLock</C> (the Creator Lock as the launch transaction set it: <C>bps</C> of the supply, the <C>amount</C> in raw units, <C>cliffSeconds</C> and <C>unlockSeconds</C>; null for a coin that locked nothing), market (<C>price</C>, <C>marketCap</C>, <C>volume24h</C>, <C>change24h</C> and <C>change5m</C>, the price change over the day and over five minutes as fractions, null until the first trade, and <C>holders</C>, the wallets whose indexed buys exceed their sells (never the platform&apos;s operations wallet, which burns or locks what it buys for a Creator), a floor on the chain&apos;s count), Copy Protection (<C>protection.until</C>, and <C>copyOf</C> when the coin took an earlier coin&apos;s name, ticker or image).
           </>
         ),
       },
@@ -107,6 +107,14 @@ export const SECTIONS: readonly Section[] = [
         ),
       },
       { endpoint: "GET /launches/:mint/airdrop", text: <>An Airdrop&apos;s recipients and which are paid.</> },
+      {
+        endpoint: "GET /launches/:mint/lock",
+        text: (
+          <>
+            A coin&apos;s Creator Lock read from the chain: its <C>terms</C>, the <C>curve</C>&apos;s state, <C>unlockStartsAt</C> and <C>unlockEndsAt</C> (null until the curve sells out, since the clock starts at the buy that sells it out), <C>asOf</C>, the chain&apos;s time the figures are counted at, the Creator&apos;s share (<C>creatorShare</C>: its <C>amount</C>, what has <C>unlocked</C>, what is <C>claimed</C> and what is <C>claimable</C> now, which is 0 before Graduation), <C>stillLocked</C>, and a Reward Launch&apos;s <C>rewardTaxBps</C>, which a claim pays like any transfer. 404 for a coin without a lock.
+          </>
+        ),
+      },
       {
         endpoint: ["GET /launches/:mint/rewards", "GET /rewards/rules", "GET /rewards/rounds/:id", "GET /wallets/:address/rewards"],
         text: (
@@ -198,7 +206,7 @@ export const SECTIONS: readonly Section[] = [
         endpoint: ["POST /launches/prepare (multipart)", "POST /launches/:mint/prepare"],
         text: (
           <>
-            A launch: <C>creator</C>, <C>quoteMint</C>, <C>name</C>, <C>symbol</C>, <C>description</C>, <C>website</C>, <C>x</C>, <C>telegram</C>, <C>discord</C>, <C>tiktok</C>, <C>instagram</C>, <C>youtube</C> (each an optional https URL), <C>image</C>, and the launch modes <C>firstBuy</C>, <C>airdrop</C>, <C>rewardTax</C> and, with it, <C>rewardPayout</C> (<C>coin</C> or <C>quote</C>; <C>coin</C> unless set, refused with 400 without <C>rewardTax</C>) and <C>rewardBurn</C>, the Reward Burn (<C>0</C>, <C>1000</C>, <C>2500</C> or <C>5000</C> basis points of every harvested tax, burned instead of paid out; <C>0</C> unless set, refused with 400 without <C>rewardTax</C>), and <C>earningsDestination</C>, where the Creator&apos;s earnings on the coin go for good (<C>wallet</C>, <C>holders</C>, <C>burn</C> or <C>liquidity</C>; <C>wallet</C> unless set, any coin may take any of them, and any other value is refused with 400). An <C>airdrop</C> from a wallet the operator has not allowed is refused with 403. The mint address and the coin&apos;s <C>metadataUri</C> on Arweave are fixed at first prepare; the second form rebuilds the same launch for a retry, so a retry never mints a second coin. The image and metadata JSON are uploaded to Arweave once the launch is indexed; until then the URI answers 404. A name, ticker or image that a coin launched inside its Copy Protection window already has is refused with 409 and the verdict (<C>copy</C>), as <C>POST /launches/check</C> would have said.
+            A launch: <C>creator</C>, <C>quoteMint</C>, <C>name</C>, <C>symbol</C>, <C>description</C>, <C>website</C>, <C>x</C>, <C>telegram</C>, <C>discord</C>, <C>tiktok</C>, <C>instagram</C>, <C>youtube</C> (each an optional https URL), <C>image</C>, and the launch modes <C>firstBuy</C>, <C>airdrop</C>, <C>rewardTax</C> and, with it, <C>rewardPayout</C> (<C>coin</C> or <C>quote</C>; <C>coin</C> unless set, refused with 400 without <C>rewardTax</C>) and <C>rewardBurn</C>, the Reward Burn (<C>0</C>, <C>1000</C>, <C>2500</C> or <C>5000</C> basis points of every harvested tax, burned instead of paid out; <C>0</C> unless set, refused with 400 without <C>rewardTax</C>), and <C>earningsDestination</C>, where the Creator&apos;s earnings on the coin go for good (<C>wallet</C>, <C>holders</C>, <C>burn</C> or <C>liquidity</C>; <C>wallet</C> unless set, any coin may take any of them, and any other value is refused with 400), and a Creator Lock: <C>lockBps</C>, the share of the supply kept back from the sale for the Creator&apos;s wallet (up to the Quote Asset&apos;s <C>creatorLockCapBps</C>), with <C>lockCliffSeconds</C> and <C>lockUnlockSeconds</C>, the time after the curve sells out before anything unlocks and the time it then unlocks evenly over (each 0 unless set; together at least 7 days, each at most four years; a schedule without <C>lockBps</C>, or a lock past these limits, is refused with 400). An <C>airdrop</C> from a wallet the operator has not allowed is refused with 403. The mint address and the coin&apos;s <C>metadataUri</C> on Arweave are fixed at first prepare; the second form rebuilds the same launch for a retry, so a retry never mints a second coin. The image and metadata JSON are uploaded to Arweave once the launch is indexed; until then the URI answers 404. A name, ticker or image that a coin launched inside its Copy Protection window already has is refused with 409 and the verdict (<C>copy</C>), as <C>POST /launches/check</C> would have said.
           </>
         ),
       },
@@ -210,8 +218,15 @@ export const SECTIONS: readonly Section[] = [
           </>
         ),
       },
-      { endpoint: "GET /launch-quote", text: <>What a First Buy would get before anything is prepared.</> },
+      {
+        endpoint: "GET /launch-quote",
+        text: <>What a First Buy would get before anything is prepared: <C>quoteMint</C>, <C>firstBuy</C>, a Reward Launch&apos;s <C>rewardTax</C>, and <C>lockBps</C> for a Creator Lock, whose coins come out of the sale, so the same buy gets fewer and the curve opens higher.</>,
+      },
       { endpoint: "POST /launches/:mint/airdrop/prepare", text: <>The Creator&apos;s airdrop payments, however many transactions they take.</> },
+      {
+        endpoint: "POST /launches/:mint/lock/claim",
+        text: <>The claim of what has unlocked of a Creator Lock, for the wallet holding the share (<C>wallet</C>) to sign and pay for; the answer&apos;s <C>amount</C> is what it takes out of the lock and <C>received</C> what reaches the wallet after a Reward Launch&apos;s Reward Tax. Refused with 403 for a wallet with no share, and with 409 before Graduation, while the cliff runs (<C>details.unlockStartsAt</C>) or when nothing new has unlocked.</>,
+      },
       {
         endpoint: "POST /trades/prepare",
         text: (
@@ -275,16 +290,16 @@ export const SECTIONS: readonly Section[] = [
         ),
       },
       { endpoint: "401", text: <>An unknown or revoked key in <C>x-api-key</C>; the operator&apos;s endpoints without their token.</> },
-      { endpoint: "403", text: <>A launch with an airdrop from a wallet the operator hasn&apos;t allowed one.</> },
+      { endpoint: "403", text: <>A launch with an airdrop from a wallet the operator hasn&apos;t allowed one; a Creator Lock claim from a wallet with no share of the lock.</> },
       {
         endpoint: "404",
-        text: <>No such coin, Quote Asset, round or key; <C>/rewards</C> of a coin that is no Reward Launch; <C>/airdrop</C> of a coin launched without one; a reported transaction not found or not confirmed yet.</>,
+        text: <>No such coin, Quote Asset, round or key; <C>/rewards</C> of a coin that is no Reward Launch; <C>/airdrop</C> or <C>/lock</C> of a coin launched without one; a reported transaction not found or not confirmed yet.</>,
       },
       {
         endpoint: "409",
         text: (
           <>
-            A launch whose name, ticker or image a coin inside its Copy Protection window already has (<C>copy</C> carries the verdict); a retry of a coin that has already launched (<C>details.mint</C>); an airdrop that can&apos;t be sent right now: every wallet paid, the coin not launched yet, or transactions handed out a moment ago that can still land (<C>details.retryAfterSeconds</C>); a pool Raydium has paused or that opens in a moment; a fee or rules change announced with too short a lead.
+            A launch whose name, ticker or image a coin inside its Copy Protection window already has (<C>copy</C> carries the verdict); a retry of a coin that has already launched (<C>details.mint</C>); an airdrop that can&apos;t be sent right now: every wallet paid, the coin not launched yet, or transactions handed out a moment ago that can still land (<C>details.retryAfterSeconds</C>); a Creator Lock claim before Graduation, while the cliff runs or with nothing new unlocked; a pool Raydium has paused or that opens in a moment; a fee or rules change announced with too short a lead.
           </>
         ),
       },
@@ -295,7 +310,7 @@ export const SECTIONS: readonly Section[] = [
       { endpoint: "429", text: <>Past a rate limit; <C>retry-after</C> says how many seconds to wait.</> },
       {
         endpoint: ["500", "503"],
-        text: <>Ours: an internal error, or a dependency down for the moment (the price source, the SOL route, reading holders from the chain). Try again in a minute.</>,
+        text: <>Ours: an internal error, or a dependency down for the moment (the price source, the SOL route, reading holders or a Creator Lock from the chain). Try again in a minute.</>,
       },
     ],
   },

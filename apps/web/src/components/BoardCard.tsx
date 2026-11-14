@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { LaunchSummary } from "@launchpad/contract";
 import type { CSSProperties } from "react";
 import { formatDelta, formatMarketValue, kindOf, tintOf } from "@/lib/board";
+import { lockShare } from "@/lib/creatorLock";
 import { quoteTicker } from "@/lib/format";
 import { CoinActions, type ExplorerCluster } from "./CoinActions";
 import { CoinImage } from "./CoinImage";
@@ -80,6 +81,12 @@ export function BoardCard({ launch, now, platform }: { launch: LaunchSummary; no
           <span className={styles.name}>
             {launch.name}
             {launch.rewardTax && <span className={styles.tax}>{launch.rewardTax.bps / 100}% tax</span>}
+            {/* The Creator Lock's badge (#211): its size, fixed at launch; where it stands is on the coin's page. */}
+            {launch.creatorLock && (
+              <span className={styles.lock} title={`${lockShare(launch.creatorLock.bps)} of the supply locked for its Creator at launch`} data-lock-badge="">
+                {lockShare(launch.creatorLock.bps)} lock
+              </span>
+            )}
           </span>
         </Link>
         <CoinActions mint={launch.mint} symbol={launch.symbol} platform={platform} className={styles.actions} />

@@ -94,6 +94,14 @@
   white-space: nowrap;
 }
 
+/* The Creator Lock's badge: in the accent, as a promise the chain keeps, where the tax beside it is a caution. */
+.lock {
+  margin-left: 6px;
+  color: var(--accent-strong);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 /* The headline: the market cap in the figure face, named under it. */
 .cap {
   display: flex;
