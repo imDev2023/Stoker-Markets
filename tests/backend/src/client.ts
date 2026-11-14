@@ -49,6 +49,10 @@ export type LaunchForm = {
   rewardBurn?: string;
   /** Where the Creator's earnings go: "wallet", "holders", "burn" or "liquidity"; the API takes "wallet" when left out. */
   earningsDestination?: string;
+  /** A Creator Lock (ADR 0023): its size in basis points of the supply, and its cliff and unlock time in seconds. */
+  lockBps?: string;
+  lockCliffSeconds?: string;
+  lockUnlockSeconds?: string;
   /** Sent as the JSON text the multipart form carries; a string is sent as it is. */
   airdrop?: { wallet: string; amount: string }[] | string;
   /** Leaves the Creator off the operator's airdrop list, to see the API refuse; otherwise `prepare` allows a Creator who sends an airdrop. */

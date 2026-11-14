@@ -3,7 +3,7 @@ import { ComputeBudgetProgram, Keypair, PublicKey, Transaction, sendAndConfirmTr
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import BN from "bn.js";
 import {
-  EARLIER_LAUNCH_SHAPES, graduationBandOf, initializeV2Ix, LAUNCH_SHAPE, launchlabCoder, launchlabPdas, readCurveRuleGroups, rewardLaunchConstraints, RuleField, RuleOp,
+  creatorLockCapBps, EARLIER_LAUNCH_SHAPES, graduationBandOf, initializeV2Ix, listGlobalConfigs, LAUNCH_SHAPE, launchlabCoder, launchlabPdas, readCurveRuleGroups, rewardLaunchConstraints, RuleField, RuleOp,
   standardLaunchConstraints, updateCurveRuleIx, WSOL_MINT, type InitializeParams, type RuleConstraint,
 } from "@launchpad/chain";
 import { PreparedTrade, TradeList, type TradeSide } from "@launchpad/contract";
@@ -176,8 +176,10 @@ describe("curve rules cover every Quote Asset on-chain", () => {
 
 describe("a GlobalConfig our curve rules don't cover yet", () => {
   const jto = EXPECTED_TARGETS[2]!;
-  // 70% of the supply sold, not our 79.31% (LaunchLab's curve needs more than half sold, or it panics computing it).
-  const offShape = LAUNCH_SHAPE.supply.muln(7).divn(10);
+  // 55% of the supply sold, not our 79.31% (LaunchLab's curve needs more than half sold, or it panics computing it), and
+  // under the 59.31% a rule that admits the largest Creator Lock lets through (ADR 0023): a sale inside that range with
+  // no lock passes the rule, and the Indexer ignores it (`creator-lock.test.ts`).
+  const offShape = LAUNCH_SHAPE.supply.muln(55).divn(100);
 
   it("lets an off-shape launch onto our PlatformConfig, which the Indexer ignores, until the refresh writes its rule", async () => {
     // As for a GlobalConfig Raydium created after the last refresh: a rule that pins nothing but a positive raise.
@@ -208,7 +210,8 @@ describe("the launch shape of 1T coins (#166) and the coins launched on the 1B s
     const groups = await readCurveRuleGroups(connection(), program(), platformConfig(), [globalConfigOf(jto.mint)]);
     return groups.get(globalConfigOf(jto.mint).toBase58())!;
   };
-  const valueOf = (group: RuleConstraint[], field: number) => group.find((c) => c.field === field)!.value.toString();
+  /** A field's pinned value, or its ceiling in a group that gives it a range (the sale, where a Creator Lock is allowed, ADR 0023). */
+  const valueOf = (group: RuleConstraint[], field: number) => group.find((c) => c.field === field && c.op !== RuleOp.Gte)!.value.toString();
 
   it("pins a supply of 1T coins, 793.1B of them sold on the curve, in both of every Quote Asset's rule groups", async () => {
     expect(LAUNCH_SHAPE.supply.toString()).toBe("1000000000000000000");
@@ -304,13 +307,17 @@ describe("the refresh moves a band only once the target has drifted 5% from its 
   const target = BigInt(jto.raw);
   const platformConfig = () => new PublicKey(env().platform.platformConfig);
   const bandAround = (centre: bigint) => ({ min: new BN(((centre * 9_000n) / 10_000n).toString()), max: new BN(((centre * 11_000n) / 10_000n).toString()) });
-  /** Writes JTO's two groups as the refresh would for a target at `centre`, signed by the operations wallet as the refresh is. */
-  const writeBandAround = (centre: bigint) => {
+  /**
+   * Writes JTO's two groups as the refresh would for a target at `centre`, with the Creator Lock JTO's GlobalConfig
+   * leaves room for (ADR 0023), signed by the operations wallet as the refresh is.
+   */
+  const writeBandAround = async (centre: bigint) => {
     const { operations } = localnetKeys();
     const band = bandAround(centre);
+    const maxLockBps = creatorLockCapBps((await listGlobalConfigs(connection(), program())).find((c) => c.quoteMint.equals(jto.mint))!);
     return send(connection(), [
-      updateCurveRuleIx(program(), operations.publicKey, platformConfig(), globalConfigOf(jto.mint), 0, standardLaunchConstraints(band)),
-      updateCurveRuleIx(program(), operations.publicKey, platformConfig(), globalConfigOf(jto.mint), 1, rewardLaunchConstraints(band)),
+      updateCurveRuleIx(program(), operations.publicKey, platformConfig(), globalConfigOf(jto.mint), 0, standardLaunchConstraints(band, { maxLockBps })),
+      updateCurveRuleIx(program(), operations.publicKey, platformConfig(), globalConfigOf(jto.mint), 1, rewardLaunchConstraints(band, { maxLockBps })),
     ], [operations]);
   };
   const bandOnChain = async () => {
