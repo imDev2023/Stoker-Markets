@@ -19,8 +19,8 @@ This repository is the fallback: it still deploys the live mainnet API and the d
 ### The frontier (2026-11-13)
 
 - **Running (owner, 2026-11-13):** #183 and #184's open half (the Burn's and the Flywheel's budgets pointed at liquidity) side by side, in the relay's lanes `reward-burn` and `budget-liquidity`; each ticket's comment of that day says what the other owns, and each PR waits for the owner.
-- **Next unit:** #186's second half, on its own, once both have landed: the launch form's lock, the coin page's mark and claim, the Indexer's listing and the Quote Registry's ranged rules (the list is in ADR 0023 and the issue's last comment).
-  Its chain half is built (PR #208, `packages/chain` alone): nothing in the API or the web reaches a lock yet.
+- **#186 (the Creator Lock, ADR 0023):** the chain half is merged (PR #208) and the API side waits for the owner on its own PR (2026-11-14, relay lane `creator-lock`, migration `0032`).
+  Next on it: the web half (the launch form's lock, the coin page's mark and claim, the badges, the API reference), re-shooting baselines only once PR #206 has landed; the issue's last comment lists it.
   #185 (`/updates`) is built in new-stoker as imDev2023/new-stoker#53 and is closed here.
 - **Row-Level Security (#201)** is built and merged (migration `0030`, the lint check, the stack's plain owner role); the issue stays open until devnet has taken it and Supabase's advisor shows neither finding on both projects.
 - **Done on the rewards roadmap:** #187 (Budget Table), #188 (Creator Ladder), #113 with #184's Creator half (Creator Earnings Destinations), #196 (volume rebates), #199 (Holding Weight).
