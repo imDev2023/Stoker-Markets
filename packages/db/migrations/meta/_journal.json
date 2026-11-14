@@ -218,6 +218,13 @@
       "when": 1794548202585,
       "tag": "0030_row_level_security",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1794570348095,
+      "tag": "0031_reward_burn",
+      "breakpoints": true
     }
   ]
 }

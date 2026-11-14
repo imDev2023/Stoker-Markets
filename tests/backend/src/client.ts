@@ -45,6 +45,8 @@ export type LaunchForm = {
   rewardTax?: string;
   /** A Reward Launch's Payout Asset, "coin" or "quote"; the API takes "coin" when left out. */
   rewardPayout?: string;
+  /** A Reward Launch's Reward Burn in basis points, "0", "1000", "2500" or "5000"; the API takes "0" when left out (#183). */
+  rewardBurn?: string;
   /** Where the Creator's earnings go: "wallet", "holders", "burn" or "liquidity"; the API takes "wallet" when left out. */
   earningsDestination?: string;
   /** Sent as the JSON text the multipart form carries; a string is sent as it is. */

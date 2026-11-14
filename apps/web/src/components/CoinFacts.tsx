@@ -10,6 +10,7 @@ import { Address } from "./Address";
 import { CopyButton } from "./CopyButton";
 import { LinkIcon, LinkName } from "./LinkIcon";
 import styles from "./CoinFacts.module.css";
+import { burnShareWords } from "@/lib/rewardBurn";
 
 /**
  * The About block and the addresses, under the trade panel and the pair card (owner, 2026-10-31): the description, the
@@ -74,6 +75,7 @@ export function CoinFacts({ launch, platform, trust, renderedAt }: {
               <dt>Reward tax</dt>
               <dd>
                 {launch.rewardTax.bps / 100}% of every transfer, paid out to holders in {launch.rewardTax.payout === "coin" ? launch.symbol : quote}
+                {burnShareWords(launch.rewardTax.burnBps) && <>, {burnShareWords(launch.rewardTax.burnBps)} of it burned first</>}
                 {launch.rewardTax.locked ? (
                   <span>
                     Fixed for good:{" "}

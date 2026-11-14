@@ -151,9 +151,8 @@ app.post("/v1/launches/prepare", async (c) => {
   if (airdrop.length > 0 && !(await mayAirdrop(c.get("db"), creator.toBase58())))
     return c.json({ error: "Airdrops at launch aren't open to this wallet. Launch without one." }, 403);
   const rewardTaxBps = f.rewardTax ?? null;
-  const rewardPayout = f.rewardPayout ?? null;
-  const earningsDestination = f.earningsDestination ?? "wallet";
-  const modes = await resolveLaunchModes(connection, cfg, quote, creator, firstBuy, airdrop, rewardTaxBps, rewardPayout, earningsDestination).catch(refuseWith(400));
+  const choices = { rewardTaxBps, rewardPayout: f.rewardPayout ?? null, rewardBurnBps: f.rewardBurn ?? null, earningsDestination: f.earningsDestination ?? "wallet" } as const;
+  const modes = await resolveLaunchModes(connection, cfg, quote, creator, firstBuy, airdrop, choices).catch(refuseWith(400));
 
   // A key the operator chose for this Creator's next launch (the Platform Token's vanity address, #75) takes the place
   // of a derived one; the draft then has no nonce and signs with the stored key.
@@ -186,7 +185,7 @@ app.post("/v1/launches/prepare", async (c) => {
     .returning();
   // Signed now, so the launch transaction names the permanent address; uploaded only once the launch has landed.
   await signMetadataItems(c.get("db"), c.env.METADATA_BUCKET, cfg, operationsKey(c.env), stored!, { bytes, contentType });
-  await saveDraft(c.get("db"), { mint, creator, nonce, quote, firstBuy, airdrop, rewardTaxBps, rewardPayout, earningsDestination });
+  await saveDraft(c.get("db"), { mint, creator, nonce, quote, firstBuy, airdrop, ...choices });
   const loaded = await loadDraft(c.get("db"), mintAddress);
   return c.json(await buildLaunch(c.get("db"), connection, cfg, loaded!, quote, modes.firstBuy, modes.summary));
 });

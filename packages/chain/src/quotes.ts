@@ -16,6 +16,13 @@ export type GlobalConfigInfo = {
   index: number;
   /** The most a referred trade may pay its referrer, in the 1e6 denominator; 0 on most configs (1% on SOL's). */
   maxShareFeeRate: BN;
+  /**
+   * Raydium's own limits on a launch's shape, in the 1e6 denominator: the most of the supply a launch may lock, and the
+   * least it must sell on the curve. They bound a Creator Lock (`creatorLockCapBps`); on mainnet SOL's config allows a
+   * lock of 80% and wants 20% sold, most others allow nearly anything, and a few allow no lock at all.
+   */
+  maxLockRate: BN;
+  minBaseSellRate: BN;
 };
 
 /**
@@ -26,11 +33,16 @@ export async function listGlobalConfigs(connection: Connection, program: PublicK
   const accounts = await connection.getProgramAccounts(program, { filters: [{ memcmp: launchlabCoder.accounts.memcmp("GlobalConfig") }] });
   const byMint = new Map<string, GlobalConfigInfo>();
   for (const { pubkey, account } of accounts) {
-    const c = launchlabCoder.accounts.decode("GlobalConfig", account.data) as { curve_type: number; index: number; quote_mint: PublicKey; max_share_fee_rate: BN };
+    const c = launchlabCoder.accounts.decode("GlobalConfig", account.data) as {
+      curve_type: number; index: number; quote_mint: PublicKey; max_share_fee_rate: BN; max_lock_rate: BN; min_base_sell_rate: BN;
+    };
     if (c.curve_type !== 0) continue;
     const seen = byMint.get(c.quote_mint.toBase58());
     if (!seen || c.index < seen.index)
-      byMint.set(c.quote_mint.toBase58(), { address: pubkey, quoteMint: c.quote_mint, index: c.index, maxShareFeeRate: c.max_share_fee_rate });
+      byMint.set(c.quote_mint.toBase58(), {
+        address: pubkey, quoteMint: c.quote_mint, index: c.index, maxShareFeeRate: c.max_share_fee_rate,
+        maxLockRate: c.max_lock_rate, minBaseSellRate: c.min_base_sell_rate,
+      });
   }
   return [...byMint.values()];
 }

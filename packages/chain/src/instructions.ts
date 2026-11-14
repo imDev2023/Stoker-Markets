@@ -1,10 +1,10 @@
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction, type AccountMeta } from "@solana/web3.js";
-import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import BN from "bn.js";
 import { launchlabCoder } from "./coder";
 import { launchlabPdas, metadataPda } from "./pda";
 import { METADATA_PROGRAM } from "./programs";
-import { LAUNCH_SHAPE, type RuleConstraint } from "./shape";
+import { LAUNCH_SHAPE, saleWithLock, type CreatorLock, type RuleConstraint } from "./shape";
 
 const meta = (pubkey: PublicKey, isSigner = false, isWritable = false): AccountMeta => ({ pubkey, isSigner, isWritable });
 
@@ -152,7 +152,35 @@ export type InitializeParams = {
   symbol: string;
   uri: string;
   graduationTargetRaw: BN;
+  /**
+   * A Creator Lock: the curve keeps these coins back from its sale for the Creator. The launch itself only sets the
+   * amount and the schedule; `createVestingAccountIx` then names who the coins are for.
+   */
+  lock?: CreatorLock | null;
 };
+
+/** The curve and the vesting a launch sets: the launch shape, with a Creator Lock's coins taken out of the sale. */
+function shapeArgs(p: Pick<InitializeParams, "graduationTargetRaw" | "lock">) {
+  const lock = p.lock ?? null;
+  return {
+    curve_param: {
+      Constant: {
+        data: {
+          supply: LAUNCH_SHAPE.supply,
+          total_base_sell: lock ? saleWithLock(lock.lockedAmount) : LAUNCH_SHAPE.totalBaseSell,
+          total_quote_fund_raising: p.graduationTargetRaw,
+          migrate_type: LAUNCH_SHAPE.migrateType,
+        },
+      },
+    },
+    vesting_param: {
+      total_locked_amount: lock?.lockedAmount ?? new BN(0),
+      cliff_period: new BN(lock?.cliffSeconds ?? 0),
+      unlock_period: new BN(lock?.unlockSeconds ?? 0),
+    },
+    amm_fee_on: { [LAUNCH_SHAPE.ammFeeOn]: {} },
+  };
+}
 
 export type TradeParams = {
   program: PublicKey;
@@ -252,18 +280,7 @@ export function initializeV2Ix(p: InitializeParams) {
   const pool = pdas.pool(p.baseMint, p.quoteMint);
   const data = launchlabCoder.instruction.encode("initialize_v2", {
     base_mint_param: { decimals: LAUNCH_SHAPE.decimals, name: p.name, symbol: p.symbol, uri: p.uri },
-    curve_param: {
-      Constant: {
-        data: {
-          supply: LAUNCH_SHAPE.supply,
-          total_base_sell: LAUNCH_SHAPE.totalBaseSell,
-          total_quote_fund_raising: p.graduationTargetRaw,
-          migrate_type: LAUNCH_SHAPE.migrateType,
-        },
-      },
-    },
-    vesting_param: { total_locked_amount: new BN(0), cliff_period: new BN(0), unlock_period: new BN(0) },
-    amm_fee_on: { [LAUNCH_SHAPE.ammFeeOn]: {} },
+    ...shapeArgs(p),
   });
   return new TransactionInstruction({
     programId: p.program,
@@ -304,18 +321,7 @@ export function initializeWithToken2022Ix(p: InitializeParams & { rewardTaxBps: 
   const pool = pdas.pool(p.baseMint, p.quoteMint);
   const data = launchlabCoder.instruction.encode("initialize_with_token_2022", {
     base_mint_param: { decimals: LAUNCH_SHAPE.decimals, name: p.name, symbol: p.symbol, uri: p.uri },
-    curve_param: {
-      Constant: {
-        data: {
-          supply: LAUNCH_SHAPE.supply,
-          total_base_sell: LAUNCH_SHAPE.totalBaseSell,
-          total_quote_fund_raising: p.graduationTargetRaw,
-          migrate_type: LAUNCH_SHAPE.migrateType,
-        },
-      },
-    },
-    vesting_param: { total_locked_amount: new BN(0), cliff_period: new BN(0), unlock_period: new BN(0) },
-    amm_fee_on: { [LAUNCH_SHAPE.ammFeeOn]: {} },
+    ...shapeArgs(p),
     transfer_fee_extension_param: { transfer_fee_basis_points: p.rewardTaxBps, maximum_fee: p.maximumFee },
   });
   return new TransactionInstruction({
@@ -338,6 +344,53 @@ export function initializeWithToken2022Ix(p: InitializeParams & { rewardTaxBps: 
       meta(pdas.eventAuthority),
       meta(p.program),
       meta(pdas.curveRule(p.platformConfig, p.globalConfig)),
+    ],
+  });
+}
+
+/**
+ * `create_vesting_account`: the curve's creator gives `shareAmount` of its locked coins to `beneficiary`, for good. Only
+ * the creator may sign (2012 otherwise), a wallet gets one share and never a second, and the shares cannot pass what the
+ * launch locked (6010). Coins nobody was given stay in the curve's vault for ever, so a Creator Lock gives the Creator
+ * all of them in the launch transaction itself. Proven on the local chain (#186): the program still takes a share after
+ * the curve has sold out and after Graduation, until the cliff ends, which is why nothing may be left to give.
+ */
+export function createVestingAccountIx(p: { program: PublicKey; creator: PublicKey; beneficiary: PublicKey; pool: PublicKey; shareAmount: BN }) {
+  return new TransactionInstruction({
+    programId: p.program,
+    data: launchlabCoder.instruction.encode("create_vesting_account", { share_amount: p.shareAmount }),
+    keys: [
+      meta(p.creator, true, true),
+      meta(p.beneficiary, false, true),
+      meta(p.pool, false, true),
+      meta(launchlabPdas(p.program).vestingRecord(p.pool, p.beneficiary), false, true),
+      meta(SystemProgram.programId),
+    ],
+  });
+}
+
+/**
+ * `claim_vested_token`: the coins of a wallet's share that have unlocked and it has not claimed yet, from the curve's
+ * vault to the wallet's own account of the coin, which the program opens if need be. Signed by the wallet itself; it
+ * fails before Graduation (6015), while the cliff runs (6012) and when nothing new has unlocked (6009). A Reward
+ * Launch's coin pays its Reward Tax on the way, like any transfer.
+ */
+export function claimVestedTokenIx(p: { program: PublicKey; beneficiary: PublicKey; pool: PublicKey; baseMint: PublicKey; baseTokenProgram: PublicKey }) {
+  const pdas = launchlabPdas(p.program);
+  return new TransactionInstruction({
+    programId: p.program,
+    data: launchlabCoder.instruction.encode("claim_vested_token", {}),
+    keys: [
+      meta(p.beneficiary, true, true),
+      meta(pdas.authority),
+      meta(p.pool, false, true),
+      meta(pdas.vestingRecord(p.pool, p.beneficiary), false, true),
+      meta(pdas.vault(p.pool, p.baseMint), false, true),
+      meta(getAssociatedTokenAddressSync(p.baseMint, p.beneficiary, true, p.baseTokenProgram), false, true),
+      meta(p.baseMint),
+      meta(p.baseTokenProgram),
+      meta(SystemProgram.programId),
+      meta(ASSOCIATED_TOKEN_PROGRAM_ID),
     ],
   });
 }

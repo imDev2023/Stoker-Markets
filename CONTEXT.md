@@ -24,7 +24,13 @@ _Avoid_: Bonding target, market cap target, fund raising
 
 **Launch Shape**:
 What every new Launch's coin and curve are, pinned on-chain by our curve rules: a supply of 1 trillion coins at 6 decimals, 793.1 billion of them sold on the curve, the rest moving to the pool at Graduation, with no vesting (since #166; coins launched before it keep the 1 billion shape, 793.1 million sold).
+A coin with a Creator Lock sells that many fewer coins on the curve; its supply and the pool's share are the same.
 _Avoid_: Tokenomics, curve settings
+
+**Creator Lock**:
+Coins a Launch sets aside for its Creator, taken out of what the curve sells: the chain holds them from launch, nothing unlocks until the cliff has passed after Graduation, and the Creator's own wallet claims what has unlocked (ADR 0023, #186).
+At most a fifth of the supply, lasting at least seven days after Graduation, all of it the Creator's and fixed at launch.
+_Avoid_: Vesting (LaunchLab's word for the mechanism), team allocation, dev supply, locked liquidity (that is the pool's, behind a Fee Key)
 
 **Quote Asset**:
 The existing token a Launch is priced and traded against, such as SOL, a community token or a tokenized stock.
@@ -216,6 +222,11 @@ _Avoid_: Reward token, reflection asset, payout mode
 **Reward Sale**:
 One bounded sale of collected Reward Tax into the coin's own market for the Quote Asset, made by the Reward Engine on its schedule for a Launch whose Payout Asset is the Quote Asset, and public down to its transaction.
 _Avoid_: Dump, conversion, swap (on its own)
+
+**Reward Burn**:
+The share of every harvested Reward Tax that a Reward Launch burns instead of paying out, chosen by its Creator at launch from the offered steps (none, a tenth, a quarter or half) and never changed (#183).
+It is burned in the transaction that withdraws the tax, before anything is sold or paid, and recorded on the Ledger; it is the holders' tax, never revenue, and has nothing to do with the Burn of the Platform Token.
+_Avoid_: Tax burn, auto-burn, deflation fee, Burn (on its own: that is the Platform Token's)
 
 **Reward Round**:
 One published cycle of paying a coin's holders, with its snapshot, rules version and payout transactions public: collected Reward Tax paid as Holder Rewards, or a coin's pot paid as Holder Dividends when its Creator's earnings go to its holders (ADR 0011).
