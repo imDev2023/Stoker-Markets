@@ -42,6 +42,11 @@ async function chainTimeReaches(time: number) {
   while ((await chainTime()) < time) await new Promise((r) => setTimeout(r, 250));
 }
 const blockTimeOf = async (signature: string) => (await rawTransaction(signature)).blockTime!;
+/**
+ * Whether the program stamped `stamped` for a transaction whose block time is `blockTime`, plus `offset`: the program
+ * reads its own clock, which a block's time can lead by a second (main's CI, 2026-11-14: 1794671269 for 1794671270).
+ */
+const stampedAt = (stamped: number | null, blockTime: number, offset = 0) => stamped !== null && stamped - offset >= blockTime - 1 && stamped - offset <= blockTime;
 
 type Direct = { lock: CreatorLock | null; rewardTaxBps?: number; totalBaseSell?: BN };
 
@@ -280,13 +285,15 @@ describe("claiming a Creator Lock", () => {
     // The buy that sells the curve out starts the clock: the cliff runs from that block, whenever Raydium migrates.
     const soldOutAt = await blockTimeOf(await sellOut(coin));
     const waiting = await lockOf(coin);
-    expect(waiting).toMatchObject({ status: "graduating", unlockStartsAt: soldOutAt + lock.cliffSeconds });
-    expect(unlockEndsAt(waiting)).toBe(soldOutAt + lock.cliffSeconds + lock.unlockSeconds);
+    expect(waiting.status).toBe("graduating");
+    expect(stampedAt(waiting.unlockStartsAt, soldOutAt, lock.cliffSeconds)).toBe(true);
+    expect(unlockEndsAt(waiting)).toBe(waiting.unlockStartsAt! + lock.unlockSeconds);
     await expect(claim(coin)).rejects.toThrow(NOT_GRADUATED);
 
     const migration = await migrateCurve(connection(), coin.pool);
     const state = await lockOf(coin);
-    expect(state).toMatchObject({ status: "graduated", unlockStartsAt: soldOutAt + lock.cliffSeconds });
+    // The migration leaves the clock alone.
+    expect(state).toMatchObject({ status: "graduated", unlockStartsAt: waiting.unlockStartsAt });
     // The pool got its 20.69% of the supply and the vault keeps the lock, owned by LaunchLab's authority as before.
     const vault = await getAccount(connection(), pdas().vault(coin.pool, coin.mint), "confirmed");
     expect(vault.amount).toBe(BigInt(lock.lockedAmount.toString()));
@@ -431,7 +438,7 @@ describe("a Creator Lock after Graduation, through the API", () => {
     const { soldOutAt } = await graduate(coin);
     const status = await lockStatus(coin.mint);
     expect(status).toMatchObject({ curve: "graduated", creatorShare: { claimable: "0", unlocked: "0" } });
-    expect(seconds(status.unlockStartsAt)).toBe(soldOutAt + 7 * DAY);
+    expect(stampedAt(seconds(status.unlockStartsAt), soldOutAt, 7 * DAY)).toBe(true);
     const res = await askClaim(coin.mint, coin.creator.publicKey);
     expect(res.status).toBe(409);
     expect(await errorOf(res)).toBe(`Nothing unlocks until ${status.unlockStartsAt}.`);
@@ -443,7 +450,9 @@ describe("a Creator Lock after Graduation, through the API", () => {
     const { trader, soldOutAt } = await graduate(coin);
     await chainTimeReaches(soldOutAt + 3);
     const before = await lockStatus(coin.mint);
-    expect(before).toMatchObject({ curve: "graduated", unlockStartsAt: new Date(soldOutAt * 1000).toISOString(), unlockEndsAt: new Date((soldOutAt + 7 * DAY) * 1000).toISOString() });
+    expect(before.curve).toBe("graduated");
+    expect(stampedAt(seconds(before.unlockStartsAt), soldOutAt)).toBe(true);
+    expect(seconds(before.unlockEndsAt)).toBe(seconds(before.unlockStartsAt)! + 7 * DAY);
     expect(BigInt(before.creatorShare!.claimable)).toBeGreaterThan(0n);
     expect(before.creatorShare!.claimable).toBe(before.creatorShare!.unlocked);
 
