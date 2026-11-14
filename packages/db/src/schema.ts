@@ -27,6 +27,12 @@ export const launches = pgTable(
      */
     rewardPayout: text("reward_payout", { enum: ["coin", "quote"] }),
     /**
+     * A Reward Launch's Reward Burn (#183, ADR 0006): the share of every harvested Reward Tax the Reward Engine burns
+     * before it sells or pays anything, in basis points (0, 1000, 2500 or 5000). Copied from the launch draft when the
+     * launch is indexed and never changed; a Reward Launch made without our API burns nothing (0). Null for a standard coin.
+     */
+    rewardBurnBps: integer("reward_burn_bps"),
+    /**
      * Where the Creator's earnings on the coin go (ADR 0011, #113, #184): their wallet, the coin's holders, a buyback
      * that burns the coin, or a buyback that adds locked liquidity to its pool. Copied from the launch draft when the
      * launch is indexed and never changed; a coin launched without our API pays the wallet.
@@ -64,6 +70,7 @@ export const launches = pgTable(
     index("launches_quote_mint_idx").on(t.quoteMint),
     index("launches_name_key_idx").on(t.nameKey),
     index("launches_symbol_key_idx").on(t.symbolKey),
+    check("launches_reward_burn_bps", sql`${t.rewardBurnBps} between 0 and 5000`),
   ],
 ).enableRLS();
 
@@ -278,13 +285,15 @@ export const launchDrafts = pgTable(
     rewardTaxBps: integer("reward_tax_bps"),
     /** The Payout Asset the Creator chose for a Reward Launch; null for a standard Launch. */
     rewardPayout: text("reward_payout", { enum: ["coin", "quote"] }),
+    /** The Reward Burn the Creator chose for a Reward Launch, basis points of every harvest (#183); null for a standard Launch. */
+    rewardBurnBps: integer("reward_burn_bps"),
     /** Where the Creator chose their earnings on the coin to go (ADR 0011). */
     earningsDestination: text("earnings_destination", { enum: ["wallet", "holders", "burn", "liquidity"] }).notNull().default("wallet"),
     /** Newest transaction of the Creator's coin account already scanned for airdrop payments. */
     airdropScannedUntil: text("airdrop_scanned_until"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("launch_drafts_creator_idx").on(t.creator)],
+  (t) => [index("launch_drafts_creator_idx").on(t.creator), check("launch_drafts_reward_burn_bps", sql`${t.rewardBurnBps} between 0 and 5000`)],
 ).enableRLS();
 
 /**
@@ -335,7 +344,7 @@ export const ledgerEntries = pgTable(
     signature: text("signature").notNull(),
     /** Position among the movements in the transaction. */
     eventIndex: integer("event_index").notNull(),
-    /** platform_fee, pool_fee, fee_key, sweep, creator_forward, burn, flywheel, arweave_top_up, metadata_upload, reward_sale, graduation_fee, holder_dividend, creator_burn, creator_liquidity or rebate so far. */
+    /** platform_fee, pool_fee, fee_key, sweep, creator_forward, burn, flywheel, arweave_top_up, metadata_upload, reward_sale, graduation_fee, holder_dividend, creator_burn, creator_liquidity, rebate or reward_burn so far. */
     kind: text("kind").notNull(),
     /** What moved: a Quote Asset or a coin; SOL as the wrapped-SOL mint. */
     assetMint: text("asset_mint").notNull(),

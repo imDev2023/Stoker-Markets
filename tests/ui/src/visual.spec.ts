@@ -563,6 +563,9 @@ test("launch form as a Reward Launch paid in the Quote Asset, and its signing", 
   await page.getByRole("radiogroup", { name: "Launch type" }).getByRole("radio", { name: "Reward Launch, paid in SOL" }).check();
   await page.getByRole("group", { name: "Reward Tax" }).getByRole("button", { name: "3%" }).click();
   await expect(page.getByText(/^The tax is sold for SOL in small slices/)).toBeVisible();
+  // A Reward Burn picked (#183), so the shot holds its control, its line and the summary's row in words.
+  await page.getByRole("group", { name: "Reward Burn" }).getByRole("button", { name: "25%" }).click();
+  await expect(page.getByText(/^A quarter of every reward is burned before the rest is sold/)).toBeVisible();
   await copyCheckSettled(page);
   await previewPriced(page);
   await page.mouse.move(0, 0);

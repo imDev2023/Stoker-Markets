@@ -18,6 +18,7 @@ import { Address } from "./Address";
 import { CoinCard, type CoinCardData } from "./CoinCard";
 import { useCopyCheck, type CopyStatus } from "./CopyCheck";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
+import { burnShareTitle } from "@/lib/rewardBurn";
 import { EarningsChoice, LaunchOptions, LaunchType, supplyShare, useLaunchOptions, type LaunchOptionsState } from "./LaunchOptions";
 import { Ring } from "./Mark";
 import { QuoteChooser } from "./QuoteChooser";
@@ -486,6 +487,13 @@ function Summary({ platform, quote, ticker, symbol, preview, options, step, fail
           <dt>Launch type</dt>
           <dd>{options.rewardTax === null ? "Standard" : `Reward Launch, ${options.rewardTax / 100}%`}</dd>
         </div>
+        {/* The Reward Burn (#183) in words; without one the row is left out, as a coin without it has always read. */}
+        {options.rewardTax !== null && burnShareTitle(options.rewardBurn) && (
+          <div>
+            <dt>Reward Burn</dt>
+            <dd>{burnShareTitle(options.rewardBurn)} of every reward</dd>
+          </div>
+        )}
         {firstBuy && quote && (
           <>
             <div>

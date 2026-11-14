@@ -223,6 +223,11 @@ _Avoid_: Reward token, reflection asset, payout mode
 One bounded sale of collected Reward Tax into the coin's own market for the Quote Asset, made by the Reward Engine on its schedule for a Launch whose Payout Asset is the Quote Asset, and public down to its transaction.
 _Avoid_: Dump, conversion, swap (on its own)
 
+**Reward Burn**:
+The share of every harvested Reward Tax that a Reward Launch burns instead of paying out, chosen by its Creator at launch from the offered steps (none, a tenth, a quarter or half) and never changed (#183).
+It is burned in the transaction that withdraws the tax, before anything is sold or paid, and recorded on the Ledger; it is the holders' tax, never revenue, and has nothing to do with the Burn of the Platform Token.
+_Avoid_: Tax burn, auto-burn, deflation fee, Burn (on its own: that is the Platform Token's)
+
 **Reward Round**:
 One published cycle of paying a coin's holders, with its snapshot, rules version and payout transactions public: collected Reward Tax paid as Holder Rewards, or a coin's pot paid as Holder Dividends when its Creator's earnings go to its holders (ADR 0011).
 A round has one source, tax or earnings, and the two never share a pot.

@@ -13,6 +13,7 @@ import { latestCheck, lotsOf } from "../rewards/checks";
 import { publishedRules, rulesInForce, taxWaiting } from "../rewards/engine";
 import { lotWeightBps } from "../rewards/weights";
 import { quotePot, salesOf } from "../rewards/sales";
+import { burnsOf } from "../rewards/burns";
 
 /**
  * Reward Rounds, public: the rules every round follows (in force and announced), each Reward Launch's rounds and the tax
@@ -107,6 +108,7 @@ rewardRoutes.get("/launches/:mint/rewards", async (c) => {
   const waiting = await taxWaiting(new Connection(cfg.rpcUrl, "confirmed"), operationsKey(c.env).publicKey, mint);
   const { inForce } = await publishedRules(db);
   const [pot, sales] = inQuote ? await Promise.all([quotePot(db, launch.mint), salesOf(db, launch.mint)]) : [waiting.held, null];
+  const burns = await burnsOf(db, launch.mint);
   const res: CoinRewards = {
     mint: mint.toBase58(),
     rewardTaxBps: launch.rewardTaxBps!,
@@ -122,6 +124,11 @@ rewardRoutes.get("/launches/:mint/rewards", async (c) => {
       recent: sales.recent.map((s) => ({
         signature: s.signature, venue: s.venue, status: s.status, coins: s.coins, proceeds: s.proceeds, time: (s.blockTime ?? s.createdAt).toISOString(),
       })),
+    },
+    burn: {
+      bps: launch.rewardBurnBps ?? 0,
+      burned: burns.burned,
+      recent: burns.recent.map((b) => ({ signature: b.signature, coins: b.amount, time: b.blockTime.toISOString() })),
     },
     rules: inForce ? ruleVersion(inForce) : null,
     rounds: rounds.map((r) => roundSummary(r, payoutRef(launch, r.payoutMint, r.payoutDecimals, row.quoteSymbol))),

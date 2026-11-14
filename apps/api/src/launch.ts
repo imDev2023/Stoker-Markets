@@ -10,7 +10,7 @@ import {
   rewardTaxFee, WSOL_MINT, type FirstBuyQuote, type LaunchPairing,
 } from "@launchpad/chain";
 import type {
-  AirdropRecipients, CreatorEarningsDestination, GraduationTarget, LaunchModesSummary, PreparedLaunch, RewardPayoutAsset, RewardTaxBps, TradeQuote,
+  AirdropRecipients, CreatorEarningsDestination, GraduationTarget, LaunchModesSummary, PreparedLaunch, RewardBurnBps, RewardPayoutAsset, RewardTaxBps, TradeQuote,
 } from "@launchpad/contract";
 import { airdropRecipients, launchDrafts, launchMetadata, type Db } from "@launchpad/db";
 import type { Config } from "./env";
@@ -116,16 +116,25 @@ async function checkQuoteBalance(connection: Connection, quote: QuoteAsset, crea
     throw new LaunchModeError(`Your wallet doesn't hold enough ${quote.ticker} for this first buy. Add ${quote.ticker} or buy less.`);
 }
 
+/** The Creator's choices a launch is fixed with: the Reward Tax, its Payout Asset and Reward Burn, and where the earnings go. */
+export type LaunchChoices = {
+  rewardTaxBps: RewardTaxBps | null; rewardPayout: RewardPayoutAsset | null; rewardBurnBps: RewardBurnBps | null; earningsDestination: CreatorEarningsDestination;
+};
+
 /**
- * Checks the launch modes together and describes them: an airdrop needs a first buy, may not include the Creator, may
- * only pay wallets (not program accounts) and may give away no more coins than the first buy gets.
+ * Checks the launch modes together and describes them: a payout asset or a Reward Burn needs a Reward Tax, an airdrop
+ * needs a first buy, may not include the Creator, may only pay wallets (not program accounts) and may give away no more
+ * coins than the first buy gets.
  */
 export async function resolveLaunchModes(
   connection: Connection, cfg: Config, quote: QuoteAsset, creator: PublicKey, firstBuy: BN | null, airdrop: AirdropRecipients,
-  rewardTaxBps: RewardTaxBps | null = null, rewardPayout: RewardPayoutAsset | null = null, earningsDestination: CreatorEarningsDestination = "wallet",
+  { rewardTaxBps, rewardPayout, rewardBurnBps, earningsDestination }: LaunchChoices,
 ): Promise<{ firstBuy: LaunchFirstBuy | null; summary: LaunchModesSummary }> {
   if (rewardPayout && !rewardTaxBps) throw new LaunchModeError("A payout asset is only for a Reward Launch. Choose a Reward Tax, or leave the payout asset out.");
-  const rewardTax = rewardTaxBps ? { bps: rewardTaxBps, payout: rewardPayout ?? ("coin" as const) } : null;
+  // Nothing to burn without a tax; "0" says no burn and is refused all the same, so a standard coin carries no Reward Burn at all.
+  if (rewardBurnBps !== null && !rewardTaxBps)
+    throw new LaunchModeError("A Reward Burn is only for a Reward Launch. Choose a Reward Tax, or leave the burn out.");
+  const rewardTax = rewardTaxBps ? { bps: rewardTaxBps, payout: rewardPayout ?? ("coin" as const), burnBps: rewardBurnBps ?? 0 } : null;
   const bought = firstBuy ? await quoteLaunchFirstBuy(connection, cfg, quote, firstBuy, rewardTaxBps) : null;
   const toContract = (b: LaunchFirstBuy) => firstBuyToContract(b, quote.decimals, b.quoteTransferFeeBps, b.rewardTaxBps);
   if (bought) await checkQuoteBalance(connection, quote, creator, bought.quote.amountIn);
@@ -164,9 +173,8 @@ export async function resolveLaunchModes(
 export async function saveDraft(
   db: Db,
   d: {
-    mint: PublicKey; creator: PublicKey; nonce: string | null; quote: QuoteAsset; firstBuy: BN | null; airdrop: AirdropRecipients; rewardTaxBps: RewardTaxBps | null;
-    rewardPayout: RewardPayoutAsset | null; earningsDestination: CreatorEarningsDestination;
-  },
+    mint: PublicKey; creator: PublicKey; nonce: string | null; quote: QuoteAsset; firstBuy: BN | null; airdrop: AirdropRecipients;
+  } & LaunchChoices,
 ) {
   await db.transaction(async (tx) => {
     await tx.insert(launchDrafts).values({
@@ -181,6 +189,8 @@ export async function saveDraft(
       rewardTaxBps: d.rewardTaxBps,
       // The Payout Asset is fixed here, with the coin's address: a retry and the Indexer read it back from this row.
       rewardPayout: d.rewardTaxBps ? (d.rewardPayout ?? "coin") : null,
+      // The Reward Burn (#183) likewise: what share of every harvest the Reward Engine burns, for the coin's life.
+      rewardBurnBps: d.rewardTaxBps ? (d.rewardBurnBps ?? 0) : null,
       // So is where the Creator's earnings go (ADR 0011): the Indexer copies it to the Launch, and nothing changes it after.
       earningsDestination: d.earningsDestination,
     });
@@ -257,9 +267,12 @@ export async function resolveDraftModes(db: Db, connection: Connection, cfg: Con
     new PublicKey(draft.creator),
     draft.firstBuy ? new BN(draft.firstBuy) : null,
     recipients.map((r) => ({ wallet: r.wallet, amount: r.amount })),
-    (draft.rewardTaxBps as RewardTaxBps | null) ?? null,
-    draft.rewardPayout,
-    draft.earningsDestination,
+    {
+      rewardTaxBps: (draft.rewardTaxBps as RewardTaxBps | null) ?? null,
+      rewardPayout: draft.rewardPayout,
+      rewardBurnBps: (draft.rewardBurnBps as RewardBurnBps | null) ?? null,
+      earningsDestination: draft.earningsDestination,
+    },
   );
   return { quote, ...modes };
 }

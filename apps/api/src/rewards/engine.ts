@@ -1,6 +1,6 @@
-// The Reward Engine (#17, amended by #43 and ADR 0011): Reward Rounds that collect a Reward Launch's withheld Reward Tax
-// and pay it to holders by their Weighted Holding (ADR 0022) in the Launch's Payout Asset: the coin itself, never sold,
-// or its Quote Asset, bought with the tax through bounded Reward Sales (ADR 0006). Every run begins with the Holding
+// The Reward Engine (#17, amended by #43, ADR 0011 and #183): Reward Rounds that collect a Reward Launch's withheld Reward
+// Tax, burn the share its Creator fixed at launch (the Reward Burn, `burns.ts`), and pay the rest to holders by their
+// Weighted Holding (ADR 0022) in the Launch's Payout Asset: the coin itself, never sold, or its Quote Asset, bought with the tax through bounded Reward Sales (ADR 0006). Every run begins with the Holding
 // Checks due (`checks.ts`), which keep the Holding Lots a round's snapshot weighs by. It also pays the rounds of the other source, `earnings`: a coin
 // whose Creator Earnings go to its holders has rounds the Creator Forward job opens (`fees/rules/holders.ts`), paid here
 // in the Quote Asset like any round, each landed payout transaction on the Ledger. A round is public from its snapshot
@@ -21,6 +21,7 @@ import { holdingDay, runHoldingChecks, type HoldingChecksSummary } from "./check
 import { readCoinAccounts } from "./holders";
 import { snapshotRound } from "./snapshot";
 import { quotePot, sellSlice, settlePendingSales, unassignedSales, type SaleReport } from "./sales";
+import { rewardBurnShare, settlePendingBurns, withdrawAndBurn, type BurnReport } from "./burns";
 
 export type RewardEngineDeps = { db: Db; cfg: Config; operations: Keypair; now?: Date };
 
@@ -29,6 +30,10 @@ export type RewardRoundsSummary = {
   holdingChecks: HoldingChecksSummary;
   /** Coins whose withheld tax was harvested and withdrawn, with how much. */
   collected: { mint: string; amount: string }[];
+  /** Reward Burns this run made (#183): the share of a harvest burned in the transaction that withdrew it. */
+  burned: BurnReport[];
+  /** Coins not collected this run because a Reward Burn of an earlier run may still land. */
+  burnWaiting: string[];
   /** Reward Sales this run made, one slice per Quote Asset payout coin at most. */
   sold: SaleReport[];
   /** Coins whose slice was not sold this run, and why. */
@@ -42,7 +47,9 @@ export type RewardRoundsSummary = {
   /** Rounds that finished this run. */
   finished: string[];
   /** Payouts and sales of earlier runs found landed or expired, now settled. */
-  settled: { landed: number; expired: number; sales: { landed: number; failed: number; expired: number } };
+  settled: {
+    landed: number; expired: number; sales: { landed: number; failed: number; expired: number }; burns: { landed: number; failed: number; expired: number };
+  };
   problems: string[];
 };
 
@@ -58,8 +65,8 @@ const WSOL = WSOL_MINT.toBase58();
 export type RewardRule = typeof rewardRules.$inferSelect;
 type Round = typeof rewardRounds.$inferSelect;
 
-/** A Reward Launch as the engine works on it. */
-type Coin = { mint: string; symbol: string; decimals: number; pool: string; quoteMint: string; payout: "coin" | "quote" };
+/** A Reward Launch as the engine works on it; `burnBps` is its Reward Burn (#183), 0 for none. */
+type Coin = { mint: string; symbol: string; decimals: number; pool: string; quoteMint: string; payout: "coin" | "quote"; burnBps: number };
 
 /** The rules version in force at `now`: the newest whose effective time has passed. Announced ones wait their turn. */
 export async function rulesInForce(db: Db, now = new Date()): Promise<RewardRule> {
@@ -89,8 +96,8 @@ export async function runRewardRounds({ db, cfg, operations, now = new Date() }:
   const connection = new Connection(cfg.rpcUrl, "confirmed");
   const ops = operations.publicKey;
   const summary: RewardRoundsSummary = {
-    holdingChecks: { day: holdingDay(now, cfg.holdingDaySeconds), checked: [], leftForLater: 0 }, collected: [], sold: [], unsold: [], opened: [], paid: [], returned: [], finished: [],
-    settled: { landed: 0, expired: 0, sales: { landed: 0, failed: 0, expired: 0 } }, problems: [],
+    holdingChecks: { day: holdingDay(now, cfg.holdingDaySeconds), checked: [], leftForLater: 0 }, collected: [], burned: [], burnWaiting: [], sold: [], unsold: [], opened: [], paid: [],
+    returned: [], finished: [], settled: { landed: 0, expired: 0, sales: { landed: 0, failed: 0, expired: 0 }, burns: { landed: 0, failed: 0, expired: 0 } }, problems: [],
   };
   // A check that fails, one coin's or all of them, is a problem of the run and never keeps a round from being paid.
   try {
@@ -101,11 +108,14 @@ export async function runRewardRounds({ db, cfg, operations, now = new Date() }:
   const rules = await rulesInForce(db, now);
   const coins: Coin[] = (
     await db
-      .select({ mint: launches.mint, symbol: launches.symbol, decimals: launches.decimals, pool: launches.pool, quoteMint: launches.quoteMint, payout: launches.rewardPayout })
+      .select({
+        mint: launches.mint, symbol: launches.symbol, decimals: launches.decimals, pool: launches.pool, quoteMint: launches.quoteMint, payout: launches.rewardPayout,
+        burnBps: launches.rewardBurnBps,
+      })
       .from(launches)
       .where(isNotNull(launches.rewardTaxBps))
       .orderBy(asc(launches.createdSlot))
-  ).map((c) => ({ ...c, payout: c.payout ?? "coin" }));
+  ).map((c) => ({ ...c, payout: c.payout ?? "coin", burnBps: c.burnBps ?? 0 }));
   let budget = maxPayouts;
   /**
    * A paying round's turn: its payouts in flight are settled, as many of the rest are sent as the run's budget still
@@ -134,11 +144,21 @@ export async function runRewardRounds({ db, cfg, operations, now = new Date() }:
         summary.settled.sales.failed += sales.failed;
         summary.settled.sales.expired += sales.expired;
       }
+      // A Reward Burn an earlier run left in flight is settled first; while it may still land, nothing more is collected.
+      const burns = await settlePendingBurns(db, connection, operations.publicKey, coin.mint);
+      summary.settled.burns.landed += burns.landed;
+      summary.settled.burns.failed += burns.failed;
+      summary.settled.burns.expired += burns.expired;
       // The coin's tax round only: an earnings round of the same coin has its own turn below.
       let [round] = await payingRounds(db, "tax", coin.mint);
       if (!round) {
-        const collected = await collectTax(connection, operations, mint);
-        if (collected > 0n) summary.collected.push({ mint: coin.mint, amount: collected.toString() });
+        // Selling and paying go on: a burn lands whole with its withdrawal, so the wallet holds either both or neither.
+        if (burns.inFlight) summary.burnWaiting.push(coin.mint);
+        else {
+          const { collected, burn } = await collectTax(db, connection, operations, coin, mint);
+          if (collected > 0n) summary.collected.push({ mint: coin.mint, amount: collected.toString() });
+          if (burn) summary.burned.push(burn);
+        }
         if (coin.payout === "quote") {
           const { sale, skipped } = await sellSlice(db, cfg, connection, operations, coin);
           if (sale) summary.sold.push(sale);
@@ -204,9 +224,12 @@ async function alertStalledRounds(db: Db, now: Date) {
 /**
  * Harvests the tax withheld in the coin's accounts to the mint, then withdraws the mint's withheld tax to the operations
  * wallet's account of the coin. Returns what the withdrawal moved. Anyone may harvest; only the withdraw authority
- * (ours from the launch) may withdraw.
+ * (ours from the launch) may withdraw. A coin with a Reward Burn (#183) has its share of the withdrawal burned in the
+ * same transaction (`burns.ts`), before any of it can be sold or paid; what it burned is returned with it.
  */
-async function collectTax(connection: Connection, operations: Keypair, mint: PublicKey): Promise<bigint> {
+async function collectTax(
+  db: Db, connection: Connection, operations: Keypair, coin: Coin, mint: PublicKey,
+): Promise<{ collected: bigint; burn: BurnReport | null }> {
   const ops = operations.publicKey;
   const accounts = (await readCoinAccounts(connection, mint, TOKEN_2022_PROGRAM_ID)).filter((a) => a.withheld > 0n);
   for (let i = 0; i < accounts.length; i += HARVEST_BATCH) {
@@ -214,13 +237,18 @@ async function collectTax(connection: Connection, operations: Keypair, mint: Pub
     await sendAndWait(connection, operations, [createHarvestWithheldTokensToMintInstruction(mint, batch, TOKEN_2022_PROGRAM_ID)]);
   }
   const withheldInMint = getTransferFeeConfig(await getMint(connection, mint, "confirmed", TOKEN_2022_PROGRAM_ID))?.withheldAmount ?? 0n;
-  if (withheldInMint === 0n) return 0n;
+  if (withheldInMint === 0n) return { collected: 0n, burn: null };
+  const share = rewardBurnShare(withheldInMint, coin.burnBps);
+  if (share > 0n) {
+    const burn = await withdrawAndBurn(db, connection, operations, coin, share);
+    return { collected: burn.outcome === "landed" ? withheldInMint : 0n, burn };
+  }
   const destination = getAssociatedTokenAddressSync(mint, ops, false, TOKEN_2022_PROGRAM_ID);
   await sendAndWait(connection, operations, [
     createAssociatedTokenAccountIdempotentInstruction(ops, destination, ops, mint, TOKEN_2022_PROGRAM_ID),
     createWithdrawWithheldTokensFromMintInstruction(mint, destination, ops, [], TOKEN_2022_PROGRAM_ID),
   ]);
-  return withheldInMint;
+  return { collected: withheldInMint, burn: null };
 }
 
 /**
