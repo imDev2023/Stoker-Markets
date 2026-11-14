@@ -1,6 +1,6 @@
 # The Creator Lock: coins the chain holds for the Creator, taken out of the curve's sale
 
-Status: accepted by the owner on 2026-11-13 (#186), for the chain's side, which is built; the launch form, the coin page's mark, the claim from the page and the Indexer's listing are the issue's second half and are not.
+Status: accepted by the owner on 2026-11-13 (#186); the chain's side is built, and so is the API's (2026-11-14); the launch form, the coin page's mark and the claim from the page are not yet.
 It amends ADR 0005: a curve rule no longer pins the sale and "no vesting" exactly where a Quote Asset allows a lock, and the Indexer holds a coin with a lock to the launch shape instead.
 
 #186 asks for the Creator's share to be locked and vested through LaunchLab itself, so that the one objection to rewarding Creators, the dump, is answered by something the chain enforces and the page shows.
@@ -78,22 +78,23 @@ A locked supply for a second wallet (a community treasury the Creator names) sta
 The Creator's wallet signs and pays for its own claim (`prepareCreatorLockClaim`, ADR 0003); nothing goes through the operations key.
 `readCreatorLock` reads the lock and a wallet's share from the chain, and `unlockedAmount` counts what has unlocked as the program does, so a page can show the schedule and what is claimable without an index of its own.
 
-## What is built, and what waits for the second half
+## What is built
 
-Built (2026-11-13, `packages/chain`): the limits, the rule constraints, the launch and its First Buy quote with a lock, the two instructions, the reader, the claim, the decoder's `lock` on a launch and its shape rule, and the GlobalConfig's own limits on `listGlobalConfigs`.
+The chain's side (2026-11-13, `packages/chain`): the limits, the rule constraints, the launch and its First Buy quote with a lock, the two instructions, the reader, the claim, the decoder's `lock` on a launch and its shape rule, and the GlobalConfig's own limits on `listGlobalConfigs`.
 
-Not built, and nothing a visitor or a Creator can reach yet:
+The API's side (2026-11-14, the second half of #186, its first part):
 
-- The Quote Registry still writes the exact groups, so no rule of ours admits a lock on any cluster; the test opens two groups of its own on the local chain and closes them.
-- The API prepares no lock (no field on the launch form or the contract, no migration), and the Indexer leaves a coin with a lock unlisted, saying so in its log.
-- The claim has no endpoint and no button.
+- The Quote Registry writes the ranged groups in both of a Quote Asset's rule groups where its GlobalConfig leaves room for a lock, and today's exact groups where it leaves none; the first refresh after the deploy rewrites each such rule once, as a shape change does.
+  It stores what the rule on-chain admits as the asset's cap (`creatorLockCapBps` on `GET /v1/quotes`).
+- `POST /v1/launches/prepare` takes `lockBps`, `lockCliffSeconds` and `lockUnlockSeconds`, refuses what `creatorLockProblem` refuses and anything above the cap the rule admits at that moment, and keeps the choice with the draft, so a retry builds the same lock; `GET /v1/launch-quote` takes `lockBps`, since the lock moves the First Buy's price.
+- The Indexer lists a coin with a lock we accept, whoever built it, and stores the lock as the launch transaction set it; every coin summary carries `creatorLock`.
+- `GET /v1/launches/{mint}/lock` reads the lock, what has unlocked and what the Creator has claimed from the chain, and `POST /v1/launches/{mint}/lock/claim` prepares the claim for the wallet holding the share, refusing it before Graduation, while the cliff runs and when nothing new has unlocked.
+- What a lock changes after Graduation, each asserted by the backend suite:
+  LaunchLab's vault is owned by a program's address, so the Holding Check, a Reward Round's snapshot, the board's holder count (by trades) and the trust figures leave it out as they leave out a curve's vault; the holder list labels it `lock` once the coin has graduated.
+  Every figure reads the coin's own sale: the launch's row keeps `totalBaseSell` as the chain set it, and the curve's events carry it.
+  A claim's answer says what reaches the wallet after a Reward Launch's Reward Tax.
 
-Before the Indexer lists such a coin, the second half must deal with what a lock changes after Graduation:
-
-- LaunchLab's vault holds the locked coins after Graduation, under an owner that is a program's address.
-  Holder counts, the trust figures, a Reward Round's snapshot and the Holding Check must go on leaving it out, as they leave out a curve's vault today, and say what share of the supply is locked.
-- A coin with a lock sells fewer coins: every place that reads the shape's sale rather than the coin's own (`totalBaseSell` is on the launch's row) must read the coin's.
-- The Creator pays the Reward Tax on a claim, which the holders receive; the page should say it before the Creator is surprised by it.
+Still to build: the launch form's lock, the coin page's mark and claim, the board's and the share card's badge, and the API reference page.
 
 ## Considered Options
 
