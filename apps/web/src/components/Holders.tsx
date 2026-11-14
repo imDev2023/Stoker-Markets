@@ -7,7 +7,8 @@ import styles from "./Holders.module.css";
 /** How many holders the card lists; the API returns up to 20. */
 const SHOWN = 10;
 
-const LABELS: Partial<Record<HolderKind, string>> = { curve: "Curve", pool: "Raydium pool" };
+// After Graduation LaunchLab's vault holds only the Creator Lock's coins (ADR 0023), and the API names it `lock`.
+const LABELS: Partial<Record<HolderKind, string>> = { curve: "Curve", pool: "Raydium pool", lock: "Creator Lock" };
 
 /** Holders named next to their address: the Creator, and the platform's own wallets, which a Fee Key pays in the coin. */
 const BADGES: Partial<Record<HolderKind, string>> = { creator: "Creator", treasury: "Platform treasury", operations: "Platform operations" };
