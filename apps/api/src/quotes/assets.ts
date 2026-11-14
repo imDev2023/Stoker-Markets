@@ -7,7 +7,7 @@ import { quoteAssets, type Db } from "@launchpad/db";
 import type { Config } from "../env";
 import { quoteMarket } from "./markets";
 import { graduationTargetRaw, type QuoteMarket } from "./pricing";
-import { bandOf, launchBlocker } from "./rules";
+import { bandOf, launchBlocker, lockCapOf } from "./rules";
 
 type Row = typeof quoteAssets.$inferSelect;
 
@@ -32,6 +32,7 @@ export function toQuoteAsset(cfg: Config, r: Row): QuoteAsset {
     launchable: reason === null,
     reason,
     referralShare: referralShare(cfg, r.maxShareFeeRate),
+    creatorLockCapBps: r.creatorLockCapBps,
     liquidityUsd: r.liquidityUsd,
     labels: r.labels ?? null,
     market: quoteMarket(r),
@@ -57,6 +58,8 @@ export function byPickerOrder(a: QuoteAsset, b: QuoteAsset) {
 
 export type LaunchQuote = {
   mint: PublicKey; globalConfig: PublicKey; tokenProgram: PublicKey; decimals: number; ticker: string; graduationTarget: GraduationTarget;
+  /** The largest Creator Lock our curve rule on-chain admits for this asset right now, in basis points of the supply. */
+  creatorLockCapBps: number;
 };
 
 /**
@@ -89,6 +92,7 @@ export async function priceLaunch(db: Db, cfg: Config, market: QuoteMarket, quot
     ticker: ticker(row),
     // launchBlocker refuses a missing target, so there is one here.
     graduationTarget: { raw: target!.toString(), lamports: lamports.toString() },
+    creatorLockCapBps: lockCapOf(rule ?? null),
   };
 }
 
@@ -110,5 +114,6 @@ export async function launchQuoteAsBuilt(db: Db, cfg: Config, quoteMint: string,
     decimals: row.decimals,
     ticker: ticker(row),
     graduationTarget: target,
+    creatorLockCapBps: lockCapOf(rule ?? null),
   };
 }

@@ -65,16 +65,10 @@ async function indexTransaction(db: Db, cfg: Config, tx: RawTransaction, result:
       continue;
     }
     if (e.kind === "launch_created") {
-      // Only a GlobalConfig newer than the last Quote Registry refresh lets such a launch through (ADR 0005).
+      // A GlobalConfig newer than the last Quote Registry refresh lets such a launch through (ADR 0005), and so does a
+      // rule that admits a Creator Lock, which cannot hold the sale and the lock to one sum (ADR 0023): never listed.
       if (!e.standardShape) {
         console.warn("ignoring a launch outside our launch shape", e.signature);
-        continue;
-      }
-      // A coin with a Creator Lock is on-shape (ADR 0023) but stays unlisted until the pages, the holder counts and the
-      // Reward Rounds know the lock, which is the second half of #186. No curve rule of ours admits one before then, so
-      // only a GlobalConfig newer than the last refresh could bring one.
-      if (e.lock) {
-        console.warn("ignoring a launch with a Creator Lock, which is not listed yet", e.signature);
         continue;
       }
       result.launched += await indexLaunch(db, cfg, e);
@@ -186,6 +180,11 @@ async function indexLaunch(db: Db, cfg: Config, e: LaunchCreated) {
       rewardPayout: e.rewardTaxBps === null ? null : (draft?.rewardPayout ?? "coin"),
       rewardBurnBps: e.rewardTaxBps === null ? null : (draft?.rewardBurnBps ?? 0),
       earningsDestination: draft?.earningsDestination ?? "wallet",
+      // The Creator Lock (ADR 0023) as the launch transaction set it, whoever built it: `standardShape` has already held
+      // it to our limits and to the shape, its coins taken out of the sale.
+      lockedAmount: e.lock?.lockedAmount.toString() ?? null,
+      lockCliffSeconds: e.lock?.cliffSeconds ?? null,
+      lockUnlockSeconds: e.lock?.unlockSeconds ?? null,
       createdSignature: e.signature,
       createdSlot: e.slot,
       createdAt: time(e.blockTime),

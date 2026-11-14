@@ -6,7 +6,7 @@ import { and, asc, count, desc, eq, ilike, like, ne, or, sql, type SQL } from "d
 import { cpmmPdas, launchlabPdas, programsFor } from "@launchpad/chain";
 import {
   LaunchListQuery, LINK_KINDS, SPARKLINE_POINTS, type CoinCreatorTier, type Holder, type HolderKind, type HolderList, type LaunchLinks, type LaunchList, type LaunchQuoteList,
-  type LaunchSummary, type MarketValue,
+  type CreatorLockTerms, type LaunchSummary, type MarketValue,
 } from "@launchpad/contract";
 import { curves, graduations, launches, launchMarkets, launchMetadata, quoteAssets, trades, type Db } from "@launchpad/db";
 import { operationsKey, type AppEnv, type Config } from "../env";
@@ -141,6 +141,17 @@ const num = (v: number | string | null) => (v === null ? null : Number(v));
 /** The day's price change as a fraction; null without a trade to measure from (see LaunchMarket.change24h). */
 const change24h = (price: number | null, ago: number | null) => (price === null || ago === null || ago <= 0 ? null : price / ago - 1);
 
+/** A coin's Creator Lock as the launch transaction set it, with the share of the supply it is; null without one. */
+export function creatorLockTerms(l: Pick<typeof launches.$inferSelect, "lockedAmount" | "lockCliffSeconds" | "lockUnlockSeconds" | "supply">): CreatorLockTerms | null {
+  if (l.lockedAmount === null) return null;
+  return {
+    bps: Number((BigInt(l.lockedAmount) * 10_000n) / BigInt(l.supply)),
+    amount: l.lockedAmount,
+    cliffSeconds: l.lockCliffSeconds ?? 0,
+    unlockSeconds: l.lockUnlockSeconds ?? 0,
+  };
+}
+
 function toSummary(cfg: Config, r: Row, creatorTier: CoinCreatorTier | null = null): LaunchSummary {
   const l = r.launch;
   const m = r.metadata;
@@ -177,6 +188,7 @@ function toSummary(cfg: Config, r: Row, creatorTier: CoinCreatorTier | null = nu
             locked: l.rewardTaxLockedSignature && l.rewardTaxLockedAt ? { signature: l.rewardTaxLockedSignature, at: l.rewardTaxLockedAt.toISOString() } : null,
           },
     earningsDestination: l.earningsDestination,
+    creatorLock: creatorLockTerms(l),
     market: {
       price: r.market?.price ?? null,
       marketCap: cap,
@@ -303,14 +315,15 @@ const HOLDER_ACCOUNTS = 20;
  * The coin's top holders and the Creator's holding, read from the chain rather than summed from indexed trades: balances
  * also move by plain transfers, airdrops and Reward Tax, none of which are trades. Program-owned holdings are labelled by
  * their owner, the curve's vault authority before Graduation and the CPMM pool authority after, so the list stays right as
- * the coins move from the curve to the pool.
+ * the coins move from the curve to the pool; after Graduation the curve's vault holds only a Creator Lock (`lock`).
  */
 launchRoutes.get("/launches/:mint/holders", async (c) => {
   const cfg = c.get("cfg");
   const [launch] = await c
     .get("db")
-    .select({ mint: launches.mint, creator: launches.creator })
+    .select({ mint: launches.mint, creator: launches.creator, lockedAmount: launches.lockedAmount, graduated: graduations.mint })
     .from(launches)
+    .leftJoin(graduations, eq(graduations.mint, launches.mint))
     .where(eq(launches.mint, c.req.param("mint")))
     .limit(1);
   if (!launch) return c.json({ error: "launch not found" }, 404);
@@ -335,8 +348,10 @@ launchRoutes.get("/launches/:mint/holders", async (c) => {
 
   const total = BigInt(supply.value.amount);
   const share = (amount: bigint) => (total === 0n ? 0 : Number((amount * 1_000_000_000n) / total) / 1_000_000_000);
+  // LaunchLab's authority owns the curve's vault, which after Graduation holds only a Creator Lock's unclaimed coins.
+  const lockOnly = launch.lockedAmount !== null && launch.graduated !== null;
   const labels = new Map<string, HolderKind>([
-    [launchlabPdas(cfg.launchlab).authority.toBase58(), "curve"],
+    [launchlabPdas(cfg.launchlab).authority.toBase58(), lockOnly ? "lock" : "curve"],
     [cpmmPdas(programsFor(cfg.cluster).cpmm).authority.toBase58(), "pool"],
     [launch.creator, "creator"],
     [operationsKey(c.env).publicKey.toBase58(), "operations"],

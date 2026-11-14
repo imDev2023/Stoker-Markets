@@ -19,8 +19,8 @@ This repository is the fallback: it still deploys the live mainnet API and the d
 ### The frontier (2026-11-14)
 
 - **Running (owner, 2026-11-14):** two relay lanes side by side, each with a PR that waits for the owner.
-  Lane `creator-lock` builds #186's second half: the API side first (migration `0032`, the prepare field, the Quote Registry's ranged rules, the Indexer's listing, the claim), the web second, and no UI baseline re-shot while PR #206 is open (the order is in the issue's comment of 2026-11-14 and ADR 0023).
-  Its chain half is merged (PR #208, `packages/chain` alone): on `main` nothing in the API or the web reaches a lock yet.
+  Lane `creator-lock` built #186's second half's API side (migration `0032`, the prepare field, the Quote Registry's ranged rules, the Indexer's listing, the lock's read and claim) as PR #210, which waits for the owner; the web half is next, with no UI baseline re-shot while PR #206 is open (the issue's last comment and ADR 0023).
+  Its chain half is merged (PR #208); on `main` nothing in the API or the web reaches a lock until #210 lands.
   Lane `budget-liquidity` brings PR #206 (#184's open half: the Burn's and the Flywheel's budgets pointed at liquidity) up to date with `main` after #183 landed first.
 - **Next unit:** none is named beyond the two lanes; ask the owner before starting another.
   #185 (`/updates`) is built in new-stoker as imDev2023/new-stoker#53 and is closed here.

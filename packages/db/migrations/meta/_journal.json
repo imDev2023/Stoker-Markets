@@ -225,6 +225,13 @@
       "when": 1794570348095,
       "tag": "0031_reward_burn",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1794671878432,
+      "tag": "0032_creator_lock",
+      "breakpoints": true
     }
   ]
 }

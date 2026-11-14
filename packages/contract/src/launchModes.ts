@@ -57,6 +57,38 @@ export const EARNINGS_DESTINATIONS = ["wallet", "holders", "burn", "liquidity"] 
 export const CreatorEarningsDestination = z.enum(EARNINGS_DESTINATIONS);
 export type CreatorEarningsDestination = z.infer<typeof CreatorEarningsDestination>;
 
+/**
+ * A Creator Lock (ADR 0023, #186): coins kept back from the curve's sale for the Creator, which LaunchLab holds and the
+ * Creator's own wallet claims once the coin has graduated. Nothing unlocks for the cliff after the curve sells out, then
+ * the coins unlock evenly over the unlock time (all at once when the cliff ends, with none). The limits are the chain's
+ * (`CREATOR_LOCK` in `@launchpad/chain`), repeated here for clients: a fifth of the supply at most, and the cap a Quote
+ * Asset allows (`creatorLockCapBps` on GET /v1/quotes); seven days at least from the sell-out to the last coin; a cliff
+ * and an unlock time of four years each at most.
+ */
+export const CREATOR_LOCK_LIMITS = {
+  maxBps: 2_000,
+  minSeconds: 7 * 86_400,
+  maxCliffSeconds: 1_461 * 86_400,
+  maxUnlockSeconds: 1_461 * 86_400,
+} as const;
+
+/** A Creator Lock as a launch was prepared with it, or as the coin has it. */
+export const CreatorLockTerms = z.object({
+  /** Basis points of the supply locked. */
+  bps: z.number().int(),
+  /** The coins locked, raw units. */
+  amount: raw,
+  cliffSeconds: z.number().int(),
+  unlockSeconds: z.number().int(),
+});
+export type CreatorLockTerms = z.infer<typeof CreatorLockTerms>;
+
+const wholeField = (what: string) =>
+  z
+    .union([z.string().regex(/^\d+$/, `${what} must be a whole number`), z.literal("")])
+    .optional()
+    .transform((v) => (v ? Number(v) : undefined));
+
 /** A form field carrying a Reward Tax in basis points, or nothing for a standard Launch. */
 const rewardTaxField = z
   .union([z.enum(["100", "200", "300", "400", "500"]), z.literal("")])
@@ -79,6 +111,14 @@ export const LaunchModeFields = z.object({
     .transform((v) => (v ? (Number(v) as RewardBurnBps) : undefined)),
   /** Where the Creator's earnings on the coin go, for good; `wallet` unless set. Any coin may choose any of them. */
   earningsDestination: z.union([CreatorEarningsDestination, z.literal("")]).optional().transform((v) => v || undefined),
+  /**
+   * A Creator Lock's size in basis points of the supply (1 to the Quote Asset's `creatorLockCapBps`); empty for none.
+   * With one, `lockCliffSeconds` and `lockUnlockSeconds` give its schedule (each 0 when left out) and must add up to
+   * seven days at least; without one, both must be left out.
+   */
+  lockBps: wholeField("lockBps"),
+  lockCliffSeconds: wholeField("lockCliffSeconds"),
+  lockUnlockSeconds: wholeField("lockUnlockSeconds"),
   /** Quote Asset the Creator spends on a first buy inside the launch transaction, raw units. */
   firstBuy: z.union([positiveRaw, z.literal("")]).optional().transform((v) => v || undefined),
   /** JSON array of `{ wallet, amount }`, paid from the first buy's coins once the coin has launched. */
@@ -119,6 +159,11 @@ export const LaunchModesSummary = z.object({
   rewardTax: z.object({ bps: z.number().int(), payout: RewardPayoutAsset, burnBps: RewardBurnBps }).nullable(),
   /** Where the Creator's earnings on the coin go, for good. */
   earningsDestination: CreatorEarningsDestination,
+  /**
+   * The Creator Lock, all of it given to the Creator's wallet in the launch transaction; null without one. Its coins
+   * come out of the curve's sale, so the same Graduation Target buys fewer coins and the curve opens higher.
+   */
+  creatorLock: CreatorLockTerms.nullable(),
   /** The first buy, exact: it is the curve's first trade and lands in the launch transaction. Null without one. */
   firstBuy: TradeQuote.nullable(),
   /** The airdrop, paid from the first buy's coins in separate transactions once the coin has launched. */
@@ -143,6 +188,8 @@ export const FirstBuyQuoteQuery = z.object({
   firstBuy: positiveRaw,
   /** The Reward Tax of the coin, which the first buy's coins lose on the way to the Creator; empty for a standard coin. */
   rewardTax: rewardTaxField,
+  /** A Creator Lock's size in basis points of the supply, which takes its coins out of the sale; empty for none. */
+  lockBps: wholeField("lockBps"),
 });
 export type FirstBuyQuoteQuery = z.infer<typeof FirstBuyQuoteQuery>;
 

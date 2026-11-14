@@ -100,6 +100,12 @@ export const QuoteAsset = QuoteRef.extend({
    */
   referralShare: z.object({ allowed: z.boolean(), bps: z.number().int() }),
   /**
+   * The largest Creator Lock (ADR 0023) a launch paired with this asset may have, in basis points of the supply: a fifth
+   * (2000) where Raydium's GlobalConfig leaves room for it, less where it does not, and 0 while our curve rule admits no
+   * lock, which a Creator then cannot add.
+   */
+  creatorLockCapBps: z.number().int(),
+  /**
    * The asset's liquidity in US dollars across the markets the token list routes through, as of the last refresh; null
    * when the list doesn't know the mint. How prominent an asset is: the launch form's chooser lists the deepest first.
    */

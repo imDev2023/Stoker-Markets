@@ -1,21 +1,26 @@
-// The Creator Lock on the chain (ADR 0023, the first half of #186): coins a launch keeps back from its curve's sale for
-// the Creator, held by LaunchLab and claimed by the Creator's own wallet once the coin has graduated. This file works
-// the chain alone, with `@launchpad/chain`'s builders: the API prepares no lock and the Indexer lists no coin with one
-// until the second half. The Quote Registry writes no rule that admits a lock yet either, so the file opens two groups
-// of its own on SOL's curve rule, with the constraints the registry will write, and closes them when it ends.
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+// The Creator Lock (ADR 0023, #186): coins a launch keeps back from its curve's sale for the Creator, held by LaunchLab
+// and claimed by the Creator's own wallet once the coin has graduated. The first describes work the chain with
+// `@launchpad/chain`'s builders, on the rule groups the Quote Registry writes (a range for the sale and a ceiling for the
+// lock where a Quote Asset allows one); the rest go through the API: the prepare field, the Indexer's listing, the
+// coin's lock and its claim, and what LaunchLab's vault must stay out of after Graduation.
+import { beforeAll, describe, expect, it } from "vitest";
 import { ComputeBudgetProgram, Keypair, PublicKey, type TransactionInstruction } from "@solana/web3.js";
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, getAccount, getAssociatedTokenAddressSync, getTransferFeeAmount } from "@solana/spl-token";
 import BN from "bn.js";
 import {
-  closedLaunchConstraints, cpmmPdas, createVestingAccountIx, CREATOR_LOCK, creatorLockCapBps, creatorLockProblem, decodeTransaction, graduationBandOf,
+  cpmmPdas, createVestingAccountIx, curvePrice, CREATOR_LOCK, creatorLockCapBps, creatorLockProblem, decodeTransaction, graduationBandOf,
   initialCurveReserves, initializeV2Ix, initializeWithToken2022Ix, launchlabCoder, launchlabPdas, LAUNCH_SHAPE, listGlobalConfigs, loadLookupTable, maxLockBpsOf,
   pinsLaunchShape, prepareCreatorLockClaim, prepareLaunch, programsFor, quoteFirstBuy, readCreatorLock, readCurveRuleGroups, REWARD_TAX_MAXIMUM_FEE,
-  rewardLaunchConstraints, RuleField, RuleOp, saleWithLock, sameConstraints, standardLaunchConstraints, supplyShare, tradeInstructions, unlockedAmount,
-  unlockEndsAt, updateCurveRuleIx, WSOL_MINT, type CreatorLock, type InitializeParams, type LaunchCreated, type TradeExecuted,
+  rewardLaunchConstraints, rewardTaxFee, RuleField, RuleOp, saleWithLock, sameConstraints, standardLaunchConstraints, supplyShare, tradeInstructions,
+  unlockedAmount, unlockEndsAt, withheldFee, WSOL_MINT, type CreatorLock, type InitializeParams, type LaunchCreated, type TradeExecuted,
 } from "@launchpad/chain";
-import { localnetKeys, migrateCurve, send } from "@launchpad/localnet";
-import { connection, deliverWebhook, env, fundedWallet, rawTransaction, signAndSend, tokenBalance } from "./client";
+import {
+  CreatorLockStatus, FirstBuyQuote, HolderList, LaunchTrust, PreparedCreatorLockClaim, PreparedLaunch, RewardRoundDetail, WalletHolding,
+} from "@launchpad/contract";
+import { migrateCurve, send } from "@launchpad/localnet";
+import {
+  SOL, connection, deliverWebhook, env, fundedWallet, getLaunch, listQuotes, prepare, rawTransaction, refreshQuoteRegistry, signAndSend, tokenBalance, trade,
+} from "./client";
 
 const programs = programsFor("localnet");
 const program = () => new PublicKey(env().platform.launchlab);
@@ -24,9 +29,6 @@ const pdas = () => launchlabPdas(program());
 const solConfig = () => pdas().globalConfig(WSOL_MINT);
 const target = () => new BN(env().platform.graduationTargetLamports);
 const DAY = 86_400;
-
-/** The groups this file opens on SOL's rule: the ids after the Quote Registry's own two. */
-const LOCK_GROUP = { standard: 2, reward: 3 } as const;
 
 // LaunchLab's errors, as a failed send names them.
 const NOT_ON_A_RULE = /0x1789|CurveParamNotMatchPlatformRule/;
@@ -40,6 +42,11 @@ async function chainTimeReaches(time: number) {
   while ((await chainTime()) < time) await new Promise((r) => setTimeout(r, 250));
 }
 const blockTimeOf = async (signature: string) => (await rawTransaction(signature)).blockTime!;
+/**
+ * Whether the program stamped `stamped` for a transaction whose block time is `blockTime`, plus `offset`: the program
+ * reads its own clock, which a block's time can lead by a second (main's CI, 2026-11-14: 1794671269 for 1794671270).
+ */
+const stampedAt = (stamped: number | null, blockTime: number, offset = 0) => stamped !== null && stamped - offset >= blockTime - 1 && stamped - offset <= blockTime;
 
 type Direct = { lock: CreatorLock | null; rewardTaxBps?: number; totalBaseSell?: BN };
 
@@ -95,31 +102,31 @@ const launchIn = async (signature: string) => (await decoded(signature)).find((e
 let band: { min: BN; max: BN };
 let capBps: number;
 
-beforeAll(async () => {
-  const { operations } = localnetKeys();
-  const rules = (await readCurveRuleGroups(connection(), program(), platformConfig(), [solConfig()])).get(solConfig().toBase58())!;
-  band = graduationBandOf(rules.get(0)!)!;
-  const sol = (await listGlobalConfigs(connection(), program())).find((c) => c.quoteMint.equals(WSOL_MINT))!;
-  capBps = creatorLockCapBps(sol);
-  await send(connection(), [
-    updateCurveRuleIx(program(), operations.publicKey, platformConfig(), solConfig(), LOCK_GROUP.standard, standardLaunchConstraints(band, { maxLockBps: capBps })),
-    updateCurveRuleIx(program(), operations.publicKey, platformConfig(), solConfig(), LOCK_GROUP.reward, rewardLaunchConstraints(band, { maxLockBps: capBps })),
-  ], [operations]);
-});
+const solRules = async () => (await readCurveRuleGroups(connection(), program(), platformConfig(), [solConfig()])).get(solConfig().toBase58())!;
 
-afterAll(async () => {
-  // No later file may find SOL's rule admitting a lock: both groups end as ones no launch can satisfy.
-  const { operations } = localnetKeys();
-  await send(connection(), [LOCK_GROUP.standard, LOCK_GROUP.reward].map((id) =>
-    updateCurveRuleIx(program(), operations.publicKey, platformConfig(), solConfig(), id, closedLaunchConstraints())), [operations]);
+beforeAll(async () => {
+  await refreshQuoteRegistry();
+  band = graduationBandOf((await solRules()).get(0)!)!;
+  capBps = creatorLockCapBps((await listGlobalConfigs(connection(), program())).find((c) => c.quoteMint.equals(WSOL_MINT))!);
 });
 
 describe("the curve rule of a Quote Asset that admits a Creator Lock", () => {
-  it("is the rule of today, constraint for constraint, where no lock is allowed, so nothing is rewritten for it", async () => {
-    const rules = (await readCurveRuleGroups(connection(), program(), platformConfig(), [solConfig()])).get(solConfig().toBase58())!;
-    expect(sameConstraints(rules.get(0)!, standardLaunchConstraints(band))).toBe(true);
-    expect(sameConstraints(rules.get(1)!, rewardLaunchConstraints(band, { maxLockBps: 0 }))).toBe(true);
-    expect(maxLockBpsOf(rules.get(0)!)).toBe(0);
+  it("is written by the Quote Registry in both of the asset's groups, up to the cap its GlobalConfig leaves room for, which the quotes list says", async () => {
+    const rules = await solRules();
+    expect(sameConstraints(rules.get(0)!, standardLaunchConstraints(band, { maxLockBps: capBps }))).toBe(true);
+    expect(sameConstraints(rules.get(1)!, rewardLaunchConstraints(band, { maxLockBps: capBps }))).toBe(true);
+    expect(maxLockBpsOf(rules.get(0)!)).toBe(2_000);
+    expect((await listQuotes()).find((q) => q.mint === WSOL_MINT.toBase58())?.creatorLockCapBps).toBe(2_000);
+    // A second refresh finds the groups as they should be and writes nothing.
+    await refreshQuoteRegistry();
+    expect(sameConstraints((await solRules()).get(0)!, rules.get(0)!)).toBe(true);
+  });
+
+  it("is the rule of before ADR 0023, constraint for constraint, where no lock is allowed", () => {
+    const exact = standardLaunchConstraints(band, { maxLockBps: 0 });
+    expect(sameConstraints(exact, standardLaunchConstraints(band))).toBe(true);
+    expect(maxLockBpsOf(exact)).toBe(0);
+    expect(exact.find((c) => c.field === RuleField.TotalSellA)).toMatchObject({ op: RuleOp.Eq });
   });
 
   it("gives the lock and the sale a range each and keeps everything else pinned, in a group no larger than today's by more than one constraint", () => {
@@ -228,12 +235,15 @@ describe("a launch with a Creator Lock", () => {
     await expect(request({ lockedAmount: supplyShare(500), cliffSeconds: DAY, unlockSeconds: DAY })).rejects.toThrow("A lock lasts at least 7 days after the curve sells out.");
   });
 
-  it("is not listed yet: the Indexer leaves a coin with a lock alone until the pages can show it", async () => {
-    const coin = await launchDirectly({ lock: { lockedAmount: supplyShare(2_000), cliffSeconds: 7 * DAY, unlockSeconds: 0 } });
+  it("is listed with its lock when it is ours, whoever built it: the Indexer takes any size up to the cap from the chain", async () => {
+    const coin = await launchDirectly({ lock: { lockedAmount: supplyShare(1_234), cliffSeconds: 7 * DAY, unlockSeconds: 0 } });
     expect((await launchIn(coin.signature)).standardShape).toBe(true);
-    const res = await deliverWebhook([coin.signature]);
-    expect(await res.json()).toEqual({ launched: 0, traded: 0, graduated: 0, airdropped: 0 });
-    expect((await fetch(`${env().apiUrl}/v1/launches/${coin.mint.toBase58()}`)).status).toBe(404);
+    expect(await (await deliverWebhook([coin.signature])).json()).toMatchObject({ launched: 1 });
+    const { launch } = await getLaunch(coin.mint.toBase58());
+    expect(launch?.creatorLock).toEqual({ bps: 1_234, amount: supplyShare(1_234).toString(), cliffSeconds: 7 * DAY, unlockSeconds: 0 });
+    // The curve's price starts on the smaller sale, as the chain's does.
+    const start = initialCurveReserves({ supply: LAUNCH_SHAPE.supply, totalBaseSell: saleWithLock(supplyShare(1_234)), fundRaising: target(), lockedAmount: supplyShare(1_234) });
+    expect(launch!.market.price).toBe(curvePrice(start, LAUNCH_SHAPE.decimals, 9));
   });
 });
 
@@ -275,13 +285,15 @@ describe("claiming a Creator Lock", () => {
     // The buy that sells the curve out starts the clock: the cliff runs from that block, whenever Raydium migrates.
     const soldOutAt = await blockTimeOf(await sellOut(coin));
     const waiting = await lockOf(coin);
-    expect(waiting).toMatchObject({ status: "graduating", unlockStartsAt: soldOutAt + lock.cliffSeconds });
-    expect(unlockEndsAt(waiting)).toBe(soldOutAt + lock.cliffSeconds + lock.unlockSeconds);
+    expect(waiting.status).toBe("graduating");
+    expect(stampedAt(waiting.unlockStartsAt, soldOutAt, lock.cliffSeconds)).toBe(true);
+    expect(unlockEndsAt(waiting)).toBe(waiting.unlockStartsAt! + lock.unlockSeconds);
     await expect(claim(coin)).rejects.toThrow(NOT_GRADUATED);
 
     const migration = await migrateCurve(connection(), coin.pool);
     const state = await lockOf(coin);
-    expect(state).toMatchObject({ status: "graduated", unlockStartsAt: soldOutAt + lock.cliffSeconds });
+    // The migration leaves the clock alone.
+    expect(state).toMatchObject({ status: "graduated", unlockStartsAt: waiting.unlockStartsAt });
     // The pool got its 20.69% of the supply and the vault keeps the lock, owned by LaunchLab's authority as before.
     const vault = await getAccount(connection(), pdas().vault(coin.pool, coin.mint), "confirmed");
     expect(vault.amount).toBe(BigInt(lock.lockedAmount.toString()));
@@ -335,5 +347,177 @@ describe("claiming a Creator Lock", () => {
     expect(held.amount).toBe(share - share / 20n);
     expect((await lockOf(coin)).share!.claimed.toString()).toBe(share.toString());
     expect(await getAccount(connection(), pdas().vault(coin.pool, coin.mint), "confirmed", TOKEN_2022_PROGRAM_ID).then((v) => v.amount)).toBe(0n);
+  });
+});
+
+const api = (path: string, init?: RequestInit) => fetch(`${env().apiUrl}${path}`, init);
+const operator = () => ({ authorization: `Bearer ${env().operatorToken}` });
+const errorOf = async (res: Response) => ((await res.json()) as { error: string }).error;
+const lockStatus = async (mint: string) => CreatorLockStatus.parse(await (await api(`/v1/launches/${mint}/lock`)).json());
+const askClaim = (mint: string, wallet: PublicKey) =>
+  api(`/v1/launches/${mint}/lock/claim`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ wallet: wallet.toBase58() }) });
+const holders = async (mint: string) => HolderList.parse(await (await api(`/v1/launches/${mint}/holders`)).json());
+const authority = () => pdas().authority.toBase58();
+const seconds = (iso: string | null) => (iso === null ? null : Date.parse(iso) / 1000);
+
+type LockForm = { lockBps?: string; lockCliffSeconds?: string; lockUnlockSeconds?: string; rewardTax?: string; firstBuy?: string };
+
+/** A coin launched through the API, as the launch form would ask for it, and indexed. */
+async function launchWithLock(form: LockForm) {
+  const creator = await fundedWallet(10);
+  const res = await prepare({ creator: creator.publicKey.toBase58(), ...form });
+  expect(res.status, await res.clone().text()).toBe(200);
+  const prepared = PreparedLaunch.parse(await res.json());
+  const signature = await signAndSend(prepared, creator);
+  expect(await (await deliverWebhook([signature])).json()).toMatchObject({ launched: 1 });
+  return { creator, mint: prepared.mint, pool: prepared.pool, prepared, tokenProgram: form.rewardTax ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID };
+}
+
+/** A trader buys the curve out, Raydium's migrate wallet graduates it, and both are indexed; returns when the curve sold out. */
+async function graduate(coin: { mint: string; pool: string }) {
+  const trader = await fundedWallet(10);
+  const bought = await trade(trader, coin.mint, "buy", SOL(2));
+  expect(bought.quote.completesCurve).toBe(true);
+  const migration = await migrateCurve(connection(), new PublicKey(coin.pool));
+  await deliverWebhook([bought.signature, migration.signature]);
+  return { trader, soldOutAt: await blockTimeOf(bought.signature) };
+}
+
+describe("preparing a Creator Lock through the API", () => {
+  it("refuses a lock we do not launch, saying why", async () => {
+    const creator = (await fundedWallet(1)).publicKey.toBase58();
+    const refused = async (form: LockForm, why: RegExp) => {
+      const res = await prepare({ creator, ...form });
+      expect(res.status).toBe(400);
+      expect(await errorOf(res)).toMatch(why);
+    };
+    await refused({ lockCliffSeconds: String(30 * DAY) }, /schedule needs coins to lock/);
+    await refused({ lockBps: "2001", lockCliffSeconds: String(30 * DAY) }, /lock 20% of the supply at most/);
+    await refused({ lockBps: "1000", lockCliffSeconds: String(3 * DAY), lockUnlockSeconds: String(3 * DAY) }, /at least 7 days after the curve sells out/);
+    await refused({ lockBps: "1000", lockCliffSeconds: String(1_462 * DAY) }, /four years each at most/);
+    expect((await prepare({ creator, lockBps: "ten" })).status).toBe(400);
+  });
+
+  it("builds the lock into the launch, prices the First Buy on the smaller sale, keeps it for a retry, and lists the coin with it", async () => {
+    const quoteOf = async (query: string) => FirstBuyQuote.parse(await (await api(`/v1/launch-quote?quoteMint=${WSOL_MINT.toBase58()}&firstBuy=100000000${query}`)).json()).firstBuy;
+    const [plain, locked] = [await quoteOf(""), await quoteOf("&lockBps=1000")];
+    expect(BigInt(locked.amountOut)).toBeLessThan(BigInt(plain.amountOut));
+    expect(locked.priceBefore).toBeGreaterThan(plain.priceBefore);
+
+    const coin = await launchWithLock({ lockBps: "1000", lockCliffSeconds: String(30 * DAY), lockUnlockSeconds: String(180 * DAY), firstBuy: "100000000" });
+    const terms = { bps: 1_000, amount: "100000000000000000", cliffSeconds: 30 * DAY, unlockSeconds: 180 * DAY };
+    expect(coin.prepared.creatorLock).toEqual(terms);
+    expect(coin.prepared.firstBuy?.amountOut).toBe(locked.amountOut);
+    // The draft keeps the lock, so a retry would have built the same launch (and answers 409 now it has landed).
+    expect((await api(`/v1/launches/${coin.mint}/prepare`, { method: "POST" })).status).toBe(409);
+    expect((await getLaunch(coin.mint)).launch?.creatorLock).toEqual(terms);
+
+    // Nothing has unlocked or can be claimed while the curve sells; the whole lock is the Creator's.
+    expect(await lockStatus(coin.mint)).toEqual({
+      mint: coin.mint, creator: coin.creator.publicKey.toBase58(), terms, curve: "live", unlockStartsAt: null, unlockEndsAt: null, asOf: expect.any(String),
+      creatorShare: { amount: terms.amount, unlocked: "0", claimed: "0", claimable: "0" }, stillLocked: terms.amount, rewardTaxBps: null,
+    });
+    const early = await askClaim(coin.mint, coin.creator.publicKey);
+    expect(early.status).toBe(409);
+    expect(await errorOf(early)).toMatch(/once the coin has graduated/);
+    expect((await askClaim(coin.mint, Keypair.generate().publicKey)).status).toBe(403);
+    // Before Graduation the curve's vault holds the sale and the lock together, labelled as the curve.
+    expect((await holders(coin.mint)).holders.find((h) => h.owner === authority())?.kind).toBe("curve");
+  });
+
+  it("answers 404 for a coin without a lock", async () => {
+    const coin = await launchWithLock({});
+    expect((await getLaunch(coin.mint)).launch?.creatorLock).toBeNull();
+    expect((await api(`/v1/launches/${coin.mint}/lock`)).status).toBe(404);
+  });
+});
+
+describe("a Creator Lock after Graduation, through the API", () => {
+  it("refuses a claim while the cliff runs, saying when the coins start to unlock", { timeout: 120_000 }, async () => {
+    const coin = await launchWithLock({ lockBps: "500", lockCliffSeconds: String(7 * DAY) });
+    const { soldOutAt } = await graduate(coin);
+    const status = await lockStatus(coin.mint);
+    expect(status).toMatchObject({ curve: "graduated", creatorShare: { claimable: "0", unlocked: "0" } });
+    expect(stampedAt(seconds(status.unlockStartsAt), soldOutAt, 7 * DAY)).toBe(true);
+    const res = await askClaim(coin.mint, coin.creator.publicKey);
+    expect(res.status).toBe(409);
+    expect(await errorOf(res)).toBe(`Nothing unlocks until ${status.unlockStartsAt}.`);
+  });
+
+  it("pays the Creator what has unlocked, and keeps LaunchLab's vault out of the holder count, the trust figures and the holder list's people", { timeout: 180_000 }, async () => {
+    // No cliff and the shortest unlock time: a week, so some coins unlock every second from the sell-out.
+    const coin = await launchWithLock({ lockBps: "1000", lockUnlockSeconds: String(7 * DAY) });
+    const { trader, soldOutAt } = await graduate(coin);
+    await chainTimeReaches(soldOutAt + 3);
+    const before = await lockStatus(coin.mint);
+    expect(before.curve).toBe("graduated");
+    expect(stampedAt(seconds(before.unlockStartsAt), soldOutAt)).toBe(true);
+    expect(seconds(before.unlockEndsAt)).toBe(seconds(before.unlockStartsAt)! + 7 * DAY);
+    expect(BigInt(before.creatorShare!.claimable)).toBeGreaterThan(0n);
+    expect(before.creatorShare!.claimable).toBe(before.creatorShare!.unlocked);
+
+    const res = await askClaim(coin.mint, coin.creator.publicKey);
+    expect(res.status, await res.clone().text()).toBe(200);
+    const claim = PreparedCreatorLockClaim.parse(await res.json());
+    expect(claim.received).toBe(claim.amount);
+    await signAndSend(claim, coin.creator);
+    // The claim pays what had unlocked when it landed: at least what was quoted.
+    const paid = (await heldBy({ mint: new PublicKey(coin.mint), tokenProgram: TOKEN_PROGRAM_ID } as Coin, coin.creator.publicKey)).amount;
+    expect(paid).toBeGreaterThanOrEqual(BigInt(claim.amount));
+    const after = await lockStatus(coin.mint);
+    expect(after.creatorShare!.claimed).toBe(paid.toString());
+    expect(after.stillLocked).toBe((100_000_000_000_000_000n - paid).toString());
+
+    // After Graduation LaunchLab's vault holds only what is still locked, under its own label, never as a person.
+    const list = await holders(coin.mint);
+    expect(list.holders.find((h) => h.owner === authority())).toMatchObject({ kind: "lock", amount: after.stillLocked });
+    // The board counts holders by their trades, so the Creator's claim is not one and the vault never is: the trader alone.
+    expect((await getLaunch(coin.mint)).launch?.market.holders).toBe(1);
+    const trust = LaunchTrust.parse(await (await api(`/v1/launches/${coin.mint}/trust`)).json());
+    expect(trust.snipers.wallets.map((w) => w.wallet)).not.toContain(authority());
+    expect(trust.creator.firstBuy).toBeNull();
+    expect(trader).toBeDefined();
+  });
+
+  it("withholds a Reward Launch's Reward Tax on a claim, and leaves LaunchLab's vault out of the Holding Check and the Reward Round", { timeout: 240_000 }, async () => {
+    const runRounds = async () => {
+      const res = await api("/v1/operator/jobs/reward-rounds", { method: "POST", headers: operator() });
+      expect(res.status, await res.clone().text()).toBe(200);
+      return ((await res.json()) as { summary: { holdingChecks: { checked: { mint: string; wallets: number }[] }; opened: { mint: string; round: string }[] } }).summary;
+    };
+    const coin = await launchWithLock({ lockBps: "1000", lockUnlockSeconds: String(7 * DAY), rewardTax: "500" });
+    const { trader, soldOutAt } = await graduate(coin);
+    await chainTimeReaches(soldOutAt + 3);
+    const res = await askClaim(coin.mint, coin.creator.publicKey);
+    expect(res.status, await res.clone().text()).toBe(200);
+    const claim = PreparedCreatorLockClaim.parse(await res.json());
+    expect((await lockStatus(coin.mint)).rewardTaxBps).toBe(500);
+    const amount = new BN(claim.amount);
+    expect(claim.received).toBe(amount.sub(withheldFee(amount, rewardTaxFee(500))).toString());
+    expect(BigInt(claim.received)).toBeLessThan(BigInt(claim.amount));
+    await signAndSend(claim, coin.creator);
+    const held = await heldBy({ mint: new PublicKey(coin.mint), tokenProgram: TOKEN_2022_PROGRAM_ID } as Coin, coin.creator.publicKey);
+    expect(getTransferFeeAmount(held)?.withheldAmount).toBeGreaterThan(0n);
+
+    // The Holding Check records the wallets that hold the coin, the trader and the Creator, and never the vault, which
+    // holds most of the lock still; a Reward Round snapshots the same wallets.
+    const wallets = [trader.publicKey.toBase58(), coin.creator.publicKey.toBase58()].sort();
+    let checked: { wallets: number } | undefined;
+    const opened: string[] = [];
+    for (let i = 0; i < 20 && (!checked || opened.length === 0); i++) {
+      const run = await runRounds();
+      checked ??= run.holdingChecks.checked.find((c) => c.mint === coin.mint);
+      opened.push(...run.opened.filter((o) => o.mint === coin.mint).map((o) => o.round));
+      if (!checked || opened.length === 0) await new Promise((r) => setTimeout(r, env().holdingDaySeconds * 1000));
+    }
+    expect(checked?.wallets).toBe(2);
+    const vault = WalletHolding.parse(await (await api(`/v1/launches/${coin.mint}/holdings/${authority()}`)).json());
+    expect(vault.held).toBe("0");
+    expect(opened.length).toBeGreaterThan(0);
+    const round = RewardRoundDetail.parse(await (await api(`/v1/rewards/rounds/${opened[0]}`)).json());
+    // Who is paid is whoever holds the round's minimum, so the Creator's few claimed coins may fall under it; the vault never counts.
+    const paid = round.payouts.map((p) => p.wallet);
+    expect(paid).toContain(trader.publicKey.toBase58());
+    expect(paid.every((w) => wallets.includes(w))).toBe(true);
   });
 });
