@@ -20,7 +20,7 @@ import { notifyPending, watchGraduations } from "./graduation";
 import { fetchRawTransaction, IndexBatchError, indexTransactions } from "./indexer";
 import { sniffImageType } from "./images";
 import {
-  buildLaunch, launchQuoteAsset, loadDraft, newMintKeyNonce, refuseWith, resolveLaunchModes, saveDraft,
+  buildLaunch, creatorLockChoice, launchQuoteAsset, loadDraft, newMintKeyNonce, refuseWith, resolveLaunchModes, saveDraft,
 } from "./launch";
 import { runJob, toJobRun } from "./jobs";
 import { arweaveUrl, metadataDocument, signedItems, signMetadataItems, uploadMetadata } from "./metadata";
@@ -50,6 +50,7 @@ import { runRewardRounds } from "./rewards/engine";
 import { runRebates } from "./rebates/engine";
 import { tradeRoutes } from "./routes/trades";
 import { trustRoutes } from "./routes/trust";
+import { creatorLockRoutes } from "./routes/creatorLock";
 import { markRoutes, operatorMarkRoutes } from "./routes/marks";
 import { pollMentions } from "./mentions";
 import { isWallet, isXId, notableAvatarKey, servePicture, walletAvatar, xAvatarKey } from "./pictures";
@@ -151,7 +152,10 @@ app.post("/v1/launches/prepare", async (c) => {
   if (airdrop.length > 0 && !(await mayAirdrop(c.get("db"), creator.toBase58())))
     return c.json({ error: "Airdrops at launch aren't open to this wallet. Launch without one." }, 403);
   const rewardTaxBps = f.rewardTax ?? null;
-  const choices = { rewardTaxBps, rewardPayout: f.rewardPayout ?? null, rewardBurnBps: f.rewardBurn ?? null, earningsDestination: f.earningsDestination ?? "wallet" } as const;
+  const lock = await Promise.resolve(f).then(creatorLockChoice).catch(refuseWith(400));
+  const choices = {
+    rewardTaxBps, rewardPayout: f.rewardPayout ?? null, rewardBurnBps: f.rewardBurn ?? null, earningsDestination: f.earningsDestination ?? "wallet", lock,
+  } as const;
   const modes = await resolveLaunchModes(connection, cfg, quote, creator, firstBuy, airdrop, choices).catch(refuseWith(400));
 
   // A key the operator chose for this Creator's next launch (the Platform Token's vanity address, #75) takes the place
@@ -243,6 +247,7 @@ app.route("/v1", copyRoutes);
 app.route("/v1", quotes);
 app.route("/v1", tradeRoutes);
 app.route("/v1", trustRoutes);
+app.route("/v1", creatorLockRoutes);
 app.route("/v1", creatorEarningsRoutes);
 app.route("/v1", revenueRoutes);
 app.route("/v1", rewardRoutes);

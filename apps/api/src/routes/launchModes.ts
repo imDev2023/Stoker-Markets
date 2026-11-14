@@ -3,7 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import { Connection, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { eq } from "drizzle-orm";
-import { LAUNCH_SHAPE, launchlabPdas, loadLookupTable, prepareAirdrop } from "@launchpad/chain";
+import { CREATOR_LOCK, LAUNCH_SHAPE, launchlabPdas, loadLookupTable, prepareAirdrop } from "@launchpad/chain";
 import {
   AllowAirdropCreator, FirstBuyQuoteQuery, type AirdropCreators, type AirdropStatus, type FirstBuyQuote, type LaunchPermissions, type PreparedAirdrop,
 } from "@launchpad/contract";
@@ -13,7 +13,7 @@ import { airdropCreators, allowAirdropCreator, disallowAirdropCreator, mayAirdro
 import { quoteMarket, type AppEnv, type Config } from "../env";
 import { indexAccountHistory } from "../indexer";
 import {
-  buildLaunch, firstBuyToContract, launchQuoteAsset, loadDraft, quoteLaunchFirstBuy, refuseWith, resolveDraftModes, type LoadedDraft,
+  buildLaunch, checkCreatorLock, firstBuyToContract, launchQuoteAsset, loadDraft, lockOf, quoteLaunchFirstBuy, refuseWith, resolveDraftModes, type LoadedDraft,
 } from "../launch";
 
 /** Launch modes: first-buy quotes, retrying a prepared launch, and paying its airdrop. */
@@ -25,7 +25,11 @@ launchModeRoutes.get("/launch-quote", async (c) => {
   if (!query.success) return c.json({ error: "invalid launch quote request", details: query.error.issues }, 400);
   const cfg = c.get("cfg");
   const quote = await launchQuoteAsset(c.get("db"), cfg, quoteMarket(c.env), query.data.quoteMint);
-  const q = await quoteLaunchFirstBuy(new Connection(cfg.rpcUrl, "confirmed"), cfg, quote, new BN(query.data.firstBuy), query.data.rewardTax ?? null).catch(refuseWith(400));
+  const lock = query.data.lockBps ? { bps: query.data.lockBps, cliffSeconds: 0, unlockSeconds: CREATOR_LOCK.minSeconds } : null;
+  // Only the lock's size moves the price; the schedule is checked at prepare. Its size is held to the asset's cap here too.
+  if (lock) await Promise.resolve(quote).then((q) => checkCreatorLock(q, lock)).catch(refuseWith(400));
+  const connection = new Connection(cfg.rpcUrl, "confirmed");
+  const q = await quoteLaunchFirstBuy(connection, cfg, quote, new BN(query.data.firstBuy), query.data.rewardTax ?? null, lock && lockOf(lock)).catch(refuseWith(400));
   const res: FirstBuyQuote = { firstBuy: firstBuyToContract(q, quote.decimals, q.quoteTransferFeeBps, q.rewardTaxBps) };
   return c.json(res);
 });

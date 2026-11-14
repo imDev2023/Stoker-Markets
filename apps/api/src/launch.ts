@@ -6,11 +6,12 @@ import { ACCOUNT_SIZE, ExtensionType, getAccountLen, getAssociatedTokenAddressSy
 import BN from "bn.js";
 import { eq, asc } from "drizzle-orm";
 import {
-  curvePrice, firstBuyTakesCurve, LAUNCH_SHAPE, loadLookupTable, RATE_DENOMINATOR, planAirdrop, prepareLaunch, quoteFirstBuy, readTransferFees,
-  rewardTaxFee, WSOL_MINT, type FirstBuyQuote, type LaunchPairing,
+  creatorLockProblem, curvePrice, firstBuyTakesCurve, LAUNCH_SHAPE, loadLookupTable, RATE_DENOMINATOR, planAirdrop, prepareLaunch, quoteFirstBuy,
+  readTransferFees, rewardTaxFee, supplyShare, WSOL_MINT, type CreatorLock, type FirstBuyQuote, type LaunchPairing,
 } from "@launchpad/chain";
 import type {
-  AirdropRecipients, CreatorEarningsDestination, GraduationTarget, LaunchModesSummary, PreparedLaunch, RewardBurnBps, RewardPayoutAsset, RewardTaxBps, TradeQuote,
+  AirdropRecipients, CreatorEarningsDestination, CreatorLockTerms, GraduationTarget, LaunchModesSummary, PreparedLaunch, RewardBurnBps, RewardPayoutAsset,
+  RewardTaxBps, TradeQuote,
 } from "@launchpad/contract";
 import { airdropRecipients, launchDrafts, launchMetadata, type Db } from "@launchpad/db";
 import type { Config } from "./env";
@@ -19,8 +20,11 @@ import { draftMintKeypair } from "./mintKeys";
 import { launchQuoteAsBuilt, priceLaunch, type LaunchQuote } from "./quotes/assets";
 import type { QuoteMarket } from "./quotes/pricing";
 
-/** A launch's Quote Asset: its pairing on-chain, its decimals and ticker, and the Graduation Target in both terms. */
-export type QuoteAsset = LaunchPairing & { decimals: number; ticker: string; graduationTarget: GraduationTarget };
+/**
+ * A launch's Quote Asset: its pairing on-chain, its decimals and ticker, the Graduation Target in both terms, and the
+ * largest Creator Lock our curve rule for it admits on-chain right now.
+ */
+export type QuoteAsset = LaunchPairing & { decimals: number; ticker: string; graduationTarget: GraduationTarget; creatorLockCapBps: number };
 
 const fromLaunchQuote = (q: LaunchQuote): QuoteAsset => ({
   globalConfig: q.globalConfig,
@@ -30,6 +34,7 @@ const fromLaunchQuote = (q: LaunchQuote): QuoteAsset => ({
   graduationTarget: q.graduationTarget,
   decimals: q.decimals,
   ticker: q.ticker,
+  creatorLockCapBps: q.creatorLockCapBps,
 });
 
 /**
@@ -86,12 +91,15 @@ export function firstBuyToContract(q: FirstBuyQuote, quoteDecimals: number, quot
  */
 export type LaunchFirstBuy = FirstBuyQuote & { quoteTransferFeeBps: number; rewardTaxBps: number };
 
-/** Quotes a first buy, refusing one that would sell out the curve inside its own launch. */
+/**
+ * Quotes a first buy, refusing one that would sell out the curve inside its own launch. A Creator Lock's coins come out
+ * of the sale, so with one the same amount buys fewer coins.
+ */
 export async function quoteLaunchFirstBuy(
-  connection: Connection, cfg: Config, quote: QuoteAsset, amount: BN, rewardTaxBps: RewardTaxBps | null = null,
+  connection: Connection, cfg: Config, quote: QuoteAsset, amount: BN, rewardTaxBps: RewardTaxBps | null = null, lock: CreatorLock | null = null,
 ): Promise<LaunchFirstBuy> {
   const transferFee = (await readTransferFees(connection, [quote.quoteMint])).get(quote.quoteMint.toBase58()) ?? null;
-  const q = await quoteFirstBuy(connection, { ...quote, platformConfig: cfg.platformConfig }, amount, { quote: transferFee, base: rewardTaxFee(rewardTaxBps) });
+  const q = await quoteFirstBuy(connection, { ...quote, platformConfig: cfg.platformConfig, lock }, amount, { quote: transferFee, base: rewardTaxFee(rewardTaxBps) });
   if (q.quote.amountOut.isZero()) throw new LaunchModeError("The first buy is too small to get any coins. Enter a larger amount.");
   if (firstBuyTakesCurve(q.quote))
     throw new LaunchModeError("A first buy can't take every coin on the curve. Enter a smaller amount.");
@@ -116,9 +124,45 @@ async function checkQuoteBalance(connection: Connection, quote: QuoteAsset, crea
     throw new LaunchModeError(`Your wallet doesn't hold enough ${quote.ticker} for this first buy. Add ${quote.ticker} or buy less.`);
 }
 
-/** The Creator's choices a launch is fixed with: the Reward Tax, its Payout Asset and Reward Burn, and where the earnings go. */
+/** A Creator Lock as the Creator asks for it: its size in basis points of the supply and its schedule in seconds. */
+export type CreatorLockChoice = { bps: number; cliffSeconds: number; unlockSeconds: number };
+
+/**
+ * The Creator Lock a launch form asks for, or null for none: a schedule without a size is refused, since it would lock
+ * nothing (LaunchLab itself refuses a cliff or an unlock time on a launch that locks nothing).
+ */
+export function creatorLockChoice(f: { lockBps?: number | undefined; lockCliffSeconds?: number | undefined; lockUnlockSeconds?: number | undefined }): CreatorLockChoice | null {
+  if (!f.lockBps) {
+    if (f.lockCliffSeconds || f.lockUnlockSeconds) throw new LaunchModeError("A lock's schedule needs coins to lock. Choose how much to lock, or leave the schedule out.");
+    return null;
+  }
+  return { bps: f.lockBps, cliffSeconds: f.lockCliffSeconds ?? 0, unlockSeconds: f.lockUnlockSeconds ?? 0 };
+}
+
+/** A Creator Lock in the chain's terms: the coins it locks, raw units, of the launch shape's supply. */
+export const lockOf = (c: CreatorLockChoice): CreatorLock => ({ lockedAmount: supplyShare(c.bps), cliffSeconds: c.cliffSeconds, unlockSeconds: c.unlockSeconds });
+
+const lockTerms = (c: CreatorLockChoice): CreatorLockTerms => ({
+  bps: c.bps, amount: supplyShare(c.bps).toString(), cliffSeconds: c.cliffSeconds, unlockSeconds: c.unlockSeconds,
+});
+
+/**
+ * Checks a Creator Lock against our limits (ADR 0023) and the Quote Asset's cap, which is what our curve rule for it
+ * admits on-chain: a lock above it would be refused by the chain.
+ */
+export function checkCreatorLock(quote: QuoteAsset, c: CreatorLockChoice) {
+  if (quote.creatorLockCapBps === 0) throw new LaunchModeError(`A coin paired with ${quote.ticker} can't have a Creator Lock. Launch without one.`);
+  const problem = creatorLockProblem(lockOf(c), quote.creatorLockCapBps);
+  if (problem) throw new LaunchModeError(problem);
+}
+
+/**
+ * The Creator's choices a launch is fixed with: the Reward Tax, its Payout Asset and Reward Burn, where the earnings go,
+ * and the Creator Lock.
+ */
 export type LaunchChoices = {
   rewardTaxBps: RewardTaxBps | null; rewardPayout: RewardPayoutAsset | null; rewardBurnBps: RewardBurnBps | null; earningsDestination: CreatorEarningsDestination;
+  lock: CreatorLockChoice | null;
 };
 
 /**
@@ -128,17 +172,20 @@ export type LaunchChoices = {
  */
 export async function resolveLaunchModes(
   connection: Connection, cfg: Config, quote: QuoteAsset, creator: PublicKey, firstBuy: BN | null, airdrop: AirdropRecipients,
-  { rewardTaxBps, rewardPayout, rewardBurnBps, earningsDestination }: LaunchChoices,
+  { rewardTaxBps, rewardPayout, rewardBurnBps, earningsDestination, lock }: LaunchChoices,
 ): Promise<{ firstBuy: LaunchFirstBuy | null; summary: LaunchModesSummary }> {
   if (rewardPayout && !rewardTaxBps) throw new LaunchModeError("A payout asset is only for a Reward Launch. Choose a Reward Tax, or leave the payout asset out.");
   // Nothing to burn without a tax; "0" says no burn and is refused all the same, so a standard coin carries no Reward Burn at all.
   if (rewardBurnBps !== null && !rewardTaxBps)
     throw new LaunchModeError("A Reward Burn is only for a Reward Launch. Choose a Reward Tax, or leave the burn out.");
   const rewardTax = rewardTaxBps ? { bps: rewardTaxBps, payout: rewardPayout ?? ("coin" as const), burnBps: rewardBurnBps ?? 0 } : null;
-  const bought = firstBuy ? await quoteLaunchFirstBuy(connection, cfg, quote, firstBuy, rewardTaxBps) : null;
+  if (lock) checkCreatorLock(quote, lock);
+  const creatorLock = lock && lockTerms(lock);
+  const bought = firstBuy ? await quoteLaunchFirstBuy(connection, cfg, quote, firstBuy, rewardTaxBps, lock && lockOf(lock)) : null;
   const toContract = (b: LaunchFirstBuy) => firstBuyToContract(b, quote.decimals, b.quoteTransferFeeBps, b.rewardTaxBps);
   if (bought) await checkQuoteBalance(connection, quote, creator, bought.quote.amountIn);
-  if (airdrop.length === 0) return { firstBuy: bought, summary: { rewardTax, earningsDestination, firstBuy: bought && toContract(bought), airdrop: null } };
+  if (airdrop.length === 0)
+    return { firstBuy: bought, summary: { rewardTax, earningsDestination, creatorLock, firstBuy: bought && toContract(bought), airdrop: null } };
   if (!bought) throw new LaunchModeError("An airdrop is paid from your first buy. Add a first buy.");
   const recipients = airdrop.map((r) => ({ wallet: new PublicKey(r.wallet), amount: new BN(r.amount) }));
   for (const r of recipients) {
@@ -163,6 +210,7 @@ export async function resolveLaunchModes(
     summary: {
       rewardTax,
       earningsDestination,
+      creatorLock,
       firstBuy: toContract(bought),
       airdrop: { recipients: recipients.length, amount: amount.toString(), transactions, costLamports: costLamports.toString() },
     },
@@ -193,6 +241,10 @@ export async function saveDraft(
       rewardBurnBps: d.rewardTaxBps ? (d.rewardBurnBps ?? 0) : null,
       // So is where the Creator's earnings go (ADR 0011): the Indexer copies it to the Launch, and nothing changes it after.
       earningsDestination: d.earningsDestination,
+      // And the Creator Lock (ADR 0023): a retry builds the same lock, and the Indexer reads it from the chain.
+      creatorLockBps: d.lock?.bps ?? null,
+      creatorLockCliffSeconds: d.lock?.cliffSeconds ?? null,
+      creatorLockUnlockSeconds: d.lock?.unlockSeconds ?? null,
     });
     if (d.airdrop.length > 0)
       await tx.insert(airdropRecipients).values(
@@ -240,6 +292,7 @@ export async function buildLaunch(
       firstBuy: firstBuy?.quote ?? null,
       lookupTable: await loadLookupTable(connection, cfg.lookupTable),
       rewardTaxBps: draft.rewardTaxBps,
+      lock: draftLock(draft) && lockOf(draftLock(draft)!),
     },
     await draftMintKeypair(db, cfg, draft),
   );
@@ -254,6 +307,11 @@ export async function buildLaunch(
     ...summary,
   };
   return body;
+}
+
+/** The Creator Lock a draft was prepared with, or null for none. */
+function draftLock(d: typeof launchDrafts.$inferSelect): CreatorLockChoice | null {
+  return d.creatorLockBps === null ? null : { bps: d.creatorLockBps, cliffSeconds: d.creatorLockCliffSeconds ?? 0, unlockSeconds: d.creatorLockUnlockSeconds ?? 0 };
 }
 
 /** Re-checks a stored draft's Quote Asset and launch modes against the chain as it is now, for a retry. */
@@ -272,6 +330,7 @@ export async function resolveDraftModes(db: Db, connection: Connection, cfg: Con
       rewardPayout: draft.rewardPayout,
       rewardBurnBps: (draft.rewardBurnBps as RewardBurnBps | null) ?? null,
       earningsDestination: draft.earningsDestination,
+      lock: draftLock(draft),
     },
   );
   return { quote, ...modes };

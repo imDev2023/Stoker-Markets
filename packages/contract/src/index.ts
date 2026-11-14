@@ -4,7 +4,7 @@ import { PublishedBudgetTable } from "./budget";
 import { PublishedCreatorLadder } from "./ladder";
 import { GraduationTarget, QuoteRef } from "./quotes";
 import { CurveProgress, Graduation, SolRouteSource } from "./trades";
-import { CreatorEarningsDestination, LaunchModeFields, LaunchModesSummary, RewardTax } from "./launchModes";
+import { CreatorEarningsDestination, CreatorLockTerms, LaunchModeFields, LaunchModesSummary, RewardTax } from "./launchModes";
 
 /** The public API contract, shared by the API (which validates with it) and every client, including our web app. */
 
@@ -24,6 +24,7 @@ export * from "./operator";
 export * from "./region";
 export * from "./trust";
 export * from "./marks";
+export * from "./creatorLock";
 
 const base58 = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "must be a base58 address");
 const optionalUrl = z.union([z.url({ protocol: /^https?$/ }).max(200), z.literal("")]).optional().transform((v) => v || undefined);
@@ -145,6 +146,12 @@ export const LaunchSummary = z.object({
   rewardTax: RewardTax.nullable(),
   /** Where the Creator's earnings on the coin go (ADR 0011), fixed at launch: a coin launched without our API pays its Creator's wallet. */
   earningsDestination: CreatorEarningsDestination,
+  /**
+   * The Creator Lock (ADR 0023): the coins the launch kept back from its sale for the Creator, as the launch transaction
+   * set them, and the share of the supply they are; null for a coin that locked nothing. What has unlocked and been
+   * claimed is on `GET /v1/launches/{mint}/lock`, read from the chain.
+   */
+  creatorLock: CreatorLockTerms.nullable(),
   market: LaunchMarket,
   /**
    * The price over the last 24 hours, in whole Quote Asset units per whole coin: 24 points an hour apart, the latest last,

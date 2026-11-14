@@ -6,7 +6,8 @@
 
 import BN from "bn.js";
 import {
-  closedLaunchConstraints, graduationBandOf, pinsLaunchShape, rewardLaunchConstraints, sameConstraints, standardLaunchConstraints, type RuleConstraint,
+  closedLaunchConstraints, graduationBandOf, maxLockBpsOf, pinsLaunchShape, rewardLaunchConstraints, sameConstraints, standardLaunchConstraints,
+  type RuleConstraint,
 } from "@launchpad/chain";
 
 /** The two kinds of Launch a curve rule admits, each as its own group: a standard coin, and a Reward Launch's taxed coin. */
@@ -51,23 +52,34 @@ export function bandOf(constraints: RuleConstraint[] | null): Band | null {
   return band ? { min: BigInt(band.min.toString()), max: BigInt(band.max.toString()) } : null;
 }
 
-const launchConstraints = (b: Band, kind: LaunchKind) =>
-  (kind === "reward" ? rewardLaunchConstraints : standardLaunchConstraints)({ min: new BN(b.min.toString()), max: new BN(b.max.toString()) });
+/**
+ * The largest Creator Lock (ADR 0023) a rule group admits, in basis points of the supply: 0 for a group that pins none,
+ * and for one that admits no launch on our shape at all.
+ */
+export const lockCapOf = (constraints: RuleConstraint[] | null) => (constraints && bandOf(constraints) ? maxLockBpsOf(constraints) : 0);
+
+const launchConstraints = (b: Band, kind: LaunchKind, maxLockBps: number) =>
+  (kind === "reward" ? rewardLaunchConstraints : standardLaunchConstraints)({ min: new BN(b.min.toString()), max: new BN(b.max.toString()) }, { maxLockBps });
 
 /**
  * The constraints a Quote Asset's rule group should have now, or null when the group on-chain can stay as it is.
  * `current` is the group today (null when there is no rule account, which LaunchLab treats as no restriction at all),
- * `target` the Graduation Target at the latest price (null without a reliable price), `exact` true for SOL.
+ * `target` the Graduation Target at the latest price (null without a reliable price), `exact` true for SOL, and
+ * `maxLockBps` the largest Creator Lock the group should admit (`creatorLockCapBps` of the asset's GlobalConfig; 0 pins
+ * a launch without one, constraint for constraint as before ADR 0023). A group that admits another cap is rewritten
+ * once, as a group on an earlier shape is.
  */
-export function ruleUpdate(current: RuleConstraint[] | null, target: bigint | null, exact: boolean, kind: LaunchKind = "standard"): RuleConstraint[] | null {
+export function ruleUpdate(
+  current: RuleConstraint[] | null, target: bigint | null, exact: boolean, kind: LaunchKind = "standard", maxLockBps = 0,
+): RuleConstraint[] | null {
   if (target === null || !targetFits(target)) {
     const closed = closedLaunchConstraints();
     return current && sameConstraints(current, closed) ? null : closed;
   }
   const band = bandOf(current);
-  const keep = band && sameConstraints(current!, launchConstraints(band, kind)) &&
+  const keep = band && sameConstraints(current!, launchConstraints(band, kind, maxLockBps)) &&
     (exact ? band.min === target && band.max === target : !needsRecentre(band, target));
-  return keep ? null : launchConstraints(bandAround(target, exact), kind);
+  return keep ? null : launchConstraints(bandAround(target, exact), kind, maxLockBps);
 }
 
 /** Whether the curve can hold a Graduation Target: large enough to be precise, small enough to fit a u64 with its band. */

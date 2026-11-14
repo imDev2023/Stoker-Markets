@@ -39,6 +39,16 @@ export const launches = pgTable(
      */
     earningsDestination: text("earnings_destination", { enum: ["wallet", "holders", "burn", "liquidity"] }).notNull().default("wallet"),
     /**
+     * A Creator Lock (ADR 0023, #186): the coins the launch kept back from its sale for the Creator, raw units, and its
+     * schedule in seconds (nothing unlocks for the cliff after the curve sells out, then the coins unlock evenly over the
+     * unlock time). Read from the launch transaction itself, so a coin launched without our API carries its own lock; the
+     * three are null together for a coin that locked nothing. LaunchLab holds the coins, and who may claim them and what
+     * has been claimed are read from the chain, never stored.
+     */
+    lockedAmount: numeric("locked_amount", { precision: 40, scale: 0 }),
+    lockCliffSeconds: integer("lock_cliff_seconds"),
+    lockUnlockSeconds: integer("lock_unlock_seconds"),
+    /**
      * The transaction in which the operations wallet gave up the coin's transfer-fee-config authority for good, once
      * Raydium's migration handed it over; from then on nobody can change the Reward Tax. Null until then.
      */
@@ -71,6 +81,10 @@ export const launches = pgTable(
     index("launches_name_key_idx").on(t.nameKey),
     index("launches_symbol_key_idx").on(t.symbolKey),
     check("launches_reward_burn_bps", sql`${t.rewardBurnBps} between 0 and 5000`),
+    check(
+      "launches_creator_lock",
+      sql`(${t.lockedAmount} is null and ${t.lockCliffSeconds} is null and ${t.lockUnlockSeconds} is null) or (${t.lockedAmount} > 0 and ${t.lockCliffSeconds} >= 0 and ${t.lockUnlockSeconds} >= 0)`,
+    ),
   ],
 ).enableRLS();
 
@@ -193,6 +207,12 @@ export const quoteAssets = pgTable("quote_assets", {
   /** The Graduation Targets our curve rule accepts; null while the rule is closed. */
   ruleMin: numeric("rule_min", { precision: 40, scale: 0 }),
   ruleMax: numeric("rule_max", { precision: 40, scale: 0 }),
+  /**
+   * The largest Creator Lock (ADR 0023) our curve rule for this Quote Asset admits on-chain, in basis points of the
+   * supply, as the last refresh read it back: ours (a fifth), less where Raydium's GlobalConfig allows less; 0 while the
+   * rule admits none.
+   */
+  creatorLockCapBps: integer("creator_lock_cap_bps").notNull().default(0),
   /** The GlobalConfig's `max_share_fee_rate` (1e6 denominator): the most a referred trade may pay its referrer; 0 on most. */
   maxShareFeeRate: bigint("max_share_fee_rate", { mode: "number" }).notNull().default(0),
   /** The token list's USD liquidity for the mint at the last refresh, null when the list doesn't know it: how prominent an asset is, for the chooser's order. */
@@ -289,11 +309,25 @@ export const launchDrafts = pgTable(
     rewardBurnBps: integer("reward_burn_bps"),
     /** Where the Creator chose their earnings on the coin to go (ADR 0011). */
     earningsDestination: text("earnings_destination", { enum: ["wallet", "holders", "burn", "liquidity"] }).notNull().default("wallet"),
+    /**
+     * The Creator Lock the Creator chose (ADR 0023, #186): its size in basis points of the supply and its schedule in
+     * seconds, null together for a launch that locks nothing. A retry builds the same lock from these.
+     */
+    creatorLockBps: integer("creator_lock_bps"),
+    creatorLockCliffSeconds: integer("creator_lock_cliff_seconds"),
+    creatorLockUnlockSeconds: integer("creator_lock_unlock_seconds"),
     /** Newest transaction of the Creator's coin account already scanned for airdrop payments. */
     airdropScannedUntil: text("airdrop_scanned_until"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("launch_drafts_creator_idx").on(t.creator), check("launch_drafts_reward_burn_bps", sql`${t.rewardBurnBps} between 0 and 5000`)],
+  (t) => [
+    index("launch_drafts_creator_idx").on(t.creator),
+    check("launch_drafts_reward_burn_bps", sql`${t.rewardBurnBps} between 0 and 5000`),
+    check(
+      "launch_drafts_creator_lock",
+      sql`(${t.creatorLockBps} is null and ${t.creatorLockCliffSeconds} is null and ${t.creatorLockUnlockSeconds} is null) or (${t.creatorLockBps} between 1 and 2000 and ${t.creatorLockCliffSeconds} >= 0 and ${t.creatorLockUnlockSeconds} >= 0)`,
+    ),
+  ],
 ).enableRLS();
 
 /**

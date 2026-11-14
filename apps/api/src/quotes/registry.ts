@@ -1,14 +1,14 @@
 import { Connection, PublicKey, Transaction, type Keypair, type TransactionInstruction } from "@solana/web3.js";
 import { getTableColumns, sql } from "drizzle-orm";
 import {
-  createCurveRuleIx, listGlobalConfigs, readCurveRuleGroups, readQuoteMints, RULE_GROUP, updateCurveRuleIx, WSOL_MINT, type RuleConstraint,
+  createCurveRuleIx, creatorLockCapBps, listGlobalConfigs, readCurveRuleGroups, readQuoteMints, RULE_GROUP, updateCurveRuleIx, WSOL_MINT, type RuleConstraint,
 } from "@launchpad/chain";
 import { quoteAssets, type Db } from "@launchpad/db";
 import type { Config } from "../env";
 import { divide, formatDecimal, graduationTargetRaw, type Decimal, type QuoteMarket } from "./pricing";
 import { quoteCategory, quoteIssuer } from "./categories";
 import { listLabels, mintLabels, sortLabels, tickerOf } from "./labels";
-import { bandOf, ruleUpdate } from "./rules";
+import { bandOf, lockCapOf, ruleUpdate } from "./rules";
 import { refreshPlatformFees } from "../routes/operator";
 
 export type RefreshDeps = { db: Db; cfg: Config; market: QuoteMarket; operations: Keypair };
@@ -44,11 +44,13 @@ export async function refreshQuoteRegistry({ db, cfg, market, operations }: Refr
   const globalConfigs = priced.map((q) => q.config.address);
   const before = await readCurveRuleGroups(connection, cfg.launchlab, cfg.platformConfig, globalConfigs);
   // Each rule has two groups, one per kind of Launch, kept in step: a standard coin's, and a Reward Launch's taxed coin's.
+  // Both admit a Creator Lock up to what the asset's GlobalConfig leaves room for (ADR 0023), or none where it leaves none.
   const writes = priced.flatMap((q) => {
     const rule = before.get(q.config.address.toBase58()) ?? null;
+    const maxLockBps = creatorLockCapBps(q.config);
     const groups: { id: number; next: RuleConstraint[] }[] = [];
     for (const [id, kind] of [[RULE_GROUP.standard, "standard"], [RULE_GROUP.reward, "reward"]] as const) {
-      const next = ruleUpdate(rule ? (rule.get(id) ?? []) : null, q.target, q.isSol, kind);
+      const next = ruleUpdate(rule ? (rule.get(id) ?? []) : null, q.target, q.isSol, kind, maxLockBps);
       if (next) groups.push({ id, next });
     }
     if (!groups.length) return [];
@@ -74,7 +76,8 @@ export async function refreshQuoteRegistry({ db, cfg, market, operations }: Refr
 
   const rows = priced.map((q) => {
     const mint = q.mint.mint.toBase58();
-    const band = bandOf(after.get(q.config.address.toBase58()) ?? null);
+    const standard = after.get(q.config.address.toBase58()) ?? null;
+    const band = bandOf(standard);
     const ticker = tickerOf(q.mint);
     return {
       mint,
@@ -92,6 +95,8 @@ export async function refreshQuoteRegistry({ db, cfg, market, operations }: Refr
       graduationTarget: q.target?.toString() ?? null,
       ruleMin: band?.min.toString() ?? null,
       ruleMax: band?.max.toString() ?? null,
+      // What the rule on-chain admits now, read back like the band: a write that failed leaves the cap where it was.
+      creatorLockCapBps: lockCapOf(standard),
       maxShareFeeRate: q.config.maxShareFeeRate.toNumber(),
       liquidityUsd: listings.get(mint)?.liquidityUsd ?? null,
       labels: sortLabels([...mintLabels(q.mint, ticker), ...listLabels(listings.get(mint), ticker, market.listName)]),
