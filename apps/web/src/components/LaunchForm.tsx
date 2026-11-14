@@ -19,7 +19,8 @@ import { CoinCard, type CoinCardData } from "./CoinCard";
 import { useCopyCheck, type CopyStatus } from "./CopyCheck";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
 import { burnShareTitle } from "@/lib/rewardBurn";
-import { EarningsChoice, LaunchOptions, LaunchType, supplyShare, useLaunchOptions, type LaunchOptionsState } from "./LaunchOptions";
+import { lockSentence } from "@/lib/creatorLock";
+import { EarningsChoice, LaunchOptions, LaunchType, LockChoice, supplyShare, useLaunchOptions, type LaunchOptionsState } from "./LaunchOptions";
 import { Ring } from "./Mark";
 import { QuoteChooser } from "./QuoteChooser";
 import { WalletButton } from "./WalletButton";
@@ -82,9 +83,14 @@ export function LaunchForm({
 
   const quote = quotes.find((q) => q.mint === quoteMint) ?? null;
   // The launch options work in whichever Quote Asset is chosen: its ticker and decimals, and quotes priced in it.
-  const options = useLaunchOptions(quote && { mint: quote.mint, symbol: quoteTicker(quote), decimals: quote.decimals }, publicKey?.toBase58() ?? null);
+  const options = useLaunchOptions(
+    quote && { mint: quote.mint, symbol: quoteTicker(quote), decimals: quote.decimals, lockCapBps: quote.creatorLockCapBps },
+    publicKey?.toBase58() ?? null,
+  );
   const copy = useCopyCheck({ name, symbol, image, creator: publicKey?.toBase58() ?? null });
-  const launchPrice = useLaunchPrice(quote);
+  // The curve's opening price, and with a Creator Lock the price it would open at without one, to say what the lock does.
+  const launchPrice = useLaunchPrice(quote, null);
+  const lockedPrice = useLaunchPrice(quote, options.lock?.bps ?? null, true);
   const failed = step.kind === "failed" ? step : step.kind === "preparing" ? step.retrying : null;
   const busy = step.kind !== "editing" && step.kind !== "failed";
 
@@ -179,7 +185,8 @@ export function LaunchForm({
 
   const side = useStickySide();
   const ticker = quote ? quoteTicker(quote) : null;
-  const preview = previewCard({ imageUrl, symbol, name, quote, firstBuy: options.firstBuyQuote, launchPrice, rewardTax: options.rewardTax });
+  const openingPrice = options.lock ? lockedPrice : launchPrice;
+  const preview = previewCard({ imageUrl, symbol, name, quote, firstBuy: options.firstBuyQuote, launchPrice: openingPrice, rewardTax: options.rewardTax });
   // While a launch is in flight or uncertain, nothing on the form may change under it.
   const locked = busy || failed !== null;
 
@@ -247,6 +254,19 @@ export function LaunchForm({
           <h2 id="block-earnings" className={`t-h3 ${styles.legend}`}>Creator earnings</h2>
           <EarningsChoice options={options} coin={symbol} labelId="block-earnings" />
         </section>
+
+        {/* The Creator Lock (ADR 0023): left out where the pair's curve rule admits none. */}
+        {options.lockOffered && (
+          <section className={styles.set} aria-labelledby="block-lock">
+            <h2 id="block-lock" className={`t-h3 ${styles.legend}`}>Creator Lock</h2>
+            <LockChoice
+              options={options}
+              coin={symbol}
+              labelId="block-lock"
+              opening={options.lock && lockedPrice !== null && launchPrice !== null ? { locked: lockedPrice, unlocked: launchPrice } : null}
+            />
+          </section>
+        )}
 
         <section className={styles.set} aria-labelledby="block-links">
           <h2 id="block-links" className={`t-h3 ${styles.legend}`}>Links</h2>
@@ -327,22 +347,23 @@ function useStickySide() {
 /**
  * The price a new coin starts at in the chosen Quote Asset, for the preview card before a First Buy is typed: a launch
  * quote for a sliver of the Graduation Target, read for its price before the buy, which is the curve's opening price
- * whatever the amount. Null until the API has answered, or for an asset that can't be launched against.
+ * whatever the amount. A Creator Lock (`lockBps`) takes its coins out of the sale, so the curve opens higher. Null until
+ * the API has answered, or for an asset that can't be launched against; with `lockOnly`, also while there is no lock.
  */
-function useLaunchPrice(quote: QuoteAsset | null) {
-  const [answer, setAnswer] = useState<{ mint: string; price: number } | null>(null);
+function useLaunchPrice(quote: QuoteAsset | null, lockBps: number | null, lockOnly = false) {
+  const [answer, setAnswer] = useState<{ mint: string; lockBps: number | null; price: number } | null>(null);
   const mint = quote?.launchable ? quote.mint : null;
   const target = quote?.launchable ? (quote.graduationTarget?.raw ?? null) : null;
   useEffect(() => {
-    if (mint === null || target === null) return;
+    if (mint === null || target === null || (lockOnly && lockBps === null)) return;
     const abort = new AbortController();
     const sliver = BigInt(target) / 1000n;
-    getLaunchQuote(mint, (sliver > 0n ? sliver : 1n).toString(), null, abort.signal)
-      .then((q) => setAnswer({ mint, price: q.firstBuy.priceBefore }))
+    getLaunchQuote(mint, (sliver > 0n ? sliver : 1n).toString(), null, lockBps, abort.signal)
+      .then((q) => setAnswer({ mint, lockBps, price: q.firstBuy.priceBefore }))
       .catch(() => undefined);
     return () => abort.abort();
-  }, [mint, target]);
-  return answer && answer.mint === mint ? answer.price : null;
+  }, [mint, target, lockBps, lockOnly]);
+  return answer && answer.mint === mint && answer.lockBps === lockBps ? answer.price : null;
 }
 
 /**
@@ -492,6 +513,13 @@ function Summary({ platform, quote, ticker, symbol, preview, options, step, fail
           <div>
             <dt>Reward Burn</dt>
             <dd>{burnShareTitle(options.rewardBurn)} of every reward</dd>
+          </div>
+        )}
+        {/* The Creator Lock in one sentence; without one the row is left out, as a coin without it has always read. */}
+        {options.lock && (
+          <div>
+            <dt>Creator Lock</dt>
+            <dd className={styles.factWords}>{lockSentence(options.lock)}</dd>
           </div>
         )}
         {firstBuy && quote && (

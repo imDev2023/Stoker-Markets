@@ -1,5 +1,5 @@
 import {
-  API_KEY_HEADER, AirdropStatus, ApiError, ApiKeyList, BudgetsPage, BurnsPage, CandleList, CoinEarnings, CoinRewards, CopyCheck, CreatorEarnings, CreatorForwardList, CreatorLadderPage, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
+  API_KEY_HEADER, AirdropStatus, CreatorLockStatus, PreparedCreatorLockClaim, ApiError, ApiKeyList, BudgetsPage, BurnsPage, CandleList, CoinEarnings, CoinRewards, CopyCheck, CreatorEarnings, CreatorForwardList, CreatorLadderPage, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
   HolderList, LaunchTrust, IssuedApiKey, MarkList, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PlatformStats, PreparedAirdrop,
   PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAsset, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, TradeList,
   RebatesPage, Region, RegionGatesView, TradeQuote, WalletHolding, WalletRebates, WalletRewards,
@@ -116,10 +116,30 @@ export async function retryLaunch(mint: string) {
   return read(await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/prepare`, { method: "POST" }), PreparedLaunch);
 }
 
-/** What a first buy of `firstBuy` raw Quote Asset units gets on a new coin, less its Reward Tax on a Reward Launch. */
-export async function getLaunchQuote(quoteMint: string, firstBuy: string, rewardTax: number | null, signal?: AbortSignal) {
-  const query = new URLSearchParams({ quoteMint, firstBuy, ...(rewardTax ? { rewardTax: String(rewardTax) } : {}) });
+/**
+ * What a first buy of `firstBuy` raw Quote Asset units gets on a new coin, less its Reward Tax on a Reward Launch; a
+ * Creator Lock (`lockBps`) takes its coins out of the sale, so the same buy gets fewer.
+ */
+export async function getLaunchQuote(quoteMint: string, firstBuy: string, rewardTax: number | null, lockBps: number | null, signal?: AbortSignal) {
+  const query = new URLSearchParams({ quoteMint, firstBuy, ...(rewardTax ? { rewardTax: String(rewardTax) } : {}), ...(lockBps ? { lockBps: String(lockBps) } : {}) });
   return read(await apiFetch(`${API_URL}/v1/launch-quote?${query}`, { cache: "no-store", signal }), FirstBuyQuote);
+}
+
+/** A coin's Creator Lock read from the chain: its schedule, what has unlocked and what its Creator has claimed (ADR 0023). */
+export async function getCreatorLock(mint: string, signal?: AbortSignal) {
+  return read(await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/lock`, { cache: "no-store", signal }), CreatorLockStatus);
+}
+
+/** The claim of what has unlocked of a Creator Lock, for the wallet holding the share to sign; refused with the reason while it could not land. */
+export async function prepareCreatorLockClaim(mint: string, wallet: string) {
+  return read(
+    await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/lock/claim`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ wallet }),
+    }),
+    PreparedCreatorLockClaim,
+  );
 }
 
 /** What the launch form offers this Creator wallet. */
