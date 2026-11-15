@@ -9,6 +9,7 @@ import { getLaunchPermissions, getLaunchQuote } from "@/lib/api";
 import { parseAirdropList } from "@/lib/airdrop";
 import { DESTINATION_NAMES, destinationChoiceLine } from "@/lib/earnings";
 import { burnShareTitle } from "@/lib/rewardBurn";
+import { LOCK_TIME_STEPS, lockSchedule, lockSentence, lockShare, lockSizes, lockTime, lockTimes, type LockUnlock } from "@/lib/creatorLock";
 import { COIN_DECIMALS, COIN_SUPPLY, formatUnits, parseUnits } from "@/lib/format";
 import { OptionRow } from "./OptionRow";
 import styles from "./LaunchOptions.module.css";
@@ -17,8 +18,11 @@ const QUOTE_DEBOUNCE_MS = 250;
 const LIST_MIN_ROWS = 4;
 const LIST_MAX_ROWS = 12;
 
-/** The Quote Asset a launch pairs with, as the launch options need it. */
-export type OptionsQuote = { mint: string; symbol: string; decimals: number };
+/**
+ * The Quote Asset a launch pairs with, as the launch options need it: `lockCapBps` is the largest Creator Lock its curve
+ * rule admits (`creatorLockCapBps` on GET /v1/quotes), 0 where it admits none.
+ */
+export type OptionsQuote = { mint: string; symbol: string; decimals: number; lockCapBps: number };
 
 /** A share of a new coin's supply, to two decimals: 34,567,890,000 coins is 3.46%, and a trace under 0.01% says so. */
 export function supplyShare(raw: bigint) {
@@ -40,6 +44,12 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
   const [rewardBurn, setRewardBurn] = useState<RewardBurnBps>(0);
   // Where the Creator's earnings on the coin go, for good (ADR 0011): their wallet unless they point them elsewhere.
   const [earningsDestination, setEarningsDestination] = useState<CreatorEarningsDestination>("wallet");
+  // The Creator Lock (ADR 0023): off unless the Creator turns it on; then a size of the supply, a lock time and how it
+  // unlocks within that time, as steps.
+  const [lockOn, setLockOn] = useState(false);
+  const [lockBpsChosen, setLockBps] = useState<number>(0);
+  const [lockSeconds, setLockSeconds] = useState<number>(LOCK_TIME_STEPS[2]);
+  const [lockUnlock, setLockUnlockState] = useState<LockUnlock>("once");
   const [firstBuyText, setFirstBuyText] = useState("");
   const [airdropChosen, setAirdropOn] = useState(false);
   const [airdropText, setAirdropText] = useState("");
@@ -52,6 +62,20 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
   const firstBuy = quote ? parseUnits(firstBuyText, quote.decimals) : null;
   const firstBuyInvalid = quote !== null && firstBuyText.trim() !== "" && firstBuy === null;
   const airdrop = useMemo(() => parseAirdropList(airdropText, COIN_DECIMALS, creator), [airdropText, creator]);
+  // The sizes the chosen pair allows; with none (its rule admits no lock) the lock is left out of the form and the launch.
+  const lockCap = quote?.lockCapBps ?? 0;
+  const sizes = lockSizes(lockCap);
+  const lockOffered = sizes.length > 0;
+  const lockActive = lockOffered && lockOn;
+  // A size the pair no longer allows (the Creator chose another pair after it) is refused here, before the wallet is asked.
+  const lockBps = lockActive && lockBpsChosen > 0 ? lockBpsChosen : null;
+  const lockProblem = lockActive && lockBpsChosen > lockCap
+    ? `Paired with ${quote!.symbol}, a coin can lock up to ${lockShare(lockCap)} of its supply. Choose a smaller lock.`
+    : lockActive && lockBpsChosen <= 0
+      ? "Choose how much of the supply to lock, or turn the lock off."
+      : null;
+  // The size quoted and launched: only one the pair allows.
+  const lockQuoted = lockProblem ? null : lockBps;
 
   useEffect(() => {
     if (creator === null) return;
@@ -73,7 +97,7 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
     const abort = new AbortController();
     const timer = setTimeout(async () => {
       try {
-        setFirstBuyQuote((await getLaunchQuote(quoteMint, firstBuy.toString(), rewardTax, abort.signal)).firstBuy);
+        setFirstBuyQuote((await getLaunchQuote(quoteMint, firstBuy.toString(), rewardTax, lockQuoted, abort.signal)).firstBuy);
       } catch (e) {
         if (!abort.signal.aborted) setQuoteError((e as Error).message);
       }
@@ -82,7 +106,7 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
       abort.abort();
       clearTimeout(timer);
     };
-  }, [firstBuy, quoteMint, rewardTax]);
+  }, [firstBuy, quoteMint, rewardTax, lockQuoted]);
 
   const bought = firstBuyQuote ? BigInt(firstBuyQuote.amountOut) : null;
   // Shown as an error as soon as it is true: something in the list the Creator has to fix.
@@ -107,16 +131,36 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
   return {
     quote,
     rewardTax, setRewardTax, rewardPayout, setRewardPayout, rewardBurn, setRewardBurn, earningsDestination, setEarningsDestination,
+    lockOffered, lockSizes: sizes, lockOn: lockActive, setLockOn: (on: boolean) => {
+      setLockOn(on);
+      // Turning the lock on starts at the smallest size the pair allows, unless a size it allows is already chosen.
+      if (on && !sizes.includes(lockBpsChosen)) setLockBps(sizes[0] ?? 0);
+    },
+    lockBpsChosen, setLockBps, lockSeconds, setLockSeconds, lockProblem,
+    lockUnlock, setLockUnlock: (unlock: LockUnlock) => {
+      setLockUnlockState(unlock);
+      // Gradually needs a time past its first 7 days: a time it does not offer moves to the shortest one it does.
+      const times = lockTimes(unlock);
+      if (!times.includes(lockSeconds)) setLockSeconds(times[0]!);
+    },
+    /** The lock the launch will carry, or null: a size the pair allows, its time and how it unlocks, from the sell-out. */
+    lock: lockQuoted === null ? null : { bps: lockQuoted, ...lockSchedule(lockSeconds, lockUnlock) },
     firstBuyText, setFirstBuyText, firstBuyInvalid, firstBuyQuote, firstBuyProblem,
     airdropAllowed, airdropOn, setAirdropOn, airdropText, setAirdropText, airdrop, airdropProblem, airdropMissing, bought,
     /** What stops the launch from being prepared, if anything. */
-    problem: firstBuyProblem ?? airdropProblem ?? airdropMissing,
+    problem: lockProblem ?? firstBuyProblem ?? airdropProblem ?? airdropMissing,
     /** The form fields these options add to the prepare request. */
     fields(): [string, string][] {
       const out: [string, string][] = [];
       if (rewardTax !== null) out.push(["rewardTax", String(rewardTax)], ["rewardPayout", rewardPayout], ["rewardBurn", String(rewardBurn)]);
       // The wallet is what the API takes a launch without the field to mean.
       if (earningsDestination !== "wallet") out.push(["earningsDestination", earningsDestination]);
+      // All at once is a cliff alone; gradually is a 7-day cliff, then a linear unlock until the lock time ends.
+      if (lockQuoted !== null) {
+        const { cliffSeconds, unlockSeconds } = lockSchedule(lockSeconds, lockUnlock);
+        out.push(["lockBps", String(lockQuoted)], ["lockCliffSeconds", String(cliffSeconds)]);
+        if (unlockSeconds > 0) out.push(["lockUnlockSeconds", String(unlockSeconds)]);
+      }
       if (firstBuy !== null) out.push(["firstBuy", firstBuy.toString()]);
       if (airdropOn && airdrop.recipients.length > 0)
         out.push(["airdrop", JSON.stringify(airdrop.recipients.map((r) => ({ wallet: r.wallet, amount: r.amount.toString() })))]);
@@ -233,6 +277,83 @@ export function EarningsChoice({ options: o, coin, labelId }: { options: LaunchO
         Fixed at launch: where a coin&apos;s earnings go can never be changed.
         {o.earningsDestination === "liquidity" && <> A coin has no pool until it graduates, so until then your earnings wait.</>}
       </p>
+    </div>
+  );
+}
+
+/**
+ * The Creator Lock on the launch form (ADR 0023, #211): off by default, as a launch without one is today's launch; on,
+ * the share of the supply kept back from the sale for the Creator and how long it stays locked after Graduation, each as
+ * steps, with what the lock does to the opening price. The form leaves it out where the pair's rule admits no lock.
+ * `opening` is the curve's opening price with the lock and without it, from launch quotes, null until both answered.
+ */
+export function LockChoice({ options: o, coin, labelId, opening }: {
+  options: LaunchOptionsState;
+  coin: string;
+  labelId: string;
+  opening: { locked: number; unlocked: number } | null;
+}) {
+  const coinLabel = coin || "your coin";
+  const rise = opening && opening.unlocked > 0 ? Math.round((opening.locked / opening.unlocked - 1) * 100) : null;
+  return (
+    <div className={styles.type}>
+      <div className={styles.types} role="radiogroup" aria-labelledby={labelId}>
+        <OptionRow name="creator-lock" value="none" checked={!o.lockOn} onChange={() => o.setLockOn(false)}>
+          <span className={styles.choice}>
+            <b>No lock</b> <span className={styles.choiceLine}>Every coin the curve offers is for sale.</span>
+          </span>
+        </OptionRow>
+        <OptionRow name="creator-lock" value="lock" checked={o.lockOn} onChange={() => o.setLockOn(true)}>
+          <span className={styles.choice}>
+            <b>Lock coins for yourself</b>{" "}
+            <span className={styles.choiceLine}>The chain holds them out of the sale and pays them to your wallet once they unlock.</span>
+          </span>
+        </OptionRow>
+      </div>
+      {o.lockOn && (
+        <div className={styles.rates} role="group" aria-label="Lock size">
+          <span className={styles.ratesLabel} aria-hidden>Lock</span>
+          <div className={`segmented ${styles.segmented}`}>
+            {o.lockSizes.map((bps) => (
+              <button key={bps} type="button" aria-pressed={o.lockBpsChosen === bps} onClick={() => o.setLockBps(bps)}>
+                {lockShare(bps)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {o.lockOn && (
+        <div className={styles.rates} role="group" aria-label="Locked for">
+          <span className={styles.ratesLabel} aria-hidden>Locked for</span>
+          <div className={`segmented ${styles.segmented} ${styles.times}`}>
+            {lockTimes(o.lockUnlock).map((seconds) => (
+              <button key={seconds} type="button" aria-pressed={o.lockSeconds === seconds} onClick={() => o.setLockSeconds(seconds)}>
+                {lockTime(seconds)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {o.lockOn && (
+        <div className={styles.rates} role="group" aria-label="Unlocks">
+          <span className={styles.ratesLabel} aria-hidden>Unlocks</span>
+          <div className={`segmented ${styles.segmented}`}>
+            <button type="button" aria-pressed={o.lockUnlock === "once"} onClick={() => o.setLockUnlock("once")}>All at once</button>
+            <button type="button" aria-pressed={o.lockUnlock === "gradual"} onClick={() => o.setLockUnlock("gradual")}>Gradually after 7 days</button>
+          </div>
+        </div>
+      )}
+      {o.lockOn && o.lockProblem ? (
+        <p className={styles.hintError} role="alert">{o.lockProblem}</p>
+      ) : o.lock ? (
+        <p className={styles.hint}>
+          {lockSentence(o.lock)} The clock starts when the curve sells out, so a coin that never sells out never unlocks. The locked
+          coins come out of the sale: the same raise buys fewer {coinLabel}
+          {rise !== null && rise > 0 ? `, so the curve opens about ${rise}% higher` : ""}. The price at graduation is the same.
+        </p>
+      ) : (
+        <p className={styles.hint}>Fixed at launch: a lock can never be shortened or taken back.</p>
+      )}
     </div>
   );
 }

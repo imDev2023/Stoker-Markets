@@ -1,0 +1,9 @@
+/* The claim card wears the Airdrop card's styles; its count is long ("0 of 100,000,000,000 claimed"), so on a narrow
+   card the head wraps and the count drops whole under the title instead of breaking beside it. */
+.head {
+  flex-wrap: wrap;
+}
+
+.count {
+  white-space: nowrap;
+}

@@ -33,6 +33,15 @@ time {
   }
 }
 
+/* The Stats page's "Swept to the treasury so far" figures are masked, since the SOL swept wavers by a few lamports with the
+   sweep's own costs, and a figure sized by its text gave the mask a run's width: 7.959784 against 7.95978 moved its left
+   edge by 16px and rewrote the four revenue.png baselines (2026-11-14). A fixed box, right-aligned like the figure, keeps
+   the mask the same every run. */
+dl[aria-labelledby="swept-title"] dd {
+  width: 22ch;
+  text-align: right;
+}
+
 /* The board's "updated 4s ago" sits in a sentence too; a fixed box keeps the mask the same width run to run. */
 [data-updated] time {
   width: 7ch;

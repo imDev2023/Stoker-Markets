@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { burnShareWords } from "@/lib/rewardBurn";
 import { Change } from "./Change";
 import { CoinImage } from "./CoinImage";
 import { PairMark } from "./PairMark";
@@ -22,6 +23,8 @@ export type CoinCardData = {
   /** The day's volume, formatted. */
   volume: string;
   rewardTaxBps: number | null;
+  /** A Reward Launch's Reward Burn (#183), basis points of every harvested tax; 0 for none. */
+  rewardBurnBps: number;
 };
 
 /** The curve's line: how far along a live curve is, or where a finished one went. */
@@ -30,6 +33,15 @@ function curveWords(card: CoinCardData) {
   if (card.curve === "graduated") return "Graduated, in its Raydium pool";
   const pct = card.progress;
   return `${pct.toFixed(pct > 0 && pct < 10 ? 1 : 0)}% of the way to graduation`;
+}
+
+/**
+ * A Reward Launch's tag: its Reward Tax to holders and, with a Reward Burn, the share of it burned, so the card says
+ * both mechanisms (the owner's review of #213): "5% to holders, half burned".
+ */
+function rewardWords(card: CoinCardData) {
+  const burned = burnShareWords(card.rewardBurnBps);
+  return `${card.rewardTaxBps! / 100}% to holders${burned ? `, ${burned} burned` : ""}`;
 }
 
 /**
@@ -58,9 +70,9 @@ export function CoinCard({ card, href }: { card: CoinCardData; href?: string }) 
         </span>
         <span className={styles.meta}>{curveWords(card)}</span>
       </div>
-      <div className={styles.row}>
+      <div className={`${styles.row} ${styles.foot}`}>
         <span className={styles.meta}>{card.volume} traded today</span>
-        {card.rewardTaxBps !== null && <span className="tag tag-caution">{card.rewardTaxBps / 100}% to holders</span>}
+        {card.rewardTaxBps !== null && <span className={`tag tag-caution ${styles.reward}`}>{rewardWords(card)}</span>}
       </div>
     </>
   );

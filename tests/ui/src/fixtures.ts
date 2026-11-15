@@ -104,6 +104,10 @@ export type LaunchFields = {
   rewardBurn?: string;
   /** Where the Creator's earnings on the coin go (ADR 0011): the wallet unless set. */
   earningsDestination?: "wallet" | "holders" | "burn" | "liquidity";
+  /** A Creator Lock (ADR 0023): its size in basis points, and its cliff and unlock time in seconds after the curve sells out. */
+  lockBps?: string;
+  lockCliffSeconds?: string;
+  lockUnlockSeconds?: string;
 };
 
 /** What a wallet does with a transaction the API prepared: sign, send, wait for confirmation, then report it for indexing. */

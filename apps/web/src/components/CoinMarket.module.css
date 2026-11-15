@@ -67,7 +67,7 @@
   min-width: 0;
 }
 
-/* The three marks as one quiet control: a press opens the card under them. */
+/* The marks (three, or four with a Creator Lock) as one quiet control: a press opens the card under them. */
 .marks {
   display: inline-flex;
   align-items: center;
@@ -100,7 +100,10 @@
   border-color: var(--line);
 }
 
+/* Inside the last mark, whose own gap is 6px: the margin keeps it the row's 14px from the words. */
 .chevron {
+  flex: none;
+  margin-left: 8px;
   color: var(--ink-3);
   transition: transform var(--dur-fast) var(--ease-standard);
 }

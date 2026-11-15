@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAirdrop, getCoinEarnings, getCoinRewards, getHolders, getLaunch, getPlatform, getQuoteAsset, getRewardRules, getTrust, listTrades } from "@/lib/api";
+import { getAirdrop, getCoinEarnings, getCoinRewards, getCreatorLock, getHolders, getLaunch, getPlatform, getQuoteAsset, getRewardRules, getTrust, listTrades } from "@/lib/api";
 import { explorerUrl, isSol, quoteTicker } from "@/lib/format";
 import { breadcrumbList, clip, pageMeta } from "@/lib/meta";
 import { siteOrigin } from "@/lib/origin";
@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 /**
  * A coin's page (#134, phase 3 of the rework): a breadcrumb, a one-line title row (the lockup at 40px, the pair, the
- * name with the explorer link, the three trust marks and the price with the day's change), the market (the chart with
+ * name with the explorer link, the trust marks (a fourth for a Creator Lock) and the price with the day's change), the market (the chart with
  * the graduation bar and the activity under it, the trade panel docked beside it with the pair's other half and, under
  * those, the About block with the description, the launch's details, the coin's links and the addresses: owner,
  * 2026-10-31, the facts belong under the trade panel as the terminals place them), and below the grid only what some
@@ -57,11 +57,13 @@ export default async function CoinPage({ params, searchParams }: Props) {
   // are shown for any asset but SOL (#11). A read that fails leaves its card out, never the page.
   // A coin whose Creator's earnings go to its holders also reads the Reward Round rules, which say whether its rounds
   // weigh coins by how long they were kept (ADR 0022); a Reward Launch's rewards carry the rules themselves.
-  const [rewards, earnings, quoteAsset, rules] = await Promise.all([
+  // A coin with a Creator Lock (ADR 0023) reads where it stands from the chain, for its trust mark and its Creator's claim.
+  const [rewards, earnings, quoteAsset, rules, lock] = await Promise.all([
     launch.rewardTax ? getCoinRewards(mint).catch(() => null) : null,
     launch.earningsDestination !== "wallet" ? getCoinEarnings(mint).catch(() => null) : null,
     getQuoteAsset(launch.quote.mint).catch(() => null),
     launch.earningsDestination === "holders" ? getRewardRules().catch(() => null) : null,
+    launch.creatorLock ? getCreatorLock(mint).catch(() => null) : null,
   ]);
   const weighted = (rules?.inForce?.holdingWeights.length ?? 0) > 0;
   // An Airdrop still being paid sits under the title row, where its Creator sends it (the market component draws it); a finished one joins the cards below.
@@ -88,7 +90,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
           re-renders with it (2026-10-31: the pair card first, then the Airdrop card the moment a wallet connected). */}
       <CoinMarket
         initial={launch} platform={platform} quoteAsset={quoteAsset} links={links} initialTrades={trades.trades} initialHolders={holders}
-        initialTrust={trust} renderedAt={Date.now()} referrer={referrer} airdrop={airdropDone ? null : airdrop}
+        initialTrust={trust} initialLock={lock} renderedAt={Date.now()} referrer={referrer} airdrop={airdropDone ? null : airdrop}
       />
 
       {(quoteAsset && !isSol(launch.quote)) || rewards || earnings || airdropDone ? (

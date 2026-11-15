@@ -1,12 +1,14 @@
 import { ImageResponse } from "next/og";
 import { getLaunch } from "@/lib/api";
+import { lockShare, lockTime } from "@/lib/creatorLock";
 import { quoteTicker } from "@/lib/format";
 import { clip } from "@/lib/meta";
 import { CARD, DISPLAY, pairSize, SHARE_SIZE, ShareFrame, shareFonts } from "@/lib/share";
 
 /**
  * A coin's share card (#83), as its link unfurls on X or Telegram: its picture, the pair it trades as, its name, its
- * description and, for a Reward Launch, the tax its holders are paid from. Only what was fixed at launch, since a
+ * description and, for a Reward Launch, the tax its holders are paid from, and for a coin with a Creator Lock its size
+ * and how long it lasts after Graduation (#211). Only what was fixed at launch, since a
  * crawler keeps the card it fetched; the live figures are on the page.
  */
 export const alt = "A coin on Stoker and the asset it is paired with";
@@ -37,6 +39,10 @@ export default async function Image({ params }: { params: Promise<{ mint: string
   const pair = `${launch.symbol} / ${quote}`;
   const image = await picture(launch.image);
   const tax = launch.rewardTax ? `Reward Launch · ${launch.rewardTax.bps / 100}% of every trade to its holders` : null;
+  const terms = launch.creatorLock;
+  const lock = terms
+    ? `Creator Lock · ${lockShare(terms.bps)} of the supply, for ${lockTime(terms.cliffSeconds + terms.unlockSeconds)} after Graduation`
+    : null;
   const box = { width: 320, height: 320, borderRadius: 28, border: `1px solid ${CARD.line}`, flexShrink: 0 } as const;
   return new ImageResponse(
     (
@@ -64,6 +70,11 @@ export default async function Image({ params }: { params: Promise<{ mint: string
             {tax && (
               <div style={{ display: "flex", alignSelf: "flex-start", marginTop: 22, padding: "8px 16px", borderRadius: 999, border: `1px solid ${CARD.line}`, fontSize: 22, color: CARD.ink2 }}>
                 {tax}
+              </div>
+            )}
+            {lock && (
+              <div style={{ display: "flex", alignSelf: "flex-start", marginTop: tax ? 12 : 22, padding: "8px 16px", borderRadius: 999, border: `1px solid ${CARD.line}`, fontSize: 22, color: CARD.ink2 }}>
+                {lock}
               </div>
             )}
           </div>

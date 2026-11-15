@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AirdropStatus, HolderList, LaunchSummary, LaunchTrust, PlatformInfo, QuoteAsset, Trade, TradeSide } from "@launchpad/contract";
-import { getHolders, getLaunch, getTrust, listTrades } from "@/lib/api";
+import type { AirdropStatus, CreatorLockStatus, HolderList, LaunchSummary, LaunchTrust, PlatformInfo, QuoteAsset, Trade, TradeSide } from "@launchpad/contract";
+import { getCreatorLock, getHolders, getLaunch, getTrust, listTrades } from "@/lib/api";
 import { quoteTicker } from "@/lib/format";
 import { AirdropCard } from "./AirdropCard";
 import { Change } from "./Change";
@@ -15,6 +15,7 @@ import { PairMark } from "./PairMark";
 import { Price } from "./Price";
 import { TradeHistory } from "./TradeHistory";
 import { TradePanel } from "./TradePanel";
+import { CreatorLockCard } from "./CreatorLockCard";
 import { TrustCard, TrustMarks } from "./TrustCard";
 import styles from "./CoinMarket.module.css";
 
@@ -51,7 +52,7 @@ const HOLDERS_REFRESH_MS = 12_000;
 
 /**
  * The live part of a coin page (#134, phase 3 of the rework): the title row with the price, the day's change and the
- * three trust marks (which open the "Before you buy" card), then the chart in eight columns with the graduation bar and
+ * trust marks, three or with a Creator Lock four (which open the "Before you buy" card), then the chart in eight columns with the graduation bar and
  * the trades and holders as tabs under it, and the trade panel docked in the other four with the pair's other half and
  * the coin's facts under it (owner, 2026-10-31: the About block sits under the trade panel, as the terminals place it;
  * `CoinFacts` and an Airdrop still to send are drawn here from data for the same reason the title row is),
@@ -59,7 +60,7 @@ const HOLDERS_REFRESH_MS = 12_000;
  * Raydium pool. On a phone the columns stack and a Buy / Sell bar at the foot brings the trade panel up.
  */
 export function CoinMarket({
-  initial, platform, quoteAsset, links, initialTrades, initialHolders, initialTrust, renderedAt, referrer = null, airdrop = null,
+  initial, platform, quoteAsset, links, initialTrades, initialHolders, initialTrust, initialLock = null, renderedAt, referrer = null, airdrop = null,
 }: {
   initial: LaunchSummary;
   platform: PlatformInfo;
@@ -76,6 +77,8 @@ export function CoinMarket({
   initialHolders: HolderList | null;
   /** Null when the API couldn't answer at render; the card retries. */
   initialTrust: LaunchTrust | null;
+  /** A coin's Creator Lock as the chain had it at render; null for a coin without one, or when it couldn't be read (the marks retry). */
+  initialLock?: CreatorLockStatus | null;
   /** The server's clock at render, so relative trade times hydrate to the same text. */
   renderedAt: number;
 }) {
@@ -83,6 +86,7 @@ export function CoinMarket({
   const [trades, setTrades] = useState(initialTrades);
   const [holders, setHolders] = useState(initialHolders);
   const [trust, setTrust] = useState(initialTrust);
+  const [lockStatus, setLockStatus] = useState(initialLock);
   const [now, setNow] = useState(renderedAt);
   const [tab, setTab] = useState<"trades" | "holders">("trades");
   const [trustOpen, setTrustOpen] = useState(false);
@@ -107,12 +111,16 @@ export function CoinMarket({
     setNow(Date.now());
   }, [launch.mint]);
 
+  const locked = launch.creatorLock !== null;
   const refreshHolders = useCallback(async () => {
-    const [h, t] = await Promise.allSettled([getHolders(launch.mint), getTrust(launch.mint)]);
+    const [h, t, l] = await Promise.allSettled([getHolders(launch.mint), getTrust(launch.mint), locked ? getCreatorLock(launch.mint) : Promise.resolve(null)]);
     // Keep showing the last good holders and figures; the next tick retries whichever failed.
     if (h.status === "fulfilled") setHolders(h.value);
     if (t.status === "fulfilled") setTrust(t.value);
-  }, [launch.mint]);
+    if (l.status === "fulfilled" && l.value) setLockStatus(l.value);
+  }, [launch.mint, locked]);
+  // The Creator Lock's mark: its terms from the coin, its stage from the chain once read.
+  const lock = launch.creatorLock ? { terms: launch.creatorLock, status: lockStatus ?? null } : null;
 
   useEffect(() => {
     const id = setInterval(refresh, REFRESH_MS);
@@ -152,14 +160,15 @@ export function CoinMarket({
         <div className={styles.trust} ref={trustBox}>
           <button type="button" className={styles.marks} aria-expanded={trustOpen} aria-controls="trust-panel" onClick={() => setTrustOpen((o) => !o)}>
             <span className="visually-hidden">Before you buy: </span>
-            <TrustMarks trust={trust} holders={holders} />
-            <svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={styles.chevron}>
-              <path d="m2.5 4.5 3.5 3.5 3.5-3.5" />
-            </svg>
+            <TrustMarks trust={trust} holders={holders} lock={lock}>
+              <svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={styles.chevron}>
+                <path d="m2.5 4.5 3.5 3.5 3.5-3.5" />
+              </svg>
+            </TrustMarks>
           </button>
           {trustOpen && (
             <div id="trust-panel" className={styles.trustPanel}>
-              <TrustCard trust={trust} holders={holders} />
+              <TrustCard trust={trust} holders={holders} lock={lock} />
             </div>
           )}
         </div>
@@ -176,6 +185,8 @@ export function CoinMarket({
       </header>
 
       {airdrop && <AirdropCard initial={airdrop} symbol={launch.symbol} platform={platform} />}
+      {/* The Creator's claim, shown to the wallet holding the lock's share alone; the card draws nothing for anyone else. */}
+      {lockStatus && <CreatorLockCard lock={lockStatus} symbol={launch.symbol} onClaimed={refreshHolders} />}
 
       <div className={`grid ${styles.market}`}>
         <div className={`col-8 ${styles.main}`}>

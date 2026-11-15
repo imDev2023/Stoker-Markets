@@ -1,6 +1,6 @@
 # The Creator Lock: coins the chain holds for the Creator, taken out of the curve's sale
 
-Status: accepted by the owner on 2026-11-13 (#186); the chain's side is built, and so is the API's (2026-11-14); the launch form, the coin page's mark and the claim from the page are not yet.
+Status: accepted by the owner on 2026-11-13 (#186); the chain's side is built, so is the API's (2026-11-14), and so is the site's (#211, 2026-11-14): the launch form's lock, the coin page's mark and claim, and the badges.
 It amends ADR 0005: a curve rule no longer pins the sale and "no vesting" exactly where a Quote Asset allows a lock, and the Indexer holds a coin with a lock to the launch shape instead.
 
 #186 asks for the Creator's share to be locked and vested through LaunchLab itself, so that the one objection to rewarding Creators, the dump, is answered by something the chain enforces and the page shows.
@@ -94,7 +94,14 @@ The API's side (2026-11-14, the second half of #186, its first part):
   Every figure reads the coin's own sale: the launch's row keeps `totalBaseSell` as the chain set it, and the curve's events carry it.
   A claim's answer says what reaches the wallet after a Reward Launch's Reward Tax.
 
-Still to build: the launch form's lock, the coin page's mark and claim, the board's and the share card's badge, and the API reference page.
+The site's side (#211, 2026-11-14):
+
+- The launch form offers the lock off by default and, where the pair's cap is above 0, as steps: the size in steps of 5% up to a fifth (those at or under the pair's cap, or the cap itself where it is under 5%), the lock time of 7 days, 14 days, 30 days, 90 days, 180 days or a year, and how it unlocks within that time.
+  "All at once" is a cliff of the whole time; "Gradually after 7 days" is a 7-day cliff and then LaunchLab's linear unlock until the time ends, so it offers 14 days and longer (the owner's review of #213, 2026-11-15, which also added the 14 days).
+  The summary says the lock in one sentence, and the form what it does to the opening price, from two launch quotes, with and without `lockBps`.
+- The coin page shows a fourth trust mark for a coin with a lock, in words for each stage: before the sell-out (no date, since the clock has not started), during the cliff (until a date), while it unlocks (the share still locked), and once it has all unlocked.
+- The Creator's wallet, and no other, sees what is locked, claimed and claimable, claims with one signature, and is told in plain words why a claim waits; on a Reward Launch the card says that a claim pays the Reward Tax and about what reaches the wallet.
+- The board's card and the share card carry the lock's size as a badge, and the API reference lists the fields and the two endpoints.
 
 ## Considered Options
 
