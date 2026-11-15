@@ -525,7 +525,7 @@ function Summary({ platform, quote, ticker, symbol, preview, options, step, fail
         {options.rewardTax !== null && burnShareTitle(options.rewardLiquidity) && (
           <div>
             <dt>Reward Liquidity</dt>
-            <dd className={styles.factWords}>{burnShareTitle(options.rewardLiquidity)} of every reward, added to its pool once it graduates, locked</dd>
+            <dd className={styles.factWords}>{burnShareTitle(options.rewardLiquidity)} of every reward, to its pool</dd>
           </div>
         )}
         {/* The Creator Lock in one sentence; without one the row is left out, as a coin without it has always read. */}

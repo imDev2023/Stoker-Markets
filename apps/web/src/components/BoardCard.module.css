@@ -98,10 +98,10 @@
   overflow-wrap: anywhere;
 }
 
+/* With both shares (#214) the tax's words outgrow a phone's card, so they wrap like the name's other words. */
 .tax {
   color: var(--caution);
   font-weight: 600;
-  white-space: nowrap;
 }
 
 /* The Creator Lock's badge: in the accent, as a promise the chain keeps, where the tax beside it is a caution. */

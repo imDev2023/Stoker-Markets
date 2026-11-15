@@ -75,8 +75,15 @@
   row-gap: 8px;
 }
 
+/*
+ * A Reward Launch's tag stays one line while it fits; with both shares (#214) it is the longest tag a card carries, and
+ * it then wraps inside the card, balanced. The control radius is a pill's on one line and a rounded block on two.
+ */
 .reward {
-  white-space: nowrap;
+  max-width: 100%;
+  white-space: normal;
+  text-wrap: balance;
+  border-radius: var(--radius-control);
 }
 
 .price {

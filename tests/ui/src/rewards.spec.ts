@@ -77,7 +77,7 @@ test("a Creator launches a Reward Launch paid in SOL, and the coin page says so"
   await expect(summary(page)).toContainText(/Launch type\s*Reward Launch, 4%/);
   // The share in words, never the rate (owner, 2026-10-30: the figures are on /fees).
   await expect(summary(page)).toContainText(/Reward Burn\s*A quarter of every reward/);
-  await expect(summary(page)).toContainText(/Reward Liquidity\s*A quarter of every reward, added to its pool once it graduates, locked/);
+  await expect(summary(page)).toContainText(/Reward Liquidity\s*A quarter of every reward, to its pool/);
   // The preview's tag says every share: the tax to holders, the share burned and the share added to the pool (#213, #214).
   await expect(page.getByRole("region", { name: "Preview" })).toContainText("4% to holders, a quarter burned, a quarter to liquidity");
   await signButton(page).click();
