@@ -4,7 +4,7 @@ import type { CSSProperties } from "react";
 import { formatDelta, formatMarketValue, kindOf, tintOf } from "@/lib/board";
 import { lockShare } from "@/lib/creatorLock";
 import { quoteTicker } from "@/lib/format";
-import { burnShareWords } from "@/lib/rewardBurn";
+import { rewardSharesTail } from "@/lib/rewardBurn";
 import { CoinActions, type ExplorerCluster } from "./CoinActions";
 import { CoinImage } from "./CoinImage";
 import { progressOf } from "./CoinRow";
@@ -83,7 +83,7 @@ export function BoardCard({ launch, now, platform }: { launch: LaunchSummary; no
             <span className={styles.nameText}>{launch.name}</span>
             {launch.rewardTax && (
               <span className={styles.tax}>
-                {launch.rewardTax.bps / 100}% tax{burnShareWords(launch.rewardTax.burnBps) ? `, ${burnShareWords(launch.rewardTax.burnBps)} burned` : ""}
+                {launch.rewardTax.bps / 100}% tax{rewardSharesTail(launch.rewardTax.burnBps, launch.rewardTax.liquidityBps)}
               </span>
             )}
             {/* The Creator Lock's badge (#211): its size, fixed at launch; where it stands is on the coin's page. */}

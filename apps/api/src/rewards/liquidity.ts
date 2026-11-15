@@ -31,6 +31,8 @@ export type LiquidityCoin = { mint: string; symbol: string; decimals: number; po
 /** One addition a run sent, as the job's summary carries it: strings, since a summary is stored and logged as JSON. */
 export type LiquidityReport = {
   mint: string; signature: string; outcome: "landed" | "expired"; coinsSold: string | null; coinsAdded: string | null; quoteAdded: string | null; position: string;
+  /** What the addition was planned from: the coins and Quote Asset kept, and the pool's two reserves at that moment. */
+  plannedFrom: { coins: string; quote: string; coinReserve: string; quoteReserve: string };
 };
 
 /** What the Reward Liquidity holds for a coin now: coins kept and not added yet, and Quote Asset an earlier sale left. */
@@ -92,6 +94,11 @@ export async function addRewardLiquidity(
 
   const addition = planRewardLiquidityAddition(pool, mint, new BN(kept.coinAccount.amount.toString()), new BN(kept.quoteAccount.amount.toString()));
   if (!addition) return { ...none, waits: "what is kept adds no liquidity yet" };
+  const reserves = poolSides(pool, mint);
+  const plannedFrom = {
+    coins: kept.coinAccount.amount.toString(), quote: kept.quoteAccount.amount.toString(),
+    coinReserve: reserves.base.reserve.toString(), quoteReserve: reserves.quote.reserve.toString(),
+  };
   const quoteMint = new PublicKey(coin.quoteMint);
   let open: ReturnType<typeof openSeededTokenAccount> = [];
   if (!kept.quoteAccount.opened) {
@@ -135,7 +142,7 @@ export async function addRewardLiquidity(
       const did = s.outcome === "landed" ? s.did : null;
       const added: LiquidityReport = {
         mint: coin.mint, signature: tx.signature, outcome: s.outcome, coinsSold: did?.coinsSold ?? null, coinsAdded: did?.coinsAdded ?? null,
-        quoteAdded: did?.quoteAdded ?? null, position,
+        quoteAdded: did?.quoteAdded ?? null, position, plannedFrom,
       };
       return { added, settled, waits: null };
     }

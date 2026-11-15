@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { burnShareWords } from "@/lib/rewardBurn";
+import { rewardSharesTail } from "@/lib/rewardBurn";
 import { Change } from "./Change";
 import { CoinImage } from "./CoinImage";
 import { PairMark } from "./PairMark";
@@ -25,6 +25,8 @@ export type CoinCardData = {
   rewardTaxBps: number | null;
   /** A Reward Launch's Reward Burn (#183), basis points of every harvested tax; 0 for none. */
   rewardBurnBps: number;
+  /** Its Reward Liquidity (#214), basis points of every harvested tax added to its pool; 0 for none. */
+  rewardLiquidityBps: number;
 };
 
 /** The curve's line: how far along a live curve is, or where a finished one went. */
@@ -36,12 +38,12 @@ function curveWords(card: CoinCardData) {
 }
 
 /**
- * A Reward Launch's tag: its Reward Tax to holders and, with a Reward Burn, the share of it burned, so the card says
- * both mechanisms (the owner's review of #213): "5% to holders, half burned".
+ * A Reward Launch's tag: its Reward Tax to holders and, with a Reward Burn or a Reward Liquidity, the share of it burned
+ * or added to the pool, so the card says every mechanism (the owner's review of #213, #214): "5% to holders, half burned",
+ * "5% to holders, a quarter burned, a quarter to liquidity".
  */
 function rewardWords(card: CoinCardData) {
-  const burned = burnShareWords(card.rewardBurnBps);
-  return `${card.rewardTaxBps! / 100}% to holders${burned ? `, ${burned} burned` : ""}`;
+  return `${card.rewardTaxBps! / 100}% to holders${rewardSharesTail(card.rewardBurnBps, card.rewardLiquidityBps)}`;
 }
 
 /**

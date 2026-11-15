@@ -461,7 +461,7 @@ export type LiquidityAdded = {
 };
 
 type SwapEventData = {
-  pool_id: PublicKey; input_amount: BN; output_amount: BN; output_transfer_fee: BN; input_mint: PublicKey; output_mint: PublicKey;
+  pool_id: PublicKey; input_amount: BN; input_transfer_fee: BN; output_amount: BN; output_transfer_fee: BN; input_mint: PublicKey; output_mint: PublicKey;
 };
 type LpChangeEventData = { pool_id: PublicKey; token_0_amount: BN; token_1_amount: BN; change_type: number };
 
@@ -494,8 +494,8 @@ export function decodeLiquidityAddition(raw: RawTransaction, cpmm: PublicKey, po
   const coinIsToken0 = keys[deposit.accounts[DEPOSIT.mint0]!] === coin.toBase58();
   return {
     coinsBought: swaps.reduce((sum, e) => sum.add(e.output_amount).sub(e.output_transfer_fee), new BN(0)),
-    // A swap event's input amount is what left the seller's account, any transfer fee included.
-    coinsSold: sales.reduce((sum, e) => sum.add(e.input_amount), new BN(0)),
+    // A swap event's input amount is what reached the pool's vault; what left the seller's account adds the transfer fee.
+    coinsSold: sales.reduce((sum, e) => sum.add(e.input_amount).add(e.input_transfer_fee), new BN(0)),
     quoteFromSale: sales.reduce((sum, e) => sum.add(e.output_amount).sub(e.output_transfer_fee), new BN(0)),
     coinsAdded: coinIsToken0 ? added.token_0_amount : added.token_1_amount,
     quoteAdded: coinIsToken0 ? added.token_1_amount : added.token_0_amount,

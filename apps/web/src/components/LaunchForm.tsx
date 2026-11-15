@@ -186,7 +186,9 @@ export function LaunchForm({
   const side = useStickySide();
   const ticker = quote ? quoteTicker(quote) : null;
   const openingPrice = options.lock ? lockedPrice : launchPrice;
-  const preview = previewCard({ imageUrl, symbol, name, quote, firstBuy: options.firstBuyQuote, launchPrice: openingPrice, rewardTax: options.rewardTax, rewardBurn: options.rewardBurn });
+  const preview = previewCard({ imageUrl, symbol, name, quote, firstBuy: options.firstBuyQuote, launchPrice: openingPrice, rewardTax: options.rewardTax, rewardBurn: options.rewardBurn,
+    rewardLiquidity: options.rewardLiquidity,
+  });
   // While a launch is in flight or uncertain, nothing on the form may change under it.
   const locked = busy || failed !== null;
 
@@ -372,7 +374,7 @@ function useLaunchPrice(quote: QuoteAsset | null, lockBps: number | null, lockOn
  * curve and the day's volume that buy leaves behind.
  */
 function previewCard({
-  imageUrl, symbol, name, quote, firstBuy, launchPrice, rewardTax, rewardBurn,
+  imageUrl, symbol, name, quote, firstBuy, launchPrice, rewardTax, rewardBurn, rewardLiquidity,
 }: {
   imageUrl: string | null;
   symbol: string;
@@ -382,6 +384,7 @@ function previewCard({
   launchPrice: number | null;
   rewardTax: number | null;
   rewardBurn: number;
+  rewardLiquidity: number;
 }): CoinCardData {
   const ticker = quote ? quoteTicker(quote) : "SOL";
   const target = quote?.graduationTarget ? BigInt(quote.graduationTarget.raw) : 0n;
@@ -402,6 +405,7 @@ function previewCard({
     volume: `${firstBuy && quote ? formatUnits(firstBuy.amountIn, quote.decimals, 4) : "0"} ${ticker}`,
     rewardTaxBps: rewardTax,
     rewardBurnBps: rewardTax === null ? 0 : rewardBurn,
+    rewardLiquidityBps: rewardTax === null ? 0 : rewardLiquidity,
   };
 }
 
@@ -515,6 +519,13 @@ function Summary({ platform, quote, ticker, symbol, preview, options, step, fail
           <div>
             <dt>Reward Burn</dt>
             <dd>{burnShareTitle(options.rewardBurn)} of every reward</dd>
+          </div>
+        )}
+        {/* The Reward Liquidity (#214) likewise, in words, only when a share is picked. */}
+        {options.rewardTax !== null && burnShareTitle(options.rewardLiquidity) && (
+          <div>
+            <dt>Reward Liquidity</dt>
+            <dd className={styles.factWords}>{burnShareTitle(options.rewardLiquidity)} of every reward, added to its pool once it graduates, locked</dd>
           </div>
         )}
         {/* The Creator Lock in one sentence; without one the row is left out, as a coin without it has always read. */}

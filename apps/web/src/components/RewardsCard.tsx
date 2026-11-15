@@ -12,12 +12,14 @@ import styles from "./RewardsCard.module.css";
  * While the rules in force weigh coins by how long they were kept (the Holding Weight, ADR 0022), a connected wallet
  * sees its own Diamond Hands under the rounds; without steps in force, or without a wallet, the card is as it was.
  * A coin with a Reward Burn (#183) says the share in words, what it has burned so far, and each burn with its
- * transaction; a coin without one reads as it always has.
+ * transaction; a coin without one reads as it always has. So does a coin with a Reward Liquidity (#214): the share in
+ * words, the coins kept for its pool and not added yet, what every addition has added, and each addition.
  */
 export function RewardsCard({ rewards, symbol, platform }: { rewards: CoinRewards; symbol: string; platform: PlatformInfo }) {
   const coins = (raw: string) => formatUnits(raw, COIN_DECIMALS, 0);
-  const { payout, sales, burn } = rewards;
+  const { payout, sales, burn, liquidity } = rewards;
   const burnShare = burnShareTitle(burn.bps);
+  const liquidityShare = burnShareTitle(liquidity.bps);
   const paid = (raw: string) => `${formatUnits(raw, payout.decimals, Math.min(payout.decimals, 4))} ${payout.symbol}`;
   const rules = rewards.rules;
   const rate = rewards.rewardTaxBps / 100;
@@ -45,6 +47,13 @@ export function RewardsCard({ rewards, symbol, platform }: { rewards: CoinReward
           <>
             {" "}
             {burnShare} of every reward is burned when it is collected, before {sales ? "anything is sold" : "anything is paid"}, fixed at launch.
+          </>
+        )}
+        {liquidityShare && (
+          <>
+            {" "}
+            {liquidityShare} of every reward is added to its pool, locked: kept apart when it is collected, and added once {symbol} has
+            graduated, fixed at launch.
           </>
         )}
       </p>
@@ -77,6 +86,18 @@ export function RewardsCard({ rewards, symbol, platform }: { rewards: CoinReward
             <dt>Burned so far</dt>
             <dd><span className="mono">{coins(burn.burned)}</span> {symbol}</dd>
           </div>
+        )}
+        {liquidityShare && (
+          <>
+            <div>
+              <dt>Kept for the pool</dt>
+              <dd><span className="mono">{coins(liquidity.waiting)}</span> {symbol}</dd>
+            </div>
+            <div>
+              <dt>Added to the pool so far</dt>
+              <dd><span className="mono">{coins(liquidity.coinsAdded)}</span> {symbol}</dd>
+            </div>
+          </>
         )}
         {rules && (
           <>
@@ -134,6 +155,20 @@ export function RewardsCard({ rewards, symbol, platform }: { rewards: CoinReward
                   Burned <span className="mono">{coins(b.coins)}</span> {symbol}
                 </a>{" "}
                 <time dateTime={b.time}>{formatUtc(b.time)}</time>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {liquidity.recent.length > 0 && (
+        <ul className={styles.rounds} aria-label="Reward Liquidity additions">
+          {liquidity.recent.map((a) => (
+            <li key={a.signature}>
+              <span>
+                <a href={explorerUrl("tx", a.signature, platform)} target="_blank" rel="noreferrer">
+                  Added <span className="mono">{coins(a.coins)}</span> {symbol} to the pool, locked
+                </a>{" "}
+                <time dateTime={a.time}>{formatUtc(a.time)}</time>
               </span>
             </li>
           ))}

@@ -117,6 +117,7 @@ Rewards and budgets:
 - Budget destinations (#184): the Burn's and the Flywheel's buys go to `burn` or `liquidity` by an operator setting; liquidity only into pools paired with SOL.
 - The Payout Asset (#43): a Reward Launch pays in the coin or in its Quote Asset, fixed at launch; a run sells 0.5% of the reserve at most.
 - The Reward Burn (#183, ADR 0006): a Reward Launch burns none, a tenth, a quarter or half of every harvested tax, fixed at launch, in the withdrawal's own transaction; a `reward_burn` entry, never revenue.
+- The Reward Liquidity (#214, ADR 0006): the same steps added to the coin's pool after Graduation, the two shares at most half together; kept tax-free in its own account; `reward_liquidity` entries, never revenue.
 - The treasury is an eligible holder in Reward Rounds (owner, 2026-10-04).
 
 Platform, keys and policy:

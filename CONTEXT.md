@@ -228,6 +228,11 @@ The share of every harvested Reward Tax that a Reward Launch burns instead of pa
 It is burned in the transaction that withdraws the tax, before anything is sold or paid, and recorded on the Ledger; it is the holders' tax, never revenue, and has nothing to do with the Burn of the Platform Token.
 _Avoid_: Tax burn, auto-burn, deflation fee, Burn (on its own: that is the Platform Token's)
 
+**Reward Liquidity**:
+The share of every harvested Reward Tax that a Reward Launch adds to its own pool as locked liquidity instead of paying out, chosen by its Creator at launch from the same steps as the Reward Burn and never changed; the two together are half of every harvest at most, so holders keep at least half (#214).
+It is kept apart in the transaction that withdraws the tax, waits until the coin has graduated and is worth a locked position, and is then added, part sold for the Quote Asset half, with the operations wallet holding the Fee Key; every addition is on the Ledger, and it is the holders' tax, never revenue.
+_Avoid_: Auto-liquidity, LP tax, liquidity fee, protocol-owned liquidity (that is the Burn's and the Flywheel's, #184)
+
 **Reward Round**:
 One published cycle of paying a coin's holders, with its snapshot, rules version and payout transactions public: collected Reward Tax paid as Holder Rewards, or a coin's pot paid as Holder Dividends when its Creator's earnings go to its holders (ADR 0011).
 A round has one source, tax or earnings, and the two never share a pot.

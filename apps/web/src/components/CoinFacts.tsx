@@ -76,6 +76,7 @@ export function CoinFacts({ launch, platform, trust, renderedAt }: {
               <dd>
                 {launch.rewardTax.bps / 100}% of every transfer, paid out to holders in {launch.rewardTax.payout === "coin" ? launch.symbol : quote}
                 {burnShareWords(launch.rewardTax.burnBps) && <>, {burnShareWords(launch.rewardTax.burnBps)} of it burned first</>}
+                {burnShareWords(launch.rewardTax.liquidityBps) && <>, {burnShareWords(launch.rewardTax.liquidityBps)} of it added to its pool, locked</>}
                 {launch.rewardTax.locked ? (
                   <span>
                     Fixed for good:{" "}
