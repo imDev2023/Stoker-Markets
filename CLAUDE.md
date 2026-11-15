@@ -21,7 +21,7 @@ This repository is the fallback: it still deploys the live mainnet API and the d
 - **Waiting for the owner (2026-11-14):** PR #213, lane `creator-lock`'s build of #211: the site half of the Creator Lock (the launch form's lock, the coin page's mark and claim, the board's and the share card's badge, the API reference).
   It closes #211 and #186; CI is green and both UI runs passed locally; its calls to overrule are in its body and on #211.
   The chain half (PR #208) and the API half (PR #210, migration `0032`) are on `main`: until #213 lands the API prepares, lists and claims a lock, and the site shows none.
-- **Next unit:** none is named after #211; ask the owner before starting another.
+- **Next unit:** #214 (a Reward Launch's tax may also go to locked liquidity, beside the Reward Burn: two rows on the form, together at most 50%), after #213 lands; then #215 (a Liquidity Launch type), which waits on the owner's answers on the issue (owner, 2026-11-15).
   #185 (`/updates`) is built in new-stoker as imDev2023/new-stoker#53 and is closed here.
 - **Row-Level Security (#201)** is built and merged (migration `0030`, the lint check, the stack's plain owner role); the issue stays open until devnet has taken it and Supabase's advisor shows neither finding on both projects.
 - **Done on the rewards roadmap:** #187 (Budget Table), #188 (Creator Ladder), #113 with #184's Creator half (Creator Earnings Destinations), #196 (volume rebates), #199 (Holding Weight), #183 (the Reward Burn, PR #207) and #184's open half (budgets pointed at liquidity, PR #206), both merged 2026-11-14.
