@@ -16,22 +16,22 @@ This repository is the fallback: it still deploys the live mainnet API and the d
 7. `docs/agents/` - this file's long form, read on demand: `code-map.md`, `run-and-test.md`, `settled.md`, `history.md` and `traps/`.
    Read the file the Traps index below names before the work it covers; none of them is loaded for you.
 
-### The frontier (2026-11-14)
+### The frontier (2026-11-15)
 
-- **Waiting for the owner (2026-11-14):** PR #213, lane `creator-lock`'s build of #211: the site half of the Creator Lock (the launch form's lock, the coin page's mark and claim, the board's and the share card's badge, the API reference).
-  It closes #211 and #186; CI is green and both UI runs passed locally; its calls to overrule are in its body and on #211.
-  The chain half (PR #208) and the API half (PR #210, migration `0032`) are on `main`: until #213 lands the API prepares, lists and claims a lock, and the site shows none.
-- **Next unit:** #214 (a Reward Launch's tax may also go to locked liquidity, beside the Reward Burn: two rows on the form, together at most 50%), after #213 lands; then #215 (a Liquidity Launch type), which waits on the owner's answers on the issue (owner, 2026-11-15).
+- **Running (owner, 2026-11-15):** one relay lane, `reward-liquidity`, on #214: a Reward Launch may add a share of every Reward Tax to its pool as locked liquidity, beside the Reward Burn (two rows on the form, together at most 50%; migration `0033`).
+  Its PR waits for the owner; nothing runs beside it, by the owner's choice.
+  The Creator Lock is whole on `main`: the chain (PR #208), the API (PR #210, migration `0032`) and the site (PR #213, merged 2026-11-15 by the main session on the owner's choice).
+- **Next unit:** #215 (a Liquidity Launch type) after #214, once the owner has answered its three questions on the issue; nothing else is named, so ask the owner.
   #185 (`/updates`) is built in new-stoker as imDev2023/new-stoker#53 and is closed here.
 - **Row-Level Security (#201)** is built and merged (migration `0030`, the lint check, the stack's plain owner role); the issue stays open until devnet has taken it and Supabase's advisor shows neither finding on both projects.
-- **Done on the rewards roadmap:** #187 (Budget Table), #188 (Creator Ladder), #113 with #184's Creator half (Creator Earnings Destinations), #196 (volume rebates), #199 (Holding Weight), #183 (the Reward Burn, PR #207) and #184's open half (budgets pointed at liquidity, PR #206), both merged 2026-11-14.
-- **Devnet rehearsal** (`devnet.stoker.markets`, `api-devnet.stoker.markets`, and the apex with a devnet notice): its database is through `0026` and both Workers run `main` as of 62bfb75, so it is behind by #193, #198, #199, #201, #207, #206 and #210.
+- **Done on the rewards roadmap:** #187 (Budget Table), #188 (Creator Ladder), #113 with #184's Creator half (Creator Earnings Destinations), #196 (volume rebates), #199 (Holding Weight), #183 (the Reward Burn, PR #207), #184's open half (budgets pointed at liquidity, PR #206) and #186 (the Creator Lock, PRs #208, #210 and #213).
+- **Devnet rehearsal** (`devnet.stoker.markets`, `api-devnet.stoker.markets`, and the apex with a devnet notice): its database is through `0026` and both Workers run `main` as of 62bfb75, so it is behind by #193, #198, #199, #201, #207, #206, #210 and #213.
   It takes migrations `0027` to `0032`, then the API, then the web: the owner's one line in #193's last comment, repeated on #198, #199 and #201 (the same line covers `0031` and `0032`).
   After every merge the rehearsal is redeployed from `main`, the database first when `packages/db` changed, and the record goes on the issue.
 - **Mainnet:** `stoker-api` is live on `api.stoker.markets` on its build from before these merges; its database is through `0020` and takes `0021` to `0032` at go-live.
   Go-live is #23: the checklist is `docs/runbooks/mainnet.md` section 12, and #23's latest comment says which item is open.
-- **The owner still owes:** the devnet redeploy line above; the review and merge of PR #213 (#211); the calls each lane left to overrule on #183, #184 and #186 (each issue's last comments); on #23, item 9 (Always Use HTTPS), step 5b's backup disk, Helius Developer, then items 8, 10 and 12 at go-live; a Budget Table version with a share for `rebates` before the rebates pay anything (runbook section 17); the Reward Rounds' version 2 before the first Reward Launch (runbook section 6), and with it or after it the first Holding Weights (section 18); answers on #159; closing #128 and #129; three calls each on #193, #198 and #199 that are theirs to overrule (`docs/agents/settled.md`); and on #201, Supabase's advisor read again on both projects once devnet has `0030` (mainnet's tables by the block on the issue, or at go-live).
-- **Open PRs on 2026-11-14:** #213 (lane `creator-lock`), #168 (`sign-in`) and #132 (`design-research`: merge its `docs/design/research/` or close it).
+- **The owner still owes:** the devnet redeploy line above; the review and merge of #214's PR when it opens; the three answers on #215; the calls each lane left to overrule on #183, #184, #186 and #211 (each issue's last comments, and PR #213's body); on #23, item 9 (Always Use HTTPS), step 5b's backup disk, Helius Developer, then items 8, 10 and 12 at go-live; a Budget Table version with a share for `rebates` before the rebates pay anything (runbook section 17); the Reward Rounds' version 2 before the first Reward Launch (runbook section 6), and with it or after it the first Holding Weights (section 18); answers on #159; closing #128 and #129; three calls each on #193, #198 and #199 that are theirs to overrule (`docs/agents/settled.md`); and on #201, Supabase's advisor read again on both projects once devnet has `0030` (mainnet's tables by the block on the issue, or at go-live).
+- **Open PRs on 2026-11-15:** #168 (`sign-in`) and #132 (`design-research`: merge its `docs/design/research/` or close it).
   Check `gh pr list` before starting work, since cloud sessions also push here, and push every working branch.
 - **Site work** (phase 6, #137, and anything in the Playground's design) belongs in new-stoker unless the owner says otherwise.
 
