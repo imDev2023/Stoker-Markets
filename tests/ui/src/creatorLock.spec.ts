@@ -52,12 +52,13 @@ test("a Creator locks part of the supply on the form, and the coin carries the l
   await expect(page.getByRole("group", { name: "Lock size" })).toHaveCount(0);
   await expect(summary(page)).not.toContainText("Creator Lock");
 
-  // On, the steps start at the smallest size and the 30 days the owner named beside 7 days.
+  // On, the steps start at the smallest size and the 30 days the owner named beside 7 days, all unlocking at once.
   await lockChoice(page).getByText("Lock coins for yourself").click();
   const sizes = page.getByRole("group", { name: "Lock size" });
   const times = page.getByRole("group", { name: "Locked for" });
   await expect(sizes.getByRole("button")).toHaveText(["5%", "10%", "15%", "20%"]);
-  await expect(times.getByRole("button")).toHaveText(["7 days", "30 days", "90 days", "180 days", "1 year"]);
+  await expect(times.getByRole("button")).toHaveText(["7 days", "14 days", "30 days", "90 days", "180 days", "1 year"]);
+  await expect(page.getByRole("group", { name: "Unlocks" }).getByRole("button", { name: "All at once" })).toHaveAttribute("aria-pressed", "true");
   await expect(sizes.getByRole("button", { name: "5%", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(times.getByRole("button", { name: "30 days" })).toHaveAttribute("aria-pressed", "true");
   await sizes.getByRole("button", { name: "10%", exact: true }).click();
@@ -90,6 +91,43 @@ test("a Creator locks part of the supply on the form, and the coin carries the l
   // The Creator sees their claim waiting for Graduation.
   await expect(claimCard(page)).toContainText("You can claim once VLTK has graduated. Nothing unlocks for 7 days after that.");
   await expect(claimCard(page).getByRole("button", { name: "Claim VLTK" })).toBeDisabled();
+});
+
+test("a Creator's lock unlocks gradually after its first 7 days, a 7-day cliff and then LaunchLab's linear unlock", async ({ page, wallet }) => {
+  expect(wallet.requests).toHaveLength(0);
+  await page.goto("/launch");
+  await connectWallet(page);
+  await fillForm(page, { name: "Steady Drip", symbol: "DRIP" });
+  await lockChoice(page).getByText("Lock coins for yourself").click();
+  const times = page.getByRole("group", { name: "Locked for" });
+  const unlocks = page.getByRole("group", { name: "Unlocks" });
+  await page.getByRole("group", { name: "Lock size" }).getByRole("button", { name: "15%", exact: true }).click();
+  await times.getByRole("button", { name: "7 days" }).click();
+
+  // Gradually needs time past its first 7 days: the 7 days alone go, and a lock set to them moves to 14 days.
+  await unlocks.getByRole("button", { name: "Gradually after 7 days" }).click();
+  await expect(times.getByRole("button")).toHaveText(["14 days", "30 days", "90 days", "180 days", "1 year"]);
+  await expect(times.getByRole("button", { name: "14 days" })).toHaveAttribute("aria-pressed", "true");
+  await times.getByRole("button", { name: "30 days" }).click();
+  const sentence = "15% of the supply is locked for the Creator; nothing unlocks for 7 days after Graduation, then a little more unlocks every day until 30 days after it.";
+  await expect(summary(page)).toContainText(`Creator Lock${sentence}`);
+  await expect(lockChoice(page).locator("xpath=..")).toContainText(sentence);
+
+  const prepared = nextPrepare(page);
+  await signButton(page).click();
+  const answer = await prepared;
+  expect(answer.ok).toBe(true);
+  expect(answer.body).toMatch(/name="lockCliffSeconds"\r\n\r\n604800\r\n/);
+  expect(answer.body).toMatch(/name="lockUnlockSeconds"\r\n\r\n1987200\r\n/);
+  const launch = PreparedLaunch.parse(answer.json);
+  await page.waitForURL(`**/coin/${launch.mint}`);
+
+  // On-chain and in the listing: the 7-day cliff, then 23 days of unlocking, 30 days in all.
+  const terms = { bps: 1_500, amount: "150000000000000000", cliffSeconds: 7 * DAY, unlockSeconds: 23 * DAY };
+  expect((await listLaunches()).find((l) => l.mint === launch.mint)?.creatorLock).toEqual(terms);
+  expect(await lockOf(launch.mint)).toMatchObject({ terms, curve: "live", unlockStartsAt: null });
+  await openTrust(page);
+  await expect(trustPanel(page)).toContainText(sentence);
 });
 
 test("a coin launched from the form without a lock has none on-chain, and its page shows three marks and no claim", async ({ page, wallet }) => {
@@ -200,11 +238,14 @@ test("the board's card and the share card carry a badge for a coin with a lock a
   const creator = await fundedKeypair(5);
   const locked = await launchViaApi(creator, { name: "Badge Holder", symbol: "BDGH", lockBps: "2000", lockCliffSeconds: String(30 * DAY) });
   await launchViaApi(creator, { name: "Badge Free", symbol: "BDGF" });
+  await launchViaApi(creator, { name: "Badge Burn", symbol: "BDGB", rewardTax: "300", rewardBurn: "1000" });
   await page.goto("/coins?view=cards");
   const card = (name: string) => page.locator("[data-coin-card]").filter({ hasText: name });
   await expect(card("Badge Holder").locator("[data-lock-badge]")).toHaveText("20% lock");
   await expect(card("Badge Free")).toBeVisible();
   await expect(card("Badge Free").locator("[data-lock-badge]")).toHaveCount(0);
+  // A Reward Launch's tag says its Reward Burn too, in words (the owner's review of #213).
+  await expect(card("Badge Burn")).toContainText("3% tax, a tenth burned");
 
   // The share card names the lock, its size and its time; a coin without one keeps the card `seo.spec.ts` pins.
   await page.goto(`/coin/${locked}`);

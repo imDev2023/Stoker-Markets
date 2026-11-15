@@ -96,8 +96,8 @@ The API's side (2026-11-14, the second half of #186, its first part):
 
 The site's side (#211, 2026-11-14):
 
-- The launch form offers the lock off by default and, where the pair's cap is above 0, as steps: the size in steps of 5% up to a fifth (those at or under the pair's cap, or the cap itself where it is under 5%), and the lock time as a cliff of 7 days, 30 days, 90 days, 180 days or a year, with everything unlocking at once when it ends.
-  A linear unlock is not offered yet; the page reads one, since a coin built without our form may have it.
+- The launch form offers the lock off by default and, where the pair's cap is above 0, as steps: the size in steps of 5% up to a fifth (those at or under the pair's cap, or the cap itself where it is under 5%), the lock time of 7 days, 14 days, 30 days, 90 days, 180 days or a year, and how it unlocks within that time.
+  "All at once" is a cliff of the whole time; "Gradually after 7 days" is a 7-day cliff and then LaunchLab's linear unlock until the time ends, so it offers 14 days and longer (the owner's review of #213, 2026-11-15, which also added the 14 days).
   The summary says the lock in one sentence, and the form what it does to the opening price, from two launch quotes, with and without `lockBps`.
 - The coin page shows a fourth trust mark for a coin with a lock, in words for each stage: before the sell-out (no date, since the clock has not started), during the cliff (until a date), while it unlocks (the share still locked), and once it has all unlocked.
 - The Creator's wallet, and no other, sees what is locked, claimed and claimable, claims with one signature, and is told in plain words why a claim waits; on a Reward Launch the card says that a claim pays the Reward Tax and about what reaches the wallet.

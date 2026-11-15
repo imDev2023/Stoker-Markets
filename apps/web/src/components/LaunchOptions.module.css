@@ -220,3 +220,11 @@
   min-width: 3.5rem;
   font-variant-numeric: tabular-nums;
 }
+
+/* The Creator Lock's six times: one row where they fit, three by two on a phone, where one row would run off the screen. */
+@media (max-width: 600px) {
+  .times {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

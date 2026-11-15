@@ -9,7 +9,7 @@ import { getLaunchPermissions, getLaunchQuote } from "@/lib/api";
 import { parseAirdropList } from "@/lib/airdrop";
 import { DESTINATION_NAMES, destinationChoiceLine } from "@/lib/earnings";
 import { burnShareTitle } from "@/lib/rewardBurn";
-import { LOCK_TIME_STEPS, lockSentence, lockShare, lockSizes, lockTime } from "@/lib/creatorLock";
+import { LOCK_TIME_STEPS, lockSchedule, lockSentence, lockShare, lockSizes, lockTime, lockTimes, type LockUnlock } from "@/lib/creatorLock";
 import { COIN_DECIMALS, COIN_SUPPLY, formatUnits, parseUnits } from "@/lib/format";
 import { OptionRow } from "./OptionRow";
 import styles from "./LaunchOptions.module.css";
@@ -44,10 +44,12 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
   const [rewardBurn, setRewardBurn] = useState<RewardBurnBps>(0);
   // Where the Creator's earnings on the coin go, for good (ADR 0011): their wallet unless they point them elsewhere.
   const [earningsDestination, setEarningsDestination] = useState<CreatorEarningsDestination>("wallet");
-  // The Creator Lock (ADR 0023): off unless the Creator turns it on; then a size of the supply and a lock time, as steps.
+  // The Creator Lock (ADR 0023): off unless the Creator turns it on; then a size of the supply, a lock time and how it
+  // unlocks within that time, as steps.
   const [lockOn, setLockOn] = useState(false);
   const [lockBpsChosen, setLockBps] = useState<number>(0);
-  const [lockSeconds, setLockSeconds] = useState<number>(LOCK_TIME_STEPS[1]);
+  const [lockSeconds, setLockSeconds] = useState<number>(LOCK_TIME_STEPS[2]);
+  const [lockUnlock, setLockUnlockState] = useState<LockUnlock>("once");
   const [firstBuyText, setFirstBuyText] = useState("");
   const [airdropChosen, setAirdropOn] = useState(false);
   const [airdropText, setAirdropText] = useState("");
@@ -135,8 +137,14 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
       if (on && !sizes.includes(lockBpsChosen)) setLockBps(sizes[0] ?? 0);
     },
     lockBpsChosen, setLockBps, lockSeconds, setLockSeconds, lockProblem,
-    /** The lock the launch will carry, or null: a size the pair allows and its time, as a cliff from the sell-out. */
-    lock: lockQuoted === null ? null : { bps: lockQuoted, cliffSeconds: lockSeconds, unlockSeconds: 0 },
+    lockUnlock, setLockUnlock: (unlock: LockUnlock) => {
+      setLockUnlockState(unlock);
+      // Gradually needs a time past its first 7 days: a time it does not offer moves to the shortest one it does.
+      const times = lockTimes(unlock);
+      if (!times.includes(lockSeconds)) setLockSeconds(times[0]!);
+    },
+    /** The lock the launch will carry, or null: a size the pair allows, its time and how it unlocks, from the sell-out. */
+    lock: lockQuoted === null ? null : { bps: lockQuoted, ...lockSchedule(lockSeconds, lockUnlock) },
     firstBuyText, setFirstBuyText, firstBuyInvalid, firstBuyQuote, firstBuyProblem,
     airdropAllowed, airdropOn, setAirdropOn, airdropText, setAirdropText, airdrop, airdropProblem, airdropMissing, bought,
     /** What stops the launch from being prepared, if anything. */
@@ -147,8 +155,12 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
       if (rewardTax !== null) out.push(["rewardTax", String(rewardTax)], ["rewardPayout", rewardPayout], ["rewardBurn", String(rewardBurn)]);
       // The wallet is what the API takes a launch without the field to mean.
       if (earningsDestination !== "wallet") out.push(["earningsDestination", earningsDestination]);
-      // The lock's time is a cliff: nothing unlocks before it ends, everything at once when it does.
-      if (lockQuoted !== null) out.push(["lockBps", String(lockQuoted)], ["lockCliffSeconds", String(lockSeconds)]);
+      // All at once is a cliff alone; gradually is a 7-day cliff, then a linear unlock until the lock time ends.
+      if (lockQuoted !== null) {
+        const { cliffSeconds, unlockSeconds } = lockSchedule(lockSeconds, lockUnlock);
+        out.push(["lockBps", String(lockQuoted)], ["lockCliffSeconds", String(cliffSeconds)]);
+        if (unlockSeconds > 0) out.push(["lockUnlockSeconds", String(unlockSeconds)]);
+      }
       if (firstBuy !== null) out.push(["firstBuy", firstBuy.toString()]);
       if (airdropOn && airdrop.recipients.length > 0)
         out.push(["airdrop", JSON.stringify(airdrop.recipients.map((r) => ({ wallet: r.wallet, amount: r.amount.toString() })))]);
@@ -313,12 +325,21 @@ export function LockChoice({ options: o, coin, labelId, opening }: {
       {o.lockOn && (
         <div className={styles.rates} role="group" aria-label="Locked for">
           <span className={styles.ratesLabel} aria-hidden>Locked for</span>
-          <div className={`segmented ${styles.segmented}`}>
-            {LOCK_TIME_STEPS.map((seconds) => (
+          <div className={`segmented ${styles.segmented} ${styles.times}`}>
+            {lockTimes(o.lockUnlock).map((seconds) => (
               <button key={seconds} type="button" aria-pressed={o.lockSeconds === seconds} onClick={() => o.setLockSeconds(seconds)}>
                 {lockTime(seconds)}
               </button>
             ))}
+          </div>
+        </div>
+      )}
+      {o.lockOn && (
+        <div className={styles.rates} role="group" aria-label="Unlocks">
+          <span className={styles.ratesLabel} aria-hidden>Unlocks</span>
+          <div className={`segmented ${styles.segmented}`}>
+            <button type="button" aria-pressed={o.lockUnlock === "once"} onClick={() => o.setLockUnlock("once")}>All at once</button>
+            <button type="button" aria-pressed={o.lockUnlock === "gradual"} onClick={() => o.setLockUnlock("gradual")}>Gradually after 7 days</button>
           </div>
         </div>
       )}

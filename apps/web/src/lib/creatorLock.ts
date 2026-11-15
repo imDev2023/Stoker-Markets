@@ -25,12 +25,30 @@ export function lockSizes(capBps: number): number[] {
 }
 
 /**
- * The lock times the form offers, from the curve selling out until the coins unlock: 7 days and 30 days, as the owner
- * asked ("can we start by giving options of 7 days, 30 days etc?"), then 90 days, 180 days and a year. Each is a cliff:
- * nothing unlocks before it ends, and everything at once when it does. LaunchLab can also unlock evenly over a time;
- * the page reads such a lock (a coin launched without our form may have one) but the form does not offer it yet.
+ * The lock times the form offers, from the curve selling out until every locked coin is free: 7 days and 30 days, as the
+ * owner first asked ("can we start by giving options of 7 days, 30 days etc?"), 14 days added on their review of #213,
+ * then 90 days, 180 days and a year.
  */
-export const LOCK_TIME_STEPS = [7 * DAY, 30 * DAY, 90 * DAY, 180 * DAY, YEAR] as const;
+export const LOCK_TIME_STEPS = [7 * DAY, 14 * DAY, 30 * DAY, 90 * DAY, 180 * DAY, YEAR] as const;
+
+/**
+ * How the coins come free within the lock time, as the form offers it: all at once when it ends (a cliff), or gradually
+ * after the first 7 days (a 7-day cliff, then LaunchLab's linear unlock until the time ends), as the owner asked on their
+ * review of #213. Gradually needs a time past those 7 days, so it never offers the 7 days alone.
+ */
+export type LockUnlock = "once" | "gradual";
+export const GRADUAL_AFTER_SECONDS = 7 * DAY;
+
+export function lockTimes(unlock: LockUnlock): number[] {
+  return LOCK_TIME_STEPS.filter((seconds) => unlock === "once" || seconds > GRADUAL_AFTER_SECONDS);
+}
+
+/** The schedule the form sends for a lock time and how it unlocks: the cliff and the linear unlock, in seconds. */
+export function lockSchedule(seconds: number, unlock: LockUnlock) {
+  return unlock === "once"
+    ? { cliffSeconds: seconds, unlockSeconds: 0 }
+    : { cliffSeconds: GRADUAL_AFTER_SECONDS, unlockSeconds: seconds - GRADUAL_AFTER_SECONDS };
+}
 
 /** A lock's size as a share of the supply: 20%, 12.34%. */
 export const lockShare = (bps: number) => `${(bps / 100).toLocaleString("en-US", { maximumFractionDigits: 2 })}%`;
@@ -45,7 +63,7 @@ export function lockTime(seconds: number) {
 function schedule(terms: Pick<CreatorLockTerms, "cliffSeconds" | "unlockSeconds">) {
   if (terms.unlockSeconds === 0) return `all of it unlocks ${lockTime(terms.cliffSeconds)} after Graduation`;
   if (terms.cliffSeconds === 0) return `it unlocks evenly over the ${lockTime(terms.unlockSeconds)} after Graduation`;
-  return `nothing unlocks for ${lockTime(terms.cliffSeconds)} after Graduation, then it unlocks evenly over ${lockTime(terms.unlockSeconds)}`;
+  return `nothing unlocks for ${lockTime(terms.cliffSeconds)} after Graduation, then a little more unlocks every day until ${lockTime(terms.cliffSeconds + terms.unlockSeconds)} after it`;
 }
 
 /** The lock in one sentence, as the launch summary and the coin page's card say it before the coin has sold out. */

@@ -186,7 +186,7 @@ export function LaunchForm({
   const side = useStickySide();
   const ticker = quote ? quoteTicker(quote) : null;
   const openingPrice = options.lock ? lockedPrice : launchPrice;
-  const preview = previewCard({ imageUrl, symbol, name, quote, firstBuy: options.firstBuyQuote, launchPrice: openingPrice, rewardTax: options.rewardTax });
+  const preview = previewCard({ imageUrl, symbol, name, quote, firstBuy: options.firstBuyQuote, launchPrice: openingPrice, rewardTax: options.rewardTax, rewardBurn: options.rewardBurn });
   // While a launch is in flight or uncertain, nothing on the form may change under it.
   const locked = busy || failed !== null;
 
@@ -372,7 +372,7 @@ function useLaunchPrice(quote: QuoteAsset | null, lockBps: number | null, lockOn
  * curve and the day's volume that buy leaves behind.
  */
 function previewCard({
-  imageUrl, symbol, name, quote, firstBuy, launchPrice, rewardTax,
+  imageUrl, symbol, name, quote, firstBuy, launchPrice, rewardTax, rewardBurn,
 }: {
   imageUrl: string | null;
   symbol: string;
@@ -381,6 +381,7 @@ function previewCard({
   firstBuy: TradeQuote | null;
   launchPrice: number | null;
   rewardTax: number | null;
+  rewardBurn: number;
 }): CoinCardData {
   const ticker = quote ? quoteTicker(quote) : "SOL";
   const target = quote?.graduationTarget ? BigInt(quote.graduationTarget.raw) : 0n;
@@ -400,6 +401,7 @@ function previewCard({
     curve: firstBuy?.completesCurve ? "graduating" : "live",
     volume: `${firstBuy && quote ? formatUnits(firstBuy.amountIn, quote.decimals, 4) : "0"} ${ticker}`,
     rewardTaxBps: rewardTax,
+    rewardBurnBps: rewardTax === null ? 0 : rewardBurn,
   };
 }
 
