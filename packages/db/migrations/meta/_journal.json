@@ -232,6 +232,13 @@
       "when": 1794671878432,
       "tag": "0032_creator_lock",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1794775538851,
+      "tag": "0033_reward_liquidity",
+      "breakpoints": true
     }
   ]
 }

@@ -13,7 +13,7 @@ import { airdropCreators, allowAirdropCreator, disallowAirdropCreator, mayAirdro
 import { quoteMarket, type AppEnv, type Config } from "../env";
 import { indexAccountHistory } from "../indexer";
 import {
-  buildLaunch, checkCreatorLock, firstBuyToContract, launchQuoteAsset, loadDraft, lockOf, quoteLaunchFirstBuy, refuseWith, resolveDraftModes, type LoadedDraft,
+  buildLaunch, checkCreatorLock, checkRewardShares, firstBuyToContract, launchQuoteAsset, loadDraft, lockOf, quoteLaunchFirstBuy, refuseWith, resolveDraftModes, type LoadedDraft,
 } from "../launch";
 
 /** Launch modes: first-buy quotes, retrying a prepared launch, and paying its airdrop. */
@@ -24,6 +24,10 @@ launchModeRoutes.get("/launch-quote", async (c) => {
   const query = FirstBuyQuoteQuery.safeParse(c.req.query());
   if (!query.success) return c.json({ error: "invalid launch quote request", details: query.error.issues }, 400);
   const cfg = c.get("cfg");
+  // The shares move no price, and are refused here as prepare refuses them, so a form hears it before anything is prepared.
+  await Promise.resolve()
+    .then(() => checkRewardShares(query.data.rewardTax ?? null, query.data.rewardBurn ?? null, query.data.rewardLiquidity ?? null))
+    .catch(refuseWith(400));
   const quote = await launchQuoteAsset(c.get("db"), cfg, quoteMarket(c.env), query.data.quoteMint);
   const lock = query.data.lockBps ? { bps: query.data.lockBps, cliffSeconds: 0, unlockSeconds: CREATOR_LOCK.minSeconds } : null;
   // Only the lock's size moves the price; the schedule is checked at prepare. Its size is held to the asset's cap here too.

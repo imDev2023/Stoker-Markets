@@ -45,11 +45,15 @@ const raw = z.string().regex(/^\d+$/, "must be a whole number of raw units");
  * - `reward_burn`: a Reward Launch's Reward Burn (#183, ADR 0006): the coins of a harvested Reward Tax that were burned
  *   instead of paid out, keyed by the transaction that withdrew the tax and burned that share of it, from the operations
  *   wallet to the burn address. The holders' tax, never revenue and never a spending of the Budget Table.
+ * - `reward_liquidity`: a Reward Launch's Reward Liquidity (#214, ADR 0006): the kept share of its harvested Reward Tax
+ *   added to the coin's own pool as locked liquidity, three entries of one transaction: the coins sold into the pool for
+ *   the Quote Asset half, then the coins and the Quote Asset that went into the pool, to the locked position whose Fee
+ *   Key the operations wallet holds. The holders' tax, never revenue and never a spending of the Budget Table.
  */
 export const LedgerKind = z.enum([
   "platform_fee", "pool_fee", "fee_key", "sweep", "creator_forward", "burn", "flywheel", "arweave_top_up", "metadata_upload", "reward_sale", "graduation_fee",
   "holder_dividend", "creator_burn", "creator_liquidity", "rebate", "reward_burn",
-  "burn_liquidity", "flywheel_liquidity",
+  "burn_liquidity", "flywheel_liquidity", "reward_liquidity",
 ]);
 export type LedgerKind = z.infer<typeof LedgerKind>;
 

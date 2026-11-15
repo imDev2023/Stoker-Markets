@@ -9,8 +9,9 @@ import {
   creatorLockProblem, curvePrice, firstBuyTakesCurve, LAUNCH_SHAPE, loadLookupTable, RATE_DENOMINATOR, planAirdrop, prepareLaunch, quoteFirstBuy,
   readTransferFees, rewardTaxFee, supplyShare, WSOL_MINT, type CreatorLock, type FirstBuyQuote, type LaunchPairing,
 } from "@launchpad/chain";
+import { REWARD_SHARES_MAX_BPS } from "@launchpad/contract";
 import type {
-  AirdropRecipients, CreatorEarningsDestination, CreatorLockTerms, GraduationTarget, LaunchModesSummary, PreparedLaunch, RewardBurnBps, RewardPayoutAsset,
+  AirdropRecipients, CreatorEarningsDestination, CreatorLockTerms, GraduationTarget, LaunchModesSummary, PreparedLaunch, RewardBurnBps, RewardLiquidityBps, RewardPayoutAsset,
   RewardTaxBps, TradeQuote,
 } from "@launchpad/contract";
 import { airdropRecipients, launchDrafts, launchMetadata, type Db } from "@launchpad/db";
@@ -157,13 +158,26 @@ export function checkCreatorLock(quote: QuoteAsset, c: CreatorLockChoice) {
 }
 
 /**
- * The Creator's choices a launch is fixed with: the Reward Tax, its Payout Asset and Reward Burn, where the earnings go,
- * and the Creator Lock.
+ * The Creator's choices a launch is fixed with: the Reward Tax, its Payout Asset, Reward Burn and Reward Liquidity, where
+ * the earnings go, and the Creator Lock.
  */
 export type LaunchChoices = {
-  rewardTaxBps: RewardTaxBps | null; rewardPayout: RewardPayoutAsset | null; rewardBurnBps: RewardBurnBps | null; earningsDestination: CreatorEarningsDestination;
-  lock: CreatorLockChoice | null;
+  rewardTaxBps: RewardTaxBps | null; rewardPayout: RewardPayoutAsset | null; rewardBurnBps: RewardBurnBps | null;
+  rewardLiquidityBps: RewardLiquidityBps | null; earningsDestination: CreatorEarningsDestination; lock: CreatorLockChoice | null;
 };
+
+/**
+ * Refuses a Reward Burn or a Reward Liquidity without a Reward Tax ("0" included, so a standard coin carries neither at
+ * all), and the two together above `REWARD_SHARES_MAX_BPS`: holders keep at least half of every reward (#214).
+ */
+export function checkRewardShares(rewardTaxBps: RewardTaxBps | null, rewardBurnBps: RewardBurnBps | null, rewardLiquidityBps: RewardLiquidityBps | null) {
+  if (rewardBurnBps != null && !rewardTaxBps)
+    throw new LaunchModeError("A Reward Burn is only for a Reward Launch. Choose a Reward Tax, or leave the burn out.");
+  if (rewardLiquidityBps != null && !rewardTaxBps)
+    throw new LaunchModeError("Reward Liquidity is only for a Reward Launch. Choose a Reward Tax, or leave the liquidity share out.");
+  if ((rewardBurnBps ?? 0) + (rewardLiquidityBps ?? 0) > REWARD_SHARES_MAX_BPS)
+    throw new LaunchModeError("Holders keep at least half of every reward: the share burned and the share added to the pool can be half of it together, at most.");
+}
 
 /**
  * Checks the launch modes together and describes them: a payout asset or a Reward Burn needs a Reward Tax, an airdrop
@@ -172,13 +186,13 @@ export type LaunchChoices = {
  */
 export async function resolveLaunchModes(
   connection: Connection, cfg: Config, quote: QuoteAsset, creator: PublicKey, firstBuy: BN | null, airdrop: AirdropRecipients,
-  { rewardTaxBps, rewardPayout, rewardBurnBps, earningsDestination, lock }: LaunchChoices,
+  { rewardTaxBps, rewardPayout, rewardBurnBps, rewardLiquidityBps, earningsDestination, lock }: LaunchChoices,
 ): Promise<{ firstBuy: LaunchFirstBuy | null; summary: LaunchModesSummary }> {
   if (rewardPayout && !rewardTaxBps) throw new LaunchModeError("A payout asset is only for a Reward Launch. Choose a Reward Tax, or leave the payout asset out.");
-  // Nothing to burn without a tax; "0" says no burn and is refused all the same, so a standard coin carries no Reward Burn at all.
-  if (rewardBurnBps !== null && !rewardTaxBps)
-    throw new LaunchModeError("A Reward Burn is only for a Reward Launch. Choose a Reward Tax, or leave the burn out.");
-  const rewardTax = rewardTaxBps ? { bps: rewardTaxBps, payout: rewardPayout ?? ("coin" as const), burnBps: rewardBurnBps ?? 0 } : null;
+  checkRewardShares(rewardTaxBps, rewardBurnBps, rewardLiquidityBps);
+  const rewardTax = rewardTaxBps
+    ? { bps: rewardTaxBps, payout: rewardPayout ?? ("coin" as const), burnBps: rewardBurnBps ?? 0, liquidityBps: rewardLiquidityBps ?? 0 }
+    : null;
   if (lock) checkCreatorLock(quote, lock);
   const creatorLock = lock && lockTerms(lock);
   const bought = firstBuy ? await quoteLaunchFirstBuy(connection, cfg, quote, firstBuy, rewardTaxBps, lock && lockOf(lock)) : null;
@@ -239,6 +253,8 @@ export async function saveDraft(
       rewardPayout: d.rewardTaxBps ? (d.rewardPayout ?? "coin") : null,
       // The Reward Burn (#183) likewise: what share of every harvest the Reward Engine burns, for the coin's life.
       rewardBurnBps: d.rewardTaxBps ? (d.rewardBurnBps ?? 0) : null,
+      // And the Reward Liquidity (#214): what share of every harvest it keeps for the coin's pool.
+      rewardLiquidityBps: d.rewardTaxBps ? (d.rewardLiquidityBps ?? 0) : null,
       // So is where the Creator's earnings go (ADR 0011): the Indexer copies it to the Launch, and nothing changes it after.
       earningsDestination: d.earningsDestination,
       // And the Creator Lock (ADR 0023): a retry builds the same lock, and the Indexer reads it from the chain.
@@ -329,6 +345,7 @@ export async function resolveDraftModes(db: Db, connection: Connection, cfg: Con
       rewardTaxBps: (draft.rewardTaxBps as RewardTaxBps | null) ?? null,
       rewardPayout: draft.rewardPayout,
       rewardBurnBps: (draft.rewardBurnBps as RewardBurnBps | null) ?? null,
+      rewardLiquidityBps: (draft.rewardLiquidityBps as RewardLiquidityBps | null) ?? null,
       earningsDestination: draft.earningsDestination,
       lock: draftLock(draft),
     },

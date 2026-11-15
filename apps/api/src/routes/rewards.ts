@@ -14,6 +14,7 @@ import { publishedRules, rulesInForce, taxWaiting } from "../rewards/engine";
 import { lotWeightBps } from "../rewards/weights";
 import { quotePot, salesOf } from "../rewards/sales";
 import { burnsOf } from "../rewards/burns";
+import { additionsOf, liquidityWaiting } from "../rewards/liquidity";
 
 /**
  * Reward Rounds, public: the rules every round follows (in force and announced), each Reward Launch's rounds and the tax
@@ -105,10 +106,15 @@ rewardRoutes.get("/launches/:mint/rewards", async (c) => {
     .where(and(eq(rewardRounds.mint, mint.toBase58()), eq(rewardRounds.source, "tax")))
     .orderBy(desc(rewardRounds.startedAt))
     .limit(50);
-  const waiting = await taxWaiting(new Connection(cfg.rpcUrl, "confirmed"), operationsKey(c.env).publicKey, mint);
+  const connection = new Connection(cfg.rpcUrl, "confirmed");
+  const ops = operationsKey(c.env).publicKey;
+  const waiting = await taxWaiting(connection, ops, mint);
   const { inForce } = await publishedRules(db);
   const [pot, sales] = inQuote ? await Promise.all([quotePot(db, launch.mint), salesOf(db, launch.mint)]) : [waiting.held, null];
   const burns = await burnsOf(db, launch.mint);
+  // Read from the Reward Liquidity's own two accounts, so a coin that keeps none still reads 0 without a request too many.
+  const kept = launch.rewardLiquidityBps ? await liquidityWaiting(connection, ops, launch) : null;
+  const added = await additionsOf(db, launch.mint);
   const res: CoinRewards = {
     mint: mint.toBase58(),
     rewardTaxBps: launch.rewardTaxBps!,
@@ -129,6 +135,14 @@ rewardRoutes.get("/launches/:mint/rewards", async (c) => {
       bps: launch.rewardBurnBps ?? 0,
       burned: burns.burned,
       recent: burns.recent.map((b) => ({ signature: b.signature, coins: b.amount, time: b.blockTime.toISOString() })),
+    },
+    liquidity: {
+      bps: launch.rewardLiquidityBps ?? 0,
+      waiting: (kept?.coinAccount.amount ?? 0n).toString(),
+      waitingQuote: (kept?.quoteAccount.amount ?? 0n).toString(),
+      coinsAdded: added.coinsAdded,
+      quoteAdded: added.quoteAdded,
+      recent: added.recent,
     },
     rules: inForce ? ruleVersion(inForce) : null,
     rounds: rounds.map((r) => roundSummary(r, payoutRef(launch, r.payoutMint, r.payoutDecimals, row.quoteSymbol))),
