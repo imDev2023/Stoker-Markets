@@ -13,6 +13,16 @@ async function newKey(name: string, rateLimitPerMinute?: number) {
   return (await res.json()) as { id: string; key: string; name: string; rateLimitPerMinute: number };
 }
 
+/**
+ * A key's requests are counted per minute, so a burst that must meet the limit may not straddle two: started in a
+ * minute's last seconds, its first requests count in one minute and the rest in the next, and none is refused (CI,
+ * 2026-11-16, at 02:51:00Z). When the minute is nearly over this waits for the next one.
+ */
+async function clearOfMinuteEnd(needed = 15_000) {
+  const left = 60_000 - (Date.now() % 60_000);
+  if (left < needed) await new Promise((r) => setTimeout(r, left + 500));
+}
+
 describe("API keys", () => {
   it("are issued by the operator, shown once, and identify the caller on every request", async () => {
     const made = await newKey("Telegram bot");
@@ -49,6 +59,7 @@ describe("API keys", () => {
 
   it("rejects requests past the key's rate limit with 429 and a retry-after, and counts usage per minute", async () => {
     const { key } = await newKey("Greedy bot", 3);
+    await clearOfMinuteEnd();
     const statuses: number[] = [];
     for (let i = 0; i < 5; i++) statuses.push((await api("/v1/launches?limit=1", { headers: { "x-api-key": key } })).status);
     expect(statuses).toEqual([200, 200, 200, 429, 429]);
