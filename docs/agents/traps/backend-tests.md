@@ -33,6 +33,8 @@ The text is the original's, one sentence a line.
 - The stack's database belongs to a plain role (`launchpad_stack`, neither a superuser nor exempt from Row-Level Security, #201), which runs the migrations and is the role the API connects as, as on the hosted databases; `databaseUrl` is that role.
   A test that needs more (a role of its own, as `row-security.test.ts` makes one with every privilege on the tables and sees it read nothing) uses `databaseAdminUrl`, the server's superuser on the same database, and drops whatever it made on the server, since a role outlives the stack's database wherever `STACK_DATABASE_URL` names the server.
   `STACK_DATABASE_URL`'s user must be a superuser (CI's and the Mac's private server's `test` is), since it makes the role and gives it the database.
+- Requests are counted per UTC minute (`minuteOf` in `apps/api/src/apiKeys.ts`), so a burst that must meet a limit may not straddle two minutes: `api-keys.test.ts` started one at 02:50:59Z in CI on 2026-11-16 and no request was refused.
+  `rate-limits.test.ts` waits for a fresh minute (`nextMinute`), and `api-keys.test.ts` waits only when the minute is nearly over (`clearOfMinuteEnd`).
 
 ## What a test must set up
 
