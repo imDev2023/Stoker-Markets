@@ -27,7 +27,8 @@ jobs:
   # solana-test-validator.
   backend:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # The suite takes 28 to 30 minutes on a runner (2026-11-16): at 30 the limit cancelled runs that had failed nothing.
+    timeout-minutes: 45
     services:
       postgres:
         image: postgres:17-alpine
