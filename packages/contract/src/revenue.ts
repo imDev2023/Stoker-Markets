@@ -48,7 +48,8 @@ const raw = z.string().regex(/^\d+$/, "must be a whole number of raw units");
  * - `reward_liquidity`: a Reward Launch's Reward Liquidity (#214, ADR 0006): the kept share of its harvested Reward Tax
  *   added to the coin's own pool as locked liquidity, three entries of one transaction: the coins sold into the pool for
  *   the Quote Asset half, then the coins and the Quote Asset that went into the pool, to the locked position whose Fee
- *   Key the operations wallet holds. The holders' tax, never revenue and never a spending of the Budget Table.
+ *   Key the operations wallet holds. The holders' tax, never revenue and never a spending of the Budget Table. A
+ *   Liquidity Launch's additions (#215) are recorded the same way: its whole tax, which is the pool's and never revenue.
  */
 export const LedgerKind = z.enum([
   "platform_fee", "pool_fee", "fee_key", "sweep", "creator_forward", "burn", "flywheel", "arweave_top_up", "metadata_upload", "reward_sale", "graduation_fee",

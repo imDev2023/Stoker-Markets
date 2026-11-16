@@ -250,6 +250,33 @@ export const CoinRewards = z.object({
 });
 export type CoinRewards = z.infer<typeof CoinRewards>;
 
+/**
+ * A Liquidity Launch's tax (#215): what waits to be added to the coin's pool (from the chain), and what every addition
+ * has put into it so far, as the Ledger records it. The whole tax goes to the pool: the coin has no Reward Round, no
+ * Payout Asset and no Reward Sale, and GET /v1/launches/:mint/rewards answers 404 for it.
+ */
+export const CoinLiquidityTax = z.object({
+  mint: base58,
+  taxBps: z.number().int(),
+  waiting: z.object({
+    /** Withheld in holders' accounts, not yet harvested to the mint. */
+    inAccounts: raw,
+    /** Harvested to the mint, not yet withdrawn. */
+    inMint: raw,
+    /** Withdrawn to the tax's own account of the coin: waiting for Graduation, and for enough to be worth a locked position of its own. */
+    kept: raw,
+    total: raw,
+    /** Quote Asset an addition's sale brought in beyond what its deposit took, waiting for the next addition, raw units. */
+    quote: raw,
+  }),
+  /** Coins and Quote Asset every addition so far put into the pool, raw units. */
+  coinsAdded: raw,
+  quoteAdded: raw,
+  /** The latest additions, newest first: the coins and Quote Asset each put into the pool, and the locked position they went to. */
+  recent: z.array(z.object({ signature: z.string(), coins: raw, quote: raw, position: z.string(), time: z.iso.datetime() })),
+});
+export type CoinLiquidityTax = z.infer<typeof CoinLiquidityTax>;
+
 /** Every Holder Reward of one wallet across every Reward Launch, newest round first. */
 export const WalletRewards = z.object({
   wallet: base58,

@@ -1,0 +1,7 @@
+ALTER TABLE "launch_drafts" ADD COLUMN "tax_kind" text;--> statement-breakpoint
+ALTER TABLE "launches" ADD COLUMN "tax_kind" text;--> statement-breakpoint
+-- Every coin with a tax so far is a Reward Launch: the Liquidity Launch (#215) is new, and `reward` is what a tax meant before it.
+UPDATE "launch_drafts" SET "tax_kind" = 'reward' WHERE "reward_tax_bps" IS NOT NULL;--> statement-breakpoint
+UPDATE "launches" SET "tax_kind" = 'reward' WHERE "reward_tax_bps" IS NOT NULL;--> statement-breakpoint
+ALTER TABLE "launch_drafts" ADD CONSTRAINT "launch_drafts_tax_kind" CHECK (("launch_drafts"."tax_kind" is null) = ("launch_drafts"."reward_tax_bps" is null) and ("launch_drafts"."tax_kind" is distinct from 'liquidity' or ("launch_drafts"."reward_payout" is null and "launch_drafts"."reward_burn_bps" is null and "launch_drafts"."reward_liquidity_bps" is null and "launch_drafts"."earnings_destination" <> 'holders')));--> statement-breakpoint
+ALTER TABLE "launches" ADD CONSTRAINT "launches_tax_kind" CHECK (("launches"."tax_kind" is null) = ("launches"."reward_tax_bps" is null) and ("launches"."tax_kind" is distinct from 'liquidity' or ("launches"."reward_payout" is null and "launches"."reward_burn_bps" is null and "launches"."reward_liquidity_bps" is null and "launches"."earnings_destination" <> 'holders')));
