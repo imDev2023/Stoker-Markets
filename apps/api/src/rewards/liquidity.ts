@@ -6,6 +6,9 @@
 // Fee Key, as the Creator Earnings `liquidity` rule does (ADR 0011). Like every job transaction it is written down
 // before it is sent and settled by its signature, so a run that dies leaves it for the next run, which records what
 // landed; and the coins it adds are the account's own, so no run can ever add them twice.
+//
+// A Liquidity Launch (#215) is added the same way from the same account, which holds its whole tax instead of a share:
+// the engine withdraws that tax straight into it (`engine.ts`), and everything below serves both kinds of coin.
 import { Keypair, PACKET_DATA_SIZE, PublicKey, SendTransactionError, type Connection } from "@solana/web3.js";
 import { ACCOUNT_SIZE, TOKEN_2022_PROGRAM_ID, getAccountLenForMint, unpackAccount, unpackMint } from "@solana/spl-token";
 import BN from "bn.js";
@@ -25,7 +28,7 @@ const JOB = "reward-rounds";
 const KIND = "reward_liquidity";
 const POLL_MS = 400;
 
-/** A Reward Launch as the addition needs it. */
+/** A Reward Launch, or a Liquidity Launch (#215), as the addition needs it. */
 export type LiquidityCoin = { mint: string; symbol: string; decimals: number; pool: string; quoteMint: string };
 
 /** One addition a run sent, as the job's summary carries it: strings, since a summary is stored and logged as JSON. */

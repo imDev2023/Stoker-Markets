@@ -6,6 +6,10 @@
 // in the Quote Asset like any round, each landed payout transaction on the Ledger. A round is public from its snapshot
 // to its last payout, resumable at any point, and never pays a holder twice: every payout is written down before it is
 // sent, and a run that finds a payout in flight waits for its transaction to land or expire before sending another.
+//
+// A Liquidity Launch (#215) has a tax and no holders' share of it: the engine withdraws its whole tax straight into the
+// account the Reward Liquidity keeps a coin's share in, and adds it to the coin's pool as locked liquidity once the coin
+// has graduated (`liquidity.ts`). It never sells that tax, never opens a round for it and never pays anyone from it.
 import { Connection, PublicKey, SystemProgram, type Keypair, type TransactionInstruction } from "@solana/web3.js";
 import {
   createAssociatedTokenAccountIdempotentInstruction, createHarvestWithheldTokensToMintInstruction, createTransferCheckedInstruction,
@@ -21,7 +25,7 @@ import { holdingDay, runHoldingChecks, type HoldingChecksSummary } from "./check
 import { readCoinAccounts } from "./holders";
 import { snapshotRound } from "./snapshot";
 import { quotePot, sellSlice, settlePendingSales, unassignedSales, type SaleReport } from "./sales";
-import { rewardBurnShare, settlePendingBurns, withdrawAndBurn, type BurnReport } from "./burns";
+import { liquidityAccount, rewardBurnShare, settlePendingBurns, withdrawAndBurn, type BurnReport } from "./burns";
 import { addRewardLiquidity, type LiquidityReport } from "./liquidity";
 
 export type RewardEngineDeps = { db: Db; cfg: Config; operations: Keypair; now?: Date };
@@ -29,15 +33,15 @@ export type RewardEngineDeps = { db: Db; cfg: Config; operations: Keypair; now?:
 export type RewardRoundsSummary = {
   /** The Holding Checks this run made (ADR 0022), before any round opened, and how many it left to later runs. */
   holdingChecks: HoldingChecksSummary;
-  /** Coins whose withheld tax was harvested and withdrawn, with how much. */
+  /** Coins whose withheld tax was harvested and withdrawn, with how much: a Reward Launch's for its holders, a Liquidity Launch's (#215) for its pool. */
   collected: { mint: string; amount: string }[];
   /** Reward Burns this run made (#183): the share of a harvest burned in the transaction that withdrew it. */
   burned: BurnReport[];
   /** Coins not collected this run because a Reward Burn of an earlier run may still land. */
   burnWaiting: string[];
-  /** Reward Liquidity additions this run made (#214), one per coin at most. */
+  /** Additions to a coin's pool this run made, one per coin at most: a Reward Launch's Reward Liquidity (#214) or a Liquidity Launch's tax (#215). */
   liquidityAdded: LiquidityReport[];
-  /** Coins whose kept Reward Liquidity was not added this run, and why. */
+  /** Coins whose kept share, or a Liquidity Launch's kept tax, was not added this run, and why. */
   liquidityWaiting: { mint: string; reason: string }[];
   /** Reward Sales this run made, one slice per Quote Asset payout coin at most. */
   sold: SaleReport[];
@@ -71,9 +75,14 @@ const WSOL = WSOL_MINT.toBase58();
 export type RewardRule = typeof rewardRules.$inferSelect;
 type Round = typeof rewardRounds.$inferSelect;
 
-/** A Reward Launch as the engine works on it; `burnBps` is its Reward Burn (#183) and `liquidityBps` its Reward Liquidity (#214), 0 for none. */
+/**
+ * A coin with a tax as the engine works on it. `kind` is what the tax is for: `reward`, a Reward Launch, with its Payout
+ * Asset, its Reward Burn (`burnBps`, #183) and its Reward Liquidity (`liquidityBps`, #214), 0 for none; or `liquidity`, a
+ * Liquidity Launch (#215), whose whole tax goes to its pool and which has none of the three.
+ */
 type Coin = {
-  mint: string; symbol: string; decimals: number; pool: string; quoteMint: string; payout: "coin" | "quote"; burnBps: number; liquidityBps: number;
+  mint: string; symbol: string; decimals: number; pool: string; quoteMint: string; kind: "reward" | "liquidity"; payout: "coin" | "quote"; burnBps: number;
+  liquidityBps: number;
 };
 
 /** The rules version in force at `now`: the newest whose effective time has passed. Announced ones wait their turn. */
@@ -90,7 +99,8 @@ export async function rulesInForce(db: Db, now = new Date()): Promise<RewardRule
 
 /**
  * One run of the Reward Engine. First the Holding Checks due (ADR 0022), a bounded number of them, so that a round
- * opened in this run weighs by lots no older than today's. Then, over every Reward Launch: settle payouts and sales in flight, harvest and withdraw
+ * opened in this run weighs by lots no older than today's. Then, over every coin with a tax: a Liquidity
+ * Launch (#215) has its whole tax withdrawn for its pool and added to it, and nothing else; for a Reward Launch: settle payouts and sales in flight, harvest and withdraw
  * withheld tax, sell one slice of it where the Payout Asset is the Quote Asset, open a round where enough has
  * collected (or been sold), and pay the open round. Then over every earnings round still paying (ADR 0011), of any
  * coin: settle its payouts in flight and pay it. At most `maxPayouts` payouts in all, so a run stays within a Cron
@@ -118,13 +128,13 @@ export async function runRewardRounds({ db, cfg, operations, now = new Date() }:
   const coins: Coin[] = (
     await db
       .select({
-        mint: launches.mint, symbol: launches.symbol, decimals: launches.decimals, pool: launches.pool, quoteMint: launches.quoteMint, payout: launches.rewardPayout,
-        burnBps: launches.rewardBurnBps, liquidityBps: launches.rewardLiquidityBps,
+        mint: launches.mint, symbol: launches.symbol, decimals: launches.decimals, pool: launches.pool, quoteMint: launches.quoteMint, kind: launches.taxKind,
+        payout: launches.rewardPayout, burnBps: launches.rewardBurnBps, liquidityBps: launches.rewardLiquidityBps,
       })
       .from(launches)
       .where(isNotNull(launches.rewardTaxBps))
       .orderBy(asc(launches.createdSlot))
-  ).map((c) => ({ ...c, payout: c.payout ?? "coin", burnBps: c.burnBps ?? 0, liquidityBps: c.liquidityBps ?? 0 }));
+  ).map((c) => ({ ...c, kind: c.kind ?? "reward", payout: c.payout ?? "coin", burnBps: c.burnBps ?? 0, liquidityBps: c.liquidityBps ?? 0 }));
   let budget = maxPayouts;
   /**
    * A paying round's turn: its payouts in flight are settled, as many of the rest are sent as the run's budget still
@@ -144,9 +154,31 @@ export async function runRewardRounds({ db, cfg, operations, now = new Date() }:
     if (await finishIfPaid(db, round.id, now)) summary.finished.push(round.id);
   };
 
+  /** The coin's kept coins are added to its pool; a failure is a problem of the run and stops nothing else. */
+  const addLiquidity = async (coin: Coin, what: string) => {
+    try {
+      const { added, settled, waits } = await addRewardLiquidity(db, cfg, connection, operations, coin);
+      summary.settled.liquidity.landed += settled.landed;
+      summary.settled.liquidity.failed += settled.failed;
+      summary.settled.liquidity.expired += settled.expired;
+      if (added) summary.liquidityAdded.push(added);
+      if (waits) summary.liquidityWaiting.push({ mint: coin.mint, reason: waits });
+    } catch (e) {
+      summary.problems.push(`${what} of ${coin.symbol} (${coin.mint}): ${(e as Error).message}`);
+    }
+  };
+
   for (const coin of coins) {
     try {
       const mint = new PublicKey(coin.mint);
+      // A Liquidity Launch (#215): its whole tax is the pool's. Nothing of it is sold for a payout, no round is opened
+      // and nobody is paid, so the coin's turn ends here.
+      if (coin.kind === "liquidity") {
+        const collected = await collectLiquidityTax(connection, operations, mint);
+        if (collected > 0n) summary.collected.push({ mint: coin.mint, amount: collected.toString() });
+        await addLiquidity(coin, "The liquidity tax");
+        continue;
+      }
       if (coin.payout === "quote") {
         const sales = await settlePendingSales(db, cfg, connection, ops, coin);
         summary.settled.sales.landed += sales.landed;
@@ -179,18 +211,7 @@ export async function runRewardRounds({ db, cfg, operations, now = new Date() }:
       }
       // The Reward Liquidity's coins are its own account's, apart from the holders' pot: an addition that fails is a
       // problem of the run and never keeps the coin's round from being opened or paid.
-      if (coin.liquidityBps > 0) {
-        try {
-          const { added, settled, waits } = await addRewardLiquidity(db, cfg, connection, operations, coin);
-          summary.settled.liquidity.landed += settled.landed;
-          summary.settled.liquidity.failed += settled.failed;
-          summary.settled.liquidity.expired += settled.expired;
-          if (added) summary.liquidityAdded.push(added);
-          if (waits) summary.liquidityWaiting.push({ mint: coin.mint, reason: waits });
-        } catch (e) {
-          summary.problems.push(`Reward Liquidity of ${coin.symbol} (${coin.mint}): ${(e as Error).message}`);
-        }
-      }
+      if (coin.liquidityBps > 0) await addLiquidity(coin, "Reward Liquidity");
       if (round) await advance(round);
     } catch (e) {
       summary.problems.push(`${coin.symbol} (${coin.mint}): ${(e as Error).message}`);
@@ -256,12 +277,7 @@ async function collectTax(
   db: Db, connection: Connection, operations: Keypair, coin: Coin, mint: PublicKey,
 ): Promise<{ collected: bigint; burn: BurnReport | null }> {
   const ops = operations.publicKey;
-  const accounts = (await readCoinAccounts(connection, mint, TOKEN_2022_PROGRAM_ID)).filter((a) => a.withheld > 0n);
-  for (let i = 0; i < accounts.length; i += HARVEST_BATCH) {
-    const batch = accounts.slice(i, i + HARVEST_BATCH).map((a) => a.address);
-    await sendAndWait(connection, operations, [createHarvestWithheldTokensToMintInstruction(mint, batch, TOKEN_2022_PROGRAM_ID)]);
-  }
-  const withheldInMint = getTransferFeeConfig(await getMint(connection, mint, "confirmed", TOKEN_2022_PROGRAM_ID))?.withheldAmount ?? 0n;
+  const withheldInMint = await harvestToMint(connection, operations, mint);
   if (withheldInMint === 0n) return { collected: 0n, burn: null };
   const share = rewardBurnShare(withheldInMint, coin.burnBps);
   const keep = rewardBurnShare(withheldInMint, coin.liquidityBps);
@@ -275,6 +291,33 @@ async function collectTax(
     createWithdrawWithheldTokensFromMintInstruction(mint, destination, ops, [], TOKEN_2022_PROGRAM_ID),
   ]);
   return { collected: withheldInMint, burn: null };
+}
+
+/** Harvests the tax withheld in the coin's accounts to the mint, a batch of accounts a transaction, and returns what the mint then holds withheld. */
+async function harvestToMint(connection: Connection, operations: Keypair, mint: PublicKey) {
+  const accounts = (await readCoinAccounts(connection, mint, TOKEN_2022_PROGRAM_ID)).filter((a) => a.withheld > 0n);
+  for (let i = 0; i < accounts.length; i += HARVEST_BATCH) {
+    const batch = accounts.slice(i, i + HARVEST_BATCH).map((a) => a.address);
+    await sendAndWait(connection, operations, [createHarvestWithheldTokensToMintInstruction(mint, batch, TOKEN_2022_PROGRAM_ID)]);
+  }
+  return getTransferFeeConfig(await getMint(connection, mint, "confirmed", TOKEN_2022_PROGRAM_ID))?.withheldAmount ?? 0n;
+}
+
+/**
+ * A Liquidity Launch's collection (#215): harvests the withheld tax to the mint, then withdraws all the mint holds
+ * straight into the account the coin's tax is kept in for its pool (`liquidityAccount`), opening it first when it is not
+ * there yet. A withdrawal is no transfer, so nothing is withheld on the way, and the tax never passes through the
+ * wallet's associated account, where a Reward Launch's holders' pot and the pool fees collected in the coin sit: every
+ * coin of it, whatever was harvested by the time the withdrawal lands, is the pool's. Returns what the run read in the
+ * mint. Withdrawing twice moves nothing twice, so the transaction needs no record of its own.
+ */
+async function collectLiquidityTax(connection: Connection, operations: Keypair, mint: PublicKey): Promise<bigint> {
+  const ops = operations.publicKey;
+  const withheldInMint = await harvestToMint(connection, operations, mint);
+  if (withheldInMint === 0n) return 0n;
+  const account = await liquidityAccount(connection, ops, mint);
+  await sendAndWait(connection, operations, [...account.open, createWithdrawWithheldTokensFromMintInstruction(mint, account.address, ops, [], TOKEN_2022_PROGRAM_ID)]);
+  return withheldInMint;
 }
 
 /**

@@ -145,10 +145,12 @@ async function indexLaunch(db: Db, cfg: Config, e: LaunchCreated) {
   // A Reward Launch's Payout Asset (ADR 0006, #43), Reward Burn (#183) and Reward Liquidity (#214), and where the
   // Creator's earnings go (ADR 0011, #113) are the Creator's choices at prepare time, kept with the draft; a coin launched
   // on our PlatformConfig without our API has no draft, pays its Holder Rewards in the coin, as every Reward Launch did
-  // before, burns none of them, keeps none for its pool, and pays its earnings to the Creator's wallet.
+  // before, burns none of them, keeps none for its pool, and pays its earnings to the Creator's wallet. What a coin's tax
+  // is for (#215) is the draft's too: a coin with a tax and no draft is a Reward Launch, and a Liquidity Launch, whose
+  // whole tax goes to its pool, has no Payout Asset, Reward Burn or Reward Liquidity share at all.
   const [draft] = await db
     .select({ rewardPayout: launchDrafts.rewardPayout, rewardBurnBps: launchDrafts.rewardBurnBps, rewardLiquidityBps: launchDrafts.rewardLiquidityBps,
-      earningsDestination: launchDrafts.earningsDestination })
+      taxKind: launchDrafts.taxKind, earningsDestination: launchDrafts.earningsDestination })
     .from(launchDrafts)
     .where(eq(launchDrafts.mint, e.baseMint.toBase58()))
     .limit(1);
@@ -158,6 +160,7 @@ async function indexLaunch(db: Db, cfg: Config, e: LaunchCreated) {
   const [metadata] = await db.select({ imageHash: launchMetadata.imageHash }).from(launchMetadata).where(eq(launchMetadata.id, e.baseMint.toBase58())).limit(1);
   const imageHash = metadata?.imageHash ?? null;
   const copy = firstCopy(await checkCopies(db, cfg, { name: e.name, symbol: e.symbol, imageHash, creator: e.creator.toBase58() }, time(e.blockTime), { window: false }));
+  const taxKind = e.rewardTaxBps === null ? null : (draft?.taxKind ?? "reward");
   const inserted = await db
     .insert(launches)
     .values({
@@ -178,9 +181,10 @@ async function indexLaunch(db: Db, cfg: Config, e: LaunchCreated) {
       totalBaseSell: e.totalBaseSell.toString(),
       graduationTarget: e.graduationTargetRaw.toString(),
       rewardTaxBps: e.rewardTaxBps,
-      rewardPayout: e.rewardTaxBps === null ? null : (draft?.rewardPayout ?? "coin"),
-      rewardBurnBps: e.rewardTaxBps === null ? null : (draft?.rewardBurnBps ?? 0),
-      rewardLiquidityBps: e.rewardTaxBps === null ? null : (draft?.rewardLiquidityBps ?? 0),
+      taxKind,
+      rewardPayout: taxKind === "reward" ? (draft?.rewardPayout ?? "coin") : null,
+      rewardBurnBps: taxKind === "reward" ? (draft?.rewardBurnBps ?? 0) : null,
+      rewardLiquidityBps: taxKind === "reward" ? (draft?.rewardLiquidityBps ?? 0) : null,
       earningsDestination: draft?.earningsDestination ?? "wallet",
       // The Creator Lock (ADR 0023) as the launch transaction set it, whoever built it: `standardShape` has already held
       // it to our limits and to the shape, its coins taken out of the sale.

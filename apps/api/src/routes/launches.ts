@@ -152,6 +152,10 @@ export function creatorLockTerms(l: Pick<typeof launches.$inferSelect, "lockedAm
   };
 }
 
+/** The transaction that gave a coin's tax authority up after Graduation, for a Reward Tax and a Liquidity Launch's tax alike; null until then. */
+const taxLocked = (l: { rewardTaxLockedSignature: string | null; rewardTaxLockedAt: Date | null }) =>
+  l.rewardTaxLockedSignature && l.rewardTaxLockedAt ? { signature: l.rewardTaxLockedSignature, at: l.rewardTaxLockedAt.toISOString() } : null;
+
 function toSummary(cfg: Config, r: Row, creatorTier: CoinCreatorTier | null = null): LaunchSummary {
   const l = r.launch;
   const m = r.metadata;
@@ -179,15 +183,16 @@ function toSummary(cfg: Config, r: Row, creatorTier: CoinCreatorTier | null = nu
       creatorTier,
     },
     rewardTax:
-      l.rewardTaxBps === null
+      l.rewardTaxBps === null || l.taxKind === "liquidity"
         ? null
         : {
             bps: l.rewardTaxBps,
             payout: l.rewardPayout ?? "coin",
             burnBps: l.rewardBurnBps ?? 0,
             liquidityBps: l.rewardLiquidityBps ?? 0,
-            locked: l.rewardTaxLockedSignature && l.rewardTaxLockedAt ? { signature: l.rewardTaxLockedSignature, at: l.rewardTaxLockedAt.toISOString() } : null,
+            locked: taxLocked(l),
           },
+    liquidityTax: l.rewardTaxBps !== null && l.taxKind === "liquidity" ? { bps: l.rewardTaxBps, locked: taxLocked(l) } : null,
     earningsDestination: l.earningsDestination,
     creatorLock: creatorLockTerms(l),
     market: {
