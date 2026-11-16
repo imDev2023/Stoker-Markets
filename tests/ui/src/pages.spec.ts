@@ -118,7 +118,8 @@ test("the Fees page lists every fee from the platform facts, and the landing's f
   const table = page.getByRole("region", { name: "Every fee" }).getByRole("table");
   await expect(table.getByRole("columnheader")).toHaveText(["Fee", "Who pays", "When", "In", "Who receives it"]);
   const rows = table.getByRole("rowgroup").last().getByRole("row");
-  await expect(rows).toHaveCount(12);
+  // Thirteen with the Liquidity Launch's tax (#215), a row of its own under the Reward Tax.
+  await expect(rows).toHaveCount(13);
   // The figures are the chain's, through the API: the Platform Fee, the pool creator fee, the referral share, the Graduation Fee.
   await expect(rows.filter({ hasText: "Platform Fee on the curve" })).toContainText(`${platform.platformFeeBps / 100}% of every trade`);
   await expect(rows.filter({ hasText: "Platform Fee on the curve" })).toContainText(`Half of it, ${platform.creatorForward.curveBps / 100}% of the trade`);

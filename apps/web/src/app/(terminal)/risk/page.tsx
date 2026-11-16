@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EXCLUDED_REGIONS, RISK_SENTENCE } from "@/lib/legal";
+import { LIQUIDITY_LAUNCH } from "@/lib/liquidityLaunch";
 import { SITE_LINKS } from "@/lib/site";
 import styles from "../document.module.css";
 
@@ -26,7 +27,7 @@ export default function RiskPage() {
         <p>Each coin is priced in an asset its creator chose: SOL, a stablecoin, a tokenized stock or another asset Raydium quotes. Some of those assets are issued by companies that can freeze or move them, some can be changed by their issuer, and some trade thinly, so a coin&apos;s value moves with its asset as well as with itself. What is known about each asset is on its page under <Link href="/assets">Assets</Link>, as risk labels read from the chain.</p>
 
         <h2 className="t-h3">Creators, early buyers and taxes</h2>
-        <p>A coin&apos;s creator may hold a large share of it and may sell at any time; so may the wallets that bought in its first moments. A coin&apos;s page shows the creator&apos;s holding, the early buyers and the largest wallets as the chain records them. A Reward Launch carries a transfer tax of 1%, 2%, 3%, 4% or 5% on every transfer of the coin, taken in the coin itself.</p>
+        <p>A coin&apos;s creator may hold a large share of it and may sell at any time; so may the wallets that bought in its first moments. A coin&apos;s page shows the creator&apos;s holding, the early buyers and the largest wallets as the chain records them. A Reward Launch carries a transfer tax of 1%, 2%, 3%, 4% or 5% on every transfer of the coin, taken in the coin itself. {`A ${LIQUIDITY_LAUNCH.name} carries the same tax, called its ${LIQUIDITY_LAUNCH.tax}. ${LIQUIDITY_LAUNCH.line}`}</p>
 
         <h2 className="t-h3">Fees</h2>
         <p>Every trade pays a fee to Raydium and to the platform, on the curve and after Graduation, and a coin&apos;s creator pays a Graduation Fee out of their earnings once it graduates. Every fee, who pays it and who receives it, with its figure read from the chain, is on the <Link href="/fees">Fees page</Link>, the one place the site shows a fee figure. Half of what the platform collects on a coin&apos;s trades is forwarded to its creator, and every payment is on the public Ledger. Fees are set on-chain and can only change with notice under <Link href="/announcements">Announcements</Link>.</p>

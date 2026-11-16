@@ -43,8 +43,9 @@ export const CreatorLockStatus = z.object({
   /** Coins of the lock still in LaunchLab's vault, raw units: the lock less what the Creator has claimed. */
   stillLocked: raw,
   /**
-   * A Reward Launch's Reward Tax in basis points, which a claim pays like any transfer of the coin: the holders receive
-   * that share of what the Creator claims. Null for a standard coin.
+   * The coin's tax in basis points, which a claim pays like any transfer of the coin: a Reward Launch's Reward Tax, so
+   * its holders receive that share of what the Creator claims, or a Liquidity Launch's tax (#215), so the coin's pool
+   * does. Null for a standard coin.
    */
   rewardTaxBps: z.number().int().nullable(),
 });

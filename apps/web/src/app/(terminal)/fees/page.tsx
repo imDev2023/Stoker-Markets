@@ -5,6 +5,7 @@ import { BUDGET_ROWS, REWARD_BURN_SHARES, REWARD_SHARES_MAX_BPS, REWARD_TAX_RATE
 import { getBurns, getPlatform, getRebates } from "@/lib/api";
 import { BUDGET_ROW_LABELS, budgetLine } from "@/lib/budget";
 import { graduationFeeSol, pct } from "@/lib/fees";
+import { LIQUIDITY_LAUNCH } from "@/lib/liquidityLaunch";
 import { formatDuration, formatUnits, formatUtc, SOL_DECIMALS } from "@/lib/format";
 import { ladderLine, poolBpsAt, TIER_NAMES } from "@/lib/ladder";
 import { isUtcWeek } from "@/lib/rebates";
@@ -68,7 +69,7 @@ export default async function FeesPage() {
         <>
           Solana charges the launch transaction&apos;s network fee and the rent of the coin&apos;s accounts; the review on the launch form shows the
           figure. A First Buy pays a curve trade&apos;s fees like any trade, an Airdrop&apos;s transactions pay their own network fees and rent, and a
-          Reward Launch costs nothing more to create.
+          Reward Launch or a {LIQUIDITY_LAUNCH.name} costs nothing more to create.
         </>
       ),
       pays: "The Creator",
@@ -185,6 +186,23 @@ export default async function FeesPage() {
       when: "Every transfer of a Reward Launch’s coin",
       asset: "The coin",
       receives: "The coin’s holders",
+    },
+    // A Liquidity Launch's tax (#215), a row of its own: the same rates, but none of it is anybody's reward.
+    {
+      fee: LIQUIDITY_LAUNCH.tax,
+      amount: `${REWARD_TAX_RATES.map((bps) => pct(bps)).join(", ")} of every transfer`,
+      note: (
+        <>
+          Only on a {LIQUIDITY_LAUNCH.name}, at the rate its Creator fixed at launch, which nobody can change. Withheld by the coin itself on
+          every transfer, trades included. {LIQUIDITY_LAUNCH.line} It waits until the coin graduates; from then on part of it is sold in
+          the pool for the coin&apos;s Quote Asset and the pair is added to the pool, locked for good with the platform holding its Fee Key, as
+          the pool&apos;s own liquidity is. No Reward Round, no payout and no burn.
+        </>
+      ),
+      pays: "Whoever sends the coin",
+      when: `Every transfer of a ${LIQUIDITY_LAUNCH.name}’s coin`,
+      asset: "The coin",
+      receives: "The coin’s own pool, as locked liquidity",
     },
     {
       fee: "Buying with SOL a coin paired with another asset",

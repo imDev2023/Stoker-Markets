@@ -1,10 +1,10 @@
 import {
-  API_KEY_HEADER, AirdropStatus, CreatorLockStatus, PreparedCreatorLockClaim, ApiError, ApiKeyList, BudgetsPage, BurnsPage, CandleList, CoinEarnings, CoinRewards, CopyCheck, CreatorEarnings, CreatorForwardList, CreatorLadderPage, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
+  API_KEY_HEADER, AirdropStatus, CreatorLockStatus, PreparedCreatorLockClaim, ApiError, ApiKeyList, BudgetsPage, BurnsPage, CandleList, CoinEarnings, CoinLiquidityTax, CoinRewards, CopyCheck, CreatorEarnings, CreatorForwardList, CreatorLadderPage, FeeAnnouncement, FeeAnnouncementList, FirstBuyQuote, LaunchPermissions,
   HolderList, LaunchTrust, IssuedApiKey, MarkList, LaunchList, LaunchQuoteList, LaunchSummary, LedgerPage, OperatorAlertList, OperatorOverview, PlatformInfo, PlatformStats, PreparedAirdrop,
   PreparedFeeChange, PreparedLaunch, PreparedTrade, QuoteAsset, QuoteAssetList, Revenue, RewardRoundDetail, RewardRulesPage, TradeList,
   RebatesPage, Region, RegionGatesView, TradeQuote, WalletHolding, WalletRebates, WalletRewards,
   type AnnounceFeeChange, type CandleInterval, type MarkQuery, type CreateApiKey, type CurveStatus, type LaunchField, type LaunchSort, type PrepareTradeRequest,
-  type QuoteCategory, type QuoteIssuer, type RegionGates, type TradeQuoteQuery,
+  type QuoteCategory, type QuoteIssuer, type RegionGates, type TaxKind, type TradeQuoteQuery,
 } from "@launchpad/contract";
 
 /** The web app is a client of the public API like any other; it never builds transactions itself (ADR 0003). */
@@ -117,11 +117,16 @@ export async function retryLaunch(mint: string) {
 }
 
 /**
- * What a first buy of `firstBuy` raw Quote Asset units gets on a new coin, less its Reward Tax on a Reward Launch; a
- * Creator Lock (`lockBps`) takes its coins out of the sale, so the same buy gets fewer.
+ * What a first buy of `firstBuy` raw Quote Asset units gets on a new coin, less the coin's own tax (`tax`: a Reward
+ * Launch's Reward Tax, or a Liquidity Launch's tax, #215; null for a standard coin); a Creator Lock (`lockBps`) takes
+ * its coins out of the sale, so the same buy gets fewer.
  */
-export async function getLaunchQuote(quoteMint: string, firstBuy: string, rewardTax: number | null, lockBps: number | null, signal?: AbortSignal) {
-  const query = new URLSearchParams({ quoteMint, firstBuy, ...(rewardTax ? { rewardTax: String(rewardTax) } : {}), ...(lockBps ? { lockBps: String(lockBps) } : {}) });
+export async function getLaunchQuote(quoteMint: string, firstBuy: string, tax: { kind: TaxKind; bps: number } | null, lockBps: number | null, signal?: AbortSignal) {
+  const query = new URLSearchParams({
+    quoteMint, firstBuy,
+    ...(tax ? { [tax.kind === "liquidity" ? "liquidityTax" : "rewardTax"]: String(tax.bps) } : {}),
+    ...(lockBps ? { lockBps: String(lockBps) } : {}),
+  });
   return read(await apiFetch(`${API_URL}/v1/launch-quote?${query}`, { cache: "no-store", signal }), FirstBuyQuote);
 }
 
@@ -223,11 +228,18 @@ export async function listLedger(before?: string | null) {
   return read(await apiFetch(`${API_URL}/v1/ledger?${query}`, { cache: "no-store" }), LedgerPage);
 }
 
-/** A Reward Launch's Holder Rewards: tax waiting, rules and rounds; null for a standard coin. */
+/** A Reward Launch's Holder Rewards: tax waiting, rules and rounds; null for a standard coin and for a Liquidity Launch. */
 export async function getCoinRewards(mint: string): Promise<CoinRewards | null> {
   const res = await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/rewards`, { cache: "no-store" });
   if (res.status === 404) return null;
   return read(res, CoinRewards);
+}
+
+/** A Liquidity Launch's tax (#215): what waits for the coin's pool and what every addition has put into it; null for any other coin. */
+export async function getCoinLiquidityTax(mint: string): Promise<CoinLiquidityTax | null> {
+  const res = await apiFetch(`${API_URL}/v1/launches/${encodeURIComponent(mint)}/liquidity-tax`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  return read(res, CoinLiquidityTax);
 }
 
 /** Burn and Flywheel: shares, rule, budgets and every buy and burn so far. */

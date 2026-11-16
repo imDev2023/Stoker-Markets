@@ -5,6 +5,7 @@ import { REWARD_SALE_MAX_RESERVE_BPS, REWARD_SALE_SLIPPAGE_BPS } from "@launchpa
 import { getPlatform, getRebates, getRewardRules } from "@/lib/api";
 import { COIN_DECIMALS, formatUnits, formatUtc } from "@/lib/format";
 import { diamondHands, stepsLine } from "@/lib/holding";
+import { LIQUIDITY_LAUNCH } from "@/lib/liquidityLaunch";
 import { WalletLookup } from "@/components/WalletLookup";
 import styles from "./page.module.css";
 import { EmptyState } from "@/components/EmptyState";
@@ -41,6 +42,10 @@ export default async function RewardsPage() {
       <p className={styles.lead}>
         A coin can also pay its holders from its Creator&apos;s earnings: a Creator can point their share of what the platform collects
         on the coin at its holders when they launch it, and the same rounds pay it out in the coin&apos;s Quote Asset.
+      </p>
+      {/* A Liquidity Launch (#215) is named here so nobody looks for its rewards: one string, so one text node. */}
+      <p className={styles.lead}>
+        {`A ${LIQUIDITY_LAUNCH.name} is not a Reward Launch: its coin withholds a ${LIQUIDITY_LAUNCH.tax} the same way, and no Reward Round ever pays it out. ${LIQUIDITY_LAUNCH.line}`}
       </p>
 
       <section className={`card ${styles.card}`} aria-labelledby="lookup-title">

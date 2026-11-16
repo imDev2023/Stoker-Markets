@@ -27,6 +27,7 @@ function cardOf(launch: LaunchSummary): CoinCardData {
     rewardTaxBps: launch.rewardTax?.bps ?? null,
     rewardBurnBps: launch.rewardTax?.burnBps ?? 0,
     rewardLiquidityBps: launch.rewardTax?.liquidityBps ?? 0,
+    liquidityTaxBps: launch.liquidityTax?.bps ?? null,
   };
 }
 

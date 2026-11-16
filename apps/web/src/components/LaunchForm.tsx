@@ -19,6 +19,7 @@ import { CoinCard, type CoinCardData } from "./CoinCard";
 import { useCopyCheck, type CopyStatus } from "./CopyCheck";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
 import { burnShareTitle } from "@/lib/rewardBurn";
+import { LIQUIDITY_LAUNCH } from "@/lib/liquidityLaunch";
 import { lockSentence } from "@/lib/creatorLock";
 import { EarningsChoice, LaunchOptions, LaunchType, LockChoice, supplyShare, useLaunchOptions, type LaunchOptionsState } from "./LaunchOptions";
 import { Ring } from "./Mark";
@@ -187,7 +188,7 @@ export function LaunchForm({
   const ticker = quote ? quoteTicker(quote) : null;
   const openingPrice = options.lock ? lockedPrice : launchPrice;
   const preview = previewCard({ imageUrl, symbol, name, quote, firstBuy: options.firstBuyQuote, launchPrice: openingPrice, rewardTax: options.rewardTax, rewardBurn: options.rewardBurn,
-    rewardLiquidity: options.rewardLiquidity,
+    rewardLiquidity: options.rewardLiquidity, liquidityTax: options.liquidityTax,
   });
   // While a launch is in flight or uncertain, nothing on the form may change under it.
   const locked = busy || failed !== null;
@@ -374,7 +375,7 @@ function useLaunchPrice(quote: QuoteAsset | null, lockBps: number | null, lockOn
  * curve and the day's volume that buy leaves behind.
  */
 function previewCard({
-  imageUrl, symbol, name, quote, firstBuy, launchPrice, rewardTax, rewardBurn, rewardLiquidity,
+  imageUrl, symbol, name, quote, firstBuy, launchPrice, rewardTax, rewardBurn, rewardLiquidity, liquidityTax,
 }: {
   imageUrl: string | null;
   symbol: string;
@@ -385,6 +386,7 @@ function previewCard({
   rewardTax: number | null;
   rewardBurn: number;
   rewardLiquidity: number;
+  liquidityTax: number | null;
 }): CoinCardData {
   const ticker = quote ? quoteTicker(quote) : "SOL";
   const target = quote?.graduationTarget ? BigInt(quote.graduationTarget.raw) : 0n;
@@ -406,6 +408,7 @@ function previewCard({
     rewardTaxBps: rewardTax,
     rewardBurnBps: rewardTax === null ? 0 : rewardBurn,
     rewardLiquidityBps: rewardTax === null ? 0 : rewardLiquidity,
+    liquidityTaxBps: liquidityTax,
   };
 }
 
@@ -512,8 +515,19 @@ function Summary({ platform, quote, ticker, symbol, preview, options, step, fail
         </div>
         <div>
           <dt>Launch type</dt>
-          <dd>{options.rewardTax === null ? "Standard" : `Reward Launch, ${options.rewardTax / 100}%`}</dd>
+          <dd>
+            {options.liquidityTax !== null
+              ? `${LIQUIDITY_LAUNCH.name}, ${options.liquidityTax / 100}%`
+              : options.rewardTax === null ? "Standard" : `Reward Launch, ${options.rewardTax / 100}%`}
+          </dd>
         </div>
+        {/* A Liquidity Launch's tax (#215) in words, where a Reward Launch's shares are: all of it to the pool, none to holders. */}
+        {options.liquidityTax !== null && (
+          <div>
+            <dt>{LIQUIDITY_LAUNCH.tax}</dt>
+            <dd className={styles.factWords}>All of it to its pool, locked; nothing to holders</dd>
+          </div>
+        )}
         {/* The Reward Burn (#183) in words; without one the row is left out, as a coin without it has always read. */}
         {options.rewardTax !== null && burnShareTitle(options.rewardBurn) && (
           <div>

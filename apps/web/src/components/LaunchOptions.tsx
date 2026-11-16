@@ -8,6 +8,7 @@ import {
 import { getLaunchPermissions, getLaunchQuote } from "@/lib/api";
 import { parseAirdropList } from "@/lib/airdrop";
 import { DESTINATION_NAMES, destinationChoiceLine } from "@/lib/earnings";
+import { LIQUIDITY_LAUNCH, liquidityLine } from "@/lib/liquidityLaunch";
 import { burnShareTitle } from "@/lib/rewardBurn";
 import { LOCK_TIME_STEPS, lockSchedule, lockSentence, lockShare, lockSizes, lockTime, lockTimes, type LockUnlock } from "@/lib/creatorLock";
 import { COIN_DECIMALS, COIN_SUPPLY, formatUnits, parseUnits } from "@/lib/format";
@@ -32,12 +33,16 @@ export function supplyShare(raw: bigint) {
 }
 
 /**
- * The launch modes on the launch form: the launch type (a standard coin or a Reward Launch), where the Creator's
- * earnings on the coin go (ADR 0011), a first buy inside the launch transaction, and an airdrop paid from it.
+ * The launch modes on the launch form: the launch type (a standard coin, a Reward Launch or a Liquidity Launch, #215),
+ * where the Creator's earnings on the coin go (ADR 0011), a first buy inside the launch transaction, and an airdrop paid
+ * from it.
  * Holds their state, the live first-buy quote, and what (if anything) stops the launch from being prepared.
  */
 export function useLaunchOptions(quote: OptionsQuote | null, creator: string | null) {
-  const [rewardTax, setRewardTax] = useState<RewardTaxBps | null>(null);
+  const [rewardTax, setRewardTaxState] = useState<RewardTaxBps | null>(null);
+  // A Liquidity Launch's tax (#215), all of it added to the coin's pool: null unless that type is chosen, and then the
+  // Reward Tax is null, since a coin's tax pays its holders or deepens its pool, never both.
+  const [liquidityTax, setLiquidityTaxState] = useState<RewardTaxBps | null>(null);
   // What a Reward Launch pays its holders in: the coin itself, or the Quote Asset bought with the tax (ADR 0006).
   const [rewardPayout, setRewardPayout] = useState<RewardPayoutAsset>("coin");
   // The share of every harvested tax burned instead of paid out (the Reward Burn, #183): none unless the Creator picks one.
@@ -95,7 +100,8 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
   const airdropOn = airdropAllowed && airdropChosen;
 
   // A live quote while the Creator types, so they see the coins they get before preparing anything. On a Reward Launch
-  // the Reward Tax comes off the first buy's coins too, so the quote follows the chosen rate.
+  // the Reward Tax comes off the first buy's coins too, and on a Liquidity Launch its tax, so the quote follows the
+  // chosen type and rate.
   useEffect(() => {
     setFirstBuyQuote(null);
     setQuoteError(null);
@@ -103,7 +109,8 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
     const abort = new AbortController();
     const timer = setTimeout(async () => {
       try {
-        setFirstBuyQuote((await getLaunchQuote(quoteMint, firstBuy.toString(), rewardTax, lockQuoted, abort.signal)).firstBuy);
+        const tax = liquidityTax !== null ? { kind: "liquidity" as const, bps: liquidityTax } : rewardTax !== null ? { kind: "reward" as const, bps: rewardTax } : null;
+        setFirstBuyQuote((await getLaunchQuote(quoteMint, firstBuy.toString(), tax, lockQuoted, abort.signal)).firstBuy);
       } catch (e) {
         if (!abort.signal.aborted) setQuoteError((e as Error).message);
       }
@@ -112,7 +119,7 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
       abort.abort();
       clearTimeout(timer);
     };
-  }, [firstBuy, quoteMint, rewardTax, lockQuoted]);
+  }, [firstBuy, quoteMint, rewardTax, liquidityTax, lockQuoted]);
 
   const bought = firstBuyQuote ? BigInt(firstBuyQuote.amountOut) : null;
   // Shown as an error as soon as it is true: something in the list the Creator has to fix.
@@ -136,7 +143,22 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
 
   return {
     quote,
-    rewardTax, setRewardTax, rewardPayout, setRewardPayout, rewardBurn, setRewardBurn, rewardLiquidity, setRewardLiquidity, sharesProblem,
+    rewardTax, rewardPayout, setRewardPayout, rewardBurn, setRewardBurn, rewardLiquidity, setRewardLiquidity, sharesProblem,
+    /** A Reward Launch at this rate, or with null a standard coin: either way the coin is no Liquidity Launch. */
+    setRewardTax: (bps: RewardTaxBps | null) => {
+      setRewardTaxState(bps);
+      setLiquidityTaxState(null);
+    },
+    liquidityTax,
+    /**
+     * A Liquidity Launch at this rate, so no Reward Launch. It pays its holders nothing, so its Creator's earnings can't
+     * go to them either: a choice of the holders made before falls back to the wallet, as the API would refuse it.
+     */
+    setLiquidityTax: (bps: RewardTaxBps) => {
+      setLiquidityTaxState(bps);
+      setRewardTaxState(null);
+      if (earningsDestination === "holders") setEarningsDestination("wallet");
+    },
     earningsDestination, setEarningsDestination,
     lockOffered, lockSizes: sizes, lockOn: lockActive, setLockOn: (on: boolean) => {
       setLockOn(on);
@@ -159,7 +181,9 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
     /** The form fields these options add to the prepare request. */
     fields(): [string, string][] {
       const out: [string, string][] = [];
-      if (rewardTax !== null) out.push(
+      // A Liquidity Launch carries its tax alone: the API refuses a Payout Asset, a Reward Burn or a Reward Liquidity with it.
+      if (liquidityTax !== null) out.push(["liquidityTax", String(liquidityTax)]);
+      else if (rewardTax !== null) out.push(
           ["rewardTax", String(rewardTax)], ["rewardPayout", rewardPayout], ["rewardBurn", String(rewardBurn)], ["rewardLiquidity", String(rewardLiquidity)],
         );
       // The wallet is what the API takes a launch without the field to mean.
@@ -181,24 +205,30 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
 export type LaunchOptionsState = ReturnType<typeof useLaunchOptions>;
 
 /**
- * The launch type on the launch form (#172, after new-stoker's launch page): three rows, a standard coin, a Reward Launch
- * paid in the coin and one paid in the Quote Asset; a Reward Launch then asks its Reward Tax and its Reward Burn (#183),
- * the share of every harvest burned instead of paid out. All of it is fixed at launch. `labelId` names the section's heading, which the form renders above. Paying holders out of the Creator's
- * earnings, once announced here as a fourth type, is a choice of `EarningsChoice` below (ADR 0011).
+ * The launch type on the launch form (#172, after new-stoker's launch page): four rows, a standard coin, a Reward Launch
+ * paid in the coin, one paid in the Quote Asset, and a Liquidity Launch (#215, named in `@/lib/liquidityLaunch`); a
+ * Reward Launch then asks its Reward Tax and its Reward Burn (#183), the share of every harvest burned instead of paid
+ * out, and its Reward Liquidity (#214); a Liquidity Launch asks its tax alone, since all of it goes to the coin's pool,
+ * and says so in its line. All of it is fixed at launch. `labelId` names the section's heading, which the form renders
+ * above. Paying holders out of the Creator's earnings, once announced here as a type of its own, is a choice of
+ * `EarningsChoice` below (ADR 0011).
  */
 export function LaunchType({ options: o, coin, labelId }: { options: LaunchOptionsState; coin: string; labelId: string }) {
   const coinLabel = coin || "the coin";
   const quoteLabel = o.quote?.symbol ?? null;
   const reward = o.rewardTax !== null;
+  const liquidity = o.liquidityTax !== null;
+  // A rate picked under one type stays picked under the other: the Creator changed what the tax is for, not its size.
+  const rate = o.rewardTax ?? o.liquidityTax ?? REWARD_TAX_RATES[0];
   const chooseReward = (payout: RewardPayoutAsset) => {
-    o.setRewardTax(o.rewardTax ?? REWARD_TAX_RATES[0]);
+    o.setRewardTax(rate);
     o.setRewardPayout(payout);
   };
 
   return (
     <div className={styles.type}>
       <div className={styles.types} role="radiogroup" aria-labelledby={labelId}>
-        <OptionRow name="launch-type" value="standard" checked={!reward} onChange={() => o.setRewardTax(null)}>
+        <OptionRow name="launch-type" value="standard" checked={!reward && !liquidity} onChange={() => o.setRewardTax(null)}>
           <span><b>Standard</b></span>
         </OptionRow>
         <OptionRow name="launch-type" value="coin" checked={reward && o.rewardPayout === "coin"} onChange={() => chooseReward("coin")}>
@@ -207,7 +237,26 @@ export function LaunchType({ options: o, coin, labelId }: { options: LaunchOptio
         <OptionRow name="launch-type" value="quote" checked={reward && o.rewardPayout === "quote"} onChange={() => chooseReward("quote")} disabled={!quoteLabel}>
           <span><b>Reward Launch</b>, paid in {quoteLabel ?? "its pair"}</span>
         </OptionRow>
+        <OptionRow name="launch-type" value="liquidity" checked={liquidity} onChange={() => o.setLiquidityTax(rate)}>
+          <span><b>{LIQUIDITY_LAUNCH.name}</b>, {LIQUIDITY_LAUNCH.short}</span>
+        </OptionRow>
       </div>
+      {liquidity && (
+        <div className={styles.rates} role="group" aria-label={LIQUIDITY_LAUNCH.tax}>
+          <span className={styles.ratesLabel} aria-hidden>{LIQUIDITY_LAUNCH.tax}</span>
+          <div className={`segmented ${styles.segmented}`}>
+            {REWARD_TAX_RATES.map((bps) => (
+              <button key={bps} type="button" aria-pressed={o.liquidityTax === bps} onClick={() => o.setLiquidityTax(bps)}>
+                {bps / 100}%
+              </button>
+            ))}
+          </div>
+          {/* One string, so one text node: the line, then when it is added and that it is fixed. */}
+          <p className={styles.hint}>
+            {`${coin ? liquidityLine(coin) : LIQUIDITY_LAUNCH.line} It waits until ${coinLabel} graduates and is added from then on. Fixed at launch, like the rate.`}
+          </p>
+        </div>
+      )}
       {reward && (
         <div className={styles.rates} role="group" aria-label="Reward Tax">
           <span className={styles.ratesLabel} aria-hidden>Reward Tax</span>
@@ -282,7 +331,8 @@ export function LaunchType({ options: o, coin, labelId }: { options: LaunchOptio
  * Where the Creator's earnings on the coin go (ADR 0011, #113, #184), right after the launch type: four rows, the
  * Creator's wallet unless they choose otherwise, the coin's holders, a buyback that burns, or liquidity locked in the
  * coin's pool, each with one line on what it does. Any coin may take any of them, a Reward Launch included, and the
- * choice is fixed at launch. `labelId` names the section's heading, which the form renders above.
+ * choice is fixed at launch; a Liquidity Launch (#215) alone is not offered its holders, since it pays them nothing.
+ * `labelId` names the section's heading, which the form renders above.
  */
 export function EarningsChoice({ options: o, coin, labelId }: { options: LaunchOptionsState; coin: string; labelId: string }) {
   const coinLabel = coin || "the coin";
@@ -290,7 +340,7 @@ export function EarningsChoice({ options: o, coin, labelId }: { options: LaunchO
   return (
     <div className={styles.type}>
       <div className={styles.types} role="radiogroup" aria-labelledby={labelId}>
-        {EARNINGS_DESTINATIONS.map((destination) => (
+        {EARNINGS_DESTINATIONS.filter((destination) => destination !== "holders" || o.liquidityTax === null).map((destination) => (
           <OptionRow
             key={destination}
             name="earnings-destination"
