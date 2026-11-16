@@ -152,10 +152,10 @@ async function recordRewardBurn(db: Db, connection: Connection, ops: PublicKey, 
 }
 
 /**
- * Moves `keep` coins from the wallet's associated account to the Reward Liquidity's own account, opening it first when
- * it is not there yet, then withdraws the tax the transfer withheld in that account back into it.
+ * The account a coin's tax is kept in for its pool, the Reward Liquidity's and a Liquidity Launch's alike (#215), and
+ * the instructions that open it when it is not there yet (none when it is).
  */
-async function keepInstructions(connection: Connection, ops: PublicKey, mint: PublicKey, from: PublicKey, keep: bigint, decimals: number) {
+export async function liquidityAccount(connection: Connection, ops: PublicKey, mint: PublicKey) {
   const account = await liquidityCoinAccount(ops, mint, TOKEN_2022_PROGRAM_ID, "reward");
   const [held = null, mintInfo = null] = await connection.getMultipleAccountsInfo([account.address, mint], "confirmed");
   if (!mintInfo) throw new Error(`the coin's mint ${mint.toBase58()} does not exist`);
@@ -168,8 +168,17 @@ async function keepInstructions(connection: Connection, ops: PublicKey, mint: Pu
   } else if (!held.owner.equals(TOKEN_2022_PROGRAM_ID)) {
     throw new Error(`the address of the Reward Liquidity's coin account, ${account.address.toBase58()}, is taken by something else`);
   }
+  return { address: account.address, open };
+}
+
+/**
+ * Moves `keep` coins from the wallet's associated account to the Reward Liquidity's own account, opening it first when
+ * it is not there yet, then withdraws the tax the transfer withheld in that account back into it.
+ */
+async function keepInstructions(connection: Connection, ops: PublicKey, mint: PublicKey, from: PublicKey, keep: bigint, decimals: number) {
+  const account = await liquidityAccount(connection, ops, mint);
   return [
-    ...open,
+    ...account.open,
     createTransferCheckedInstruction(from, mint, account.address, ops, keep, decimals, [], TOKEN_2022_PROGRAM_ID),
     createWithdrawWithheldTokensFromAccountsInstruction(mint, account.address, ops, [], [account.address], TOKEN_2022_PROGRAM_ID),
   ];

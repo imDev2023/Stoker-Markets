@@ -186,7 +186,7 @@ export function CoinMarket({
 
       {airdrop && <AirdropCard initial={airdrop} symbol={launch.symbol} platform={platform} />}
       {/* The Creator's claim, shown to the wallet holding the lock's share alone; the card draws nothing for anyone else. */}
-      {lockStatus && <CreatorLockCard lock={lockStatus} symbol={launch.symbol} onClaimed={refreshHolders} />}
+      {lockStatus && <CreatorLockCard lock={lockStatus} symbol={launch.symbol} liquidityLaunch={launch.liquidityTax !== null} onClaimed={refreshHolders} />}
 
       <div className={`grid ${styles.market}`}>
         <div className={`col-8 ${styles.main}`}>

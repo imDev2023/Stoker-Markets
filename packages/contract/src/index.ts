@@ -4,7 +4,7 @@ import { PublishedBudgetTable } from "./budget";
 import { PublishedCreatorLadder } from "./ladder";
 import { GraduationTarget, QuoteRef } from "./quotes";
 import { CurveProgress, Graduation, SolRouteSource } from "./trades";
-import { CreatorEarningsDestination, CreatorLockTerms, LaunchModeFields, LaunchModesSummary, RewardTax } from "./launchModes";
+import { CreatorEarningsDestination, CreatorLockTerms, LaunchModeFields, LaunchModesSummary, LiquidityTax, RewardTax } from "./launchModes";
 
 /** The public API contract, shared by the API (which validates with it) and every client, including our web app. */
 
@@ -142,8 +142,10 @@ export const LaunchSummary = z.object({
   curve: CurveProgress,
   /** Set once Raydium has moved the Launch into its CPMM pool, where it trades from then on. */
   graduation: Graduation.nullable(),
-  /** A Reward Launch's Reward Tax; null for a standard coin. */
+  /** A Reward Launch's Reward Tax; null for a standard coin and for a Liquidity Launch, which pays its holders nothing. */
   rewardTax: RewardTax.nullable(),
+  /** A Liquidity Launch's tax (#215), all of it added to the coin's own pool as locked liquidity; null for any other coin. */
+  liquidityTax: LiquidityTax.nullable(),
   /** Where the Creator's earnings on the coin go (ADR 0011), fixed at launch: a coin launched without our API pays its Creator's wallet. */
   earningsDestination: CreatorEarningsDestination,
   /**

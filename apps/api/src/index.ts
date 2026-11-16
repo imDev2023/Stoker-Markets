@@ -20,7 +20,7 @@ import { notifyPending, watchGraduations } from "./graduation";
 import { fetchRawTransaction, IndexBatchError, indexTransactions } from "./indexer";
 import { sniffImageType } from "./images";
 import {
-  buildLaunch, creatorLockChoice, launchQuoteAsset, loadDraft, newMintKeyNonce, refuseWith, resolveLaunchModes, saveDraft,
+  buildLaunch, creatorLockChoice, launchQuoteAsset, loadDraft, newMintKeyNonce, refuseWith, resolveLaunchModes, saveDraft, taxChoice,
 } from "./launch";
 import { runJob, toJobRun } from "./jobs";
 import { arweaveUrl, metadataDocument, signedItems, signMetadataItems, uploadMetadata } from "./metadata";
@@ -151,10 +151,11 @@ app.post("/v1/launches/prepare", async (c) => {
   const airdrop = f.airdrop ?? [];
   if (airdrop.length > 0 && !(await mayAirdrop(c.get("db"), creator.toBase58())))
     return c.json({ error: "Airdrops at launch aren't open to this wallet. Launch without one." }, 403);
-  const rewardTaxBps = f.rewardTax ?? null;
+  // A Reward Launch's Reward Tax or a Liquidity Launch's tax (#215): one rate on the coin, and what it is for.
+  const tax = await Promise.resolve(f).then(taxChoice).catch(refuseWith(400));
   const lock = await Promise.resolve(f).then(creatorLockChoice).catch(refuseWith(400));
   const choices = {
-    rewardTaxBps, rewardPayout: f.rewardPayout ?? null, rewardBurnBps: f.rewardBurn ?? null, rewardLiquidityBps: f.rewardLiquidity ?? null,
+    ...tax, rewardPayout: f.rewardPayout ?? null, rewardBurnBps: f.rewardBurn ?? null, rewardLiquidityBps: f.rewardLiquidity ?? null,
     earningsDestination: f.earningsDestination ?? "wallet", lock,
   } as const;
   const modes = await resolveLaunchModes(connection, cfg, quote, creator, firstBuy, airdrop, choices).catch(refuseWith(400));

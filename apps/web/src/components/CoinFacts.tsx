@@ -10,17 +10,18 @@ import { Address } from "./Address";
 import { CopyButton } from "./CopyButton";
 import { LinkIcon, LinkName } from "./LinkIcon";
 import styles from "./CoinFacts.module.css";
+import { LIQUIDITY_LAUNCH, liquidityLine } from "@/lib/liquidityLaunch";
 import { burnShareWords } from "@/lib/rewardBurn";
 
 /**
  * The About block and the addresses, under the trade panel and the pair card (owner, 2026-10-31): the description, the
- * launch's details, what the Creator earns (in words: the Fees page is the one place a fee figure is shown, owner
- * 2026-10-30; after graduation the coin's tier on the Creator Ladder with its Active Days, ADR 0020; and where those
- * earnings go, the Creator's wallet or the rule they fixed at launch, ADR 0011) and the Graduation Fee once there is
- * one, the liquidity's state, the dates, the Copy Protection's length and end, the coin's own links and the
- * aggregators, then every address with its copy button. Drawn on the client from data like the
- * rest of the market: a server-rendered tree handed through the client boundary as a prop warned about missing keys on
- * the page with an Airdrop to send (2026-10-31), the same trap the pair card met.
+ * launch's details (its type, and a Reward Launch's or a Liquidity Launch's tax with where it goes), what the Creator
+ * earns (in words: the Fees page is the one place a fee figure is shown, owner 2026-10-30; after graduation the coin's
+ * tier on the Creator Ladder with its Active Days, ADR 0020; and where those earnings go, the Creator's wallet or the
+ * rule they fixed at launch, ADR 0011) and the Graduation Fee once there is one, the liquidity's state, the dates, the
+ * Copy Protection's length and end, the coin's own links and the aggregators, then every address with its copy button.
+ * Drawn on the client from data like the rest of the market: a server-rendered tree handed through the client boundary
+ * as a prop warned about missing keys on the page with an Airdrop to send (2026-10-31), the same trap the pair card met.
  */
 export function CoinFacts({ launch, platform, trust, renderedAt }: {
   launch: LaunchSummary;
@@ -68,8 +69,28 @@ export function CoinFacts({ launch, platform, trust, renderedAt }: {
         <dl className={styles.facts}>
           <div>
             <dt>Launch type</dt>
-            <dd>{launch.rewardTax ? "Reward Launch" : "Standard coin"}</dd>
+            <dd>{launch.liquidityTax ? LIQUIDITY_LAUNCH.name : launch.rewardTax ? "Reward Launch" : "Standard coin"}</dd>
           </div>
+          {/* A Liquidity Launch's tax (#215): where it goes, in the type's own line, so nobody reads it as a Reward Tax. */}
+          {launch.liquidityTax && (
+            <div data-liquidity-tax="">
+              <dt>{LIQUIDITY_LAUNCH.tax}</dt>
+              <dd>
+                {launch.liquidityTax.bps / 100}% of every transfer, all of it added to its pool
+                <span>{launch.graduation ? liquidityLine(launch.symbol) : `${liquidityLine(launch.symbol)} It waits until ${launch.symbol} graduates.`}</span>
+                {launch.liquidityTax.locked ? (
+                  <span>
+                    Fixed for good:{" "}
+                    <a href={explorerUrl("tx", launch.liquidityTax.locked.signature, platform)} target="_blank" rel="noreferrer">
+                      authority given up
+                    </a>
+                  </span>
+                ) : (
+                  <span>Fixed: LaunchLab holds the tax authority until graduation</span>
+                )}
+              </dd>
+            </div>
+          )}
           {launch.rewardTax && (
             <div>
               <dt>Reward tax</dt>

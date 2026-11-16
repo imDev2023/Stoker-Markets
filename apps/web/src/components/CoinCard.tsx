@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { LIQUIDITY_LAUNCH, liquidityTaxBadge } from "@/lib/liquidityLaunch";
 import { rewardSharesTail } from "@/lib/rewardBurn";
 import { Change } from "./Change";
 import { CoinImage } from "./CoinImage";
@@ -27,6 +28,8 @@ export type CoinCardData = {
   rewardBurnBps: number;
   /** Its Reward Liquidity (#214), basis points of every harvested tax added to its pool; 0 for none. */
   rewardLiquidityBps: number;
+  /** A Liquidity Launch's tax (#215), all of it added to its pool; null for any other coin, and then `rewardTaxBps` is null. */
+  liquidityTaxBps: number | null;
 };
 
 /** The curve's line: how far along a live curve is, or where a finished one went. */
@@ -75,6 +78,10 @@ export function CoinCard({ card, href }: { card: CoinCardData; href?: string }) 
       <div className={`${styles.row} ${styles.foot}`}>
         <span className={styles.meta}>{card.volume} traded today</span>
         {card.rewardTaxBps !== null && <span className={`tag tag-caution ${styles.reward}`}>{rewardWords(card)}</span>}
+        {/* A Liquidity Launch's tag, in the same place and tone: a tax, by its own name, so nobody reads it as a reward. */}
+        {card.liquidityTaxBps !== null && (
+          <span className={`tag tag-caution ${styles.reward}`} title={LIQUIDITY_LAUNCH.line} data-liquidity-tax="">{liquidityTaxBadge(card.liquidityTaxBps)}</span>
+        )}
       </div>
     </>
   );

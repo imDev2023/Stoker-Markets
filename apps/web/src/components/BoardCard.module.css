@@ -104,6 +104,11 @@
   font-weight: 600;
 }
 
+/* A Liquidity Launch's badge (#215) is three short words, so it stays whole and drops under the name where the card is narrow. */
+.liquidityTax {
+  white-space: nowrap;
+}
+
 /* The Creator Lock's badge: in the accent, as a promise the chain keeps, where the tax beside it is a caution. */
 .lock {
   color: var(--accent-strong);

@@ -220,8 +220,14 @@ describe("Reward Liquidity", () => {
     const { quote: quoteSide } = poolSides(pool, new PublicKey(both.mint));
     const budgetsBefore = BudgetsPage.parse(await (await api("/v1/budgets")).json());
 
-    const run = await runRounds();
+    let run = await runRounds();
     expect(run.collected.find((c) => c.mint === both.mint)?.amount).toBe(withheld.toString());
+    // A Platform Lookup Table extended moments ago makes an addition wait for a later run, by design (`lookupTableWaits`):
+    // the stack's bootstrap extends it, so a file that gets here within 64 slots of the stack's start runs the engine again.
+    for (let i = 0; i < 20 && run.liquidityWaiting.some((w) => w.mint === both.mint && /Platform Lookup Table/.test(w.reason)); i++) {
+      await new Promise((r) => setTimeout(r, 3_000));
+      run = await runRounds();
+    }
     const [added, ...more] = run.liquidityAdded.filter((a) => a.mint === both.mint);
     expect(more).toEqual([]);
     // Planned from the coins this test worked out and the pool as it read it.

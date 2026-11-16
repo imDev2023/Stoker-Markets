@@ -4,6 +4,7 @@ import type { CSSProperties } from "react";
 import { formatDelta, formatMarketValue, kindOf, tintOf } from "@/lib/board";
 import { lockShare } from "@/lib/creatorLock";
 import { quoteTicker } from "@/lib/format";
+import { LIQUIDITY_LAUNCH, liquidityTaxBadge } from "@/lib/liquidityLaunch";
 import { rewardSharesTail } from "@/lib/rewardBurn";
 import { CoinActions, type ExplorerCluster } from "./CoinActions";
 import { CoinImage } from "./CoinImage";
@@ -84,6 +85,12 @@ export function BoardCard({ launch, now, platform }: { launch: LaunchSummary; no
             {launch.rewardTax && (
               <span className={styles.tax}>
                 {launch.rewardTax.bps / 100}% tax{rewardSharesTail(launch.rewardTax.burnBps, launch.rewardTax.liquidityBps)}
+              </span>
+            )}
+            {/* A Liquidity Launch's badge (#215) names its tax, so nobody reads it as a Reward Launch's; the line is its title. */}
+            {launch.liquidityTax && (
+              <span className={`${styles.tax} ${styles.liquidityTax}`} title={LIQUIDITY_LAUNCH.line} data-liquidity-tax="">
+                {liquidityTaxBadge(launch.liquidityTax.bps)}
               </span>
             )}
             {/* The Creator Lock's badge (#211): its size, fixed at launch; where it stands is on the coin's page. */}

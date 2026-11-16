@@ -32,6 +32,18 @@ export const DISCLAIMER_KEY = "launchpad.disclaimer.v1";
  */
 export const SCHEME_COOKIE = "scheme";
 
+/**
+ * The Liquidity Launch as the site names it (#215; `LIQUIDITY_LAUNCH` and `liquidityLine` in
+ * apps/web/src/lib/liquidityLaunch.ts): its name, its tax's name, and the line that goes with them wherever the type is
+ * offered or shown, about the coin or about one coin by its ticker. The name is the owner's to overrule, so the suite
+ * says it here once, as the site says it there once, and every spec reads it from here.
+ */
+export const LIQUIDITY_LAUNCH = {
+  name: "Stoke Launch",
+  tax: "Stoke Tax",
+  line: (symbol?: string) => `The whole tax is added to ${symbol ? `${symbol}'s` : "the coin's"} pool as locked liquidity, and holders are paid nothing from it.`,
+} as const;
+
 /** Clears the acceptance on the open page, as a visitor who cleared the site's data: the next launch or trade asks again. */
 export const forgetDisclaimer = (page: Page) => page.evaluate((key) => window.localStorage.removeItem(key), DISCLAIMER_KEY);
 
@@ -102,6 +114,8 @@ export type LaunchFields = {
   rewardTax?: string;
   rewardPayout?: string;
   rewardBurn?: string;
+  /** A Liquidity Launch (#215): its tax in basis points, in place of every field of a Reward Launch. */
+  liquidityTax?: string;
   /** Where the Creator's earnings on the coin go (ADR 0011): the wallet unless set. */
   earningsDestination?: "wallet" | "holders" | "burn" | "liquidity";
   /** A Creator Lock (ADR 0023): its size in basis points, and its cliff and unlock time in seconds after the curve sells out. */

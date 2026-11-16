@@ -233,6 +233,17 @@ The share of every harvested Reward Tax that a Reward Launch adds to its own poo
 It is kept apart in the transaction that withdraws the tax, waits until the coin has graduated and is worth a locked position, and is then added, part sold for the Quote Asset half, with the operations wallet holding the Fee Key; every addition is on the Ledger, and it is the holders' tax, never revenue.
 _Avoid_: Auto-liquidity, LP tax, liquidity fee, protocol-owned liquidity (that is the Burn's and the Flywheel's, #184)
 
+**Stoke Launch**:
+A Launch whose coin charges a Stoke Tax on every transfer, all of it added to the coin's own pool as locked liquidity; its holders are paid nothing from it, so it has no Reward Round, no Payout Asset, no Reward Burn and no Reward Liquidity share (#215).
+The third launch type beside a standard coin and a Reward Launch, fixed at launch and never changed.
+The name is display only and may change: in code, the contract, the database and the Ledger it is a Liquidity Launch (`liquidity`).
+_Avoid_: Liquidity Launch (in copy; it is the identifier), LP launch, auto-LP coin, Reward Launch (it pays no rewards)
+
+**Stoke Tax**:
+The percentage withheld from every transfer of a Stoke Launch's coin, in that same coin, at the rates a Reward Tax may have; collected by the Reward Engine, kept until the coin has graduated and added to its pool as the Reward Liquidity is, with the operations wallet holding the Fee Key.
+It is the pool's, never the holders' and never revenue.
+_Avoid_: Reward Tax (that pays holders), liquidity tax (in copy; `liquidityTax` is the identifier), LP tax, transfer fee (the chain's mechanism)
+
 **Reward Round**:
 One published cycle of paying a coin's holders, with its snapshot, rules version and payout transactions public: collected Reward Tax paid as Holder Rewards, or a coin's pot paid as Holder Dividends when its Creator's earnings go to its holders (ADR 0011).
 A round has one source, tax or earnings, and the two never share a pot.

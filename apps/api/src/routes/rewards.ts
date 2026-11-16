@@ -4,7 +4,7 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { WSOL_MINT } from "@launchpad/chain";
 import {
-  AnnounceRewardRules, HOLDING_WEIGHT_ONCE_BPS, REWARD_RULES_LEAD_SECONDS_MIN, REWARD_SALE_MAX_RESERVE_BPS, REWARD_SALE_SLIPPAGE_BPS, type CoinRewards,
+  AnnounceRewardRules, HOLDING_WEIGHT_ONCE_BPS, REWARD_RULES_LEAD_SECONDS_MIN, REWARD_SALE_MAX_RESERVE_BPS, REWARD_SALE_SLIPPAGE_BPS, type CoinLiquidityTax, type CoinRewards,
   type RewardPayoutAssetRef, type RewardRoundDetail, type RewardRoundSummary, type RewardRulesPage, type RewardRuleVersion, type WalletHolding, type WalletRewards,
 } from "@launchpad/contract";
 import { launches, quoteAssets, rewardPayouts, rewardRounds, rewardRules, type Db } from "@launchpad/db";
@@ -83,11 +83,38 @@ async function roundLaunch(db: Db, mint: string) {
   return row ?? null;
 }
 
-/** A Reward Launch, the same way. */
+/** A Reward Launch, the same way: a Liquidity Launch (#215) has a tax too, and is none. */
 async function rewardLaunch(db: Db, mint: string) {
   const row = await roundLaunch(db, mint);
-  return row && row.launch.rewardTaxBps !== null ? row : null;
+  return row && row.launch.rewardTaxBps !== null && row.launch.taxKind !== "liquidity" ? row : null;
 }
+
+/**
+ * A Liquidity Launch's tax (#215): what waits for the coin's pool, read from the chain, and what every addition has put
+ * into it, read from the Ledger. The coin has no round, payout or sale to report.
+ */
+rewardRoutes.get("/launches/:mint/liquidity-tax", async (c) => {
+  const mint = address(c.req.param("mint"), "mint");
+  const db = c.get("db");
+  const [launch] = await db.select().from(launches).where(eq(launches.mint, mint.toBase58())).limit(1);
+  if (!launch || launch.rewardTaxBps === null || launch.taxKind !== "liquidity") return c.json({ error: "not a Liquidity Launch" }, 404);
+  const connection = new Connection(c.get("cfg").rpcUrl, "confirmed");
+  const ops = operationsKey(c.env).publicKey;
+  const [waiting, kept, added] = await Promise.all([taxWaiting(connection, ops, mint), liquidityWaiting(connection, ops, launch), additionsOf(db, launch.mint)]);
+  const coins = kept.coinAccount.amount;
+  const res: CoinLiquidityTax = {
+    mint: launch.mint,
+    taxBps: launch.rewardTaxBps,
+    waiting: {
+      inAccounts: waiting.inAccounts.toString(), inMint: waiting.inMint.toString(), kept: coins.toString(),
+      total: (waiting.inAccounts + waiting.inMint + coins).toString(), quote: kept.quoteAccount.amount.toString(),
+    },
+    coinsAdded: added.coinsAdded,
+    quoteAdded: added.quoteAdded,
+    recent: added.recent,
+  };
+  return c.json(res);
+});
 
 /** A Reward Launch's rounds, newest first, and what is waiting to be paid, read from the chain and, for a Quote Asset payout, from its sales. */
 rewardRoutes.get("/launches/:mint/rewards", async (c) => {

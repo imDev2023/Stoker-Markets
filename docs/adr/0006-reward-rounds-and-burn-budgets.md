@@ -1,6 +1,6 @@
 # Reward Rounds pay in the coin or the Quote Asset from the operations wallet; Burn and Flywheel budgets come from the Ledger
 
-Status: implemented on the local chain (#17, #18); amended on 2026-10-03 by the owner's decision in #43 (the Payout Asset, below), on 2026-11-13 by #183 (the Reward Burn, below), and on 2026-11-15 by #214 (the Reward Liquidity, below).
+Status: implemented on the local chain (#17, #18); amended on 2026-10-03 by the owner's decision in #43 (the Payout Asset, below), on 2026-11-13 by #183 (the Reward Burn, below), on 2026-11-15 by #214 (the Reward Liquidity, below), and on 2026-11-16 by #215 (the Liquidity Launch, shown as a Stoke Launch, below).
 
 A Reward Launch's coin is a Token-2022 mint whose transfer fee is the Reward Tax.
 LaunchLab's own authority holds the fee-config authority until Graduation, and the migration hands it to the PlatformConfig's fee-extension authority, our operations wallet, which gives it up for good in the next minute (the `reward-tax-lock` job), so nobody can ever change a coin's tax.
@@ -162,3 +162,46 @@ The Fee Key is put on record as the addition lands, and the Fee Collector collec
 - Holders of a coin with a Reward Liquidity receive less than the tax's face value by the share; the pool deepens with every addition, and the position's fees are the platform's.
 - A Quote Asset payout with a Reward Liquidity sells less into its own chart through Reward Sales, though each addition sells part of its coins into the pool.
 - The keep costs two instructions in a transaction the engine sent anyway; each addition costs a transaction and a locked position's rent, which the minimum keeps rare.
+
+## Amendment (2026-11-16, #215): the Liquidity Launch, shown as a Stoke Launch
+
+The owner, after choosing the two rows of #214, asked for a launch type of its own "later": a coin whose whole tax deepens its own pool, with no holder rewards.
+On 2026-11-16 the owner answered its three questions: the name was left to the main session, which picked Stoke Launch and Stoke Tax (every trade stokes the coin's own pool) and which the owner may overrule; the type has no burn share; and it is offered with whichever Quote Asset a coin can be paired with.
+So there are three kinds of Launch: a standard coin with no tax, a Reward Launch whose Reward Tax pays its holders, and a Liquidity Launch whose tax is all added to the coin's own pool as locked liquidity and pays its holders nothing.
+
+### What the kind is, and where the name lives
+
+A Liquidity Launch's coin carries the same Token-2022 transfer fee as a Reward Launch's, 1% to 5%, fixed at launch and locked after Graduation by the same job, and launches under the same curve rules (rule group 1).
+What differs is what the tax is for, so the kind is stored as that: `tax_kind` on `launch_drafts` and `launches`, `reward` or `liquidity`, null for a standard coin (migration `0034`), beside `reward_tax_bps`, which holds the tax's rate for either kind.
+A Liquidity Launch has no Payout Asset, no Reward Burn and no Reward Liquidity share, so those three columns are null for it, as for a standard coin, and both tables check it; a coin with a tax made without our API has no draft and is a Reward Launch, as before.
+The kind is kept with the draft, copied to the Launch by the Indexer, rebuilt unchanged by a retry and never updated: a coin's type never changes after launch.
+
+The name may change, so identifiers, the contract, the database and the Ledger say `liquidity`, never `stoke`: the display name and its line live in one file of the web app (`apps/web/src/lib/liquidityLaunch.ts`) and one entry of `CONTEXT.md`.
+
+### The contract
+
+`liquidityTax` on `POST /v1/launches/prepare` and `GET /v1/launch-quote` (100 to 500 basis points) makes the coin a Liquidity Launch.
+Both refuse it with 400, in words, together with `rewardTax` (a coin's tax pays its holders or deepens its pool, never both), `rewardBurn` or `rewardLiquidity` ("0" included), and prepare also with `rewardPayout` and with `earningsDestination` `holders`.
+A launch carries `liquidityTax` (`{ bps, locked }`) beside `rewardTax`, which is null for it: a client that reads `rewardTax` to decide whether a coin pays its holders leaves a Liquidity Launch out without knowing the type exists.
+`GET /v1/launches/:mint/liquidity-tax` answers what waits for the pool, from the chain, and what every addition has put into it, from the Ledger; `GET /v1/launches/:mint/rewards` answers 404 for a Liquidity Launch.
+
+The Creator's earnings on a Liquidity Launch may go to the Creator's wallet, a burn or liquidity, but not to holders (the builder's call, for the owner to overrule): Holder Dividends are Reward Rounds, and a coin offered as paying its holders nothing should open none.
+
+### How the tax reaches the pool
+
+The Reward Engine gives a Liquidity Launch a turn of its own: it harvests the withheld tax to the mint and withdraws all the mint holds straight into the account the Reward Liquidity keeps a coin's share in (`liquidityCoinAccount`, "reward"), opening it first when it is not there yet.
+A withdrawal is no transfer, so nothing is withheld on the way and #214's move and withdraw-back are not needed; and the tax never passes through the operations wallet's associated account of the coin, where pool fees collected in the coin wait for the sweep, so every coin of the harvest, whatever was harvested by the time the withdrawal lands, is the pool's, and none of it can be swept as revenue.
+Withdrawing twice moves nothing twice, so the withdrawal needs no record of its own.
+
+From that account on it is #214's addition unchanged: it waits before Graduation, and afterwards, once what is kept is worth `LIQUIDITY_ADD_MIN_LAMPORTS`, one transaction sells part of it in the coin's own pool, deposits the pair and locks the LP tokens, the Fee Key minted to the operations wallet, written to `job_transactions` (`reward_liquidity`) before it is sent, so a run that dies never adds the same coins twice.
+The Ledger records it as #214's is recorded, up to three `reward_liquidity` entries on the addition's signature: never revenue and never a spending of the Budget Table.
+A kind of its own was considered and left out: the entries are the same three movements to the same kind of position, and the coin's type is on the coin.
+
+The engine never sells a Liquidity Launch's tax for a payout, never opens a Reward Round for it and never pays anyone from it, and the Holding Checks leave the coin out, since no round can ever weigh its holders.
+
+### Consequences of the fourth amendment
+
+- A buyer of a Liquidity Launch pays the tax on every transfer and is paid nothing from it; the site says so wherever the type is offered or shown, under its own name, so nobody buys it expecting Holder Rewards.
+- The pool deepens with every addition and the liquidity is locked for good; the locked positions' fees go to the platform's operations wallet through their Fee Keys, as #214's do (the owner may overrule both together).
+- Every addition sells part of the tax into the coin's own pool, as a Reward Liquidity addition does, and costs a transaction and a locked position's rent, which the minimum keeps rare.
+- `reward_tax_bps` now names the tax's rate for either kind; renaming the column was left out, since every transfer-fee calculation reads it and none of them depends on the kind.

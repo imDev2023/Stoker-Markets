@@ -18,7 +18,10 @@ export const launches = pgTable(
     supply: numeric("supply", { precision: 40, scale: 0 }).notNull(),
     totalBaseSell: numeric("total_base_sell", { precision: 40, scale: 0 }).notNull(),
     graduationTarget: numeric("graduation_target", { precision: 40, scale: 0 }).notNull(),
-    /** A Reward Launch's Reward Tax in basis points (100, 200, 300, 400 or 500); null for a standard coin. */
+    /**
+     * The coin's tax in basis points (100, 200, 300, 400 or 500), which every transfer of it withholds: a Reward Launch's
+     * Reward Tax or a Liquidity Launch's tax, by `tax_kind`; null for a standard coin.
+     */
     rewardTaxBps: integer("reward_tax_bps"),
     /**
      * A Reward Launch's Payout Asset (ADR 0006, #43): its Holder Rewards are paid in the coin itself, or in its Quote
@@ -39,6 +42,14 @@ export const launches = pgTable(
      * a Reward Launch made without our API keeps none (0). Null for a standard coin.
      */
     rewardLiquidityBps: integer("reward_liquidity_bps"),
+    /**
+     * What the coin's tax is for (#215, ADR 0006): `reward`, a Reward Launch, whose tax pays its holders, or `liquidity`,
+     * a Liquidity Launch, whose whole tax is added to its own pool as locked liquidity and which has no Reward Round, no
+     * Payout Asset, no Reward Burn and no Reward Liquidity share (all three null). `reward_tax_bps` is the tax's rate for
+     * either kind. Copied from the launch draft when the launch is indexed and never changed; a coin with a tax made
+     * without our API is a Reward Launch. Null for a standard coin.
+     */
+    taxKind: text("tax_kind", { enum: ["reward", "liquidity"] }),
     /**
      * Where the Creator's earnings on the coin go (ADR 0011, #113, #184): their wallet, the coin's holders, a buyback
      * that burns the coin, or a buyback that adds locked liquidity to its pool. Copied from the launch draft when the
@@ -89,6 +100,10 @@ export const launches = pgTable(
     index("launches_symbol_key_idx").on(t.symbolKey),
     check("launches_reward_burn_bps", sql`${t.rewardBurnBps} between 0 and 5000`),
     check("launches_reward_liquidity_bps", sql`${t.rewardLiquidityBps} between 0 and 5000 and coalesce(${t.rewardBurnBps}, 0) + ${t.rewardLiquidityBps} <= 5000`),
+    check(
+      "launches_tax_kind",
+      sql`(${t.taxKind} is null) = (${t.rewardTaxBps} is null) and (${t.taxKind} is distinct from 'liquidity' or (${t.rewardPayout} is null and ${t.rewardBurnBps} is null and ${t.rewardLiquidityBps} is null and ${t.earningsDestination} <> 'holders'))`,
+    ),
     check(
       "launches_creator_lock",
       sql`(${t.lockedAmount} is null and ${t.lockCliffSeconds} is null and ${t.lockUnlockSeconds} is null) or (${t.lockedAmount} > 0 and ${t.lockCliffSeconds} >= 0 and ${t.lockUnlockSeconds} >= 0)`,
@@ -317,6 +332,11 @@ export const launchDrafts = pgTable(
     rewardBurnBps: integer("reward_burn_bps"),
     /** The Reward Liquidity the Creator chose for a Reward Launch, basis points of every harvest (#214); null for a standard Launch. */
     rewardLiquidityBps: integer("reward_liquidity_bps"),
+    /**
+     * What the tax the Creator chose is for (#215): `reward` for a Reward Launch, `liquidity` for a Liquidity Launch, whose
+     * `reward_tax_bps` is its tax's rate and whose payout, burn and liquidity share are null; null for a standard Launch.
+     */
+    taxKind: text("tax_kind", { enum: ["reward", "liquidity"] }),
     /** Where the Creator chose their earnings on the coin to go (ADR 0011). */
     earningsDestination: text("earnings_destination", { enum: ["wallet", "holders", "burn", "liquidity"] }).notNull().default("wallet"),
     /**
@@ -336,6 +356,10 @@ export const launchDrafts = pgTable(
     check(
       "launch_drafts_reward_liquidity_bps",
       sql`${t.rewardLiquidityBps} between 0 and 5000 and coalesce(${t.rewardBurnBps}, 0) + ${t.rewardLiquidityBps} <= 5000`,
+    ),
+    check(
+      "launch_drafts_tax_kind",
+      sql`(${t.taxKind} is null) = (${t.rewardTaxBps} is null) and (${t.taxKind} is distinct from 'liquidity' or (${t.rewardPayout} is null and ${t.rewardBurnBps} is null and ${t.rewardLiquidityBps} is null and ${t.earningsDestination} <> 'holders'))`,
     ),
     check(
       "launch_drafts_creator_lock",

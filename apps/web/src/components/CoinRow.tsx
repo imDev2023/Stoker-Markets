@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { LaunchSummary } from "@launchpad/contract";
 import { formatDelta, formatMarketValue } from "@/lib/board";
 import { quoteTicker } from "@/lib/format";
+import { LIQUIDITY_LAUNCH, liquidityTaxBadge } from "@/lib/liquidityLaunch";
 import { CoinActions, type ExplorerCluster } from "./CoinActions";
 import { CoinImage } from "./CoinImage";
 import { PairMark } from "./PairMark";
@@ -59,7 +60,7 @@ function Delta({ value, label, className = "" }: { value: number | null; label: 
  * lockup draws both halves (the coin's image with the Quote Asset's logo over its corner) and the mark writes them
  * (BASE/QUOTE), with the name under. The figures are right-aligned tabular mono under their column names; the curve is
  * the one thing drawn, in the heat ramp, and a graduated coin says so in the gain colour. A Reward Launch's tax sits
- * by its name, where the MODE column was.
+ * by its name, where the MODE column was, and a Liquidity Launch's (#215) under its own name.
  */
 export function CoinRow({ launch, now, platform }: { launch: LaunchSummary; now: number; platform: ExplorerCluster }) {
   const quote = quoteTicker(launch.quote);
@@ -79,6 +80,7 @@ export function CoinRow({ launch, now, platform }: { launch: LaunchSummary; now:
         <span className={styles.name}>
           {launch.name}
           {launch.rewardTax && <span className={styles.tax}>{launch.rewardTax.bps / 100}% tax</span>}
+          {launch.liquidityTax && <span className={styles.tax} title={LIQUIDITY_LAUNCH.line} data-liquidity-tax="">{liquidityTaxBadge(launch.liquidityTax.bps)}</span>}
         </span>
       </Link>
       <span className={`${styles.num} ${styles.price}`} data-label="Price">{launch.market.price === null ? "-" : <Price value={launch.market.price} />}</span>

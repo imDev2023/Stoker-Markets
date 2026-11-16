@@ -11,7 +11,7 @@ import {
 } from "@launchpad/chain";
 import { REWARD_SHARES_MAX_BPS } from "@launchpad/contract";
 import type {
-  AirdropRecipients, CreatorEarningsDestination, CreatorLockTerms, GraduationTarget, LaunchModesSummary, PreparedLaunch, RewardBurnBps, RewardLiquidityBps, RewardPayoutAsset,
+  AirdropRecipients, CreatorEarningsDestination, CreatorLockTerms, GraduationTarget, LaunchModesSummary, PreparedLaunch, RewardBurnBps, RewardLiquidityBps, RewardPayoutAsset, TaxKind,
   RewardTaxBps, TradeQuote,
 } from "@launchpad/contract";
 import { airdropRecipients, launchDrafts, launchMetadata, type Db } from "@launchpad/db";
@@ -158,13 +158,40 @@ export function checkCreatorLock(quote: QuoteAsset, c: CreatorLockChoice) {
 }
 
 /**
- * The Creator's choices a launch is fixed with: the Reward Tax, its Payout Asset, Reward Burn and Reward Liquidity, where
- * the earnings go, and the Creator Lock.
+ * The Creator's choices a launch is fixed with: the coin's tax and what it is for (`taxKind`: a Reward Launch's Reward
+ * Tax or a Liquidity Launch's tax, #215; null with no tax), a Reward Launch's Payout Asset, Reward Burn and Reward
+ * Liquidity, where the earnings go, and the Creator Lock. `rewardTaxBps` is the tax's rate for either kind.
  */
 export type LaunchChoices = {
-  rewardTaxBps: RewardTaxBps | null; rewardPayout: RewardPayoutAsset | null; rewardBurnBps: RewardBurnBps | null;
+  rewardTaxBps: RewardTaxBps | null; taxKind: TaxKind | null; rewardPayout: RewardPayoutAsset | null; rewardBurnBps: RewardBurnBps | null;
   rewardLiquidityBps: RewardLiquidityBps | null; earningsDestination: CreatorEarningsDestination; lock: CreatorLockChoice | null;
 };
+
+/**
+ * The tax a launch request names and what it is for: `rewardTax` makes a Reward Launch, `liquidityTax` a Liquidity
+ * Launch (#215), neither a standard coin. Refuses the two together: a coin's tax pays its holders or deepens its pool,
+ * and which is fixed for the coin's life.
+ */
+export function taxChoice(f: { rewardTax?: RewardTaxBps; liquidityTax?: RewardTaxBps }): Pick<LaunchChoices, "rewardTaxBps" | "taxKind"> {
+  if (f.rewardTax && f.liquidityTax)
+    throw new LaunchModeError("A coin is a Reward Launch or a Liquidity Launch, never both. Choose a Reward Tax or a liquidity tax, not the two.");
+  if (f.liquidityTax) return { rewardTaxBps: f.liquidityTax, taxKind: "liquidity" };
+  return f.rewardTax ? { rewardTaxBps: f.rewardTax, taxKind: "reward" } : { rewardTaxBps: null, taxKind: null };
+}
+
+/**
+ * Refuses what a Liquidity Launch (#215) cannot have: a Payout Asset, a Reward Burn or a Reward Liquidity share ("0"
+ * included, so it carries none of them at all), since its whole tax goes to its pool and nothing of it is paid out or
+ * burned; and Creator Earnings that go to its holders, since the coin pays its holders nothing.
+ */
+export function checkLiquidityLaunch(c: Pick<LaunchChoices, "rewardPayout" | "rewardBurnBps" | "rewardLiquidityBps"> & { earningsDestination?: CreatorEarningsDestination }) {
+  if (c.rewardPayout) throw new LaunchModeError("A Liquidity Launch has no payout asset: its whole tax is added to its pool. Leave the payout asset out.");
+  if (c.rewardBurnBps != null) throw new LaunchModeError("A Liquidity Launch has no Reward Burn: its whole tax is added to its pool. Leave the burn out.");
+  if (c.rewardLiquidityBps != null)
+    throw new LaunchModeError("A Liquidity Launch has no Reward Liquidity share: its whole tax is added to its pool already. Leave the liquidity share out.");
+  if (c.earningsDestination === "holders")
+    throw new LaunchModeError("A Liquidity Launch pays its holders nothing, so its Creator Earnings can't go to holders. Choose your wallet, a burn or liquidity.");
+}
 
 /**
  * Refuses a Reward Burn or a Reward Liquidity without a Reward Tax ("0" included, so a standard coin carries neither at
@@ -186,20 +213,23 @@ export function checkRewardShares(rewardTaxBps: RewardTaxBps | null, rewardBurnB
  */
 export async function resolveLaunchModes(
   connection: Connection, cfg: Config, quote: QuoteAsset, creator: PublicKey, firstBuy: BN | null, airdrop: AirdropRecipients,
-  { rewardTaxBps, rewardPayout, rewardBurnBps, rewardLiquidityBps, earningsDestination, lock }: LaunchChoices,
+  { rewardTaxBps, taxKind, rewardPayout, rewardBurnBps, rewardLiquidityBps, earningsDestination, lock }: LaunchChoices,
 ): Promise<{ firstBuy: LaunchFirstBuy | null; summary: LaunchModesSummary }> {
+  const liquidityLaunch = rewardTaxBps !== null && taxKind === "liquidity";
+  if (liquidityLaunch) checkLiquidityLaunch({ rewardPayout, rewardBurnBps, rewardLiquidityBps, earningsDestination });
   if (rewardPayout && !rewardTaxBps) throw new LaunchModeError("A payout asset is only for a Reward Launch. Choose a Reward Tax, or leave the payout asset out.");
   checkRewardShares(rewardTaxBps, rewardBurnBps, rewardLiquidityBps);
-  const rewardTax = rewardTaxBps
+  const rewardTax = rewardTaxBps && !liquidityLaunch
     ? { bps: rewardTaxBps, payout: rewardPayout ?? ("coin" as const), burnBps: rewardBurnBps ?? 0, liquidityBps: rewardLiquidityBps ?? 0 }
     : null;
+  const liquidityTax = liquidityLaunch ? { bps: rewardTaxBps } : null;
   if (lock) checkCreatorLock(quote, lock);
   const creatorLock = lock && lockTerms(lock);
   const bought = firstBuy ? await quoteLaunchFirstBuy(connection, cfg, quote, firstBuy, rewardTaxBps, lock && lockOf(lock)) : null;
   const toContract = (b: LaunchFirstBuy) => firstBuyToContract(b, quote.decimals, b.quoteTransferFeeBps, b.rewardTaxBps);
   if (bought) await checkQuoteBalance(connection, quote, creator, bought.quote.amountIn);
   if (airdrop.length === 0)
-    return { firstBuy: bought, summary: { rewardTax, earningsDestination, creatorLock, firstBuy: bought && toContract(bought), airdrop: null } };
+    return { firstBuy: bought, summary: { rewardTax, liquidityTax, earningsDestination, creatorLock, firstBuy: bought && toContract(bought), airdrop: null } };
   if (!bought) throw new LaunchModeError("An airdrop is paid from your first buy. Add a first buy.");
   const recipients = airdrop.map((r) => ({ wallet: new PublicKey(r.wallet), amount: new BN(r.amount) }));
   for (const r of recipients) {
@@ -223,6 +253,7 @@ export async function resolveLaunchModes(
     firstBuy: bought,
     summary: {
       rewardTax,
+      liquidityTax,
       earningsDestination,
       creatorLock,
       firstBuy: toContract(bought),
@@ -238,6 +269,7 @@ export async function saveDraft(
     mint: PublicKey; creator: PublicKey; nonce: string | null; quote: QuoteAsset; firstBuy: BN | null; airdrop: AirdropRecipients;
   } & LaunchChoices,
 ) {
+  const rewardLaunch = d.rewardTaxBps !== null && d.taxKind !== "liquidity";
   await db.transaction(async (tx) => {
     await tx.insert(launchDrafts).values({
       mint: d.mint.toBase58(),
@@ -249,12 +281,15 @@ export async function saveDraft(
       graduationTargetLamports: d.quote.graduationTarget.lamports,
       firstBuy: d.firstBuy?.toString() ?? null,
       rewardTaxBps: d.rewardTaxBps,
+      // What the tax is for (#215) is fixed here too: a Liquidity Launch's goes to its pool whole, so it has no Payout
+      // Asset, no Reward Burn and no Reward Liquidity share, as a standard coin has none.
+      taxKind: d.rewardTaxBps ? (d.taxKind ?? "reward") : null,
       // The Payout Asset is fixed here, with the coin's address: a retry and the Indexer read it back from this row.
-      rewardPayout: d.rewardTaxBps ? (d.rewardPayout ?? "coin") : null,
+      rewardPayout: rewardLaunch ? (d.rewardPayout ?? "coin") : null,
       // The Reward Burn (#183) likewise: what share of every harvest the Reward Engine burns, for the coin's life.
-      rewardBurnBps: d.rewardTaxBps ? (d.rewardBurnBps ?? 0) : null,
+      rewardBurnBps: rewardLaunch ? (d.rewardBurnBps ?? 0) : null,
       // And the Reward Liquidity (#214): what share of every harvest it keeps for the coin's pool.
-      rewardLiquidityBps: d.rewardTaxBps ? (d.rewardLiquidityBps ?? 0) : null,
+      rewardLiquidityBps: rewardLaunch ? (d.rewardLiquidityBps ?? 0) : null,
       // So is where the Creator's earnings go (ADR 0011): the Indexer copies it to the Launch, and nothing changes it after.
       earningsDestination: d.earningsDestination,
       // And the Creator Lock (ADR 0023): a retry builds the same lock, and the Indexer reads it from the chain.
@@ -343,6 +378,7 @@ export async function resolveDraftModes(db: Db, connection: Connection, cfg: Con
     recipients.map((r) => ({ wallet: r.wallet, amount: r.amount })),
     {
       rewardTaxBps: (draft.rewardTaxBps as RewardTaxBps | null) ?? null,
+      taxKind: draft.taxKind,
       rewardPayout: draft.rewardPayout,
       rewardBurnBps: (draft.rewardBurnBps as RewardBurnBps | null) ?? null,
       rewardLiquidityBps: (draft.rewardLiquidityBps as RewardLiquidityBps | null) ?? null,

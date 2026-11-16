@@ -7,6 +7,7 @@ import type { CreatorLockStatus } from "@launchpad/contract";
 import { prepareCreatorLockClaim } from "@/lib/api";
 import { lockStage, lockTime, receivedAfterTax } from "@/lib/creatorLock";
 import { COIN_DECIMALS, formatUnits, formatUtc } from "@/lib/format";
+import { LIQUIDITY_LAUNCH } from "@/lib/liquidityLaunch";
 import { landedError } from "@/lib/transactions";
 import styles from "./AirdropCard.module.css";
 import own from "./CreatorLockCard.module.css";
@@ -32,9 +33,17 @@ function refusal(lock: CreatorLockStatus, symbol: string) {
  * The Creator's own view of their Creator Lock (ADR 0023, #211), shown to the wallet holding the share and nobody else:
  * what is locked for them, what they have claimed and what they can claim now, and the claim, which their wallet signs
  * and pays for (ADR 0003). While a claim can't land the button waits and the card says why. On a Reward Launch the claim
- * pays the coin's Reward Tax like any transfer, and the card says what reaches the wallet.
+ * pays the coin's Reward Tax like any transfer, and the card says what reaches the wallet; so it does on a Liquidity
+ * Launch (#215, `liquidityLaunch`), whose tax goes to the coin's pool and not to its holders: the lock's status carries
+ * the rate for either, and the coin says which it is.
  */
-export function CreatorLockCard({ lock, symbol, onClaimed }: { lock: CreatorLockStatus; symbol: string; onClaimed: () => Promise<void> }) {
+export function CreatorLockCard({ lock, symbol, liquidityLaunch = false, onClaimed }: {
+  lock: CreatorLockStatus;
+  symbol: string;
+  /** The coin is a Liquidity Launch, so `lock.rewardTaxBps` is its tax for the pool, never a Reward Tax. */
+  liquidityLaunch?: boolean;
+  onClaimed: () => Promise<void>;
+}) {
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
   const [step, setStep] = useState<Step>({ kind: "idle" });
@@ -44,6 +53,12 @@ export function CreatorLockCard({ lock, symbol, onClaimed }: { lock: CreatorLock
   if (!share || publicKey?.toBase58() !== lock.creator) return null;
 
   const claimable = BigInt(share.claimable);
+  // What a claim pays like any transfer, as one clause: a Reward Launch's tax to its holders, a Liquidity Launch's to its pool.
+  const taxClause = lock.rewardTaxBps === null
+    ? null
+    : liquidityLaunch
+      ? `A claim pays ${symbol}'s ${lock.rewardTaxBps / 100}% ${LIQUIDITY_LAUNCH.tax} to its pool like any transfer`
+      : `A claim pays ${symbol}'s ${lock.rewardTaxBps / 100}% Reward Tax to its holders like any transfer`;
   const why = refusal(lock, symbol);
   const busy = step.kind !== "idle";
 
@@ -94,15 +109,13 @@ export function CreatorLockCard({ lock, symbol, onClaimed }: { lock: CreatorLock
         ) : (
           <>Nothing to claim right now.</>
         )}
-        {lock.rewardTaxBps !== null && claimable > 0n && (
+        {taxClause && claimable > 0n && (
           <>
-            {" "}A claim pays {symbol}&apos;s {lock.rewardTaxBps / 100}% Reward Tax to its holders like any transfer, so about{" "}
+            {" "}{taxClause}, so about{" "}
             <span className="mono">{coins(receivedAfterTax(claimable, lock.rewardTaxBps))}</span> reach your wallet.
           </>
         )}
-        {lock.rewardTaxBps !== null && claimable === 0n && (
-          <> A claim pays {symbol}&apos;s {lock.rewardTaxBps / 100}% Reward Tax to its holders like any transfer.</>
-        )}
+        {taxClause && claimable === 0n && <> {taxClause}.</>}
       </p>
 
       {error && (

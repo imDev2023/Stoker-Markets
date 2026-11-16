@@ -13,7 +13,7 @@ import { airdropCreators, allowAirdropCreator, disallowAirdropCreator, mayAirdro
 import { quoteMarket, type AppEnv, type Config } from "../env";
 import { indexAccountHistory } from "../indexer";
 import {
-  buildLaunch, checkCreatorLock, checkRewardShares, firstBuyToContract, launchQuoteAsset, loadDraft, lockOf, quoteLaunchFirstBuy, refuseWith, resolveDraftModes, type LoadedDraft,
+  buildLaunch, checkCreatorLock, checkLiquidityLaunch, checkRewardShares, firstBuyToContract, launchQuoteAsset, loadDraft, lockOf, quoteLaunchFirstBuy, refuseWith, resolveDraftModes, taxChoice, type LoadedDraft,
 } from "../launch";
 
 /** Launch modes: first-buy quotes, retrying a prepared launch, and paying its airdrop. */
@@ -25,15 +25,21 @@ launchModeRoutes.get("/launch-quote", async (c) => {
   if (!query.success) return c.json({ error: "invalid launch quote request", details: query.error.issues }, 400);
   const cfg = c.get("cfg");
   // The shares move no price, and are refused here as prepare refuses them, so a form hears it before anything is prepared.
-  await Promise.resolve()
-    .then(() => checkRewardShares(query.data.rewardTax ?? null, query.data.rewardBurn ?? null, query.data.rewardLiquidity ?? null))
+  const tax = await Promise.resolve()
+    .then(() => {
+      const choice = taxChoice(query.data);
+      const shares = { rewardPayout: null, rewardBurnBps: query.data.rewardBurn ?? null, rewardLiquidityBps: query.data.rewardLiquidity ?? null };
+      if (choice.taxKind === "liquidity") checkLiquidityLaunch(shares);
+      checkRewardShares(choice.rewardTaxBps, shares.rewardBurnBps, shares.rewardLiquidityBps);
+      return choice;
+    })
     .catch(refuseWith(400));
   const quote = await launchQuoteAsset(c.get("db"), cfg, quoteMarket(c.env), query.data.quoteMint);
   const lock = query.data.lockBps ? { bps: query.data.lockBps, cliffSeconds: 0, unlockSeconds: CREATOR_LOCK.minSeconds } : null;
   // Only the lock's size moves the price; the schedule is checked at prepare. Its size is held to the asset's cap here too.
   if (lock) await Promise.resolve(quote).then((q) => checkCreatorLock(q, lock)).catch(refuseWith(400));
   const connection = new Connection(cfg.rpcUrl, "confirmed");
-  const q = await quoteLaunchFirstBuy(connection, cfg, quote, new BN(query.data.firstBuy), query.data.rewardTax ?? null, lock && lockOf(lock)).catch(refuseWith(400));
+  const q = await quoteLaunchFirstBuy(connection, cfg, quote, new BN(query.data.firstBuy), tax.rewardTaxBps, lock && lockOf(lock)).catch(refuseWith(400));
   const res: FirstBuyQuote = { firstBuy: firstBuyToContract(q, quote.decimals, q.quoteTransferFeeBps, q.rewardTaxBps) };
   return c.json(res);
 });

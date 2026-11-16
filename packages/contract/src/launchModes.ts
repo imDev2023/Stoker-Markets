@@ -61,6 +61,15 @@ export type RewardLiquidityBps = z.infer<typeof RewardLiquidityBps>;
 export const REWARD_SHARES_MAX_BPS = 5000;
 
 /**
+ * What a coin's tax is for, fixed at launch (#215, ADR 0006 amended): `reward`, a Reward Launch, whose Reward Tax pays
+ * its holders; or `liquidity`, a Liquidity Launch, whose whole tax is added to the coin's own pool as locked liquidity
+ * and pays holders nothing. A standard coin has no tax and no kind.
+ */
+export const TAX_KINDS = ["reward", "liquidity"] as const;
+export const TaxKind = z.enum(TAX_KINDS);
+export type TaxKind = z.infer<typeof TaxKind>;
+
+/**
  * Where a Creator's earnings on a coin go (ADR 0011, #113, #184), chosen on the launch form and fixed for the coin's life:
  * - `wallet`: to the Creator's wallet, as Creator Forwards (ADR 0009);
  * - `holders`: to the coin's holders, pro rata in the Quote Asset, through Reward Rounds;
@@ -134,7 +143,17 @@ export const LaunchModeFields = z.object({
    * without `rewardTax`, and when it and `rewardBurn` add up to more than 5000.
    */
   rewardLiquidity: rewardLiquidityField,
-  /** Where the Creator's earnings on the coin go, for good; `wallet` unless set. Any coin may choose any of them. */
+  /**
+   * Makes the coin a Liquidity Launch (#215): a Token-2022 coin whose every transfer withholds this tax (basis points),
+   * all of it added to the coin's own pool as locked liquidity once the coin has graduated; its holders are paid nothing
+   * from it. Empty for any other coin. Refused together with `rewardTax`, `rewardPayout`, `rewardBurn` or
+   * `rewardLiquidity`, which are a Reward Launch's, and with `earningsDestination` `holders`.
+   */
+  liquidityTax: rewardTaxField,
+  /**
+   * Where the Creator's earnings on the coin go, for good; `wallet` unless set. Any coin may choose any of them, but a
+   * Liquidity Launch may not choose `holders`: it pays its holders nothing.
+   */
   earningsDestination: z.union([CreatorEarningsDestination, z.literal("")]).optional().transform((v) => v || undefined),
   /**
    * A Creator Lock's size in basis points of the supply (1 to the Quote Asset's `creatorLockCapBps`); empty for none.
@@ -180,6 +199,18 @@ export const RewardTax = z.object({
 });
 export type RewardTax = z.infer<typeof RewardTax>;
 
+/**
+ * A Liquidity Launch's tax (#215): the rate its coin withholds on every transfer, all of it added to the coin's own pool
+ * as locked liquidity once the coin has graduated. Its holders are paid nothing from it: no Reward Round is ever opened
+ * for the coin. The rate is locked the way a Reward Tax is.
+ */
+export const LiquidityTax = z.object({
+  bps: z.number().int(),
+  /** The transaction in which the platform gave the tax authority up after Graduation; null until then. */
+  locked: z.object({ signature: z.string(), at: z.iso.datetime() }).nullable(),
+});
+export type LiquidityTax = z.infer<typeof LiquidityTax>;
+
 /** What a launch with these modes will do, fixed when it is prepared. */
 export const LaunchModesSummary = z.object({
   /**
@@ -187,6 +218,8 @@ export const LaunchModesSummary = z.object({
    * coin's pool as locked liquidity, or null for a standard coin.
    */
   rewardTax: z.object({ bps: z.number().int(), payout: RewardPayoutAsset, burnBps: RewardBurnBps, liquidityBps: RewardLiquidityBps }).nullable(),
+  /** The tax a Liquidity Launch carries, all of it added to the coin's pool as locked liquidity; null for any other coin. */
+  liquidityTax: z.object({ bps: z.number().int() }).nullable(),
   /** Where the Creator's earnings on the coin go, for good. */
   earningsDestination: CreatorEarningsDestination,
   /**
@@ -228,6 +261,11 @@ export const FirstBuyQuoteQuery = z.object({
     .optional()
     .transform((v) => (v ? (Number(v) as RewardBurnBps) : undefined)),
   rewardLiquidity: rewardLiquidityField,
+  /**
+   * A Liquidity Launch's tax, which the first buy's coins lose on the way to the Creator as they would a Reward Tax;
+   * empty for any other coin. Refused together with `rewardTax`, `rewardBurn` or `rewardLiquidity`, as prepare refuses it.
+   */
+  liquidityTax: rewardTaxField,
   /** A Creator Lock's size in basis points of the supply, which takes its coins out of the sale; empty for none. */
   lockBps: wholeField("lockBps"),
 });

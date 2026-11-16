@@ -5,7 +5,7 @@ import type { Page } from "@playwright/test";
 import { LedgerPage, Revenue } from "@launchpad/contract";
 import {
   allowAirdrops, COIN_PNG, coinEarnings, drain, expect, expectHydrated, expectNoHorizontalOverflow, expectNoTruncatedText, fixedKeypair, forgetDisclaimer, giveCoins,
-  listLaunches, hoverMark, markTooltip, postMarkAt, QUOTES, SEED_CREATOR, SEED_HOLDER, test,
+  LIQUIDITY_LAUNCH, listLaunches, hoverMark, markTooltip, postMarkAt, QUOTES, SEED_CREATOR, SEED_HOLDER, test,
 } from "./fixtures";
 import { AIRDROP_CREATOR, AIRDROP_PAID, AIRDROP_SENDING, EARNINGS_COINS, REWARD_QUOTE } from "./seedData";
 import { chooseQuote, firstBuyField, signButton, signing, summary } from "./launchPage";
@@ -578,6 +578,23 @@ test("launch form as a Reward Launch paid in the Quote Asset, and its signing", 
   await page.mouse.move(0, 0);
   await snap(page, "launch-signing-reward.png");
   await launch.end();
+});
+
+test("launch form as a Liquidity Launch", async ({ page, wallet }) => {
+  await page.goto("/launch");
+  await connectOnForm(page);
+  await fillCoin(page, "Deep Well", "WELL");
+  // The third type (#215): its rate, its line under it, the summary's two rows and the preview card's tag; no Payout
+  // Asset, burn or liquidity row, and the holders gone from where the Creator's earnings may go.
+  await page.getByRole("radiogroup", { name: "Launch type" }).getByRole("radio", { name: new RegExp(`^${LIQUIDITY_LAUNCH.name}`) }).check();
+  await page.getByRole("group", { name: LIQUIDITY_LAUNCH.tax }).getByRole("button", { name: "3%" }).click();
+  await expect(page.getByText(LIQUIDITY_LAUNCH.line("WELL"))).toBeVisible();
+  await expect(page.getByRole("radiogroup", { name: "Creator earnings" }).getByRole("radio")).toHaveCount(3);
+  await copyCheckSettled(page);
+  await previewPriced(page);
+  await page.mouse.move(0, 0);
+  await snap(page, "launch-liquidity.png");
+  expect(wallet.requests).toHaveLength(0);
 });
 
 test("launch form with the Creator's earnings pointed at liquidity", async ({ page, wallet }) => {

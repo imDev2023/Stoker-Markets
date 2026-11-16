@@ -9,6 +9,7 @@ import type {
 } from "@launchpad/contract";
 import { getQuote, listTrades, prepareTrade, reportTransaction } from "@/lib/api";
 import { landedError as landedErrorOf } from "@/lib/transactions";
+import { LIQUIDITY_LAUNCH } from "@/lib/liquidityLaunch";
 import { COIN_DECIMALS, explorerUrl, formatUnits, isSol, parseUnits, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { Disclaimer, hasAcceptedDisclaimer } from "./Disclaimer";
 import { Price } from "./Price";
@@ -293,7 +294,8 @@ export function TradePanel({
   // One "Fees" line in the asset paid (owner, 2026-10-30: no rates anywhere but the Fees page): the platform's and
   // Raydium's fees and any referral fee in the Quote Asset, plus the Quote Asset's own transfer fee where its issuer
   // takes one; in the pool a sell pays the pool's own fee in the coins going in, and a Reward Launch withholds its
-  // Reward Tax in the coin; a buy paid with SOL pays the swap's own fee in SOL in front.
+  // Reward Tax in the coin, as a Liquidity Launch (#215) does its own tax; a buy paid with SOL pays the swap's own fee
+  // in SOL in front.
   const poolFeeInCoins = shown?.venue === "pool" && shown.side === "sell";
   const quoteFees = shown
     ? BigInt(shown.fees.platform) + BigInt(shown.fees.creator) + (poolFeeInCoins ? 0n : BigInt(shown.fees.raydium)) + BigInt(shown.referral?.fee ?? "0") +
@@ -477,7 +479,7 @@ export function TradePanel({
                 </dd>
               </div>
               <div className={styles.fee}>
-                <dt>{shown.venue === "pool" ? "Raydium's pool fees and the platform's" : "Raydium's fee and the Platform Fee"}{shown.referral?.applies ? ", the referral share" : ""}{shown.transferFees.base !== "0" ? `, ${launch.symbol}'s reward tax` : ""}{shown.transferFees.quote !== "0" ? `, ${quoteSymbol}'s transfer fee` : ""}</dt>
+                <dt>{shown.venue === "pool" ? "Raydium's pool fees and the platform's" : "Raydium's fee and the Platform Fee"}{shown.referral?.applies ? ", the referral share" : ""}{shown.transferFees.base !== "0" ? `, ${launch.symbol}'s ${launch.liquidityTax ? LIQUIDITY_LAUNCH.tax : "reward tax"}` : ""}{shown.transferFees.quote !== "0" ? `, ${quoteSymbol}'s transfer fee` : ""}</dt>
                 <dd><Link href="/fees" className={styles.feeLink}>Every fee, explained</Link></dd>
               </div>
             </dl>

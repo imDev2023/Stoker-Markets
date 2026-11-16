@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAirdrop, getCoinEarnings, getCoinRewards, getCreatorLock, getHolders, getLaunch, getPlatform, getQuoteAsset, getRewardRules, getTrust, listTrades } from "@/lib/api";
+import { getAirdrop, getCoinEarnings, getCoinLiquidityTax, getCoinRewards, getCreatorLock, getHolders, getLaunch, getPlatform, getQuoteAsset, getRewardRules, getTrust, listTrades } from "@/lib/api";
 import { explorerUrl, isSol, quoteTicker } from "@/lib/format";
 import { breadcrumbList, clip, pageMeta } from "@/lib/meta";
 import { siteOrigin } from "@/lib/origin";
@@ -9,6 +9,7 @@ import { AirdropCard } from "@/components/AirdropCard";
 import { CoinMarket, type CoinLink } from "@/components/CoinMarket";
 import { EarningsCard } from "@/components/EarningsCard";
 import { JsonLd } from "@/components/JsonLd";
+import { LiquidityTaxCard } from "@/components/LiquidityTaxCard";
 import { QuoteLabelList } from "@/components/QuoteLabels";
 import { RewardsCard } from "@/components/RewardsCard";
 import styles from "./page.module.css";
@@ -38,8 +39,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
  * the graduation bar and the activity under it, the trade panel docked beside it with the pair's other half and, under
  * those, the About block with the description, the launch's details, the coin's links and the addresses: owner,
  * 2026-10-31, the facts belong under the trade panel as the terminals place them), and below the grid only what some
- * coins have: the Quote Asset's labels, the rewards, the Creator's earnings under a rule (ADR 0011) and a finished
- * Airdrop.
+ * coins have: the Quote Asset's labels, the rewards or, for a Liquidity Launch (#215), its tax and what it has added to
+ * the pool, the Creator's earnings under a rule (ADR 0011) and a finished Airdrop.
  */
 export default async function CoinPage({ params, searchParams }: Props) {
   const { mint } = await params;
@@ -52,14 +53,16 @@ export default async function CoinPage({ params, searchParams }: Props) {
     getAirdrop(mint),
   ]);
   if (!launch) notFound();
-  // What only some coins have, read together: a Reward Launch's rewards; the Creator's earnings where they go to a rule
+  // What only some coins have, read together: a Reward Launch's rewards, or a Liquidity Launch's tax (#215), which has
+  // no rewards and takes their card's place; the Creator's earnings where they go to a rule
   // rather than the wallet (ADR 0011); and the Quote Asset, whose card wants its price and liquidity and whose labels
   // are shown for any asset but SOL (#11). A read that fails leaves its card out, never the page.
   // A coin whose Creator's earnings go to its holders also reads the Reward Round rules, which say whether its rounds
   // weigh coins by how long they were kept (ADR 0022); a Reward Launch's rewards carry the rules themselves.
   // A coin with a Creator Lock (ADR 0023) reads where it stands from the chain, for its trust mark and its Creator's claim.
-  const [rewards, earnings, quoteAsset, rules, lock] = await Promise.all([
+  const [rewards, liquidityTax, earnings, quoteAsset, rules, lock] = await Promise.all([
     launch.rewardTax ? getCoinRewards(mint).catch(() => null) : null,
+    launch.liquidityTax ? getCoinLiquidityTax(mint).catch(() => null) : null,
     launch.earningsDestination !== "wallet" ? getCoinEarnings(mint).catch(() => null) : null,
     getQuoteAsset(launch.quote.mint).catch(() => null),
     launch.earningsDestination === "holders" ? getRewardRules().catch(() => null) : null,
@@ -93,7 +96,7 @@ export default async function CoinPage({ params, searchParams }: Props) {
         initialTrust={trust} initialLock={lock} renderedAt={Date.now()} referrer={referrer} airdrop={airdropDone ? null : airdrop}
       />
 
-      {(quoteAsset && !isSol(launch.quote)) || rewards || earnings || airdropDone ? (
+      {(quoteAsset && !isSol(launch.quote)) || rewards || liquidityTax || earnings || airdropDone ? (
         <section className={`grid ${styles.more}`} aria-label="More about this coin">
 
           {quoteAsset && !isSol(launch.quote) && (
@@ -108,6 +111,11 @@ export default async function CoinPage({ params, searchParams }: Props) {
             </section>
           )}
           {rewards && <div className={styles.wide}><RewardsCard rewards={rewards} symbol={launch.symbol} platform={platform} /></div>}
+          {liquidityTax && (
+            <div className={styles.wide}>
+              <LiquidityTaxCard tax={liquidityTax} symbol={launch.symbol} quote={launch.quote} graduated={launch.graduation !== null} platform={platform} />
+            </div>
+          )}
           {earnings && <div className={styles.wide}><EarningsCard earnings={earnings} symbol={launch.symbol} platform={platform} weighted={weighted} /></div>}
           {airdropDone && airdrop && <div className={styles.wide}><AirdropCard initial={airdrop} symbol={launch.symbol} platform={platform} /></div>}
         </section>

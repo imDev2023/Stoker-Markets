@@ -3,7 +3,7 @@
 // long a wallet has kept its coins. Only a check writes the lots; a round's snapshot reads them (`snapshot.ts`).
 import { PublicKey, type Connection } from "@solana/web3.js";
 import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
-import { and, asc, eq, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
+import { and, asc, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { holdingChecks, holdingLots, launches, type Db } from "@launchpad/db";
 import { readCoinAccounts, walletBalances } from "./holders";
 import { reconcileLots, type Lot } from "./weights";
@@ -33,7 +33,7 @@ export const holdingDay = (at: Date, daySeconds: number) => Math.floor(at.getTim
 
 /**
  * The run's Holding Checks: at most `limit` of the coins that can have a round (every Reward Launch, and every coin
- * whose Creator Earnings go to its holders, both fixed at launch) and have no check in the Holding Day `now` falls in.
+ * whose Creator Earnings go to its holders, both fixed at launch; never a Liquidity Launch, which pays holders nothing, #215) and have no check in the Holding Day `now` falls in.
  * The coins never checked come first, then the ones unchecked for longest. One coin's failure is a problem in the
  * summary and never keeps the others from being checked.
  */
@@ -46,7 +46,7 @@ export async function runHoldingChecks(
     .select({ mint: launches.mint, symbol: launches.symbol, taxed: sql<boolean>`${launches.rewardTaxBps} is not null` })
     .from(launches)
     .leftJoin(latest, eq(latest.mint, launches.mint))
-    .where(and(or(isNotNull(launches.rewardTaxBps), eq(launches.earningsDestination, "holders")), or(isNull(latest.day), lt(latest.day, day))))
+    .where(and(or(eq(launches.taxKind, "reward"), eq(launches.earningsDestination, "holders")), or(isNull(latest.day), lt(latest.day, day))))
     .orderBy(sql`${latest.day} asc nulls first`, asc(launches.createdSlot), asc(launches.mint));
   const summary: HoldingChecksSummary = { day, checked: [], leftForLater: Math.max(0, due.length - limit) };
   for (const coin of due.slice(0, limit)) {

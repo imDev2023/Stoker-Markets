@@ -39,7 +39,7 @@ operatorViewRoutes.get("/overview", async (c) => {
       .leftJoin(curves, eq(curves.mint, launches.mint))
       .leftJoin(graduations, eq(graduations.mint, launches.mint))
       .groupBy(status),
-    db.select({ n: count() }).from(launches).where(sql`${launches.rewardTaxBps} is not null`),
+    db.select({ n: count() }).from(launches).where(eq(launches.taxKind, "reward")),
     db.select({ status: rewardRounds.status, n: count() }).from(rewardRounds).groupBy(rewardRounds.status),
     db.select({ n: sql<number>`count(distinct ${ledgerEntries.signature})::int` }).from(ledgerEntries).where(sql`${ledgerEntries.kind} in ('burn', 'flywheel')`),
     db.selectDistinctOn([jobRuns.job]).from(jobRuns).orderBy(jobRuns.job, desc(jobRuns.startedAt)),
