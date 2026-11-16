@@ -33,6 +33,13 @@ export const launches = pgTable(
      */
     rewardBurnBps: integer("reward_burn_bps"),
     /**
+     * A Reward Launch's Reward Liquidity (#214, ADR 0006): the share of every harvested Reward Tax the Reward Engine keeps
+     * apart and adds to the coin's own pool as locked liquidity once it has graduated, in basis points (0, 1000, 2500 or
+     * 5000; with the Reward Burn at most 5000). Copied from the launch draft when the launch is indexed and never changed;
+     * a Reward Launch made without our API keeps none (0). Null for a standard coin.
+     */
+    rewardLiquidityBps: integer("reward_liquidity_bps"),
+    /**
      * Where the Creator's earnings on the coin go (ADR 0011, #113, #184): their wallet, the coin's holders, a buyback
      * that burns the coin, or a buyback that adds locked liquidity to its pool. Copied from the launch draft when the
      * launch is indexed and never changed; a coin launched without our API pays the wallet.
@@ -81,6 +88,7 @@ export const launches = pgTable(
     index("launches_name_key_idx").on(t.nameKey),
     index("launches_symbol_key_idx").on(t.symbolKey),
     check("launches_reward_burn_bps", sql`${t.rewardBurnBps} between 0 and 5000`),
+    check("launches_reward_liquidity_bps", sql`${t.rewardLiquidityBps} between 0 and 5000 and coalesce(${t.rewardBurnBps}, 0) + ${t.rewardLiquidityBps} <= 5000`),
     check(
       "launches_creator_lock",
       sql`(${t.lockedAmount} is null and ${t.lockCliffSeconds} is null and ${t.lockUnlockSeconds} is null) or (${t.lockedAmount} > 0 and ${t.lockCliffSeconds} >= 0 and ${t.lockUnlockSeconds} >= 0)`,
@@ -307,6 +315,8 @@ export const launchDrafts = pgTable(
     rewardPayout: text("reward_payout", { enum: ["coin", "quote"] }),
     /** The Reward Burn the Creator chose for a Reward Launch, basis points of every harvest (#183); null for a standard Launch. */
     rewardBurnBps: integer("reward_burn_bps"),
+    /** The Reward Liquidity the Creator chose for a Reward Launch, basis points of every harvest (#214); null for a standard Launch. */
+    rewardLiquidityBps: integer("reward_liquidity_bps"),
     /** Where the Creator chose their earnings on the coin to go (ADR 0011). */
     earningsDestination: text("earnings_destination", { enum: ["wallet", "holders", "burn", "liquidity"] }).notNull().default("wallet"),
     /**
@@ -323,6 +333,10 @@ export const launchDrafts = pgTable(
   (t) => [
     index("launch_drafts_creator_idx").on(t.creator),
     check("launch_drafts_reward_burn_bps", sql`${t.rewardBurnBps} between 0 and 5000`),
+    check(
+      "launch_drafts_reward_liquidity_bps",
+      sql`${t.rewardLiquidityBps} between 0 and 5000 and coalesce(${t.rewardBurnBps}, 0) + ${t.rewardLiquidityBps} <= 5000`,
+    ),
     check(
       "launch_drafts_creator_lock",
       sql`(${t.creatorLockBps} is null and ${t.creatorLockCliffSeconds} is null and ${t.creatorLockUnlockSeconds} is null) or (${t.creatorLockBps} between 1 and 2000 and ${t.creatorLockCliffSeconds} >= 0 and ${t.creatorLockUnlockSeconds} >= 0)`,
@@ -378,7 +392,7 @@ export const ledgerEntries = pgTable(
     signature: text("signature").notNull(),
     /** Position among the movements in the transaction. */
     eventIndex: integer("event_index").notNull(),
-    /** platform_fee, pool_fee, fee_key, sweep, creator_forward, burn, flywheel, arweave_top_up, metadata_upload, reward_sale, graduation_fee, holder_dividend, creator_burn, creator_liquidity, rebate or reward_burn so far. */
+    /** platform_fee, pool_fee, fee_key, sweep, creator_forward, burn, flywheel, arweave_top_up, metadata_upload, reward_sale, graduation_fee, holder_dividend, creator_burn, creator_liquidity, rebate, reward_burn, burn_liquidity, flywheel_liquidity or reward_liquidity so far. */
     kind: text("kind").notNull(),
     /** What moved: a Quote Asset or a coin; SOL as the wrapped-SOL mint. */
     assetMint: text("asset_mint").notNull(),

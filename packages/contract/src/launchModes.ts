@@ -46,6 +46,21 @@ export const RewardBurnBps = z.union([z.literal(0), z.literal(1000), z.literal(2
 export type RewardBurnBps = z.infer<typeof RewardBurnBps>;
 
 /**
+ * The Reward Liquidity (#214, ADR 0006 amended): the share of every Reward Tax the Reward Engine collects that it keeps
+ * apart and adds to the coin's own pool as locked liquidity once the coin has graduated, instead of paying it out, in
+ * basis points of the harvest, fixed for the coin's life like the Reward Burn and offered in the same steps.
+ */
+export const REWARD_LIQUIDITY_SHARES = [0, 1000, 2500, 5000] as const;
+export const RewardLiquidityBps = z.union([z.literal(0), z.literal(1000), z.literal(2500), z.literal(5000)]);
+export type RewardLiquidityBps = z.infer<typeof RewardLiquidityBps>;
+
+/**
+ * The most of every harvest the Reward Burn and the Reward Liquidity may take together, in basis points: holders always
+ * keep at least half of every reward (owner, 2026-11-15, #214).
+ */
+export const REWARD_SHARES_MAX_BPS = 5000;
+
+/**
  * Where a Creator's earnings on a coin go (ADR 0011, #113, #184), chosen on the launch form and fixed for the coin's life:
  * - `wallet`: to the Creator's wallet, as Creator Forwards (ADR 0009);
  * - `holders`: to the coin's holders, pro rata in the Quote Asset, through Reward Rounds;
@@ -95,6 +110,11 @@ const rewardTaxField = z
   .optional()
   .transform((v) => (v ? (Number(v) as RewardTaxBps) : undefined));
 
+const rewardLiquidityField = z
+  .union([z.enum(["0", "1000", "2500", "5000"]), z.literal("")])
+  .optional()
+  .transform((v) => (v ? (Number(v) as RewardLiquidityBps) : undefined));
+
 /** Launch-form fields for the launch modes; multipart carries the airdrop list as JSON text. */
 export const LaunchModeFields = z.object({
   /**
@@ -109,6 +129,11 @@ export const LaunchModeFields = z.object({
     .union([z.enum(["0", "1000", "2500", "5000"]), z.literal("")])
     .optional()
     .transform((v) => (v ? (Number(v) as RewardBurnBps) : undefined)),
+  /**
+   * A Reward Launch's Reward Liquidity in basis points of every harvest (0, 1000, 2500 or 5000); 0 unless set. Refused
+   * without `rewardTax`, and when it and `rewardBurn` add up to more than 5000.
+   */
+  rewardLiquidity: rewardLiquidityField,
   /** Where the Creator's earnings on the coin go, for good; `wallet` unless set. Any coin may choose any of them. */
   earningsDestination: z.union([CreatorEarningsDestination, z.literal("")]).optional().transform((v) => v || undefined),
   /**
@@ -148,6 +173,8 @@ export const RewardTax = z.object({
   payout: RewardPayoutAsset,
   /** The Reward Burn: the share of every harvested tax burned before anything is sold or paid, basis points, fixed at launch; 0 for none. */
   burnBps: z.number().int(),
+  /** The Reward Liquidity: the share of every harvested tax added to the coin's pool as locked liquidity, basis points, fixed at launch; 0 for none. */
+  liquidityBps: z.number().int(),
   /** The transaction in which the platform gave the tax authority up after Graduation; null until then. */
   locked: z.object({ signature: z.string(), at: z.iso.datetime() }).nullable(),
 });
@@ -155,8 +182,11 @@ export type RewardTax = z.infer<typeof RewardTax>;
 
 /** What a launch with these modes will do, fixed when it is prepared. */
 export const LaunchModesSummary = z.object({
-  /** The Reward Tax the coin carries, what it is paid out in and the share of it burned, or null for a standard coin. */
-  rewardTax: z.object({ bps: z.number().int(), payout: RewardPayoutAsset, burnBps: RewardBurnBps }).nullable(),
+  /**
+   * The Reward Tax the coin carries, what it is paid out in, the share of it burned and the share of it added to the
+   * coin's pool as locked liquidity, or null for a standard coin.
+   */
+  rewardTax: z.object({ bps: z.number().int(), payout: RewardPayoutAsset, burnBps: RewardBurnBps, liquidityBps: RewardLiquidityBps }).nullable(),
   /** Where the Creator's earnings on the coin go, for good. */
   earningsDestination: CreatorEarningsDestination,
   /**
@@ -188,6 +218,16 @@ export const FirstBuyQuoteQuery = z.object({
   firstBuy: positiveRaw,
   /** The Reward Tax of the coin, which the first buy's coins lose on the way to the Creator; empty for a standard coin. */
   rewardTax: rewardTaxField,
+  /**
+   * The Reward Burn and the Reward Liquidity the coin would carry, in basis points of every harvest. Neither moves the
+   * price; each is checked as prepare checks it (refused without `rewardTax`, together at most 5000), so a form can say
+   * so before anything is prepared.
+   */
+  rewardBurn: z
+    .union([z.enum(["0", "1000", "2500", "5000"]), z.literal("")])
+    .optional()
+    .transform((v) => (v ? (Number(v) as RewardBurnBps) : undefined)),
+  rewardLiquidity: rewardLiquidityField,
   /** A Creator Lock's size in basis points of the supply, which takes its coins out of the sale; empty for none. */
   lockBps: wholeField("lockBps"),
 });

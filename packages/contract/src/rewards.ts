@@ -228,6 +228,23 @@ export const CoinRewards = z.object({
     burned: raw,
     recent: z.array(z.object({ signature: z.string(), coins: raw, time: z.iso.datetime() })),
   }),
+  /**
+   * The Reward Liquidity (#214): the share of every harvest kept apart and added to the coin's pool as locked liquidity
+   * once the coin has graduated, fixed at launch; the coins kept and not added yet (they wait for Graduation, and for
+   * enough to be worth a locked position of its own); what every addition has put into the pool so far as the Ledger
+   * records it; and the latest additions, newest first. `bps` 0 keeps nothing.
+   */
+  liquidity: z.object({
+    bps: z.number().int(),
+    /** Coins kept for the pool and not added yet, raw units. */
+    waiting: raw,
+    /** Quote Asset an addition's sale brought in beyond what its deposit took, waiting for the next addition, raw units. */
+    waitingQuote: raw,
+    /** Coins and Quote Asset every addition so far put into the pool, raw units. */
+    coinsAdded: raw,
+    quoteAdded: raw,
+    recent: z.array(z.object({ signature: z.string(), coins: raw, quote: raw, position: z.string(), time: z.iso.datetime() })),
+  }),
   rules: RewardRuleVersion.nullable(),
   rounds: z.array(RewardRoundSummary),
 });

@@ -47,6 +47,8 @@ export type LaunchForm = {
   rewardPayout?: string;
   /** A Reward Launch's Reward Burn in basis points, "0", "1000", "2500" or "5000"; the API takes "0" when left out (#183). */
   rewardBurn?: string;
+  /** A Reward Launch's Reward Liquidity in basis points, "0", "1000", "2500" or "5000"; the API takes "0" when left out (#214). */
+  rewardLiquidity?: string;
   /** Where the Creator's earnings go: "wallet", "holders", "burn" or "liquidity"; the API takes "wallet" when left out. */
   earningsDestination?: string;
   /** A Creator Lock (ADR 0023): its size in basis points of the supply, and its cliff and unlock time in seconds. */

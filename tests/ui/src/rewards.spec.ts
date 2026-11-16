@@ -1,4 +1,4 @@
-// A Reward Launch's Payout Asset (#43) and Reward Burn (#183) in the web app: chosen with the launch type, repeated in
+// A Reward Launch's Payout Asset (#43), Reward Burn (#183) and Reward Liquidity (#214) in the web app: chosen with the launch type, repeated in
 // the review, and stated on the coin page, where the Holder Rewards card explains the sales it will make and the share it burns. And Volume Rebates (#196, ADR 0021)
 // on the Rewards page: a Rebate Week announced, traded, settled and paid, as its traders see it.
 import type { Locator, Page } from "@playwright/test";
@@ -36,7 +36,9 @@ test("a Creator launches a Reward Launch paid in SOL, and the coin page says so"
   await expect(types.getByRole("radio", { name: /Holder rewards/ })).toHaveCount(0);
   await expect(terms).toHaveCount(0);
   const burn = page.getByRole("group", { name: "Reward Burn" });
+  const liquidity = page.getByRole("group", { name: "Reward Liquidity" });
   await expect(burn).toHaveCount(0);
+  await expect(liquidity).toHaveCount(0);
   await types.getByRole("radio", { name: "Reward Launch, paid in the coin" }).check();
   // Five rates, 1% to 5% (owner, 2026-11-07), the lowest chosen until the Creator picks another.
   await expect(terms.getByRole("button")).toHaveText(["1%", "2%", "3%", "4%", "5%"]);
@@ -57,20 +59,33 @@ test("a Creator launches a Reward Launch paid in SOL, and the coin page says so"
   );
   await burn.getByRole("button", { name: "25%" }).click();
   await expect(burn).toContainText("A quarter of every reward is burned before the rest is sold. Fixed at launch.");
+  // The Reward Liquidity (#214): the same steps, none until picked, and with the burn at most half of every reward.
+  await expect(liquidity.getByRole("button")).toHaveText(["None", "10%", "25%", "50%"]);
+  await expect(liquidity.getByRole("button", { name: "None" })).toHaveAttribute("aria-pressed", "true");
+  await expect(liquidity).toContainText("Add a share of every reward to DIVD's pool as locked liquidity, to deepen its market. Fixed at launch.");
+  await expect(summary(page)).not.toContainText("Reward Liquidity");
+  await liquidity.getByRole("button", { name: "50%" }).click();
+  await expect(liquidity.getByRole("alert")).toHaveText(
+    "Holders keep at least half of every reward: burned and to liquidity can be half of it together, at most. Choose smaller shares.",
+  );
+  await liquidity.getByRole("button", { name: "25%" }).click();
+  await expect(liquidity.getByRole("alert")).toHaveCount(0);
+  await expect(liquidity).toContainText("A quarter of every reward is added to DIVD's pool once it graduates, locked for good. Fixed at launch.");
 
   const prepared = nextPrepared(page);
   // The summary says the launch type, and the preview card carries the tax as the board's cards do.
   await expect(summary(page)).toContainText(/Launch type\s*Reward Launch, 4%/);
   // The share in words, never the rate (owner, 2026-10-30: the figures are on /fees).
   await expect(summary(page)).toContainText(/Reward Burn\s*A quarter of every reward/);
-  // With a Reward Burn, the preview's tag says both: the tax to holders and the share of it burned (the owner's review of #213).
-  await expect(page.getByRole("region", { name: "Preview" })).toContainText("4% to holders, a quarter burned");
+  await expect(summary(page)).toContainText(/Reward Liquidity\s*A quarter of every reward, to its pool/);
+  // The preview's tag says every share: the tax to holders, the share burned and the share added to the pool (#213, #214).
+  await expect(page.getByRole("region", { name: "Preview" })).toContainText("4% to holders, a quarter burned, a quarter to liquidity");
   await signButton(page).click();
   const launch = await prepared;
-  expect(launch.rewardTax).toEqual({ bps: 400, payout: "quote", burnBps: 2500 });
+  expect(launch.rewardTax).toEqual({ bps: 400, payout: "quote", burnBps: 2500, liquidityBps: 2500 });
   await page.waitForURL(`**/coin/${launch.mint}`);
   expect(wallet.requests).toHaveLength(1);
-  await expect(page.getByText("4% of every transfer, paid out to holders in SOL, a quarter of it burned first")).toBeVisible();
+  await expect(page.getByText("4% of every transfer, paid out to holders in SOL, a quarter of it burned first, a quarter of it added to its pool, locked")).toBeVisible();
   const card = page.getByRole("region", { name: "Holder rewards" });
   await expect(card).toContainText("The tax is sold for SOL in small slices, at most 0.5% of the coins in the market per run");
   await expect(card).toContainText("Waiting to be sold");
@@ -78,6 +93,9 @@ test("a Creator launches a Reward Launch paid in SOL, and the coin page says so"
   await expect(card).toContainText("No round yet: the first runs once enough tax has been sold.");
   await expect(card).toContainText("A quarter of every reward is burned when it is collected, before anything is sold, fixed at launch.");
   await expect(card).toContainText(/Burned so far\s*0 DIVD/);
+  await expect(card).toContainText("A quarter of every reward is added to its pool, locked: kept apart when it is collected, and added once DIVD has graduated, fixed at launch.");
+  await expect(card).toContainText(/Kept for the pool\s*0 DIVD/);
+  await expect(card).toContainText(/Added to the pool so far\s*0 DIVD/);
 });
 
 // Volume rebates. A Rebate Week lasts a minute on this stack (`global-setup.ts`), so one ends while the test watches.

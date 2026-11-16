@@ -27,6 +27,7 @@ const KIND: Record<LedgerKind, string> = {
   burn_liquidity: "Burn added as locked liquidity",
   flywheel_liquidity: "Flywheel added as locked liquidity",
   reward_burn: "Reward Tax burned",
+  reward_liquidity: "Reward Tax added as locked liquidity",
 };
 
 /** Entries that move revenue out of the operations wallet rather than into it. */
@@ -46,7 +47,7 @@ const inItsCoin = (e: LedgerEntry) => e.launch?.mint === e.asset.mint;
  * transaction, so they are a count beside the money spent, neither revenue in nor revenue out. So is a Reward Burn
  * (#183): the holders' tax a coin burns instead of paying out, which was never revenue.
  */
-const isCoinCount = (e: LedgerEntry) => (BUYBACK.has(e.kind) && inItsCoin(e)) || e.kind === "reward_burn";
+const isCoinCount = (e: LedgerEntry) => (BUYBACK.has(e.kind) && inItsCoin(e)) || e.kind === "reward_burn" || e.kind === "reward_liquidity";
 
 /**
  * A Reward Sale is two entries: the coins that left the wallet, and the Quote Asset that came in (the holders' pot, not
@@ -90,6 +91,17 @@ function origin(e: LedgerEntry, platform: PlatformInfo) {
   }
   if (e.kind === "reward_burn")
     return e.launch ? <>Burned from the holders&apos; tax of <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link>, not paid out</> : "Burned from a coin's Reward Tax";
+  // The Reward Liquidity (#214): the holders' tax a coin keeps for its pool, part sold for the Quote Asset half and the
+  // pair added to the pool, locked. The holders' tax, never revenue, so every entry is a count.
+  if (e.kind === "reward_liquidity") {
+    if (!e.launch) return "Added to a pool from a coin's Reward Tax, locked";
+    const coin = <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link>;
+    if (!inItsCoin(e)) return <>Paired from the holders&apos; tax of {coin}, into its pool, locked for good</>;
+    // The first entry is the sale; the second and third went into the locked position.
+    return e.index === 0
+      ? <>Sold from the holders&apos; tax of {coin} for the other half of the pair</>
+      : <>Added from the holders&apos; tax of {coin} to its pool, locked for good</>;
+  }
   if (e.kind === "burn" || e.kind === "flywheel")
     return e.launch ? <>Bought and burned <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link></> : "Bought and burned";
   if (e.launch) return <>From <Link href={`/coin/${e.launch.mint}`}>{e.launch.symbol}</Link></>;

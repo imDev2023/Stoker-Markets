@@ -26,6 +26,7 @@ function cardOf(launch: LaunchSummary): CoinCardData {
     volume: formatMarketValue(launch.market.volume24h, launch.quote),
     rewardTaxBps: launch.rewardTax?.bps ?? null,
     rewardBurnBps: launch.rewardTax?.burnBps ?? 0,
+    rewardLiquidityBps: launch.rewardTax?.liquidityBps ?? 0,
   };
 }
 

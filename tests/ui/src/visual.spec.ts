@@ -566,6 +566,9 @@ test("launch form as a Reward Launch paid in the Quote Asset, and its signing", 
   // A Reward Burn picked (#183), so the shot holds its control, its line and the summary's row in words.
   await page.getByRole("group", { name: "Reward Burn" }).getByRole("button", { name: "25%" }).click();
   await expect(page.getByText(/^A quarter of every reward is burned before the rest is sold/)).toBeVisible();
+  // And a Reward Liquidity (#214), so it holds the second row, its line, the summary's row and the preview card's longest tag.
+  await page.getByRole("group", { name: "Reward Liquidity" }).getByRole("button", { name: "25%" }).click();
+  await expect(page.getByText(/^A quarter of every reward is added to YLD's pool once it graduates/)).toBeVisible();
   await copyCheckSettled(page);
   await previewPriced(page);
   await page.mouse.move(0, 0);

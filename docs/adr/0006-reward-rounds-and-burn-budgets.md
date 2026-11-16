@@ -1,6 +1,6 @@
 # Reward Rounds pay in the coin or the Quote Asset from the operations wallet; Burn and Flywheel budgets come from the Ledger
 
-Status: implemented on the local chain (#17, #18); amended on 2026-10-03 by the owner's decision in #43 (the Payout Asset, below), and on 2026-11-13 by #183 (the Reward Burn, below).
+Status: implemented on the local chain (#17, #18); amended on 2026-10-03 by the owner's decision in #43 (the Payout Asset, below), on 2026-11-13 by #183 (the Reward Burn, below), and on 2026-11-15 by #214 (the Reward Liquidity, below).
 
 A Reward Launch's coin is a Token-2022 mint whose transfer fee is the Reward Tax.
 LaunchLab's own authority holds the fee-config authority until Graduation, and the migration hands it to the PlatformConfig's fee-extension authority, our operations wallet, which gives it up for good in the next minute (the `reward-tax-lock` job), so nobody can ever change a coin's tax.
@@ -124,3 +124,41 @@ The Fee Key is put on record as the addition lands, and the Fee Collector's sear
 Liquidity is added only to a pool paired with SOL: a coin paired with another Quote Asset is skipped and its share waits, as a coin without a SOL route is.
 The Burn's two-step buy does not carry over, because the route's swap and the addition, which alone takes up to 1,226 of a transaction's 1,232 bytes, do not fit one transaction, and in two the Quote Asset between them would sit in the operations wallet outside every budget.
 The Platform Token is paired with SOL (the runbook, section 10), so only the Flywheel's picks paired with something else wait.
+
+## Amendment (2026-11-15, #214): the Reward Liquidity
+
+The owner, trying the Creator Lock on a local stack, asked whether a Reward Launch's tax could go into liquidity as well as being burned, and chose two rows on the launch form: a share burned and a share added to the coin's pool.
+So a Reward Launch fixes a second share beside the Reward Burn, as unchangeable as it: the Reward Liquidity, the share of every harvested Reward Tax added to the coin's own pool as locked liquidity instead of paid out, in the same steps (`REWARD_LIQUIDITY_SHARES`: 0, 1000, 2500 or 5000 basis points).
+The two together are at most half of every harvest (`REWARD_SHARES_MAX_BPS`, 5000), so holders always keep at least half of every reward; the launch form refuses a larger sum in its own words, and prepare and the launch quote refuse it with 400, as they refuse a share without a Reward Tax.
+It is kept with the launch draft (`reward_liquidity_bps`), copied to the Launch by the Indexer, rebuilt unchanged by a retry and never updated; a Reward Launch made without our API keeps none, and both tables check the sum.
+
+### How a harvest keeps the share
+
+The share rides in the withdrawal's transaction with the Reward Burn: after the withdrawal (and the burn), it moves from the operations wallet's associated account of the coin, which holds the holders' pot, to the Reward Liquidity's own account, a token account the operations wallet owns at an address derived from it and the coin (`liquidityCoinAccount`, "reward", never the Creator Earnings rule's account of the same coin).
+Every Token-2022 transfer withholds the coin's tax in the receiving account, so the same transaction withdraws what the move withheld straight back into that account, which only the withdraw authority can do: the kept share pays no tax for being kept apart, and pays the tax once, as every trade does, when it goes into the pool.
+Nothing else holds it, so its balance is the share waiting, read from the chain, and no table records it.
+The transaction is written down and settled as the Reward Burn's is, under `reward_split`, so a run that dies keeps no harvest twice, and while one may still land the coin's tax is not collected again.
+
+Everything after it sees only what is left: a coin payout's round pays what remains after the burn and the share, and a Quote Asset payout's Reward Sales sell only that.
+
+### How the share is added
+
+Before Graduation the share waits, since the curve has no pool.
+After it, once what is kept is worth `LIQUIDITY_ADD_MIN_LAMPORTS` at the pool's price (every addition is a locked position of its own), one transaction sells part of the kept coins in the pool for its Quote Asset (`swap_base_input`, at most 1% under its quote), deposits what is then on hand of each for an exact number of LP tokens, and locks them with Raydium's lock program, which mints the position's Fee Key to the operations wallet, exactly as a Creator's `liquidity` destination does (ADR 0011), with the same slack and the same Platform Lookup Table.
+The deposit draws only on the Reward Liquidity's own two accounts, the coin account and a Quote Asset account opened by the first addition and kept, so what the deposit leaves of either, the slack and anything the sale brought in above its least, stays there for the next addition, and none of the holders' tax ever mixes with the platform's money.
+Any Quote Asset works: the sale is in the coin's own pool, so no route is needed.
+The addition is written down in `job_transactions` (`reward_liquidity`) before it is sent and settled by its signature, and while one may still land the coin adds nothing more; the coins it adds are its account's own, so no run can add them twice.
+An addition that fails is a problem of the run, and never keeps the coin's round from being opened or paid.
+
+### The Ledger
+
+A landed addition is up to three `reward_liquidity` entries on its signature: the coins its sale took into the pool (index 0, to the pool), then the coins and the Quote Asset its deposit put in (indexes 1 and 2, to the locked position).
+It is the holders' tax, so it is never revenue and never a spending of any row of the Budget Table; the position's rent and the network fee are the platform's, as for a Creator's addition.
+The Fee Key is put on record as the addition lands, and the Fee Collector collects the position's fees as `fee_key` revenue from its next run (the second call the owner may overrule: the pool fees go to the platform's operations wallet through the Fee Key).
+`GET /v1/launches/:mint/rewards` carries `liquidity`: the share, the coins and Quote Asset waiting, what every addition has added, and the latest additions with their positions.
+
+### Consequences of the third amendment
+
+- Holders of a coin with a Reward Liquidity receive less than the tax's face value by the share; the pool deepens with every addition, and the position's fees are the platform's.
+- A Quote Asset payout with a Reward Liquidity sells less into its own chart through Reward Sales, though each addition sells part of its coins into the pool.
+- The keep costs two instructions in a transaction the engine sent anyway; each addition costs a transaction and a locked position's rent, which the minimum keeps rare.

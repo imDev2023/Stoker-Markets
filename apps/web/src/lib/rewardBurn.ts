@@ -16,3 +16,16 @@ export function burnShareTitle(bps: RewardBurnBps | number): string | null {
   const words = burnShareWords(bps);
   return words && words[0]!.toUpperCase() + words.slice(1);
 }
+
+/**
+ * A Reward Launch's two shares (#183, #214) as a card's short tail: ", a quarter burned, a quarter to liquidity", or ""
+ * with neither. The words are the Reward Burn's, which the Reward Liquidity shares, so "a quarter" reads the same on
+ * either.
+ */
+export function rewardSharesTail(burnBps: number, liquidityBps: number): string {
+  const parts = [
+    burnShareWords(burnBps) && `${burnShareWords(burnBps)} burned`,
+    burnShareWords(liquidityBps) && `${burnShareWords(liquidityBps)} to liquidity`,
+  ].filter(Boolean);
+  return parts.length ? `, ${parts.join(", ")}` : "";
+}

@@ -60,14 +60,14 @@ describe("Reward Burn", () => {
     expect((await prepare({ creator, rewardTax: "300", rewardBurn: "10000" })).status).toBe(400);
     // Left out, a Reward Launch burns nothing, as every one did before.
     const plain = await prepare({ creator, rewardTax: "300" });
-    expect(PreparedLaunch.parse(await plain.json()).rewardTax).toEqual({ bps: 300, payout: "coin", burnBps: 0 });
+    expect(PreparedLaunch.parse(await plain.json()).rewardTax).toEqual({ bps: 300, payout: "coin", burnBps: 0, liquidityBps: 0 });
     const res = await prepare({ creator, rewardTax: "300", rewardPayout: "quote", rewardBurn: "1000" });
     const prepared = PreparedLaunch.parse(await res.json());
-    expect(prepared.rewardTax).toEqual({ bps: 300, payout: "quote", burnBps: 1000 });
+    expect(prepared.rewardTax).toEqual({ bps: 300, payout: "quote", burnBps: 1000, liquidityBps: 0 });
     // A retry rebuilds the same launch from the draft, the Reward Burn with it.
     const retry = await api(`/v1/launches/${prepared.mint}/prepare`, { method: "POST" });
     expect(retry.status, await retry.clone().text()).toBe(200);
-    expect(PreparedLaunch.parse(await retry.json()).rewardTax).toEqual({ bps: 300, payout: "quote", burnBps: 1000 });
+    expect(PreparedLaunch.parse(await retry.json()).rewardTax).toEqual({ bps: 300, payout: "quote", burnBps: 1000, liquidityBps: 0 });
   });
 
   it("burns its share of every harvest in the withdrawal, on the Ledger and never revenue, and pays holders the rest in the coin", async () => {

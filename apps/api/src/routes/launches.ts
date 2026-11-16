@@ -185,6 +185,7 @@ function toSummary(cfg: Config, r: Row, creatorTier: CoinCreatorTier | null = nu
             bps: l.rewardTaxBps,
             payout: l.rewardPayout ?? "coin",
             burnBps: l.rewardBurnBps ?? 0,
+            liquidityBps: l.rewardLiquidityBps ?? 0,
             locked: l.rewardTaxLockedSignature && l.rewardTaxLockedAt ? { signature: l.rewardTaxLockedSignature, at: l.rewardTaxLockedAt.toISOString() } : null,
           },
     earningsDestination: l.earningsDestination,

@@ -6,7 +6,7 @@ import {
 import bs58 from "bs58";
 import BN from "bn.js";
 import { cpmmCoder, launchlabCoder, lockCoder } from "./coder";
-import { depositIx, poolSides, poolSwap, poolSwapExactOut, swapBaseOutputIx, type Pool, type PoolSwap, type PoolToken } from "./cpmm";
+import { depositIx, poolSides, poolSwap, poolSwapExactOut, swapBaseInputIx, swapBaseOutputIx, type Pool, type PoolSwap, type PoolToken } from "./cpmm";
 import { programDataLogs, type RawTransaction } from "./decode";
 import { cpmmPdas, lockPdas, metadataPda } from "./pda";
 import { METADATA_PROGRAM, WSOL_MINT, type Programs } from "./programs";
@@ -168,6 +168,112 @@ export function planLiquidityAddition(pool: Pool, coin: PublicKey, amount: BN, h
   };
 }
 
+/**
+ * One addition of a Reward Launch's Reward Liquidity (#214), as planned from a pool: the kept coins it sells for the
+ * Quote Asset half, and the deposit of what is then on hand of each.
+ */
+export type RewardLiquidityAddition = {
+  /** The sale: exactly `coins` leave the coin account for at least `minAmountOut` of the Quote Asset. Null when the Quote Asset on hand already pairs every coin. */
+  sale: { coins: BN; amountOut: BN; minAmountOut: BN } | null;
+  /** The LP tokens the deposit mints and the lock takes. */
+  lpAmount: BN;
+  /** The deposit as the pool stands right after the sale, per token in the pool's order. */
+  deposit: PoolDeposit;
+  coins: DepositSide;
+  quote: DepositSide;
+};
+
+/**
+ * Plans an addition from `coins` kept in the Reward Liquidity's coin account and `quote` already in its Quote Asset
+ * account from earlier additions. It sells as many coins as leave enough to pair the Quote Asset then on hand, less the
+ * slack: about half each way. The deposit may take everything in the two accounts, which hold nothing but the Reward
+ * Liquidity's own; what it leaves (the slack, and a sale that brought in more than its least) stays there for the next
+ * addition. Null when the coins add no liquidity at all.
+ */
+export function planRewardLiquidityAddition(pool: Pool, coin: PublicKey, coins: BN, quote: BN): RewardLiquidityAddition | null {
+  const sides = poolSides(pool, coin);
+  if (sides.base.reserve.isZero() || sides.quote.reserve.isZero() || pool.lpSupply.isZero()) return null;
+  const coinIsToken0 = pool.tokens[0].mint.equals(sides.base.mint);
+  const attempt = (sold: BN) => {
+    const swap = sold.isZero() ? null : poolSwap(pool, coin, sold);
+    if (swap && swap.amountOut.isZero()) return null;
+    const minAmountOut = swap ? swap.amountOut.muln(10_000 - LIQUIDITY_BUY_SLIPPAGE_BPS).div(BPS) : new BN(0);
+    const after = swap ? poolAfterSwap(pool, coin, swap) : pool;
+    const now = poolSides(after, coin);
+    const coinsLeft = coins.sub(sold);
+    const quoteOnHand = quote.add(minAmountOut);
+    const byCoins = lpBackedBy(after, now.base, coinsLeft.muln(10_000 - LIQUIDITY_DEPOSIT_SLACK_BPS).div(BPS));
+    const byQuote = lpBackedBy(after, now.quote, quoteOnHand.mul(BPS).divn(10_000 + LIQUIDITY_DEPOSIT_SLACK_BPS));
+    return { swap, minAmountOut, after, coinsLeft, quoteOnHand, byCoins, byQuote };
+  };
+  // The more coins the sale takes, the more Quote Asset there is to pair and the fewer coins to pair it with, so the
+  // most that can still be paired is found by bisection, between selling none and selling them all.
+  let low = new BN(0);
+  let high = coins;
+  while (low.lt(high)) {
+    const middle = low.add(high).addn(1).divn(2);
+    const a = attempt(middle);
+    if (a && a.byQuote.lte(a.byCoins)) low = middle;
+    else high = middle.subn(1);
+  }
+  const chosen = attempt(low);
+  if (!chosen) return null;
+  const deposit = poolDeposit(chosen.after, BN.min(chosen.byCoins, chosen.byQuote));
+  if (!deposit) return null;
+  const [coinIndex, quoteIndex] = coinIsToken0 ? [0, 1] as const : [1, 0] as const;
+  return {
+    sale: chosen.swap ? { coins: low, amountOut: chosen.swap.amountOut, minAmountOut: chosen.minAmountOut } : null,
+    lpAmount: deposit.lpAmount,
+    deposit,
+    coins: { added: deposit.amounts[coinIndex], transfer: deposit.transfers[coinIndex], maximum: chosen.coinsLeft },
+    quote: { added: deposit.amounts[quoteIndex], transfer: deposit.transfers[quoteIndex], maximum: chosen.quoteOnHand },
+  };
+}
+
+export type RewardLiquidityRequest = {
+  programs: Pick<Programs, "cpmm" | "lock">;
+  pool: Pool;
+  coin: PublicKey;
+  owner: PublicKey;
+  addition: RewardLiquidityAddition;
+  /** The Reward Liquidity's coin account, open since the harvest that first kept coins in it. */
+  coinAccount: PublicKey;
+  /** Its Quote Asset account, with the instructions that open it when it does not exist yet. */
+  quoteAccount: { address: PublicKey; open: TransactionInstruction[] };
+  feeKey: PublicKey;
+};
+
+/**
+ * The instructions of one Reward Liquidity addition (#214), for the owner and the new Fee Key's mint to sign: the sale of
+ * kept coins for the Quote Asset, the deposit and the lock, all or nothing, from and into the Reward Liquidity's own two
+ * accounts. Nothing is wrapped or unwrapped: the Quote Asset account keeps what the deposit leaves.
+ */
+export function rewardLiquidityInstructions(r: RewardLiquidityRequest): TransactionInstruction[] {
+  const { programs, pool, owner, addition } = r;
+  const { base, quote } = poolSides(pool, r.coin);
+  const lpAccount = getAssociatedTokenAddressSync(pool.lpMint, owner, true);
+  const coinIsToken0 = pool.tokens[0].mint.equals(base.mint);
+  const inPoolOrder = <T>(ofCoin: T, ofQuote: T): [T, T] => (coinIsToken0 ? [ofCoin, ofQuote] : [ofQuote, ofCoin]);
+  return [
+    ComputeBudgetProgram.setComputeUnitLimit({ units: LIQUIDITY_ADD_COMPUTE_UNITS }),
+    ...r.quoteAccount.open,
+    ...(addition.sale
+      ? [
+          swapBaseInputIx(programs.cpmm, pool, {
+            payer: owner, input: base, output: quote, inputAccount: r.coinAccount, outputAccount: r.quoteAccount.address,
+            amountIn: addition.sale.coins, minAmountOut: addition.sale.minAmountOut,
+          }),
+        ]
+      : []),
+    createAssociatedTokenAccountIdempotentInstruction(owner, lpAccount, owner, pool.lpMint),
+    depositIx(programs.cpmm, pool, {
+      owner, lpAccount, tokenAccounts: inPoolOrder(r.coinAccount, r.quoteAccount.address), lpAmount: addition.lpAmount,
+      maximums: inPoolOrder(addition.coins.maximum, addition.quote.maximum),
+    }),
+    lockCpLiquidityIx(programs.lock, pool, { owner, lpAccount, feeKey: r.feeKey, lpAmount: addition.lpAmount, withMetadata: false }),
+  ];
+}
+
 /** A Fee Key's accounts for a position this owner opens: the NFT in the owner's associated account, and the lock's record. */
 export function lockedPositionOf(lock: PublicKey, feeKey: PublicKey, owner: PublicKey) {
   return { feeKeyAccount: getAssociatedTokenAddressSync(feeKey, owner, true), lockedLiquidity: lockPdas(lock).lockedLiquidity(feeKey) };
@@ -213,14 +319,33 @@ export function lockCpLiquidityIx(
 }
 
 /**
+ * Whose coins a seeded liquidity account keeps: the Creator Earnings `liquidity` rule's (ADR 0011), or a Reward Launch's
+ * Reward Liquidity (#214), the holders' tax kept for the pool. The two never share an account, so neither ever adds the
+ * other's coins and each one's Ledger entries are exactly its own.
+ */
+export type LiquidityKeeper = "earnings" | "reward";
+
+/**
  * Where the liquidity rule keeps a coin between its additions: a token account of the owner at an address derived from
  * the owner, the coin and the coin's token program, so it is the same for every addition and is never the owner's
  * associated account of the coin, which holds other things. The seed is sixteen characters from the middle of the
  * coin's address, clear of any vanity prefix or suffix; that is 93 bits, and a transaction has no room for more.
+ * The Reward Liquidity's account (#214) takes two letters and fourteen of those characters, so it is another address.
  */
-export async function liquidityCoinAccount(owner: PublicKey, coin: PublicKey, tokenProgram: PublicKey) {
-  const seed = coin.toBase58().slice(12, 28);
+export async function liquidityCoinAccount(owner: PublicKey, coin: PublicKey, tokenProgram: PublicKey, keeper: LiquidityKeeper = "earnings") {
+  const seed = keeper === "earnings" ? coin.toBase58().slice(12, 28) : `rc${coin.toBase58().slice(12, 26)}`;
   return { seed, address: await PublicKey.createWithSeed(owner, seed, tokenProgram) };
+}
+
+/**
+ * Where a Reward Launch's Reward Liquidity (#214) keeps the Quote Asset an addition's sale brought in beyond what its
+ * deposit took: a token account of the Quote Asset at an address derived from the owner, the coin and the Quote Asset's
+ * token program, opened by the first addition and kept, so the next addition pairs it and none of the holders' tax ever
+ * joins the owner's own money. For SOL it holds wrapped SOL.
+ */
+export async function rewardLiquidityQuoteAccount(owner: PublicKey, coin: PublicKey, quoteTokenProgram: PublicKey) {
+  const seed = `rq${coin.toBase58().slice(12, 26)}`;
+  return { seed, address: await PublicKey.createWithSeed(owner, seed, quoteTokenProgram) };
 }
 
 /**
@@ -325,6 +450,9 @@ export async function graduatedPool(connection: Connection, programs: Pick<Progr
 export type LiquidityAdded = {
   /** Coins the buy delivered to the buyer's account. */
   coinsBought: BN;
+  /** Coins a Reward Liquidity addition's sale took from its account (#214), and the Quote Asset that reached it. */
+  coinsSold: BN;
+  quoteFromSale: BN;
   /** What the deposit added to the pool's two reserves. */
   coinsAdded: BN;
   quoteAdded: BN;
@@ -332,7 +460,9 @@ export type LiquidityAdded = {
   lpAmount: BN;
 };
 
-type SwapEventData = { pool_id: PublicKey; output_amount: BN; output_transfer_fee: BN; output_mint: PublicKey };
+type SwapEventData = {
+  pool_id: PublicKey; input_amount: BN; input_transfer_fee: BN; output_amount: BN; output_transfer_fee: BN; input_mint: PublicKey; output_mint: PublicKey;
+};
 type LpChangeEventData = { pool_id: PublicKey; token_0_amount: BN; token_1_amount: BN; change_type: number };
 
 // Positions in `deposit`'s accounts, and the event type a deposit writes.
@@ -356,12 +486,17 @@ export function decodeLiquidityAddition(raw: RawTransaction, cpmm: PublicKey, po
   if (!deposit) return null;
   const args = cpmmCoder.instruction.decode(Buffer.from(bs58.decode(deposit.data)))!.data as { lp_token_amount: BN };
   const events = programDataLogs(txMeta.logMessages ?? [], cpmm.toBase58()).flatMap((data) => safely(() => cpmmCoder.events.decode(data)) ?? []);
-  const swaps = events.filter((e) => e.name === "SwapEvent").map((e) => e.data as SwapEventData).filter((e) => e.pool_id.equals(pool) && e.output_mint.equals(coin));
+  const poolSwaps = events.filter((e) => e.name === "SwapEvent").map((e) => e.data as SwapEventData).filter((e) => e.pool_id.equals(pool));
+  const swaps = poolSwaps.filter((e) => e.output_mint.equals(coin));
+  const sales = poolSwaps.filter((e) => e.input_mint.equals(coin));
   const added = events.filter((e) => e.name === "LpChangeEvent").map((e) => e.data as LpChangeEventData).find((e) => e.pool_id.equals(pool) && e.change_type === LP_CHANGE_DEPOSIT);
   if (!added) throw new Error(`transaction ${raw.transaction.signatures[0]} deposits into pool ${pool.toBase58()} but its log has no event for it`);
   const coinIsToken0 = keys[deposit.accounts[DEPOSIT.mint0]!] === coin.toBase58();
   return {
     coinsBought: swaps.reduce((sum, e) => sum.add(e.output_amount).sub(e.output_transfer_fee), new BN(0)),
+    // A swap event's input amount is what reached the pool's vault; what left the seller's account adds the transfer fee.
+    coinsSold: sales.reduce((sum, e) => sum.add(e.input_amount).add(e.input_transfer_fee), new BN(0)),
+    quoteFromSale: sales.reduce((sum, e) => sum.add(e.output_amount).sub(e.output_transfer_fee), new BN(0)),
     coinsAdded: coinIsToken0 ? added.token_0_amount : added.token_1_amount,
     quoteAdded: coinIsToken0 ? added.token_1_amount : added.token_0_amount,
     lpAmount: args.lp_token_amount,

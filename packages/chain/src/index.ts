@@ -68,6 +68,8 @@ export { depositIx } from "./cpmm";
 export { liquidityLookupAddresses, type LookupPools } from "./lookup";
 export {
   decodeLiquidityAddition, graduatedPool, liquidityAddInstructions, liquidityCoinAccount, lockCpLiquidityIx, lockedPositionOf, openSeededTokenAccount,
-  planLiquidityAddition, poolAfterSwap, poolDeposit, LIQUIDITY_BUY_SLIPPAGE_BPS, LIQUIDITY_DEPOSIT_SLACK_BPS,
-  type DepositSide, type LiquidityAdded, type LiquidityAddition, type LiquidityAddRequest, type PoolDeposit,
+  planLiquidityAddition, planRewardLiquidityAddition, poolAfterSwap, poolDeposit, rewardLiquidityInstructions, rewardLiquidityQuoteAccount,
+  LIQUIDITY_BUY_SLIPPAGE_BPS, LIQUIDITY_DEPOSIT_SLACK_BPS,
+  type DepositSide, type LiquidityAdded, type LiquidityAddition, type LiquidityAddRequest, type LiquidityKeeper, type PoolDeposit,
+  type RewardLiquidityAddition, type RewardLiquidityRequest,
 } from "./liquidity";

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { BUDGET_ROWS, REWARD_BURN_SHARES, REWARD_TAX_RATES, TRADER_PROGRAMS_MAX_BPS, type BudgetRow } from "@launchpad/contract";
+import { BUDGET_ROWS, REWARD_BURN_SHARES, REWARD_SHARES_MAX_BPS, REWARD_TAX_RATES, TRADER_PROGRAMS_MAX_BPS, type BudgetRow } from "@launchpad/contract";
 import { getBurns, getPlatform, getRebates } from "@/lib/api";
 import { BUDGET_ROW_LABELS, budgetLine } from "@/lib/budget";
 import { graduationFeeSol, pct } from "@/lib/fees";
@@ -27,7 +27,7 @@ type Row = { fee: string; amount: ReactNode; note?: ReactNode; pays: ReactNode; 
  * are here too, from `GET /v1/rebates`: how long a Rebate Week is, the limit on a rebate and the minimum payout.
  * Everywhere else the site says what a fee is for and links here.
  */
-/** The Reward Burn's shares other than none (#183), as the Reward Tax row says them: "10%, 25% or 50%". */
+/** The Reward Burn's shares other than none (#183), which the Reward Liquidity shares (#214), as the Reward Tax row says them: "10%, 25% or 50%". */
 const burnShares = (() => {
   const shares = REWARD_BURN_SHARES.filter((bps) => bps > 0).map((bps) => pct(bps));
   return `${shares.slice(0, -1).join(", ")} or ${shares.at(-1)}`;
@@ -176,7 +176,8 @@ export default async function FeesPage() {
         <>
           Only on a Reward Launch, at the rate its Creator fixed at launch, which nobody can change. Withheld by the coin itself on every
           transfer, trades included, and paid to the coin&apos;s holders in Reward Rounds, in the coin or in its Quote Asset as the Creator chose.
-          The Creator may also fix a Reward Burn at launch: {burnShares} of every harvested tax, burned before anything is sold or paid.
+          The Creator may also fix a Reward Burn at launch: {burnShares} of every harvested tax, burned before anything is sold or paid; and a
+          Reward Liquidity, {burnShares} of it added to the coin&apos;s pool as locked liquidity once it graduates; the two together {pct(REWARD_SHARES_MAX_BPS)} at most.
           See <Link href="/rewards">Holder rewards</Link>.
         </>
       ),

@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  AIRDROP_MAX_RECIPIENTS, EARNINGS_DESTINATIONS, REWARD_BURN_SHARES, REWARD_SALE_MAX_RESERVE_BPS, REWARD_TAX_RATES,
-  type CreatorEarningsDestination, type RewardBurnBps, type RewardPayoutAsset, type RewardTaxBps, type TradeQuote,
+  AIRDROP_MAX_RECIPIENTS, EARNINGS_DESTINATIONS, REWARD_BURN_SHARES, REWARD_LIQUIDITY_SHARES, REWARD_SALE_MAX_RESERVE_BPS, REWARD_SHARES_MAX_BPS,
+  REWARD_TAX_RATES, type CreatorEarningsDestination, type RewardBurnBps, type RewardLiquidityBps, type RewardPayoutAsset, type RewardTaxBps, type TradeQuote,
 } from "@launchpad/contract";
 import { getLaunchPermissions, getLaunchQuote } from "@/lib/api";
 import { parseAirdropList } from "@/lib/airdrop";
@@ -42,6 +42,8 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
   const [rewardPayout, setRewardPayout] = useState<RewardPayoutAsset>("coin");
   // The share of every harvested tax burned instead of paid out (the Reward Burn, #183): none unless the Creator picks one.
   const [rewardBurn, setRewardBurn] = useState<RewardBurnBps>(0);
+  // The share added to the coin's pool as locked liquidity once it graduates (the Reward Liquidity, #214): none unless picked.
+  const [rewardLiquidity, setRewardLiquidity] = useState<RewardLiquidityBps>(0);
   // Where the Creator's earnings on the coin go, for good (ADR 0011): their wallet unless they point them elsewhere.
   const [earningsDestination, setEarningsDestination] = useState<CreatorEarningsDestination>("wallet");
   // The Creator Lock (ADR 0023): off unless the Creator turns it on; then a size of the supply, a lock time and how it
@@ -76,6 +78,10 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
       : null;
   // The size quoted and launched: only one the pair allows.
   const lockQuoted = lockProblem ? null : lockBps;
+  // Holders keep at least half of every reward: the two shares together are half at most, refused here before the API would.
+  const sharesProblem = rewardTax !== null && rewardBurn + rewardLiquidity > REWARD_SHARES_MAX_BPS
+    ? "Holders keep at least half of every reward: burned and to liquidity can be half of it together, at most. Choose smaller shares."
+    : null;
 
   useEffect(() => {
     if (creator === null) return;
@@ -130,7 +136,8 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
 
   return {
     quote,
-    rewardTax, setRewardTax, rewardPayout, setRewardPayout, rewardBurn, setRewardBurn, earningsDestination, setEarningsDestination,
+    rewardTax, setRewardTax, rewardPayout, setRewardPayout, rewardBurn, setRewardBurn, rewardLiquidity, setRewardLiquidity, sharesProblem,
+    earningsDestination, setEarningsDestination,
     lockOffered, lockSizes: sizes, lockOn: lockActive, setLockOn: (on: boolean) => {
       setLockOn(on);
       // Turning the lock on starts at the smallest size the pair allows, unless a size it allows is already chosen.
@@ -148,11 +155,13 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
     firstBuyText, setFirstBuyText, firstBuyInvalid, firstBuyQuote, firstBuyProblem,
     airdropAllowed, airdropOn, setAirdropOn, airdropText, setAirdropText, airdrop, airdropProblem, airdropMissing, bought,
     /** What stops the launch from being prepared, if anything. */
-    problem: lockProblem ?? firstBuyProblem ?? airdropProblem ?? airdropMissing,
+    problem: sharesProblem ?? lockProblem ?? firstBuyProblem ?? airdropProblem ?? airdropMissing,
     /** The form fields these options add to the prepare request. */
     fields(): [string, string][] {
       const out: [string, string][] = [];
-      if (rewardTax !== null) out.push(["rewardTax", String(rewardTax)], ["rewardPayout", rewardPayout], ["rewardBurn", String(rewardBurn)]);
+      if (rewardTax !== null) out.push(
+          ["rewardTax", String(rewardTax)], ["rewardPayout", rewardPayout], ["rewardBurn", String(rewardBurn)], ["rewardLiquidity", String(rewardLiquidity)],
+        );
       // The wallet is what the API takes a launch without the field to mean.
       if (earningsDestination !== "wallet") out.push(["earningsDestination", earningsDestination]);
       // All at once is a cliff alone; gradually is a 7-day cliff, then a linear unlock until the lock time ends.
@@ -240,6 +249,29 @@ export function LaunchType({ options: o, coin, labelId }: { options: LaunchOptio
               <>{burnShareTitle(o.rewardBurn)} of every reward is burned before the rest is sold. Fixed at launch.</>
             )}
           </p>
+        </div>
+      )}
+      {reward && (
+        <div className={styles.rates} role="group" aria-label="Reward Liquidity">
+          <span className={styles.ratesLabel} aria-hidden>To liquidity</span>
+          <div className={`segmented ${styles.segmented}`}>
+            {REWARD_LIQUIDITY_SHARES.map((bps) => (
+              <button key={bps} type="button" aria-pressed={o.rewardLiquidity === bps} onClick={() => o.setRewardLiquidity(bps)}>
+                {bps === 0 ? "None" : `${bps / 100}%`}
+              </button>
+            ))}
+          </div>
+          {o.sharesProblem ? (
+            <p className={styles.hintError} role="alert">{o.sharesProblem}</p>
+          ) : (
+            <p className={styles.hint}>
+              {o.rewardLiquidity === 0 ? (
+                <>Add a share of every reward to {coinLabel}&apos;s pool as locked liquidity, to deepen its market. Fixed at launch.</>
+              ) : (
+                <>{burnShareTitle(o.rewardLiquidity)} of every reward is added to {coinLabel}&apos;s pool once it graduates, locked for good. Fixed at launch.</>
+              )}
+            </p>
+          )}
         </div>
       )}
     </div>

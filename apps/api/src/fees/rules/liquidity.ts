@@ -102,7 +102,7 @@ const POLL_MS = 400;
  * alone, so the rule adds the addresses itself, once, rather than fail until somebody does it by hand. The addition
  * then runs on a later run, when the new entries can be relied on. Null when the table is ready.
  */
-async function lookupTableWaits(
+export async function lookupTableWaits(
   connection: Connection, operations: Keypair, cfg: Config, table: AddressLookupTableAccount, cpswapConfig: PublicKey,
 ): Promise<string | null> {
   const owner = operations.publicKey;
@@ -132,7 +132,7 @@ async function lookupTableWaits(
 }
 
 /** The size of the transaction these instructions make, signatures included; null when it is too large to encode at all. */
-function transactionBytes(payer: PublicKey, instructions: TransactionInstruction[], tables: BuybackPlan["lookupTables"]) {
+export function transactionBytes(payer: PublicKey, instructions: TransactionInstruction[], tables: BuybackPlan["lookupTables"]) {
   const message = new TransactionMessage({ payerKey: payer, recentBlockhash: PublicKey.default.toBase58(), instructions }).compileToV0Message(tables);
   try {
     return new VersionedTransaction(message).serialize().length;

@@ -154,7 +154,8 @@ app.post("/v1/launches/prepare", async (c) => {
   const rewardTaxBps = f.rewardTax ?? null;
   const lock = await Promise.resolve(f).then(creatorLockChoice).catch(refuseWith(400));
   const choices = {
-    rewardTaxBps, rewardPayout: f.rewardPayout ?? null, rewardBurnBps: f.rewardBurn ?? null, earningsDestination: f.earningsDestination ?? "wallet", lock,
+    rewardTaxBps, rewardPayout: f.rewardPayout ?? null, rewardBurnBps: f.rewardBurn ?? null, rewardLiquidityBps: f.rewardLiquidity ?? null,
+    earningsDestination: f.earningsDestination ?? "wallet", lock,
   } as const;
   const modes = await resolveLaunchModes(connection, cfg, quote, creator, firstBuy, airdrop, choices).catch(refuseWith(400));
 
