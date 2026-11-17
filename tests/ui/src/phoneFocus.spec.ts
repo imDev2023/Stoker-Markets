@@ -114,9 +114,10 @@ async function focusEach(page: Page): Promise<Stop[]> {
 }
 
 /**
- * How far the footer's end stands under the foot's bars once the page is scrolled to its end: above zero, its last
- * line can never be read (a coin page's kept its room inside the page, and the Buy / Sell bar covered the footer's
- * closing line for good, found with #224).
+ * How far the footer's end stands under the foot's bars once the page is scrolled to its end: a pixel or more, and its
+ * last line can never be read whole (a coin page kept its room inside the page, and the Buy / Sell bar covered the
+ * footer's closing line for good, found with #224). A page's height is not a whole number of pixels and the scroll
+ * stops on one, so the end can read a fraction of a pixel under the bar (0.2 on a coin's page) with nothing covered.
  */
 const footerUnderFoot = (page: Page) =>
   page.evaluate(() => {
@@ -150,7 +151,7 @@ test.describe("on a phone-width window", () => {
     expect(covered(forwards), "tabbing forwards").toEqual([]);
     expect(covered(await tabThrough(page, "Shift+Tab")), "tabbing backwards").toEqual([]);
     expect(covered(await focusEach(page)), "each control focused on its own").toEqual([]);
-    expect(await footerUnderFoot(page), "the footer's end at the page's end").toBeLessThanOrEqual(0);
+    expect(await footerUnderFoot(page), "the footer's end at the page's end").toBeLessThan(1);
     // Nothing was asked of the wallet.
     expect(wallet.requests).toHaveLength(0);
   });
@@ -176,7 +177,7 @@ test.describe("on a phone-width window", () => {
     expect(covered(forwards), "tabbing forwards").toEqual([]);
     expect(covered(await tabThrough(page, "Shift+Tab")), "tabbing backwards").toEqual([]);
     expect(covered(await focusEach(page)), "each control focused on its own").toEqual([]);
-    expect(await footerUnderFoot(page), "the footer's end at the page's end").toBeLessThanOrEqual(0);
+    expect(await footerUnderFoot(page), "the footer's end at the page's end").toBeLessThan(1);
     // Nothing was asked of the wallet.
     expect(wallet.requests).toHaveLength(0);
   });
