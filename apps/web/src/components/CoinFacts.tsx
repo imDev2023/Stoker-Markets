@@ -3,7 +3,8 @@
 import Link from "next/link";
 import type { LaunchSummary, LaunchTrust, PlatformInfo } from "@launchpad/contract";
 import { destinationSentence } from "@/lib/earnings";
-import { explorerUrl, formatDuration, formatShare, formatUnits, formatUtc, quoteTicker, SOL_DECIMALS } from "@/lib/format";
+import { coinTaxBps, firstBuyShare } from "@/lib/coinTax";
+import { explorerUrl, formatDuration, formatUnits, formatUtc, quoteTicker, SOL_DECIMALS } from "@/lib/format";
 import { TIER_NAMES, tierProgress } from "@/lib/ladder";
 import { LINK_KINDS, type LinkKind } from "@/lib/links";
 import { Address } from "./Address";
@@ -32,6 +33,8 @@ export function CoinFacts({ launch, platform, trust, renderedAt }: {
   renderedAt: number;
 }) {
   const quote = quoteTicker(launch.quote);
+  // The First Buy as it reached the Creator's wallet, the share the launch summary promised (#221).
+  const firstBuy = trust && firstBuyShare(trust, coinTaxBps(launch));
   // A graduated coin's place on the Creator Ladder (ADR 0020); null on the curve, where every coin is on the first tier.
   const tier = launch.graduation?.creatorTier ?? null;
   // Where the Creator's earnings go (ADR 0011): their wallet, in the words the page has always used, or the rule's own.
@@ -114,7 +117,7 @@ export function CoinFacts({ launch, platform, trust, renderedAt }: {
           {trust && (
             <div>
               <dt>First Buy</dt>
-              <dd>{trust.creator.firstBuy ? `${formatShare(trust.creator.firstBuy.share)} of the supply, bought by the Creator at launch` : "None: the Creator bought nothing at launch"}</dd>
+              <dd>{firstBuy ? `${firstBuy} of the supply, bought by the Creator at launch` : "None: the Creator bought nothing at launch"}</dd>
             </div>
           )}
           <div>
