@@ -29,6 +29,17 @@ export function formatShare(share: number) {
   return `${pct.toFixed(pct < 1 ? 2 : 1)}%`;
 }
 
+/**
+ * A raw amount as a share of a coin's supply, the way the launch summary writes a First Buy's (`supplyShare` on the
+ * launch form): whole hundredths of a percent, cut and never rounded up, and "<0.01%" for a trace. Whatever repeats a
+ * figure the summary promised uses this, so the two never differ by a rounding (#221).
+ */
+export function formatSupplyShare(raw: bigint, supply: bigint) {
+  const basisPoints = Number((raw * 10_000n) / supply);
+  if (raw > 0n && basisPoints === 0) return "<0.01%";
+  return `${(basisPoints / 100).toLocaleString("en-US", { maximumFractionDigits: 2 })}%`;
+}
+
 export function shortAddress(address: string) {
   return `${address.slice(0, 4)}…${address.slice(-4)}`;
 }

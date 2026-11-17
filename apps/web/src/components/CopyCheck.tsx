@@ -17,7 +17,10 @@ const DEBOUNCE_MS = 350;
  * prepare time.
  */
 export function useCopyCheck({ name, symbol, image, creator }: { name: string; symbol: string; image: File | null; creator: string | null }) {
-  const [result, setResult] = useState<CopyCheck | null>(null);
+  // The answer with what it answers for: a verdict is shown only beside the value it was given for, so a changed field
+  // reads "Checking" again and never wears the last value's verdict (#222). `check` is null when the check failed.
+  const [answer, setAnswer] = useState<{ check: CopyCheck | null; name: string; symbol: string; image: File | null; creator: string | null } | null>(null);
+  const result = answer?.check ?? null;
   const [pending, setPending] = useState(false);
   const trimmedName = name.trim();
   const trimmedSymbol = symbol.trim();
@@ -25,8 +28,9 @@ export function useCopyCheck({ name, symbol, image, creator }: { name: string; s
   const anything = asked.name || asked.symbol || asked.image;
 
   useEffect(() => {
-    if (!anything) return setResult(null);
+    if (!anything) return setAnswer(null);
     const controller = new AbortController();
+    const asking = { name: trimmedName, symbol: trimmedSymbol, image, creator };
     const timer = setTimeout(async () => {
       setPending(true);
       try {
@@ -35,9 +39,10 @@ export function useCopyCheck({ name, symbol, image, creator }: { name: string; s
         if (trimmedName) form.set("name", trimmedName);
         if (trimmedSymbol) form.set("symbol", trimmedSymbol);
         if (image) form.set("image", image);
-        setResult(await checkCopy(form, controller.signal));
+        setAnswer({ ...asking, check: await checkCopy(form, controller.signal) });
       } catch {
-        // A failed check never blocks the form: prepare checks again and says what it refuses.
+        // A failed check never blocks the form: prepare checks again and says what it refuses. The fields then say nothing.
+        if (!controller.signal.aborted) setAnswer({ ...asking, check: null });
       } finally {
         if (!controller.signal.aborted) setPending(false);
       }
@@ -49,7 +54,11 @@ export function useCopyCheck({ name, symbol, image, creator }: { name: string; s
   }, [anything, trimmedName, trimmedSymbol, image, creator]);
 
   const field = (f: CopyField) => {
-    const verdict = asked[f] ? (result?.[f] ?? null) : null;
+    const current = f === "name" ? trimmedName : f === "symbol" ? trimmedSymbol : image;
+    const answered = answer !== null && answer[f] === current && answer.creator === creator;
+    // A check that failed leaves the field without a line, as before anything was typed.
+    if (asked[f] && answered && answer.check === null) return { status: "empty" as CopyStatus, text: null };
+    const verdict = asked[f] && answered ? (result?.[f] ?? null) : null;
     const status: CopyStatus = !asked[f] ? "empty" : !verdict ? "pending" : verdict.status === "taken" ? "taken" : verdict.status === "unchecked" ? "unchecked" : "free";
     return { status, text: asked[f] ? describe(f, verdict) : null };
   };

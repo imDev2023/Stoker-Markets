@@ -16,20 +16,23 @@ This repository is the fallback: it still deploys the live mainnet API and the d
 7. `docs/agents/` - this file's long form, read on demand: `code-map.md`, `run-and-test.md`, `settled.md`, `history.md` and `traps/`.
    Read the file the Traps index below names before the work it covers; none of them is loaded for you.
 
-### The frontier (2026-11-16)
+### The frontier (2026-11-17)
 
-- **Running:** nothing. No relay lane is on a ticket, and no unit is named.
+- **Running:** two relay lanes side by side, by the owner's choice: #223 (a coin's social link takes any site's address) and #224 (a control focused by keyboard under the phone's tab bar).
+  Their PRs wait for the owner; #223's is PR #228.
 - **Next unit:** none is named; ask the owner before starting one.
   The rewards roadmap is built through the Stoke Launch (#215, PR #219, merged 2026-11-16 on the owner's word; migration `0034`); what is left before mainnet is the owner's go-live list below.
   #185 (`/updates`) is built in new-stoker as imDev2023/new-stoker#53 and is closed here.
+- **The rehearsal's findings (#221 and #222)** are fixed and on `main`, the web alone, with nothing waiting for the owner from them: #222 (PR #226, 0f2849c) is the launch page, every function tried and eight defects fixed; #221 (PR #225, c231ff9) is the trade panel's result and the About's First Buy on a coin with a tax, the board's cards level in a row, and a sell preset after a trade.
+  All twelve fixes were tried again on the rehearsal after its redeploy; the records are the last comments of #221 and #222.
 - **Row-Level Security (#201)** is built and merged (migration `0030`, the lint check, the stack's plain owner role); devnet took it on 2026-11-16 (`runMigrations` ends by checking every table); the issue stays open until Supabase's advisor shows neither finding on both projects.
 - **Done on the rewards roadmap:** #187 (Budget Table), #188 (Creator Ladder), #113 with #184's Creator half (Creator Earnings Destinations), #196 (volume rebates), #199 (Holding Weight), #183 (the Reward Burn, PR #207), #184's open half (budgets pointed at liquidity, PR #206), #186 (the Creator Lock, PRs #208, #210 and #213), #214 (the Reward Liquidity, PR #217) and #215 (the Stoke Launch, PR #219).
-- **Devnet rehearsal** (`devnet.stoker.markets`, `api-devnet.stoker.markets`, and the apex with a devnet notice): redeployed from `main` at 89dd0be on 2026-11-16 by the main session, on the owner's word: the database through `0034`, then the API, then the web.
+- **Devnet rehearsal** (`devnet.stoker.markets`, `api-devnet.stoker.markets`, and the apex with a devnet notice): the web redeployed from `main` at c231ff9 on 2026-11-17 by the main session (#221 and #222 changed the web alone); the API and the database, through `0034`, are as deployed from 89dd0be on 2026-11-16.
   After every merge the rehearsal is redeployed from `main`, the database first when `packages/db` changed, and the record goes on the issue; the line is in #193's last comment.
 - **Mainnet:** `stoker-api` is live on `api.stoker.markets` on its build from before these merges; its database is through `0020` and takes `0021` to `0034` at go-live.
   Go-live is #23: the checklist is `docs/runbooks/mainnet.md` section 12, and #23's latest comment says which item is open.
-- **The owner still owes:** the name Stoke Launch, theirs to overrule; the calls each lane left to overrule on #183, #184, #186, #211, #214 and #215 (each issue's last comments, and the bodies of PRs #213, #217 and #219); on #23, item 9 (Always Use HTTPS), step 5b's backup disk, Helius Developer, then items 8, 10 and 12 at go-live; a Budget Table version with a share for `rebates` before the rebates pay anything (runbook section 17); the Reward Rounds' version 2 before the first Reward Launch (runbook section 6), and with it or after it the first Holding Weights (section 18); answers on #159; closing #128 and #129; three calls each on #193, #198 and #199 that are theirs to overrule (`docs/agents/settled.md`); and on #201, Supabase's advisor read again on both projects now that devnet has `0030` (mainnet's tables by the block on the issue, or at go-live).
-- **Open PRs on 2026-11-16:** #168 (`sign-in`) and #132 (`design-research`: merge its `docs/design/research/` or close it).
+- **The owner still owes:** the name Stoke Launch, theirs to overrule; the calls each lane left to overrule on #183, #184, #186, #211, #214, #215, #221 and #222 (each issue's last comments, and the bodies of PRs #213, #217, #219, #225 and #226); on #23, item 9 (Always Use HTTPS), step 5b's backup disk, Helius Developer, then items 8, 10 and 12 at go-live; a Budget Table version with a share for `rebates` before the rebates pay anything (runbook section 17); the Reward Rounds' version 2 before the first Reward Launch (runbook section 6), and with it or after it the first Holding Weights (section 18); answers on #159; closing #128 and #129; three calls each on #193, #198 and #199 that are theirs to overrule (`docs/agents/settled.md`); and on #201, Supabase's advisor read again on both projects now that devnet has `0030` (mainnet's tables by the block on the issue, or at go-live).
+- **Open PRs on 2026-11-17:** #228 (#223, waiting for the owner), #168 (`sign-in`) and #132 (`design-research`: merge its `docs/design/research/` or close it).
   Check `gh pr list` before starting work, since cloud sessions also push here, and push every working branch.
 - **Site work** (phase 6, #137, and anything in the Playground's design) belongs in new-stoker unless the owner says otherwise.
 

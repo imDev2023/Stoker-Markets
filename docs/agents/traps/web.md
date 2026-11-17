@@ -26,6 +26,21 @@ The text is the original's, one sentence a line.
 - A `backdrop-filter` on the site header makes it the containing block of anything `position: fixed` inside it: the old search palette's backdrop covered the header's band alone (found 2026-10-13); portal any menu or sheet that opens from the header or the tab bar (`BottomTabs` does).
   The header has had no search since 2026-10-31; the site's one search is the board's `searchbox` "Search coins".
 
+- The cards of the board's grid share their rows (#221): each `li` of `CoinGrid` spans five rows of the grid as a subgrid and `BoardCard` lays its five parts on them, so a tag that takes two lines in one card lowers the same lines of the cards beside it.
+  A sixth part in the card needs the span in `CoinGrid.module.css` raised with it, or the part lands in a row of the next cards.
+  The grid's own gap is 16px and the card's is 12px: a subgrid may set its own `row-gap`, and the cards came out pixel for pixel as the flex column drew them.
+
+## Amounts on a coin with a tax
+
+- The Indexer's `baseAmount` is the curve's amount on a curve trade and the wallet's on a pool trade (`decode.ts` adds the pool's transfer fees in, LaunchLab's event leaves them out): on a Reward Launch or a Stoke Launch a curve buy delivers less than it, and a curve sell takes more.
+  Anything that tells a holder what reached or left their wallet reads the transaction's own token balances (`walletCoins` in `TradePanel.tsx`) or takes the tax off (`afterCoinTax` in `src/lib/coinTax.ts`, Token-2022's rule: the rate rounded up to a whole unit, no cap on our coins), never `baseAmount` as it is (#221: the panel's result and the About's First Buy both named the curve's amount).
+  The trades table and the trust figures' `firstBuy` go on carrying the curve's amounts.
+- The launch summary writes a share of the supply cut to hundredths of a percent (`supplyShare`, 0.1675% is "0.16%"), where `formatShare` rounds and drops to one decimal above 1%.
+  A figure that repeats what the summary promised uses `formatSupplyShare` (`src/lib/format.ts`), the summary's rule; if the summary's rounding ever changes, the two change together.
+- A read at `confirmed` straight after a confirmation can be answered by a node that has not reached the trade's slot yet: on the rehearsal a sell preset pressed two seconds after a buy filled half of the old holding (#221).
+  The answer's `context.slot` says where it was read: `refreshBalances` in `TradePanel.tsx` reads again until it is the confirmation's slot or later, and holds the balances (and the presets) unknown meanwhile.
+  Anything else read right after a transaction needs the same check.
+
 ## TradingView
 
 - TradingView's widget docs show their embed code only after a sign-up, and the module scripts (`widgets.tradingview-widget.com/w/en/tv-*.js`) answer 403 to curl: read a widget's attributes from the docs page's live preview in a browser (`customElements.get("tv-advanced-chart").observedAttributes`; its symbol search, `symbol-search.tradingview.com/symbol_search/v3/`, answers curl with a browser `Origin` and found every market in `markets.ts`).
@@ -47,3 +62,14 @@ The text is the original's, one sentence a line.
 
 - A coin's links are the seven `LINK_KINDS` of the contract (Telegram, X, Website, then Discord, TikTok, Instagram and YouTube behind the form's "More links"; owner, 2026-11-02), each a column of `launch_metadata` (migration 0023), a key of the Arweave document's `extensions` and a chip with its mark (`LinkIcon`, `src/lib/links.ts`) on the coin page; a new kind is added there, never as a one-off field.
   The review page "Stoker Launch Flow" is reshot with the throwaway scripts in `~/.claude/projects/-Volumes-Farhan-Work-Folder-Dev-AI-stonk-fun-solana/handoff/review-shots/` (its README has the command), never while a UI suite runs in the same worktree: a second `next dev` of one checkout fails on Turbopack's font cache and the stack never becomes ready.
+
+## The launch page against a real cluster (#222, 2026-11-17)
+
+- The API reads a reported transaction from its own node, and on devnet that node was seconds behind the one the browser had confirmed on: `POST /v1/transactions/:signature` answered 404 "transaction not found or not confirmed yet", the form ignored it, and the coin's page opened on "No coin at this address" for a coin that existed.
+  A local stack never shows this, since the browser and the API share one node; `reportLaunch` asks again until the API has taken the transaction, and a flow stands in for the lag with `page.route`.
+  `apiFetch` returns the response whatever its status, so a caller that never looks at `ok` has not checked anything; `reportTransaction` (the trade panel's) still does not.
+- A cluster's node words a failure its own way: a fee payer that has never held SOL is `AccountNotFound` on the local chain and `InvalidAccountForFee` on devnet (4.5).
+  When the form's words for a failed simulation or send are changed, read the real answer on devnet (`simulateTransaction`'s `err`), not the local chain's alone.
+- The file dialog's `accept` filter can be lifted and never applies to a dropped file, and a file's type is only its name's claim: the form checks the type when a file is picked and takes a file back out when its preview fails to load.
+- A `<dialog>`'s backdrop is the dialog itself: a click outside the box arrives with the dialog as its target, as a click on the dialog's own padding does, so a close on an outside click compares the pointer with the dialog's box (`QuotePicker`).
+- A fixture option that is an array (`expectedHttpErrors`) cannot be set through `test.use({ ... })` with more than one entry, since Playwright reads an array as a value with its options: push to the fixture inside the test instead.

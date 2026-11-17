@@ -296,6 +296,25 @@ export async function reportTransaction(signature: string) {
   await apiFetch(`${API_URL}/v1/transactions/${signature}`, { method: "POST" }).catch(() => undefined);
 }
 
+/**
+ * Reports a launch that has just confirmed and waits until the API has indexed it, so the coin's page finds its coin.
+ * The API reads the transaction from its own node, which can be a few seconds behind the one the wallet's browser
+ * confirmed on: it then answers 404 "not found or not confirmed yet", and a page opened at once says "No coin at this
+ * address" for a coin that exists (the devnet rehearsal, 2026-11-17, #222). So the report is sent again until it is
+ * taken, for about twenty seconds; after that the Indexer's own poll is what finds the coin. True once it is indexed.
+ */
+export async function reportLaunch(signature: string, { attempts = 14, waitMs = 1_500 }: { attempts?: number; waitMs?: number } = {}) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, waitMs));
+    try {
+      if ((await apiFetch(`${API_URL}/v1/transactions/${signature}`, { method: "POST" })).ok) return true;
+    } catch {
+      // Not seen yet, or the API was out of reach for a moment: ask again.
+    }
+  }
+  return false;
+}
+
 /** Every announced Platform Fee or Creator Fee change, newest effective time first; public, so none comes as a surprise. */
 export async function listAnnouncements() {
   return read(await apiFetch(`${API_URL}/v1/announcements`, { cache: "no-store" }), FeeAnnouncementList);
