@@ -56,15 +56,22 @@ async function chartsSettled(page: Page) {
   await expect(page.locator('[data-chart="loading"]')).toHaveCount(0, { timeout: 60_000 });
 }
 
-/** How long a shot waits for the network to go quiet before it goes on without the report (`snap`). */
+/** How long a shot waits for the network to go quiet before it goes on without the report (`quietNetwork`). */
 const NETWORK_QUIET_MS = 20_000;
 
+/**
+ * Waits for the network to go quiet before a shot, but not for ever: on a chart page Playwright now and then never
+ * reports it although no request is open (the page of the seed's coin with buybacks hung about one load in four on
+ * 2026-11-17, on `main` as on a branch, in `snap` and in `snapCard`, and a failed visual project skips every flow).
+ * The page is settled without the report: what follows waits for the fonts and the images, and a shot is two captures
+ * that agree. Every wait for a quiet network in this file goes through here.
+ */
+const quietNetwork = (page: Page, name: string) =>
+  page.waitForLoadState("networkidle", { timeout: NETWORK_QUIET_MS }).catch(() => console.warn(`${name}: the network was never reported quiet, shot anyway`));
+
 async function snap(page: Page, name: string, mask = dynamic) {
-  // Check the settled page: hydrated, images in and web fonts swapped. The wait for a quiet network is bounded: on a
-  // chart page Playwright now and then never reports one although no request is open (the coin page with trades hung
-  // about one load in four on 2026-11-17, on `main` as on a branch, and a failed visual project skips every flow), and
-  // the page is settled without it: what follows waits for the fonts and the images, and a shot is two captures that agree.
-  await page.waitForLoadState("networkidle", { timeout: NETWORK_QUIET_MS }).catch(() => console.warn(`${name}: the network was never reported quiet, shot anyway`));
+  // Check the settled page: hydrated, images in and web fonts swapped.
+  await quietNetwork(page, name);
   await page.evaluate(() => document.fonts.ready);
   // The page scrolls under a resting pointer below, and whatever passes beneath it is hovered: an open picker makes the
   // hovered option active and scrolls its list to it. Park the pointer over the header first.
@@ -377,7 +384,7 @@ async function earningsCard(page: Page, coin: string, rule: "holders" | "burn" |
  */
 async function snapCard(page: Page, name: string) {
   const card = page.getByRole("region", { name: "Creator earnings" });
-  await page.waitForLoadState("networkidle");
+  await quietNetwork(page, name);
   await page.evaluate(() => document.fonts.ready);
   await expectHydrated(page);
   await chartsSettled(page);
