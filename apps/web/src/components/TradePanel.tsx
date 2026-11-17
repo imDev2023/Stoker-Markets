@@ -1,13 +1,13 @@
 "use client";
 
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { PublicKey, SendTransactionError, VersionedTransaction } from "@solana/web3.js";
+import { PublicKey, SendTransactionError, VersionedTransaction, type Connection, type RpcResponseAndContext, type TokenBalance } from "@solana/web3.js";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type {
   LaunchSummary, PayWith, PlatformInfo, PreparedTrade, SolRoute, TradeQuote, TradeSide, TradeStep, TradeVenue,
 } from "@launchpad/contract";
-import { getQuote, listTrades, prepareTrade, reportTransaction } from "@/lib/api";
+import { getQuote, prepareTrade, reportTransaction } from "@/lib/api";
 import { landedError as landedErrorOf } from "@/lib/transactions";
 import { LIQUIDITY_LAUNCH } from "@/lib/liquidityLaunch";
 import { COIN_DECIMALS, explorerUrl, formatUnits, isSol, parseUnits, quoteTicker, SOL_DECIMALS } from "@/lib/format";
@@ -24,8 +24,8 @@ type Step =
   | { kind: "signing"; review: Review }
   | { kind: "confirming"; review: Review };
 /**
- * A sent trade; `coins` is the indexed fill, null if the Indexer hasn't seen it yet. `unconfirmed` when it was sent but
- * its confirmation could not be followed, so it may well have landed.
+ * A sent trade; `coins` is what it moved into the wallet or out of it, null if the node could not show the transaction
+ * yet. `unconfirmed` when it was sent but its confirmation could not be followed, so it may well have landed.
  */
 type Done = { side: TradeSide; coins: string | null; signature: string; unconfirmed?: boolean };
 
@@ -34,6 +34,17 @@ const SLIPPAGE_BPS = [50, 100, 200, 500] as const;
 const BUY_PRESETS_SOL = [0.1, 0.5, 1] as const;
 const SELL_PRESETS = [25, 50, 100] as const;
 const QUOTE_DEBOUNCE_MS = 250;
+/**
+ * After a trade the wallet's balances are read until the node answers from the trade's slot or a later one: this many
+ * times, this far apart, after which its answer is taken as it stands (a node that far behind is out of step for
+ * another reason, and a panel without balances for good would be worse).
+ */
+const BALANCE_READS = 20;
+const BALANCE_RETRY_MS = 500;
+/** How often the node is asked for a trade that has just confirmed, and how far apart, before the result goes without its amount. */
+const RESULT_READS = 8;
+const RESULT_RETRY_MS = 400;
+const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export function TradePanel({
   launch, platform, referrer = null, sideRequest = null, onTraded,
@@ -56,7 +67,7 @@ export function TradePanel({
   const payWithChosen = useRef(false);
   const [quote, setQuote] = useState<TradeQuote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
-  /** Raw units held: SOL in lamports, the Quote Asset (the same as SOL for a SOL pair) and the coin. */
+  /** Raw units held: SOL in lamports, the Quote Asset (the same as SOL for a SOL pair) and the coin. Null while they are not known, which holds the sell presets. */
   const [balances, setBalances] = useState<{ sol: bigint; quote: bigint; coins: bigint } | null>(null);
   const [step, setStep] = useState<Step>({ kind: "editing" });
   const [error, setError] = useState<string | null>(null);
@@ -88,21 +99,43 @@ export function TradePanel({
   // A trader never refers themselves; the referral is dropped for the referrer's own wallet.
   const referral = referrer && referrer !== publicKey?.toBase58() ? referrer : null;
 
-  const refreshBalances = useCallback(async () => {
+  /** The newest read of the balances: an older one that answers after it is dropped. */
+  const balanceRead = useRef(0);
+
+  /**
+   * Reads the wallet's balances. After a trade, `minSlot` is the slot it confirmed in: a node that has fallen behind
+   * answers as the wallet stood before the trade, and a preset then filled a share of the old holding (#221). So the
+   * balances are unknown, which holds the sell presets, until every answer is from that slot or a later one.
+   */
+  const refreshBalances = useCallback(async (minSlot = 0) => {
+    const read = ++balanceRead.current;
+    const newest = () => balanceRead.current === read;
     if (!publicKey) return setBalances(null);
-    try {
-      const held = async (mint: string) => {
-        const accounts = await connection.getParsedTokenAccountsByOwner(publicKey, { mint: new PublicKey(mint) }, "confirmed");
-        return accounts.value.reduce((sum, a) => sum + BigInt(a.account.data.parsed.info.tokenAmount.amount as string), 0n);
-      };
-      const [sol, coins, quote] = await Promise.all([
-        connection.getBalance(publicKey, "confirmed").then(BigInt),
-        held(launch.mint),
-        solPair ? null : held(launch.quote.mint),
-      ]);
-      setBalances({ sol, quote: quote ?? sol, coins });
-    } catch {
-      setBalances(null);
+    if (minSlot > 0) setBalances(null);
+    for (let attempt = 1; newest(); attempt++) {
+      const last = attempt >= BALANCE_READS;
+      try {
+        // The earliest slot any of the answers was read in.
+        let slot = Infinity;
+        const at = <T,>(answer: RpcResponseAndContext<T>) => {
+          slot = Math.min(slot, answer.context.slot);
+          return answer.value;
+        };
+        const held = async (mint: string) =>
+          at(await connection.getParsedTokenAccountsByOwner(publicKey, { mint: new PublicKey(mint) }, "confirmed"))
+            .reduce((sum, a) => sum + BigInt(a.account.data.parsed.info.tokenAmount.amount as string), 0n);
+        const [sol, coins, quote] = await Promise.all([
+          connection.getBalanceAndContext(publicKey, "confirmed").then(at).then(BigInt),
+          held(launch.mint),
+          solPair ? null : held(launch.quote.mint),
+        ]);
+        if (!newest()) return;
+        if (slot >= minSlot || last) return setBalances({ sol, quote: quote ?? sol, coins });
+      } catch {
+        if (!newest()) return;
+        if (minSlot === 0 || last) return setBalances(null);
+      }
+      await pause(BALANCE_RETRY_MS);
     }
   }, [connection, publicKey, launch.mint, launch.quote.mint, solPair]);
 
@@ -216,18 +249,24 @@ export function TradePanel({
       return setStep({ kind: "editing" });
     }
     setStep({ kind: "confirming", review: r });
+    /** The slot the trade confirmed in; 0 while that is not known. */
+    let confirmedSlot = 0;
     try {
       const result = await connection.confirmTransaction(
         { signature, blockhash: signed.message.recentBlockhash, lastValidBlockHeight: r.prepared.lastValidBlockHeight },
         "confirmed",
       );
+      // The trade is in that slot whether it worked or failed there, so the balances are read from it on.
+      confirmedSlot = result.context.slot;
+      void refreshBalances(confirmedSlot);
       if (result.value.err) {
         setError(landedError(JSON.stringify(result.value.err), r.prepared, quoteSymbol));
       } else {
         await reportTransaction(signature);
-        // The fill can differ from the quote when others trade first, so report what the chain actually did.
-        const filled = (await listTrades(launch.mint).catch(() => null))?.trades.find((t) => t.signature === signature);
-        setDone({ side: r.prepared.quote.side, coins: filled?.baseAmount ?? null, signature });
+        // The fill can differ from the quote when others trade first, so report what the chain actually did: the coins
+        // that reached the wallet or left it, which on a coin with a tax are not the curve's amount (#221).
+        const coins = owner ? await walletCoins(connection, signature, owner, launch.mint) : null;
+        setDone({ side: r.prepared.quote.side, coins: coins?.toString() ?? null, signature });
         setAmountText("");
         onTraded();
       }
@@ -246,8 +285,9 @@ export function TradePanel({
         );
         onTraded();
       }
+      // A read from the trade's slot on is already on its way once the confirmation was seen; a plain one would replace it.
+      if (confirmedSlot === 0) void refreshBalances();
     }
-    void refreshBalances();
     setStep({ kind: "editing" });
   }
 
@@ -582,6 +622,26 @@ export function TradePanel({
       />
     </section>
   );
+}
+
+/**
+ * The coins a confirmed trade moved into the wallet or out of it, from the transaction's own record of the wallet's
+ * accounts of the coin before and after it. The curve's amount, which the Indexer keeps and the trades table shows, is
+ * not that on a coin with a tax (a Reward Launch, a Liquidity Launch): a buy delivers less than the curve gave, and a
+ * sell takes more than the curve received (#221). Null when the node cannot show the transaction yet.
+ */
+async function walletCoins(connection: Connection, signature: string, owner: string, mint: string): Promise<bigint | null> {
+  const held = (balances: TokenBalance[] | null | undefined) =>
+    (balances ?? []).filter((b) => b.owner === owner && b.mint === mint).reduce((sum, b) => sum + BigInt(b.uiTokenAmount.amount), 0n);
+  for (let attempt = 1; attempt <= RESULT_READS; attempt++) {
+    const tx = await connection.getTransaction(signature, { commitment: "confirmed", maxSupportedTransactionVersion: 0 }).catch(() => null);
+    if (tx?.meta) {
+      const moved = held(tx.meta.postTokenBalances) - held(tx.meta.preTokenBalances);
+      return moved < 0n ? -moved : moved;
+    }
+    if (attempt < RESULT_READS) await pause(RESULT_RETRY_MS);
+  }
+  return null;
 }
 
 /** How a buy paid with SOL is routed, and why some of the Quote Asset stays in the wallet, in a line. */
