@@ -1,6 +1,6 @@
-import { LINK_KINDS, type LinkKind } from "@launchpad/contract";
+import { LINK_KINDS, LINK_MAX_LENGTH, linkHostAllowed, linkHostsText, type LinkKind } from "@launchpad/contract";
 
-export { LINK_KINDS, type LinkKind };
+export { LINK_KINDS, LINK_MAX_LENGTH, type LinkKind };
 
 /**
  * Each link kind as the site names it and the address it starts a field with. A kind whose mark is its name (X's mark
@@ -17,9 +17,6 @@ export const LINK_INFO: Record<LinkKind, { label: string; placeholder: string; m
   youtube: { label: "YouTube", placeholder: "https://youtube.com/@" },
 };
 
-/** The longest address a link may be (the contract's `optionalUrl`). */
-export const LINK_MAX_LENGTH = 200;
-
 /** A link as typed, with `https://` put before an address that names no scheme ("t.me/name"); anything else as it is. */
 export function withScheme(value: string) {
   const text = value.trim();
@@ -28,7 +25,9 @@ export function withScheme(value: string) {
 
 /**
  * What is wrong with the first link the API would refuse, in the form's words, or null: the contract takes a web
- * address over http or https, up to `LINK_MAX_LENGTH` characters, and answers anything else "invalid launch fields".
+ * address over http or https, up to `LINK_MAX_LENGTH` characters and, for every kind but the website, on its own
+ * site's hosts (`LINK_HOSTS`, #223: a Telegram chip must lead to Telegram), and answers anything else "invalid launch
+ * fields".
  */
 export function linkProblem(links: Record<LinkKind, string>): string | null {
   for (const kind of LINK_KINDS) {
@@ -43,6 +42,8 @@ export function linkProblem(links: Record<LinkKind, string>): string | null {
     if (!url || !/^https?:$/.test(url.protocol) || !url.hostname.includes("."))
       return `The ${LINK_INFO[kind].label} link is not a web address. It starts with https://.`;
     if (text.length > LINK_MAX_LENGTH) return `The ${LINK_INFO[kind].label} link is longer than ${LINK_MAX_LENGTH} characters. Use a shorter address.`;
+    if (kind !== "website" && !linkHostAllowed(kind, text))
+      return `The ${LINK_INFO[kind].label} link is not on ${LINK_INFO[kind].label}. Use an address on ${linkHostsText(kind)}.`;
   }
   return null;
 }
