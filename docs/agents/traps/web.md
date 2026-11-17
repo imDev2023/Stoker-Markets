@@ -62,3 +62,14 @@ The text is the original's, one sentence a line.
 
 - A coin's links are the seven `LINK_KINDS` of the contract (Telegram, X, Website, then Discord, TikTok, Instagram and YouTube behind the form's "More links"; owner, 2026-11-02), each a column of `launch_metadata` (migration 0023), a key of the Arweave document's `extensions` and a chip with its mark (`LinkIcon`, `src/lib/links.ts`) on the coin page; a new kind is added there, never as a one-off field.
   The review page "Stoker Launch Flow" is reshot with the throwaway scripts in `~/.claude/projects/-Volumes-Farhan-Work-Folder-Dev-AI-stonk-fun-solana/handoff/review-shots/` (its README has the command), never while a UI suite runs in the same worktree: a second `next dev` of one checkout fails on Turbopack's font cache and the stack never becomes ready.
+
+## The launch page against a real cluster (#222, 2026-11-17)
+
+- The API reads a reported transaction from its own node, and on devnet that node was seconds behind the one the browser had confirmed on: `POST /v1/transactions/:signature` answered 404 "transaction not found or not confirmed yet", the form ignored it, and the coin's page opened on "No coin at this address" for a coin that existed.
+  A local stack never shows this, since the browser and the API share one node; `reportLaunch` asks again until the API has taken the transaction, and a flow stands in for the lag with `page.route`.
+  `apiFetch` returns the response whatever its status, so a caller that never looks at `ok` has not checked anything; `reportTransaction` (the trade panel's) still does not.
+- A cluster's node words a failure its own way: a fee payer that has never held SOL is `AccountNotFound` on the local chain and `InvalidAccountForFee` on devnet (4.5).
+  When the form's words for a failed simulation or send are changed, read the real answer on devnet (`simulateTransaction`'s `err`), not the local chain's alone.
+- The file dialog's `accept` filter can be lifted and never applies to a dropped file, and a file's type is only its name's claim: the form checks the type when a file is picked and takes a file back out when its preview fails to load.
+- A `<dialog>`'s backdrop is the dialog itself: a click outside the box arrives with the dialog as its target, as a click on the dialog's own padding does, so a close on an outside click compares the pointer with the dialog's box (`QuotePicker`).
+- A fixture option that is an array (`expectedHttpErrors`) cannot be set through `test.use({ ... })` with more than one entry, since Playwright reads an array as a value with its options: push to the fixture inside the test instead.

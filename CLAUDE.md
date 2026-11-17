@@ -18,15 +18,15 @@ This repository is the fallback: it still deploys the live mainnet API and the d
 
 ### The frontier (2026-11-17)
 
-- **Running:** nothing but lane `launch-page` on #222 (the launch page tried on the rehearsal, then its form's fixes), until its PR lands.
+- **Running:** two relay lanes side by side, by the owner's choice: #223 (a coin's social link takes any site's address) and #224 (a control focused by keyboard under the phone's tab bar).
 - **Next unit:** none is named; ask the owner before starting one.
   The rewards roadmap is built through the Stoke Launch (#215, PR #219, merged 2026-11-16 on the owner's word; migration `0034`); what is left before mainnet is the owner's go-live list below.
   #185 (`/updates`) is built in new-stoker as imDev2023/new-stoker#53 and is closed here.
-- **#221 (the rehearsal's four fixes, PR #225, the web alone)** is fixed: on a coin with a tax the trade panel's result and the About's First Buy name what reached or left the wallet, a row of board cards keeps its lines level, and a sell preset waits for the balance after the trade.
+- **The rehearsal's findings (#221 and #222)** are fixed and on `main`, the web alone, with nothing waiting for the owner from them: #222 (PR #226, 0f2849c) is the launch page, every function tried and eight defects fixed; #221 (PR #225) is the trade panel's result and the About's First Buy on a coin with a tax, the board's cards level in a row, and a sell preset after a trade.
 - **Row-Level Security (#201)** is built and merged (migration `0030`, the lint check, the stack's plain owner role); devnet took it on 2026-11-16 (`runMigrations` ends by checking every table); the issue stays open until Supabase's advisor shows neither finding on both projects.
 - **Done on the rewards roadmap:** #187 (Budget Table), #188 (Creator Ladder), #113 with #184's Creator half (Creator Earnings Destinations), #196 (volume rebates), #199 (Holding Weight), #183 (the Reward Burn, PR #207), #184's open half (budgets pointed at liquidity, PR #206), #186 (the Creator Lock, PRs #208, #210 and #213), #214 (the Reward Liquidity, PR #217) and #215 (the Stoke Launch, PR #219).
 - **Devnet rehearsal** (`devnet.stoker.markets`, `api-devnet.stoker.markets`, and the apex with a devnet notice): redeployed from `main` at 89dd0be on 2026-11-16 by the main session, on the owner's word: the database through `0034`, then the API, then the web.
-  It is behind `main` by #221 (PR #225, the web alone) until the main session redeploys it.
+  It is behind `main` by #222 and #221 (the web alone) until the main session redeploys it.
   After every merge the rehearsal is redeployed from `main`, the database first when `packages/db` changed, and the record goes on the issue; the line is in #193's last comment.
 - **Mainnet:** `stoker-api` is live on `api.stoker.markets` on its build from before these merges; its database is through `0020` and takes `0021` to `0034` at go-live.
   Go-live is #23: the checklist is `docs/runbooks/mainnet.md` section 12, and #23's latest comment says which item is open.

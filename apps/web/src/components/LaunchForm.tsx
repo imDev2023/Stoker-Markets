@@ -7,13 +7,13 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { LAUNCH_IMAGE_MAX_BYTES, type PlatformInfo, type PreparedLaunch, type QuoteAsset, type TradeQuote } from "@launchpad/contract";
-import { ApiRequestError, getLaunchQuote, prepareLaunch, reportTransaction, retryLaunch } from "@/lib/api";
+import { LAUNCH_IMAGE_MAX_BYTES, LAUNCH_IMAGE_TYPES, type PlatformInfo, type PreparedLaunch, type QuoteAsset, type TradeQuote } from "@launchpad/contract";
+import { ApiRequestError, getLaunchQuote, prepareLaunch, reportLaunch, retryLaunch } from "@/lib/api";
 import { landedError } from "@/lib/transactions";
 import { graduationFeeSol } from "@/lib/fees";
 import { DESTINATION_SUMMARY } from "@/lib/earnings";
 import { COIN_DECIMALS, COIN_SUPPLY, formatAmount, formatUnits, isSol, quoteTicker } from "@/lib/format";
-import { FIRST_LINKS, LINK_INFO, LINK_KINDS, MORE_LINKS, type LinkKind } from "@/lib/links";
+import { FIRST_LINKS, LINK_INFO, LINK_KINDS, LINK_MAX_LENGTH, MORE_LINKS, linkProblem, withScheme, type LinkKind } from "@/lib/links";
 import { Address } from "./Address";
 import { CoinCard, type CoinCardData } from "./CoinCard";
 import { useCopyCheck, type CopyStatus } from "./CopyCheck";
@@ -98,6 +98,8 @@ export function LaunchForm({
   function pickImage(file: File | undefined) {
     setError(null);
     if (!file) return;
+    // The file dialog's filter can be lifted, and a dropped file never meets it: say so here, not when the launch is sent.
+    if (!(LAUNCH_IMAGE_TYPES as readonly string[]).includes(file.type)) return setError("That file is not a PNG, JPEG, WebP or GIF. Choose an image for your coin.");
     if (file.size > LAUNCH_IMAGE_MAX_BYTES) return setError("The image is larger than 2 MB. Choose a smaller one.");
     setImage(file);
   }
@@ -149,7 +151,7 @@ export function LaunchForm({
         "confirmed",
       );
       if (result.value.err) throw new LaunchFailed(onChainError(result.value.err));
-      await reportTransaction(signature);
+      await reportLaunch(signature);
       router.push(`/coin/${ready.prepared.mint}`);
     } catch (e) {
       const failure = launchFailure(e);
@@ -177,12 +179,20 @@ export function LaunchForm({
     if (busy) return;
     setError(null);
     if (failed) return void launch(() => retryLaunch(failed.mint), failed.quote, failed);
+    if (!name.trim()) return setError("Give your coin a name.");
     if (!image) return setError("Add an image for your coin.");
+    const link = linkProblem(links);
+    if (link) return setError(link);
     if (!quote?.launchable) return setError("Choose a Quote Asset to pair your coin with.");
     if (options.problem) return setError(options.problem);
     if (!hasAcceptedDisclaimer()) return setDisclaimerOpen(true);
     start();
   }
+
+  // A refusal is about the form as it was: once the Creator changes a field, or the wallet, it is no longer said. The
+  // image is left out, since choosing one answers for itself (a file refused leaves the image as it was).
+  const edited = JSON.stringify([name, symbol, description, links, quoteMint, options.fields(), publicKey?.toBase58() ?? null]);
+  useEffect(() => setError(null), [edited]);
 
   const side = useStickySide();
   const ticker = quote ? quoteTicker(quote) : null;
@@ -207,7 +217,16 @@ export function LaunchForm({
             <label className={styles.drop} data-filled={imageUrl ? true : undefined}>
               {imageUrl ? (
                 <>
-                  <img className={styles.dropImage} src={imageUrl} alt="Coin image preview" />
+                  <img
+                    className={styles.dropImage}
+                    src={imageUrl}
+                    alt="Coin image preview"
+                    // A file named as an image that holds none: taken back out, with the reason.
+                    onError={() => {
+                      setImage(null);
+                      setError("That file can't be read as an image. Choose another one.");
+                    }}
+                  />
                   <span>Change image</span>
                 </>
               ) : (
@@ -419,7 +438,19 @@ function LinkField({ kind, value, onChange, wide = false }: { kind: LinkKind; va
     <div className={`${styles.field} ${wide ? styles.wide : ""}`}>
       <label htmlFor={`coin-${kind}`}>{info.label}</label>
       <span className={`input ${styles.well}`}>
-        <input id={`coin-${kind}`} type="url" inputMode="url" autoComplete="off" spellCheck={false} value={value} onChange={(e) => onChange(e.target.value)} placeholder={info.placeholder} />
+        <input
+          id={`coin-${kind}`}
+          type="url"
+          inputMode="url"
+          autoComplete="off"
+          spellCheck={false}
+          maxLength={LINK_MAX_LENGTH}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          // An address pasted without its scheme ("t.me/name") gets it, where the browser would only say "Please enter a URL."
+          onBlur={() => { if (withScheme(value) !== value) onChange(withScheme(value)); }}
+          placeholder={info.placeholder}
+        />
       </span>
     </div>
   );
@@ -672,7 +703,8 @@ function simulationError(err: unknown, logs: string[], payingQuote: string | nul
     return `Your wallet doesn't have enough ${payingQuote} for your first buy. Add ${payingQuote} or buy less.`;
   if (/insufficient (lamports|funds)|InsufficientFundsForRent|0x1\b|"Custom":1\b/.test(text))
     return "Your wallet doesn't have enough SOL to pay for the launch. Add SOL and try again.";
-  if (/AccountNotFound/.test(text)) return "Your wallet has no SOL yet. Add SOL and try again.";
+  // A wallet that has never held SOL is no account at all: the node says it can't pay the fee, or that it is not found.
+  if (/AccountNotFound|InvalidAccountForFee/.test(text)) return "Your wallet has no SOL yet. Add SOL and try again.";
   return "The launch would fail on-chain, so nothing was sent. Try again in a moment.";
 }
 
