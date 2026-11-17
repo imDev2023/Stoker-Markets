@@ -16,20 +16,23 @@ This repository is the fallback: it still deploys the live mainnet API and the d
 7. `docs/agents/` - this file's long form, read on demand: `code-map.md`, `run-and-test.md`, `settled.md`, `history.md` and `traps/`.
    Read the file the Traps index below names before the work it covers; none of them is loaded for you.
 
-### The frontier (2026-11-16)
+### The frontier (2026-11-17)
 
-- **Running:** nothing. No relay lane is on a ticket, and no unit is named.
-- **Next unit:** none is named; ask the owner before starting one.
-  The rewards roadmap is built through the Stoke Launch (#215, PR #219, merged 2026-11-16 on the owner's word; migration `0034`); what is left before mainnet is the owner's go-live list below.
+- **Waiting for the owner (2026-11-17):** two PRs, each green in CI and proven by its lane's UI runs, whose relay sessions stay open for questions.
+  PR #225 (#221, lane `rehearsal-fixes`): on a coin with a tax the trade panel's result and the About's First Buy name the wallet's amounts, a row of board cards stays level, a sell preset waits for the balance after a trade.
+  PR #226 (#222, lane `launch-page`): every function of the launch page tried on the rehearsal (the table is on #222) and eight defects of the form fixed, each with a flow.
+  They touch different files; whichever lands second merges `main` in and proves a plain run again.
+- **Next unit:** when the owner says to merge them, merge each, redeploy the rehearsal (the web alone: neither has a migration or an API change), try the fixes there with the devnet test wallet (`docs/agents/traps/deploy-ops.md`), close the two sessions and write the handoff.
+  Nothing else is named: #223 (a coin's social link takes any site's address; it changes the contract) and #224 (a control focused by keyboard under the phone's tab bar) were filed by lane `launch-page` and wait for the owner's word.
   #185 (`/updates`) is built in new-stoker as imDev2023/new-stoker#53 and is closed here.
-- **Row-Level Security (#201)** is built and merged (migration `0030`, the lint check, the stack's plain owner role); devnet took it on 2026-11-16 (`runMigrations` ends by checking every table); the issue stays open until Supabase's advisor shows neither finding on both projects.
-- **Done on the rewards roadmap:** #187 (Budget Table), #188 (Creator Ladder), #113 with #184's Creator half (Creator Earnings Destinations), #196 (volume rebates), #199 (Holding Weight), #183 (the Reward Burn, PR #207), #184's open half (budgets pointed at liquidity, PR #206), #186 (the Creator Lock, PRs #208, #210 and #213), #214 (the Reward Liquidity, PR #217) and #215 (the Stoke Launch, PR #219).
+- **Row-Level Security (#201)** is on `main` and on devnet (migration `0030`); the issue stays open until Supabase's advisor shows neither finding on both projects.
+- **The rewards roadmap is built**, from the Budget Table (#187) through the Stoke Launch (#215, PR #219): each unit has its line under Settled below and its merge in `docs/agents/history.md`.
 - **Devnet rehearsal** (`devnet.stoker.markets`, `api-devnet.stoker.markets`, and the apex with a devnet notice): redeployed from `main` at 89dd0be on 2026-11-16 by the main session, on the owner's word: the database through `0034`, then the API, then the web.
   After every merge the rehearsal is redeployed from `main`, the database first when `packages/db` changed, and the record goes on the issue; the line is in #193's last comment.
 - **Mainnet:** `stoker-api` is live on `api.stoker.markets` on its build from before these merges; its database is through `0020` and takes `0021` to `0034` at go-live.
   Go-live is #23: the checklist is `docs/runbooks/mainnet.md` section 12, and #23's latest comment says which item is open.
-- **The owner still owes:** the name Stoke Launch, theirs to overrule; the calls each lane left to overrule on #183, #184, #186, #211, #214 and #215 (each issue's last comments, and the bodies of PRs #213, #217 and #219); on #23, item 9 (Always Use HTTPS), step 5b's backup disk, Helius Developer, then items 8, 10 and 12 at go-live; a Budget Table version with a share for `rebates` before the rebates pay anything (runbook section 17); the Reward Rounds' version 2 before the first Reward Launch (runbook section 6), and with it or after it the first Holding Weights (section 18); answers on #159; closing #128 and #129; three calls each on #193, #198 and #199 that are theirs to overrule (`docs/agents/settled.md`); and on #201, Supabase's advisor read again on both projects now that devnet has `0030` (mainnet's tables by the block on the issue, or at go-live).
-- **Open PRs on 2026-11-16:** #168 (`sign-in`) and #132 (`design-research`: merge its `docs/design/research/` or close it).
+- **The owner still owes:** the review and merge of PRs #225 and #226, and the sentences PR #226 wrote for the form (its "Choices the owner should check" on #222); the name Stoke Launch, theirs to overrule; the calls each lane left to overrule on #183, #184, #186, #211, #214 and #215 (each issue's last comments, and the bodies of PRs #213, #217 and #219); on #23, item 9 (Always Use HTTPS), step 5b's backup disk, Helius Developer, then items 8, 10 and 12 at go-live; a Budget Table version with a share for `rebates` before the rebates pay anything (runbook section 17); the Reward Rounds' version 2 before the first Reward Launch (runbook section 6), and with it or after it the first Holding Weights (section 18); answers on #159; closing #128 and #129; three calls each on #193, #198 and #199 that are theirs to overrule (`docs/agents/settled.md`); and on #201, Supabase's advisor read again on both projects now that devnet has `0030` (mainnet's tables by the block on the issue, or at go-live).
+- **Open PRs on 2026-11-17:** #225 and #226 (above), #168 (`sign-in`) and #132 (`design-research`: merge its `docs/design/research/` or close it).
   Check `gh pr list` before starting work, since cloud sessions also push here, and push every working branch.
 - **Site work** (phase 6, #137, and anything in the Playground's design) belongs in new-stoker unless the owner says otherwise.
 
