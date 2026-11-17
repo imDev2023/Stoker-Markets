@@ -162,7 +162,15 @@ function QuotePicker({ quotes, value, open, onChange, onClose }: { quotes: Quote
   }, [open]);
 
   return (
-    <dialog ref={dialog} className={`dialog ${styles.picker}`} aria-labelledby={`${id}-title`} onClose={onClose} onCancel={(e) => { e.preventDefault(); onClose(); }}>
+    <dialog ref={dialog} className={`dialog ${styles.picker}`} aria-labelledby={`${id}-title`} onClose={onClose}
+      onCancel={(e) => { e.preventDefault(); onClose(); }}
+      // A click outside the picker lands on its backdrop, which is the dialog itself, outside its box: that closes it too.
+      onClick={(e) => {
+        if (e.target !== e.currentTarget) return;
+        const box = e.currentTarget.getBoundingClientRect();
+        if (e.clientX < box.left || e.clientX > box.right || e.clientY < box.top || e.clientY > box.bottom) onClose();
+      }}
+    >
       <div className={styles.pickerHead}>
         <h2 id={`${id}-title`} className={`t-h3 ${styles.pickerTitle}`}>Pair with</h2>
         <button type="button" className={`button button-ghost button-sm ${styles.close}`} onClick={onClose}>Close</button>
