@@ -290,7 +290,7 @@ test.describe.serial("Volume Rebates", () => {
       await page.evaluate(() => document.fonts.ready);
       // The section is taller than the window, so it is captured while the page is scrolled: the sticky header, which
       // would sit over its top, scrolls away with the page (`unstickHeader` in visual.spec.ts).
-      await page.addStyleTag({ content: "body > header { position: static !important; } html { scroll-padding-top: 0 !important; }" });
+      await page.addStyleTag({ content: "body > header { position: static !important; } html { scroll-padding-block: 0 !important; }" });
       await page.mouse.move(0, 0);
       await expectNoHorizontalOverflow(page);
       await expect(section).toHaveScreenshot(`rebates-settled-${look.name}.png`, { mask: [section.locator("time"), section.locator("a.mono")] });

@@ -25,6 +25,10 @@ The text is the original's, one sentence a line.
   `PairMark` measures its glyphs to fit, because per-character estimates break on wide letters like W.
 - A `backdrop-filter` on the site header makes it the containing block of anything `position: fixed` inside it: the old search palette's backdrop covered the header's band alone (found 2026-10-13); portal any menu or sheet that opens from the header or the tab bar (`BottomTabs` does).
   The header has had no search since 2026-10-31; the site's one search is the board's `searchbox` "Search coins".
+- Under 768px everything fixed over the window's foot is one height, `--foot-h` in `globals.css` (#224): the tab bar, its safe-area inset, and a bar a page fixes on top of it, which says its own height in `--foot-bar-h` on the root (the coin page's Buy / Sell bar, `:root:has(.tradeBar)` in `CoinMarket.module.css`).
+  The body keeps that much room under the footer and the page keeps that much `scroll-padding-bottom`, plus 16px, so a control the browser scrolls to by itself (a Tab press, a refused field) stops clear of the bars.
+  A new bar fixed at the foot adds its height there, never as padding inside the page: the coin page once kept 120px inside its own column instead, which left the footer's last line under the Buy / Sell bar for good (found 2026-11-17).
+  `tests/ui/src/phoneFocus.spec.ts` walks `/launch` and a coin's page by keyboard and fails on any control a bar covers.
 
 ## TradingView
 

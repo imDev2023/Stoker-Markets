@@ -303,6 +303,10 @@
 }
 
 @media (max-width: 767px) {
+  /* The bar's height, said to the page (`--foot-h` in globals.css), which keeps that much more room under its footer and that much more padding when it scrolls a control into view: the hairline, the padding and a button. */
+  :root:has(.tradeBar) {
+    --foot-bar-h: 57px;
+  }
   .tradeBar {
     position: fixed;
     right: 0;
@@ -312,6 +316,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
+    height: var(--foot-bar-h);
     padding: 8px var(--gutter);
     border-top: 1px solid var(--line);
     background: var(--surface);
