@@ -59,6 +59,10 @@ The text is the original's, one sentence a line.
 - The UI fixture records the disclaimer's acceptance before every page load (`DISCLAIMER_KEY` in `tests/ui/src/fixtures.ts`), so no test or baseline meets the welcome: a test of the welcome sets `test.use({ firstVisit: true })`, and a test of the launch or trade disclaimer calls `forgetDisclaimer(page)` after the load, or the dialog never comes.
   Escape closes a modal `<dialog>` by itself and Chromium may not let `cancel` prevent it, so anything the close must do (the welcome's acceptance) hangs on `close`, never on `cancel` alone.
 
+- A node that has fallen behind is played by a route on the RPC's address (`taxedCoins.spec.ts`): the real answer is fetched (`route.fetch()`, which keeps its CORS headers for `fulfill({ response, json })`) and an answer kept from before the trade is sent in its place, under the request's own `id`, for the next reads.
+  The local validator is one node and never lags by itself, so a fault that needs a stale read never shows on the stack without it.
+- A flow that proves what a trade moved compares the page with the wallet's balance on the chain (`coinBalance` before and after), never with the Indexer's trade: on a coin with a tax the two differ, which is the point of `taxedCoins.spec.ts`.
+
 ## Layout checks: overflow, truncation and the pair
 
 - The UI tests' overflow check flags any element whose box runs past the viewport, even inside a scrolling container; a sideways-scrolling `pre` must hold plain text, not a `code` child.
