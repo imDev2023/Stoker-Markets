@@ -63,6 +63,11 @@ The text is the original's, one sentence a line.
   The local validator is one node and never lags by itself, so a fault that needs a stale read never shows on the stack without it.
 - A flow that proves what a trade moved compares the page with the wallet's balance on the chain (`coinBalance` before and after), never with the Indexer's trade: on a coin with a tax the two differ, which is the point of `taxedCoins.spec.ts`.
 
+- `waitForLoadState("networkidle")` can hang on a chart page with no request open at all: the shot of the coin page with trades never got the report about one load in four on 2026-11-17 (logged from before the load: nothing open, the chart drawn), on `main`'s web as on a branch, in any look, with or without another suite beside it, and its failure skipped all 90 flows.
+  `snap` bounds that wait at 20 seconds and goes on, saying so in the run's output; the page is settled by what follows it.
+  Never read such a failure as the branch's before trying `main`'s `apps/web` in the same worktree (`git checkout origin/main -- apps/web`, the filtered run, then `git checkout HEAD -- apps/web`).
+- A filtered run of the seed and one shot (`-g "seed the board|coin page with trades"`) can differ from the full run's baseline: that shot matched in all four looks on one filtered run and came out 21px taller in one look on another (not looked into; its trades table counts the coin's buybacks, which land after the seed), so judge a baseline by the full run.
+
 ## Layout checks: overflow, truncation and the pair
 
 - The UI tests' overflow check flags any element whose box runs past the viewport, even inside a scrolling container; a sideways-scrolling `pre` must hold plain text, not a `code` child.

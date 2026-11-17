@@ -56,9 +56,15 @@ async function chartsSettled(page: Page) {
   await expect(page.locator('[data-chart="loading"]')).toHaveCount(0, { timeout: 60_000 });
 }
 
+/** How long a shot waits for the network to go quiet before it goes on without the report (`snap`). */
+const NETWORK_QUIET_MS = 20_000;
+
 async function snap(page: Page, name: string, mask = dynamic) {
-  // Check the settled page: hydrated, images in and web fonts swapped.
-  await page.waitForLoadState("networkidle");
+  // Check the settled page: hydrated, images in and web fonts swapped. The wait for a quiet network is bounded: on a
+  // chart page Playwright now and then never reports one although no request is open (the coin page with trades hung
+  // about one load in four on 2026-11-17, on `main` as on a branch, and a failed visual project skips every flow), and
+  // the page is settled without it: what follows waits for the fonts and the images, and a shot is two captures that agree.
+  await page.waitForLoadState("networkidle", { timeout: NETWORK_QUIET_MS }).catch(() => console.warn(`${name}: the network was never reported quiet, shot anyway`));
   await page.evaluate(() => document.fonts.ready);
   // The page scrolls under a resting pointer below, and whatever passes beneath it is hovered: an open picker makes the
   // hovered option active and scrolls its list to it. Park the pointer over the header first.
