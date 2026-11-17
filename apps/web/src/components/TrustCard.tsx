@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { CreatorLockStatus, CreatorLockTerms, HolderList, LaunchTrust } from "@launchpad/contract";
+import { firstBuyShare } from "@/lib/coinTax";
 import { lockedShareBps, lockSentence, lockShare, lockStage } from "@/lib/creatorLock";
 import { formatShare as percent, formatUtc } from "@/lib/format";
 import styles from "./TrustCard.module.css";
@@ -116,7 +117,11 @@ export function TrustMarks({ trust, holders, lock = null, children }: Figures & 
   );
 }
 
-export function TrustCard({ trust, holders, lock = null, className = "" }: Figures & { className?: string }) {
+export function TrustCard({ trust, holders, lock = null, taxBps = 0, className = "" }: Figures & {
+  /** The tax the coin withholds on a transfer, in basis points, so the First Buy is the share that reached the Creator's wallet (#221). */
+  taxBps?: number;
+  className?: string;
+}) {
   const rows: { term: string; tone: Tone; text: ReactNode; detail?: ReactNode }[] = [];
 
   // The Creator: what they hold now (the chain), their First Buy at launch and their record here (the indexed trades and launches).
@@ -127,7 +132,8 @@ export function TrustCard({ trust, holders, lock = null, className = "" }: Figur
   const creatorRow = rows[0];
   if (trust && creatorRow) {
     const record = trust.creator.launches === 1 ? "Their first coin here." : `${count(trust.creator.launches, "coin")} here, ${trust.creator.graduated} graduated.`;
-    creatorRow.detail = `${trust.creator.firstBuy ? `First Buy at launch: ${percent(trust.creator.firstBuy.share)}.` : "No First Buy at launch."} ${record}`;
+    const firstBuy = firstBuyShare(trust, taxBps);
+    creatorRow.detail = `${firstBuy ? `First Buy at launch: ${firstBuy}.` : "No First Buy at launch."} ${record}`;
   }
 
   // Bundle Radar: whoever bought in the first slots, and what they still hold by their trades here.

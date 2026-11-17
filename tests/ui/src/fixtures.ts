@@ -110,10 +110,11 @@ export type LaunchFields = {
   /** Raw units of the Quote Asset. */
   firstBuy?: string;
   airdrop?: { wallet: string; amount: string }[];
-  /** A Reward Launch: its Reward Tax in basis points, its Payout Asset ("coin" unless set) and its Reward Burn (#183, "0" unless set). */
+  /** A Reward Launch: its Reward Tax in basis points, its Payout Asset ("coin" unless set), its Reward Burn (#183, "0" unless set) and its Reward Liquidity (#214, the same). */
   rewardTax?: string;
   rewardPayout?: string;
   rewardBurn?: string;
+  rewardLiquidity?: string;
   /** A Liquidity Launch (#215): its tax in basis points, in place of every field of a Reward Launch. */
   liquidityTax?: string;
   /** Where the Creator's earnings on the coin go (ADR 0011): the wallet unless set. */

@@ -59,6 +59,15 @@ The text is the original's, one sentence a line.
 - The UI fixture records the disclaimer's acceptance before every page load (`DISCLAIMER_KEY` in `tests/ui/src/fixtures.ts`), so no test or baseline meets the welcome: a test of the welcome sets `test.use({ firstVisit: true })`, and a test of the launch or trade disclaimer calls `forgetDisclaimer(page)` after the load, or the dialog never comes.
   Escape closes a modal `<dialog>` by itself and Chromium may not let `cancel` prevent it, so anything the close must do (the welcome's acceptance) hangs on `close`, never on `cancel` alone.
 
+- A node that has fallen behind is played by a route on the RPC's address (`taxedCoins.spec.ts`): the real answer is fetched (`route.fetch()`, which keeps its CORS headers for `fulfill({ response, json })`) and an answer kept from before the trade is sent in its place, under the request's own `id`, for the next reads.
+  The local validator is one node and never lags by itself, so a fault that needs a stale read never shows on the stack without it.
+- A flow that proves what a trade moved compares the page with the wallet's balance on the chain (`coinBalance` before and after), never with the Indexer's trade: on a coin with a tax the two differ, which is the point of `taxedCoins.spec.ts`.
+
+- `waitForLoadState("networkidle")` can hang on a chart page with no request open at all: the shot of the coin page with trades never got the report about one load in four on 2026-11-17 (logged from before the load: nothing open, the chart drawn), on `main`'s web as on a branch, in any look, with or without another suite beside it, and its failure skipped all 90 flows.
+  `snap` and `snapCard` bound that wait at 20 seconds through `quietNetwork` and go on, saying so in the run's output; the page is settled by what follows it. The same coin's earnings card hung the same way in `snapCard` on the next run, so no shot in `visual.spec.ts` waits for a quiet network unbounded; the flows' own shots (`liquidityLaunch.spec.ts`, `taxedCoins.spec.ts` and others) still do and have not hung.
+  Never read such a failure as the branch's before trying `main`'s `apps/web` in the same worktree (`git checkout origin/main -- apps/web`, the filtered run, then `git checkout HEAD -- apps/web`).
+- A filtered run of the seed and one shot (`-g "seed the board|coin page with trades"`) can differ from the full run's baseline: that shot matched in all four looks on one filtered run and came out 21px taller in one look on another (not looked into; its trades table counts the coin's buybacks, which land after the seed), so judge a baseline by the full run.
+
 ## Layout checks: overflow, truncation and the pair
 
 - The UI tests' overflow check flags any element whose box runs past the viewport, even inside a scrolling container; a sideways-scrolling `pre` must hold plain text, not a `code` child.

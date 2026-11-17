@@ -1,4 +1,9 @@
-/* Three cards across on a wide window, two on a narrower one, one on a phone; each card stretches to its row's height. */
+/*
+  Three cards across on a wide window, two on a narrower one, one on a phone. A card's five parts (the coin, the
+  headline, the price, the curve, the foot: BoardCard) sit on five rows that every card of a row shares, so a part that
+  takes more room in one card (a tag on two lines, #221) moves the same part of the cards beside it and their lines stay
+  level; the cards of a row are the same height by that.
+*/
 .grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -14,12 +19,11 @@
 }
 
 .item {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: subgrid;
+  grid-row: span 5;
   min-width: 0;
-}
-
-.item > * {
-  flex: 1 1 auto;
 }
 
 @media (max-width: 1100px) {
