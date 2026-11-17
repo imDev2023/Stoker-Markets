@@ -43,11 +43,10 @@ const DIALOG_STYLES = ["screenshot.css", "dialog.css"].map((name) => fileURLToPa
  * padding, which keeps anything scrolled into view clear of that header, goes with it: Playwright scrolls a panel that
  * fits the viewport into view and then captures the viewport alone, and with the padding kept a panel taller than the
  * viewport less the padding lands with its top at the padding and its bottom off screen, blank in the shot
- * (`trade-sol-quote.png` on the phone, 2026-10-27). The padding at the window's foot, which a phone keeps for the tab
- * bar (#224), goes too: in a shot that bar sits at the page's foot (`screenshot.css`), so nothing is over the window's.
+ * (`trade-sol-quote.png` on the phone, 2026-10-27).
  */
 const unstickHeader = (page: Page) =>
-  page.addStyleTag({ content: "body > header { position: static !important; } html { scroll-padding-block: 0 !important; }" });
+  page.addStyleTag({ content: "body > header { position: static !important; } html { scroll-padding-top: 0 !important; }" });
 
 /**
  * Every coin chart on the page has loaded TradingView's library and drawn, or said it could not: the plot is masked

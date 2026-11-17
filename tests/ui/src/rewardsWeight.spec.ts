@@ -117,7 +117,7 @@ async function settled(page: Page) {
   await page.waitForLoadState("networkidle");
   await page.evaluate(() => document.fonts.ready);
   await expectHydrated(page);
-  await page.addStyleTag({ content: "body > header { position: static !important; } html { scroll-padding-block: 0 !important; }" });
+  await page.addStyleTag({ content: "body > header { position: static !important; } html { scroll-padding-top: 0 !important; }" });
   await page.mouse.move(0, 0);
   await expectNoHorizontalOverflow(page);
 }
