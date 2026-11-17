@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AirdropStatus, CreatorLockStatus, HolderList, LaunchSummary, LaunchTrust, PlatformInfo, QuoteAsset, Trade, TradeSide } from "@launchpad/contract";
 import { getCreatorLock, getHolders, getLaunch, getTrust, listTrades } from "@/lib/api";
+import { coinTaxBps } from "@/lib/coinTax";
 import { quoteTicker } from "@/lib/format";
 import { AirdropCard } from "./AirdropCard";
 import { Change } from "./Change";
@@ -168,7 +169,7 @@ export function CoinMarket({
           </button>
           {trustOpen && (
             <div id="trust-panel" className={styles.trustPanel}>
-              <TrustCard trust={trust} holders={holders} lock={lock} />
+              <TrustCard trust={trust} holders={holders} lock={lock} taxBps={coinTaxBps(launch)} />
             </div>
           )}
         </div>
