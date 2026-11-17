@@ -622,6 +622,21 @@ test("launch form with a mistake in the airdrop list", async ({ page, wallet }) 
   expect(wallet.requests).toHaveLength(0);
 });
 
+test("launch form refusing a link on another site than its kind's", async ({ page, wallet }) => {
+  await page.goto("/launch");
+  await connectOnForm(page);
+  await fillCoin(page, "Own Hosts", "HOST");
+  await page.getByRole("textbox", { name: "Telegram" }).fill("https://example.com/not-telegram");
+  await copyCheckSettled(page);
+  await previewPriced(page);
+  await signButton(page).click();
+  // The refusal names the site the field expects and its hosts (#223), two sentences in the summary.
+  await expect(page.getByRole("main").getByRole("alert")).toHaveText("The Telegram link is not on Telegram. Use an address on t.me or telegram.me.");
+  await page.mouse.move(0, 0);
+  await snap(page, "launch-link-refused.png");
+  expect(wallet.requests).toHaveLength(0);
+});
+
 test("launch the network refused", async ({ page, wallet }) => {
   await allowAirdrops(wallet.keypair.publicKey);
   await launchFormWithOptions(page, OPTION_WALLETS.map((w) => `${w}, 250000000`).join("\n"));
