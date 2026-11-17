@@ -1,16 +1,18 @@
 /*
   One coin as a card on the board (#161; BoardCard). The coin's link is stretched over the card, with the copy and explorer controls above it;
   the paired asset is its logo on the coin's picture and its colours as the card's light (below). Every card in a row is
-  the same height (the grid stretches them), and the parts sit in the same places on every card, so the eye reads only
-  the differences.
+  the same height, and the parts sit in the same places on every card, so the eye reads only the differences: the card's
+  five parts lie on rows the whole row of cards shares (CoinGrid's subgrid, #221), so a tag that takes two lines in one
+  card lowers the same lines in the cards beside it. A sixth part needs CoinGrid's span raised with it.
   Figures are the mono; the name beside the pair is a word.
 */
 .card {
   position: relative;
   isolation: isolate;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-row: 1 / -1;
+  grid-template-rows: subgrid;
+  row-gap: 12px;
   min-width: 0;
   padding: 16px;
   overflow: hidden;

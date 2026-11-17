@@ -30,6 +30,21 @@ The text is the original's, one sentence a line.
   A new bar fixed at the foot adds its height there, never as padding inside the page: the coin page once kept 120px inside its own column instead, which left the footer's last line under the Buy / Sell bar for good (found 2026-11-17).
   `tests/ui/src/phoneFocus.spec.ts` walks `/launch` and a coin's page by keyboard and fails on any control a bar covers.
 
+- The cards of the board's grid share their rows (#221): each `li` of `CoinGrid` spans five rows of the grid as a subgrid and `BoardCard` lays its five parts on them, so a tag that takes two lines in one card lowers the same lines of the cards beside it.
+  A sixth part in the card needs the span in `CoinGrid.module.css` raised with it, or the part lands in a row of the next cards.
+  The grid's own gap is 16px and the card's is 12px: a subgrid may set its own `row-gap`, and the cards came out pixel for pixel as the flex column drew them.
+
+## Amounts on a coin with a tax
+
+- The Indexer's `baseAmount` is the curve's amount on a curve trade and the wallet's on a pool trade (`decode.ts` adds the pool's transfer fees in, LaunchLab's event leaves them out): on a Reward Launch or a Stoke Launch a curve buy delivers less than it, and a curve sell takes more.
+  Anything that tells a holder what reached or left their wallet reads the transaction's own token balances (`walletCoins` in `TradePanel.tsx`) or takes the tax off (`afterCoinTax` in `src/lib/coinTax.ts`, Token-2022's rule: the rate rounded up to a whole unit, no cap on our coins), never `baseAmount` as it is (#221: the panel's result and the About's First Buy both named the curve's amount).
+  The trades table and the trust figures' `firstBuy` go on carrying the curve's amounts.
+- The launch summary writes a share of the supply cut to hundredths of a percent (`supplyShare`, 0.1675% is "0.16%"), where `formatShare` rounds and drops to one decimal above 1%.
+  A figure that repeats what the summary promised uses `formatSupplyShare` (`src/lib/format.ts`), the summary's rule; if the summary's rounding ever changes, the two change together.
+- A read at `confirmed` straight after a confirmation can be answered by a node that has not reached the trade's slot yet: on the rehearsal a sell preset pressed two seconds after a buy filled half of the old holding (#221).
+  The answer's `context.slot` says where it was read: `refreshBalances` in `TradePanel.tsx` reads again until it is the confirmation's slot or later, and holds the balances (and the presets) unknown meanwhile.
+  Anything else read right after a transaction needs the same check.
+
 ## TradingView
 
 - TradingView's widget docs show their embed code only after a sign-up, and the module scripts (`widgets.tradingview-widget.com/w/en/tv-*.js`) answer 403 to curl: read a widget's attributes from the docs page's live preview in a browser (`customElements.get("tv-advanced-chart").observedAttributes`; its symbol search, `symbol-search.tradingview.com/symbol_search/v3/`, answers curl with a browser `Origin` and found every market in `markets.ts`).
