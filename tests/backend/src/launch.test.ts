@@ -6,7 +6,7 @@ import {
   createCurveRuleIx, createPlatformConfigIx, initializeV2Ix, launchlabCoder, launchlabPdas, metadataPda, WSOL_MINT,
 } from "@launchpad/chain";
 import { CPSWAP_CONFIG, SOL_GLOBAL_CONFIG } from "@launchpad/localnet";
-import { PreparedLaunch } from "@launchpad/contract";
+import { LINK_HOSTS, PreparedLaunch } from "@launchpad/contract";
 import { connection, deliverWebhook, env, fundedWallet, getLaunch, launch, listLaunches, PNG, prepare } from "./client";
 
 describe("launching a SOL-paired coin", () => {
@@ -178,6 +178,56 @@ describe("launch form validation", () => {
   ])("rejects %s", async (_label, override) => {
     const res = await prepare({ creator, ...override });
     expect(res.status).toBe(400);
+  });
+
+  // Each kind of link but the website takes its own site's hosts (#223): a Telegram chip that leads elsewhere is how a
+  // visitor gets sent to a page that asks for their wallet.
+  it.each([
+    ["telegram", "https://example.com/not-telegram"],
+    ["x", "https://example.com/x"],
+    ["discord", "https://example.com/discord"],
+    ["tiktok", "https://example.com/tt"],
+    ["instagram", "https://example.com/ig"],
+    ["youtube", "https://example.com/yt"],
+  ] as const)("refuses a %s link on another site, naming the field and the hosts it takes", async (kind, link) => {
+    const res = await prepare({ creator, [kind]: link });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string; details: { path: string[]; message: string }[] };
+    expect(body.error).toBe("invalid launch fields");
+    expect(body.details).toHaveLength(1);
+    expect(body.details[0]!.path).toEqual([kind]);
+    expect(body.details[0]!.message).toBe(`must be a link on ${LINK_HOSTS[kind].join(" or ")}`);
+  });
+
+  it.each([
+    ["a host that only starts with the site's", { telegram: "https://t.me.example.com/coin" }],
+    ["a host that only ends with the site's", { telegram: "https://nott.me/coin" }],
+    ["the site's name in the path alone", { x: "https://example.com/x.com/coin" }],
+    ["the site's name as the sign-in part of another host", { discord: "https://discord.gg@example.com/coin" }],
+    ["a backslash before another host's sign-in part", { youtube: "https://example.com\\@youtube.com/@coin" }],
+    ["another subdomain of the site", { tiktok: "https://shop.tiktok.com/@coin" }],
+    // The Cyrillic letter that looks like "a": the host a browser opens is another one (punycode).
+    ["a lookalike letter in the host", { instagram: "https://instagr\u0430m.com/coin" }],
+    ["one kind's site under another kind", { telegram: "https://x.com/coin" }],
+  ])("refuses %s", async (_label, override) => {
+    const res = await prepare({ creator, ...override });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ error: "invalid launch fields", details: [{ path: [Object.keys(override)[0]] }] });
+  });
+
+  it.each([
+    ["each site's other host", {
+      telegram: "https://telegram.me/coin", x: "https://twitter.com/coin", discord: "https://discord.com/invite/coin",
+      tiktok: "https://www.tiktok.com/@coin", instagram: "https://www.instagram.com/coin", youtube: "https://youtu.be/dQw4w9WgXcQ",
+    }],
+    ["www, the mobile subdomains, capitals and http", {
+      telegram: "https://www.t.me/coin", x: "https://mobile.x.com/coin", discord: "http://WWW.Discord.GG/coin",
+      tiktok: "https://m.tiktok.com/@coin", instagram: "https://m.instagram.com/coin", youtube: "https://m.youtube.com/@coin",
+      website: "https://coin.example.org/any/site",
+    }],
+  ])("takes %s", async (_label, links) => {
+    const res = await prepare({ creator, ...links });
+    expect(res.status).toBe(200);
   });
 
   it("requires an image", async () => {

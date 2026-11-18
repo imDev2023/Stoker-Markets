@@ -1,6 +1,6 @@
 // The launch page's refusals and its landing, as found on the devnet rehearsal (#222): what the form says to a file
-// that is no image, a link the API would refuse, a wallet with no SOL, a click outside the picker, a field changed after
-// its check, and a launch the API's node has not seen yet.
+// that is no image, a link the API would refuse, a link on another site than its kind's (#223), a wallet with no SOL, a
+// click outside the picker, a field changed after its check, and a launch the API's node has not seen yet.
 import { coinImage, expect, test } from "./fixtures";
 import { connectWallet, fillForm, firstBuyField, formAlert, openPicker, signButton, summary } from "./launchPage";
 
@@ -100,6 +100,43 @@ test("a link without its scheme gets one, and one the API would refuse is refuse
   expect(prepares).toBe(0);
   // Nothing was asked of the wallet.
   expect(wallet.requests).toHaveLength(0);
+});
+
+test("a link on another site than its kind's is refused in the form's words, and a launched coin's chips lead to the sites they name", async ({ page, wallet }) => {
+  let prepares = 0;
+  page.on("request", (r) => void (r.url().endsWith("/v1/launches/prepare") && prepares++));
+  await page.goto("/launch");
+  await connectWallet(page);
+  // A website may be anywhere; every other kind takes its own site's hosts (#223).
+  await fillForm(page, { name: "Own Hosts", symbol: "HOST", website: "https://example.com/own-hosts" });
+  await page.getByRole("button", { name: /^More links/ }).click();
+  const links = [
+    { label: "Telegram", field: "Telegram" as string | RegExp, wrong: "https://example.com/not-telegram", right: "https://telegram.me/ownhosts", hosts: "t.me or telegram.me" },
+    // A host that only starts with the site's, and the site's name as the sign-in part of another host.
+    { label: "X", field: /^X\b/, wrong: "https://x.com.example.com/ownhosts", right: "https://mobile.twitter.com/ownhosts", hosts: "x.com or twitter.com" },
+    { label: "Discord", field: "Discord", wrong: "https://discord.gg@example.com/ownhosts", right: "https://discord.com/invite/ownhosts", hosts: "discord.gg or discord.com" },
+    { label: "TikTok", field: "TikTok", wrong: "https://example.com/tt", right: "https://www.tiktok.com/@ownhosts", hosts: "tiktok.com" },
+    { label: "Instagram", field: "Instagram", wrong: "https://example.com/ig", right: "https://www.instagram.com/ownhosts", hosts: "instagram.com" },
+    { label: "YouTube", field: "YouTube", wrong: "https://example.com/yt", right: "https://youtu.be/dQw4w9WgXcQ", hosts: "youtube.com or youtu.be" },
+  ];
+  for (const link of links) {
+    const field = page.getByRole("textbox", { name: link.field });
+    await field.fill(link.wrong);
+    await signButton(page).click();
+    await expect(formAlert(page)).toHaveText(`The ${link.label} link is not on ${link.label}. Use an address on ${link.hosts}.`);
+    await field.fill(link.right);
+    await expect(formAlert(page)).toHaveCount(0);
+  }
+  // Nothing was prepared and nothing asked of the wallet while a link led elsewhere.
+  expect(prepares).toBe(0);
+  expect(wallet.requests).toHaveLength(0);
+  // With each link on its own site the coin launches, and each chip on its page leads to the site it names.
+  await signButton(page).click();
+  await page.waitForURL("**/coin/*", { timeout: 60_000 });
+  expect(prepares).toBe(1);
+  expect(wallet.requests).toHaveLength(1);
+  for (const link of links) await expect(page.getByRole("article").getByRole("link", { name: link.label, exact: true })).toHaveAttribute("href", link.right);
+  await expect(page.getByRole("article").getByRole("link", { name: "Website", exact: true })).toHaveAttribute("href", "https://example.com/own-hosts");
 });
 
 test("a click outside the pair picker closes it, and one inside it does not", async ({ page }) => {

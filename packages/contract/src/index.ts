@@ -26,17 +26,74 @@ export * from "./trust";
 export * from "./marks";
 export * from "./creatorLock";
 
-const base58 = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "must be a base58 address");
-const optionalUrl = z.union([z.url({ protocol: /^https?$/ }).max(200), z.literal("")]).optional().transform((v) => v || undefined);
+/** The runtime's own URL (a Worker's, Node's and a browser's are one standard); this package's `lib` names no runtime. */
+declare const URL: new (url: string) => { hostname: string };
 
+const base58 = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "must be a base58 address");
 /**
  * The links a coin can carry, in the order the launch form asks for them (owner, 2026-11-02: Telegram first, since coins
  * with one graduated nine times as often; the three the form shows first, then the rest behind "More links"). Each is
- * an optional https URL on the form, a column of the hosted metadata, a key of the Arweave document's extensions and a
- * link on the coin page.
+ * an optional web address on the form (on its own site's hosts for every kind but the website, `LINK_HOSTS`), a column
+ * of the hosted metadata, a key of the Arweave document's extensions and a link on the coin page.
  */
 export const LINK_KINDS = ["telegram", "x", "website", "discord", "tiktok", "instagram", "youtube"] as const;
 export type LinkKind = (typeof LINK_KINDS)[number];
+/** Every kind whose link must be on its own site; a coin's website may be anywhere. */
+export type HostedLinkKind = Exclude<LinkKind, "website">;
+/**
+ * The hosts each kind's link may be on (#223; the owner's to change): a Telegram link that leads to another site is how
+ * a visitor gets sent to a page that asks for their wallet. The first host is the one the site names in a field.
+ */
+export const LINK_HOSTS: Record<HostedLinkKind, readonly string[]> = {
+  telegram: ["t.me", "telegram.me"],
+  x: ["x.com", "twitter.com"],
+  discord: ["discord.gg", "discord.com"],
+  tiktok: ["tiktok.com"],
+  instagram: ["instagram.com"],
+  youtube: ["youtube.com", "youtu.be"],
+};
+/** The subdomains each of those hosts is also taken under: `www.` and the sites' mobile ones. No other subdomain is. */
+export const LINK_HOST_PREFIXES = ["www.", "m.", "mobile."] as const;
+
+/**
+ * Whether a link of this kind is on one of its kind's hosts; a website is wherever it is. The address is read as a
+ * browser reads it, so the host is where a click really leads: "t.me@example.com" and "example.com\@t.me" are both on
+ * example.com, and a lookalike letter makes another host. An address a browser cannot read is on no host.
+ */
+export function linkHostAllowed(kind: LinkKind, link: string): boolean {
+  if (kind === "website") return true;
+  let host: string;
+  try {
+    host = new URL(link).hostname;
+  } catch {
+    return false;
+  }
+  return LINK_HOSTS[kind].some((h) => host === h || LINK_HOST_PREFIXES.some((p) => host === p + h));
+}
+
+/** A kind's hosts as a sentence names them: "t.me or telegram.me". */
+export const linkHostsText = (kind: HostedLinkKind) => LINK_HOSTS[kind].join(" or ");
+
+/** The longest address a link may be. */
+export const LINK_MAX_LENGTH = 200;
+const webAddress = z.union([z.url({ protocol: /^https?$/ }).max(LINK_MAX_LENGTH), z.literal("")]);
+/**
+ * One link of the launch form: empty, or a web address over http or https of up to `LINK_MAX_LENGTH` characters that,
+ * for every kind but the website, is on its kind's hosts. A link on another host is refused with one issue at the
+ * field's own path, whose message names the hosts.
+ */
+const linkField = (kind: LinkKind) =>
+  (kind === "website"
+    ? webAddress
+    : webAddress.refine((v) => v === "" || linkHostAllowed(kind, v), {
+        error: `must be a link on ${linkHostsText(kind)}`,
+        // An address that is no web address at all has been told so already.
+        when: (payload) => payload.issues.length === 0,
+      })
+  )
+    .optional()
+    .transform((v) => v || undefined);
+
 /** A coin's links as the API answers them: every kind, null where the Creator gave none. */
 export const LaunchLinks = z.object(Object.fromEntries(LINK_KINDS.map((k) => [k, z.string().nullable()])) as Record<LinkKind, z.ZodNullable<z.ZodString>>);
 export type LaunchLinks = z.infer<typeof LaunchLinks>;
@@ -52,13 +109,13 @@ export const PrepareLaunchFields = z.object({
   name: z.string().trim().min(1).max(32),
   symbol: z.string().trim().min(1).max(10).regex(/^[A-Za-z0-9$]+$/, "letters, digits and $ only"),
   description: z.string().trim().max(1000).default(""),
-  website: optionalUrl,
-  x: optionalUrl,
-  telegram: optionalUrl,
-  discord: optionalUrl,
-  tiktok: optionalUrl,
-  instagram: optionalUrl,
-  youtube: optionalUrl,
+  website: linkField("website"),
+  x: linkField("x"),
+  telegram: linkField("telegram"),
+  discord: linkField("discord"),
+  tiktok: linkField("tiktok"),
+  instagram: linkField("instagram"),
+  youtube: linkField("youtube"),
 }).extend(LaunchModeFields.shape);
 export type PrepareLaunchFields = z.infer<typeof PrepareLaunchFields>;
 
