@@ -44,7 +44,7 @@ type Step =
 const DESCRIPTION_MAX = 1000;
 
 /**
- * The launch form after new-stoker's launch page (#172; the owner's answer of 2026-11-06: its look and layout in this
+ * The launch form after kiln's launch page (#172; the owner's answer of 2026-11-06: its look and layout in this
  * site's colours and type). One page without steps: the coin, the pair, the launch type, where the Creator's earnings
  * go (ADR 0011), the links and the First Buy as plain headed sections, and beside them the summary, which is the review
  * and holds the one action: a preview of the coin as the site's coin card draws it, the terms it launches on, and
@@ -508,7 +508,7 @@ type SummaryProps = {
 };
 
 /**
- * The launch summary beside the form (new-stoker's, in our tokens): the coin's preview as the site's coin card, the terms
+ * The launch summary beside the form (kiln's, in our tokens): the coin's preview as the site's coin card, the terms
  * it launches on, every one fixed at launch, the three promises, and the one action with what follows it: the signing
  * panel while the wallet asks, the status while the launch lands, and a way back when it did not visibly land.
  */

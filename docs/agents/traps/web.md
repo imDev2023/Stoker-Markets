@@ -68,7 +68,7 @@ The text is the original's, one sentence a line.
   Every kind but the website takes its own site's hosts alone (#223, `LINK_HOSTS` and `linkHostAllowed` in the contract: `t.me` and `telegram.me`, `x.com` and `twitter.com`, `discord.gg` and `discord.com`, `tiktok.com`, `instagram.com`, `youtube.com` and `youtu.be`, each also under `www.`, `m.` and `mobile.`), since a Telegram chip that led to another site is how a visitor gets sent to a page that asks for their wallet; the API, the form (`linkProblem`) and the API reference read that one list, so a host is added there and nowhere else, and a new kind needs its hosts or the contract does not compile.
   The host is the one a browser would open (`new URL(link).hostname`), never a search of the text: `t.me@example.com`, `example.com\@t.me` and `t.me.example.com` are all on example.com.
   The rule is checked when a launch is prepared and never when a coin is read, so a coin launched before it keeps the links it has.
-  The review page "Stoker Launch Flow" is reshot with the throwaway scripts in `~/.claude/projects/-Volumes-Farhan-Work-Folder-Dev-AI-stonk-fun-solana/handoff/review-shots/` (its README has the command), never while a UI suite runs in the same worktree: a second `next dev` of one checkout fails on Turbopack's font cache and the stack never becomes ready.
+  The review page "Stoker Launch Flow" is reshot with the throwaway scripts in `~/.claude/projects/-Volumes-Farhan-Work-Folder-Dev-AI-stoker/handoff/review-shots/` (its README has the command), never while a UI suite runs in the same worktree: a second `next dev` of one checkout fails on Turbopack's font cache and the stack never becomes ready.
 
 ## The launch page against a real cluster (#222, 2026-11-17)
 

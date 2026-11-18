@@ -1,4 +1,4 @@
-/* The pair chooser on the launch form (#172, after new-stoker's): the recommended three as rows, the field for any other asset, and the full picker as a dialog. */
+/* The pair chooser on the launch form (#172, after kiln's): the recommended three as rows, the field for any other asset, and the full picker as a dialog. */
 .chooser {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
