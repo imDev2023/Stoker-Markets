@@ -80,10 +80,3 @@
     grid-column: 1 / -1;
   }
 }
-
-@media (max-width: 767px) {
-  /* Room at the foot for the Buy / Sell bar above the site's tab bar. */
-  .page {
-    padding-bottom: 120px;
-  }
-}

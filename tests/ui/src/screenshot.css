@@ -106,3 +106,11 @@ nav[aria-label="Sections"] {
 [data-trade-bar] {
   position: absolute !important;
 }
+
+/* With both bars at the page's foot nothing is over the window's, so the padding a phone keeps there when it scrolls a
+   control into view (#224) goes for a shot: Playwright scrolls an element into view by it before capturing the
+   viewport, and a panel taller than the window less the header's padding and the foot's (the phone's trade panel in
+   review, 727px of 844) was centred with its top under the sticky header. */
+html {
+  scroll-padding-bottom: 0 !important;
+}
