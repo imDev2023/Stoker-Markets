@@ -23,7 +23,7 @@
   color: var(--ink-3);
 }
 
-/* The First Buy is one large amount (new-stoker's .amount): a well on sunken with the line on its edge and the ring when it has focus (the input primitive's rules). */
+/* The First Buy is one large amount (kiln's .amount): a well on sunken with the line on its edge and the ring when it has focus (the input primitive's rules). */
 .amount {
   display: flex;
   align-items: center;

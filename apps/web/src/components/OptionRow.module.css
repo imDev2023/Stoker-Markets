@@ -1,4 +1,4 @@
-/* A choice as a row: the line on its edge, the accent's two-pixel edge once chosen (new-stoker's .option, in our tokens). */
+/* A choice as a row: the line on its edge, the accent's two-pixel edge once chosen (kiln's .option, in our tokens). */
 .row {
   display: flex;
   align-items: center;

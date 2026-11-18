@@ -1,9 +1,10 @@
-# stonk-fun-solana
+# stoker
 
 An "open + trustless" asset-paired Solana launchpad on Raydium LaunchLab named Stoker (ticker STOKER, domain `stoker.markets`; the packages keep their `@launchpad/` scope), built after researching StonkFun.
 No custom on-chain program: our own LaunchLab `PlatformConfig` plus a Cloudflare backend and a Next.js app.
-Since 2026-11-04 the site's rebuild runs in `/Volumes/Farhan/Work Folder/Dev/AI/new-stoker` (`imDev2023/new-stoker`, a copy of this repository at `12dbc10` with its history; Multica project `e5972df9`): the whole website from scratch in the Playground's design, with programs of our own allowed, its map is issue #1 there, and the relay runs it as the project `new-stoker`.
-This repository is the fallback: it still deploys the live mainnet API and the devnet rehearsal, and site work (phase 6, #137; Advanced Charts, #126) belongs in new-stoker unless the owner says otherwise.
+Since 2026-11-04 the site's rebuild runs in `/Volumes/Farhan/Work Folder/Dev/AI/kiln` (`imDev2023/kiln`, a copy of this repository at `12dbc10` with its history; Multica project `e5972df9`): the whole website from scratch in the Playground's design, with programs of our own allowed, its map is issue #1 there, and the relay runs it as the project `kiln`.
+This repository is the fallback: it still deploys the live mainnet API and the devnet rehearsal, and site work (phase 6, #137; Advanced Charts, #126) belongs in kiln unless the owner says otherwise.
+Renamed on 2026-11-18 (owner): this project is `stoker` on its folder (was `stonk-fun-solana`) and its repository (was `imDev2023/Stoker-Markets`), and the rebuild is `kiln` (was `new-stoker`); GitHub redirects both old addresses, and the private `imDev2023/Stoker-Markets-research` keeps its name.
 
 ## Read first
 
@@ -21,21 +22,20 @@ This repository is the fallback: it still deploys the live mainnet API and the d
 - **Running:** nothing. No relay lane is on a ticket.
 - **Next unit:** none is named; ask the owner before starting one.
   The rewards roadmap is built through the Stoke Launch (#215, PR #219, merged 2026-11-16 on the owner's word; migration `0034`); what is left before mainnet is the owner's go-live list below.
-  #185 (`/updates`) is built in new-stoker as imDev2023/new-stoker#53 and is closed here.
+  #185 (`/updates`) is built in kiln as imDev2023/kiln#53 and is closed here.
 - **The rehearsal's findings (#221 and #222)** are fixed and on `main`, the web alone, with nothing waiting for the owner from them: #222 (PR #226, 0f2849c) is the launch page, every function tried and eight defects fixed; #221 (PR #225, c231ff9) is the trade panel's result and the About's First Buy on a coin with a tax, the board's cards level in a row, and a sell preset after a trade.
   All twelve fixes were tried again on the rehearsal after its redeploy; the records are the last comments of #221 and #222.
-  The two defects #222 found outside the page are fixed and on `main` too: #224 (PR #229, 1e12d6d; at phone width a control the keyboard reaches stops clear of the tab bar) and #223 (PR #228; a coin's link takes its own site's hosts alone, `LINK_HOSTS` in the contract).
+  The two defects #222 found outside the page are fixed and on `main` too: #224 (PR #229, 1e12d6d; at phone width a control the keyboard reaches stops clear of the tab bar) and #223 (PR #228, 967e564; a coin's link takes its own site's hosts alone, `LINK_HOSTS` in the contract); both were tried on the site after their deploys (the tickets' last comments).
 - **Row-Level Security (#201)** is built and merged (migration `0030`, the lint check, the stack's plain owner role); devnet took it on 2026-11-16 (`runMigrations` ends by checking every table); the issue stays open until Supabase's advisor shows neither finding on both projects.
 - **Done on the rewards roadmap:** #187 (Budget Table), #188 (Creator Ladder), #113 with #184's Creator half (Creator Earnings Destinations), #196 (volume rebates), #199 (Holding Weight), #183 (the Reward Burn, PR #207), #184's open half (budgets pointed at liquidity, PR #206), #186 (the Creator Lock, PRs #208, #210 and #213), #214 (the Reward Liquidity, PR #217) and #215 (the Stoke Launch, PR #219).
-- **Devnet rehearsal** (`devnet.stoker.markets`, `api-devnet.stoker.markets`, and the apex with a devnet notice): the web redeployed from `main` at c231ff9 on 2026-11-17 by the main session (#221 and #222 changed the web alone); the API and the database, through `0034`, are as deployed from 89dd0be on 2026-11-16.
-  It is behind `main` by #224 (the web) and by #223 (the contract, so the API, then the web) until the main session redeploys it.
+- **Devnet rehearsal** (`devnet.stoker.markets`, `api-devnet.stoker.markets`, and the apex with a devnet notice): redeployed from `main` at 967e564 on 2026-11-18 by the main session, on the owner's word: the API (#223 changed the contract), then the web; the database is through `0034`, with no migration pending.
   After every merge the rehearsal is redeployed from `main`, the database first when `packages/db` changed, and the record goes on the issue; the line is in #193's last comment.
 - **Mainnet:** `stoker-api` is live on `api.stoker.markets` on its build from before these merges; its database is through `0020` and takes `0021` to `0034` at go-live.
   Go-live is #23: the checklist is `docs/runbooks/mainnet.md` section 12, and #23's latest comment says which item is open.
 - **The owner still owes:** the name Stoke Launch, theirs to overrule; the calls each lane left to overrule on #183, #184, #186, #211, #214, #215 and #221 to #224 (each issue's last comments, and the bodies of PRs #213, #217, #219, #225, #226, #228 and #229); on #23, item 9 (Always Use HTTPS), step 5b's backup disk, Helius Developer, then items 8, 10 and 12 at go-live; a Budget Table version with a share for `rebates` before the rebates pay anything (runbook section 17); the Reward Rounds' version 2 before the first Reward Launch (runbook section 6), and with it or after it the first Holding Weights (section 18); answers on #159; closing #128 and #129; three calls each on #193, #198 and #199 that are theirs to overrule (`docs/agents/settled.md`); and on #201, Supabase's advisor read again on both projects now that devnet has `0030` (mainnet's tables by the block on the issue, or at go-live).
 - **Open PRs on 2026-11-18:** #168 (`sign-in`) and #132 (`design-research`: merge its `docs/design/research/` or close it).
   Check `gh pr list` before starting work, since cloud sessions also push here, and push every working branch.
-- **Site work** (phase 6, #137, and anything in the Playground's design) belongs in new-stoker unless the owner says otherwise.
+- **Site work** (phase 6, #137, and anything in the Playground's design) belongs in kiln unless the owner says otherwise.
 
 ## Hard rules
 
@@ -170,7 +170,7 @@ A SessionStart hook (`.claude/hooks/ff-main.sh`) fast-forwards the main checkout
 ## Multica dashboard
 
 This project is mirrored on the owner's Multica dashboard (workspace Pandora) as project `c5707009-2225-4a7d-94e3-93a9eed5d951`.
-GitHub issues on `imDev2023/Stoker-Markets` are the source of truth; Multica only mirrors them (see `docs/agents/issue-tracker.md`).
+GitHub issues on `imDev2023/stoker` are the source of truth; Multica only mirrors them (see `docs/agents/issue-tracker.md`).
 At the end of every session, after the tracker is updated, run the `multica-sync` skill for this project: mirror ticket statuses, add any new tickets, and refresh the project's "Current step" section.
 Every Multica write passes `--no-start` and no ticket is ever assigned to an agent, so the sync never starts an agent run.
 If the `multica` CLI is not signed in, say so in the session summary and stop anyway; the sync never blocks the work.
@@ -179,7 +179,7 @@ If the `multica` CLI is not signed in, say so in the session summary and stop an
 
 ### Issue tracker
 
-Issues live in GitHub Issues on `imDev2023/Stoker-Markets` and are mirrored to Multica; external PRs are not a triage surface. See `docs/agents/issue-tracker.md`.
+Issues live in GitHub Issues on `imDev2023/stoker` and are mirrored to Multica; external PRs are not a triage surface. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import styles from "./OptionRow.module.css";
 
 /**
- * One choice of a set as a full-width row (#172, after new-stoker's launch page): the radio, what it is, and at the
+ * One choice of a set as a full-width row (#172, after kiln's launch page): the radio, what it is, and at the
  * row's end a tag (an asset's kind, "Coming soon"). The launch form's pair and launch type are made of these; the
  * radio's accessible name is the row's whole text.
  */

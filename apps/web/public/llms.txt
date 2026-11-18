@@ -14,7 +14,7 @@ This file states what the project is and what can be checked. It makes no claim 
 - Liquidity is locked at graduation. The platform earns from it through Raydium's Fee Key, not by holding it.
 - Copy Protection: for a window after a coin launches, nobody else may launch a coin with its name, ticker or image; afterwards a copy is labeled as one.
 - Quote Risk Labels: what an asset's issuer can do (freeze wallets, tax transfers) is shown on every pair.
-- The source is public: https://github.com/imDev2023/Stoker-Markets
+- The source is public: https://github.com/imDev2023/stoker
 - The API is documented on the site at `/api` and answers without a key.
 
 ## Pages

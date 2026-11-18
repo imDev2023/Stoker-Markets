@@ -77,7 +77,7 @@ function CardBody({ q, size }: { q: QuoteAsset; size: number }) {
 }
 
 /**
- * The Quote Asset chooser on the launch form (#172, after new-stoker's launch page): the recommended three as rows (SOL,
+ * The Quote Asset chooser on the launch form (#172, after kiln's launch page): the recommended three as rows (SOL,
  * the deepest stablecoin and the deepest stock), each with its kind at its end, and under them "Any other asset", a
  * field that reads like a select and opens the full picker with its search, since a plain select of six hundred assets
  * can't be searched. An asset chosen from the picker is named in that field, and no row is checked. `labelId` names the

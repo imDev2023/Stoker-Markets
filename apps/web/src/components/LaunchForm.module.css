@@ -1,5 +1,5 @@
 /*
-  The launch form after new-stoker's launch page (#172, the owner's answer of 2026-11-06): its layout and spacing, in this
+  The launch form after kiln's launch page (#172, the owner's answer of 2026-11-06): its layout and spacing, in this
   site's tokens and type. The form's sections stand on the page as headed groups (no card around them), and the summary
   is the one card, sticky beside them on a desktop and after them on a phone.
 */
@@ -410,7 +410,7 @@
   }
 }
 
-/* One field a row where two would crowd (new-stoker's breakpoint). */
+/* One field a row where two would crowd (kiln's breakpoint). */
 @media (max-width: 520px) {
   .two {
     grid-template-columns: minmax(0, 1fr);

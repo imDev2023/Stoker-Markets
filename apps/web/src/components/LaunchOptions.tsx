@@ -205,7 +205,7 @@ export function useLaunchOptions(quote: OptionsQuote | null, creator: string | n
 export type LaunchOptionsState = ReturnType<typeof useLaunchOptions>;
 
 /**
- * The launch type on the launch form (#172, after new-stoker's launch page): four rows, a standard coin, a Reward Launch
+ * The launch type on the launch form (#172, after kiln's launch page): four rows, a standard coin, a Reward Launch
  * paid in the coin, one paid in the Quote Asset, and a Liquidity Launch (#215, named in `@/lib/liquidityLaunch`); a
  * Reward Launch then asks its Reward Tax and its Reward Burn (#183), the share of every harvest burned instead of paid
  * out, and its Reward Liquidity (#214); a Liquidity Launch asks its tax alone, since all of it goes to the coin's pool,
@@ -441,7 +441,7 @@ export function LockChoice({ options: o, coin, labelId, opening }: {
 }
 
 /**
- * The First Buy (#172, after new-stoker's launch page): one large amount in the Quote Asset, whose live quote the summary
+ * The First Buy (#172, after kiln's launch page): one large amount in the Quote Asset, whose live quote the summary
  * shows, and for a Creator the operator has allowed, an airdrop paid from it.
  */
 export function LaunchOptions({ options: o, coin }: { options: LaunchOptionsState; coin: string }) {
