@@ -322,12 +322,19 @@
   --tabs-h: 56px;
 }
 
+/*
+  Under 768px the tab bar is fixed over the window's foot, and a page may fix a bar of its own on top of it (a coin
+  page's Buy / Sell bar, which says its height in `--foot-bar-h`). `--foot-h` is all of it, the safe-area inset included:
+  the room the page keeps under its footer, so its last line scrolls clear, and the padding a scroll into view keeps
+  (the `html` rule below).
+*/
 @media (max-width: 767px) {
   :root {
     --header-h: 52px;
+    --foot-h: calc(var(--tabs-h) + env(safe-area-inset-bottom, 0px) + var(--foot-bar-h, 0px));
   }
   body {
-    padding-bottom: calc(var(--tabs-h) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: var(--foot-h);
   }
 }
 
@@ -348,6 +355,13 @@ html {
   -webkit-text-size-adjust: 100%;
   /* Anything scrolled into view (a focused field, a linked section) clears the sticky site header. */
   scroll-padding-top: calc(var(--header-h) + 16px);
+}
+
+/* And under 768px what is fixed over the window's foot, by the same margin: a control the keyboard reaches, or a field the browser refused, never stops under the tab bar (#224). */
+@media (max-width: 767px) {
+  html {
+    scroll-padding-bottom: calc(var(--foot-h) + 16px);
+  }
 }
 
 /* Header, main and footer in a column at least the window tall, so a short page's footer still ends at the bottom. */
